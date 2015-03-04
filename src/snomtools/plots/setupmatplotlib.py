@@ -31,6 +31,8 @@ def usepackage(package, options=None):
 preamble = "\n".join([
 	usepackage('siunitx'),
 	usepackage('icomma'),
+	usepackage('fixltx2e'),	# for using \textsubscript
+	r'\sisetup{detect-all}'
 	])
 
 # for Palatino and other serif fonts use:
