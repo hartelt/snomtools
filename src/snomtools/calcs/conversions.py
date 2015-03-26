@@ -62,6 +62,38 @@ def lambda2k(lambda_):
 	k = 2.0*constants.pi/lambda_
 	return k
 
+def omega2energy(omega):
+	'''
+	Converts an angular frequency to the corresponding energy.
+	E = hbar * omega
+	:param omega: the angular frequency in rad/s
+	:return:the energy in J
+	'''
+	E = constants.hbar * omega
+	return E
+
+def joule2ev(energy):
+	'''
+	Converts an energy value from J to eV.
+	E/eV = E/J / e
+	for e is the elementary charge.
+	:param energy: the energy in J
+	:return:the energy in eV
+	'''
+	eV = energy / constants.e
+	return eV
+
+def ev2joule(energy):
+	'''
+	Converts an energy value from eV to J.
+	E/J = E/eV * e
+	for e is the elementary charge.
+	:param energy: the energy in eV
+	:return: the energy in J
+	'''
+	J = energy * constants.e
+	return J
+
 def k_beat2k_spp(k_b,k_l,angle):
 	'''
 	Extracts the SPP wavenumber out of the PEEM beating wavenumber.
