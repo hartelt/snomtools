@@ -1,5 +1,5 @@
-__author__ = 'hartelt'
+__author__ = 'Michael Hartelt, Cristian González'
 '''
-This package provides tools for plotting data.
+This package provides a set of tools written in python for plotting data.
 As a plotting program, it uses matplotlib. Speedy may implement a gnuplot support later on.
 '''

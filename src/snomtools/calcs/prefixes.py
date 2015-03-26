@@ -1,6 +1,6 @@
 __author__ = 'hartelt'
 '''
-This is a file with constants representing the unit prefixes.
+This file contains variables used to process unit prefixes of the SI.
 '''
 
 # The unit prefixes:
