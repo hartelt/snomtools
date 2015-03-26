@@ -105,6 +105,26 @@ def k_beat2k_spp(k_b,k_l,angle):
 	k_spp=k_b+k_l*numpy.sin(angle*constants.pi/180.0)
 	return k_spp
 
+def n2epsilon(n):
+	'''
+	Converts a complex refraction index to the corresponding dielectric constant.
+	(...which is simply the complex second power of it.)
+	:param n: the complex refractive index
+	:return: the complex dielectric constant
+	'''
+	eps = n**2
+	return eps
+
+def epsilon2n(epsilon):
+	'''
+	Converts a complex dielectric constant to the corresponding refraction index.
+	(...which is simply the complex square root of it.)
+	:param epsilon: the complex dielectric constant
+	:return: the complex refractive index
+	'''
+	myn = numpy.sqrt(epsilon)
+	return myn
+
 #for testing:
 test = numpy.linspace(0,10,100)
 if __name__ == "__main__":
