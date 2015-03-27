@@ -1,6 +1,6 @@
 __author__ = 'hartelt'
 '''
-This script provides tools for conversions of units.
+This script provides tools for conversion between types of representations.
 As long as it's not specified otherwise, it should be kept in SI!
 All functions must be programed to work with float variables, as well as numpy arrays.
 '''
@@ -28,7 +28,7 @@ def rad2deg(rad):
 
 def lambda2omega(lambda_):
 	'''
-	Converts the given wavelength to the corresponding angular frequency.
+	Converts a light wavelength to the corresponding angular frequency.
 	:param lambda_: the wavelength value in m
 	:return: the angular frequency in Hz (rad/s)
 	'''
@@ -62,6 +62,38 @@ def lambda2k(lambda_):
 	k = 2.0*constants.pi/lambda_
 	return k
 
+def omega2energy(omega):
+	'''
+	Converts an angular frequency to the corresponding energy.
+	E = hbar * omega
+	:param omega: the angular frequency in rad/s
+	:return:the energy in J
+	'''
+	E = constants.hbar * omega
+	return E
+
+def joule2ev(energy):
+	'''
+	Converts an energy value from J to eV.
+	E/eV = E/J / e
+	for e is the elementary charge.
+	:param energy: the energy in J
+	:return:the energy in eV
+	'''
+	eV = energy / constants.e
+	return eV
+
+def ev2joule(energy):
+	'''
+	Converts an energy value from eV to J.
+	E/J = E/eV * e
+	for e is the elementary charge.
+	:param energy: the energy in eV
+	:return: the energy in J
+	'''
+	J = energy * constants.e
+	return J
+
 def k_beat2k_spp(k_b,k_l,angle):
 	'''
 	Extracts the SPP wavenumber out of the PEEM beat pattern wavenumber
@@ -73,6 +105,26 @@ def k_beat2k_spp(k_b,k_l,angle):
 	'''
 	k_spp=k_b+k_l*numpy.sin(angle*constants.pi/180.0)
 	return k_spp
+
+def n2epsilon(n):
+	'''
+	Converts a complex refraction index to the corresponding dielectric constant.
+	(...which is simply the complex second power of it.)
+	:param n: the complex refractive index
+	:return: the complex dielectric constant
+	'''
+	eps = n**2
+	return eps
+
+def epsilon2n(epsilon):
+	'''
+	Converts a complex dielectric constant to the corresponding refraction index.
+	(...which is simply the complex square root of it.)
+	:param epsilon: the complex dielectric constant
+	:return: the complex refractive index
+	'''
+	myn = numpy.sqrt(epsilon)
+	return myn
 
 # Just for testing purposes:
 test = numpy.linspace(0,10,100)

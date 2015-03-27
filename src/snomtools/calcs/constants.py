@@ -28,6 +28,12 @@ e = 1.60217733e-19
 # Unit: kg
 m_e = 9.1093897e-31
 
+#h: the planck constant in Js
+h = 6.6260693e-34
+
+#hbar: the planck constant divided by 2 Pi in Js (/rad)
+hbar = 1.05457168e-34
+
 # Just for testing purposes:
 if __name__ == "__main__":
 	print pi
