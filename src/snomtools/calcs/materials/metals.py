@@ -5,6 +5,7 @@ Functions take and give SI values! Use conversion tools in snomtools/calcs/conve
 '''
 
 import numpy
+import snomtools.calcs.prefixes as pref
 
 class InterbandTransition:
 	"""
@@ -32,9 +33,14 @@ class InterbandTransition:
 		:param omega: the frequency at which the dielectric function shall be calculated (float or numpy array) in rad/s
 		:return: the contribution to the dielectric function (dimensionless)
 		"""
-		omegasquare = omega**2
-		denominator = (self.omega_0*self.omega_0) - omegasquare - ((0+1j)*self.gamma*omega)
-		eps = self.omega_p*self.omega_p / denominator
+		#Convert all values to terahertz to avoid numerical errors due to huge exponents.
+		omega_tera = omega * pref.tera
+		omega_0_tera = self.omega_0 * pref.tera
+		omega_p_tera = self.omega_p * pref.tera
+		gamma_tera = self.gamma * pref.tera
+		omegasquare = omega_tera**2
+		denominator = (omega_0_tera**2) - omegasquare - (1j*gamma_tera*omega_tera)
+		eps = omega_p_tera**2 / denominator
 		return eps
 
 #TODO: We should implement tabulated literature data. Then we can always take the nearest value or so.
@@ -73,11 +79,26 @@ class Metal:
 		Caution: The offset 1 from the vacuum is NOT included, to make it possible to just add all contributions to get
 		the final dielectric function.
 		The formula is:
-		- omega_p^2 / (omega^2 - i omega gamma)
+		- omega_p^2 / (omega^2 + i omega gamma)
 		:param omega: the frequency at which the dielectric function shall be calculated (float or numpy array) in rad/s
 		:return:the contribution to the dielectric function (dimensionless)
 		"""
-		eps = - self.omega_p**2 / (omega**2 - (0+1j)*omega*self.gamma)
+		#Convert all values to terahertz to avoid numerical errors due to huge exponents.
+		omega_tera = omega / pref.tera
+		omega_p_tera = self.omega_p / pref.tera
+		gamma_tera = self.gamma / pref.tera
+		#Calculate the dielectric function
+		eps = - omega_p_tera**2 / (omega_tera**2 + (0+1j)*omega_tera*gamma_tera)
+		return eps
+
+	def epsilon_wo_inter(self,omega):
+		"""
+		This method calculates the dielectric function without taking interband transitions into account:
+		epsilon = 1 + epsilon_plasma
+		:param omega: the frequency at which the dielectric function shall be calculated (float or numpy array) in rad/s
+		:return: value of the dielectric function w/o interband transitions (dimensionless)
+		"""
+		eps = 1 + self.epsilon_plasma(omega)
 		return eps
 
 	def epsilon(self,omega):
@@ -108,7 +129,7 @@ Au_Schneider = Metal("Au",13.202e15,102.033e12,[InterbandTransition(4.5e15,896e1
 
 #for testing:
 if __name__=="__main__":
-	import snomtools.calcs.prefixes as pref
+	#import snomtools.calcs.prefixes as pref
 	test = numpy.linspace(2000,4000,20)
 	hz = test * pref.tera
 	print(Au_Schneider.epsilon(hz))

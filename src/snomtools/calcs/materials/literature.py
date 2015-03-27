@@ -11,8 +11,10 @@ import os
 import snomtools.calcs.prefixes as pref
 import snomtools.calcs.conversions as conv
 
+ownpath = os.path.dirname(os.path.realpath(__file__))
+
 """
-Au by Johnson and Christie
+Au by Johnson and Christy
 @Article{johnsonchristy1972,
   Title                    = {Optical constants of the noble metals},
   Author                   = {Johnson, Peter B and Christy, R. W.},
@@ -28,12 +30,12 @@ Au by Johnson and Christie
   Timestamp                = {2015.03.26}
 }
 """
-raw = numpy.loadtxt(os.path.abspath("literature/Au/johnson-christy.dat"))
+raw = numpy.loadtxt(os.path.abspath(os.path.join(ownpath,"literature/Au/johnson-christy.dat")))
 #datafile is formatted: wavelength in micrometers, n, k
 wl = raw[:,0] * pref.micro
 n = raw[:,1] + (raw[:,2]*1j)
 eps = conv.n2epsilon(n)
-Au_Johnson_Christie = numpy.column_stack((wl,eps,n))
+Au_Johnson_Christy = numpy.column_stack((wl,eps,n))
 
 
 """
@@ -62,19 +64,19 @@ Datafiles are formatted: Photon energy/eV	Wavelength/m	ep1	ep2	n	k
   Url                      = {http://dx.doi.org/10.1103/PhysRevB.86.235147}
 }
 """
-raw = numpy.loadtxt(os.path.abspath("literature/Au/Olmon_PRB2012_EV.dat"))
+raw = numpy.loadtxt(os.path.abspath(os.path.join(ownpath,"literature/Au/Olmon_PRB2012_EV.dat")))
 wl = raw[:,1]
 eps = raw[:,2] + 1j*raw[:,3]
 n = raw[:,4] + 1j*raw[:,5]
 Au_Olmon_evaporated = numpy.column_stack((wl,eps,n))
 
-raw = numpy.loadtxt(os.path.abspath("literature/Au/Olmon_PRB2012_SC.dat"))
+raw = numpy.loadtxt(os.path.abspath(os.path.join(ownpath,"literature/Au/Olmon_PRB2012_SC.dat")))
 wl = raw[:,1]
 eps = raw[:,2] + 1j*raw[:,3]
 n = raw[:,4] + 1j*raw[:,5]
 Au_Olmon_singlecristalline = numpy.column_stack((wl,eps,n))
 
-raw = numpy.loadtxt(os.path.abspath("literature/Au/Olmon_PRB2012_TS.dat"))
+raw = numpy.loadtxt(os.path.abspath(os.path.join(ownpath,"literature/Au/Olmon_PRB2012_TS.dat")))
 wl = raw[:,1]
 eps = raw[:,2] + 1j*raw[:,3]
 n = raw[:,4] + 1j*raw[:,5]
@@ -89,7 +91,7 @@ Koenig et al.:
 Electrically Tunable Plasmonic Behavior of Nanocube-Polymer Nanomaterials Induced by a Redox-Active Electrochromic Polymer
 ACS Nano, American Chemical Society (ACS), 2014, 8, 6182-6192
 """
-raw = numpy.loadtxt(os.path.abspath("literature/ITO/ITO-Koenig.dat"))
+raw = numpy.loadtxt(os.path.abspath(os.path.join(ownpath,"literature/ITO/ITO-Koenig.dat")))
 #Datafile format: wl/um	n		k
 wl = raw[:,0] * pref.micro
 n = raw[:,1] + (raw[:,2]*1j)
