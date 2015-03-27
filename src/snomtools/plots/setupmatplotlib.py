@@ -18,9 +18,10 @@ fontsize_xylabel = 11.
 fontsize_title = 13.
 fontsize_ticks = 9.
 
-rc('font', **{'family': 'serif', 'weight': 'normal'})
+rc('font', **{'family': 'serif', 'weight': 'light',"size":11., "style": 'normal'})
 rc('xtick', **{'labelsize': fontsize_ticks})
 rc('ytick', **{'labelsize': fontsize_ticks})
+#rc('axes', **{'labelweight': 'normal'})
 rc('axes', **{'linewidth': 1.5})
 rc('axes.formatter', use_locale=True)
 # tex using six units and icomma
