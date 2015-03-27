@@ -14,6 +14,10 @@ import matplotlib.pyplot as plt
 # matplotlib rc settings
 ###########################################
 
+#
+# General definition for the font size for the different elements of the plots,
+# remember to use a point after the number.
+#
 fontsize_xylabel = 11.
 fontsize_title = 13.
 fontsize_ticks = 9.
@@ -25,13 +29,14 @@ rc('axes', **{'linewidth': 1.5})
 rc('axes.formatter', use_locale=True)
 # tex using six units and icomma
 
+# defines the packages used to generate \LaTeX elements in the labels or the plot itself 
 def usepackage(package, options=None):
 	opt = '\[%s\]' % options if options is not None else ''
 	return "\\usepackage%s{%s}" % (opt, package)
 preamble = "\n".join([
-	usepackage('siunitx'),
-	usepackage('icomma'),
-	usepackage('fixltx2e')	# for using \textsubscript
+	usepackage('siunitx'),  # A comprehensive (SI) units package        https://www.ctan.org/pkg/siunitx
+	usepackage('icomma'),   # Intelligent commas for decimal numbers    https://www.ctan.org/pkg/icomma
+	usepackage('fixltx2e')  # for using \textsubscript                  https://www.ctan.org/pkg/fixltx2e
 #	r'\sisetup{detect-all}'
 	])
 
@@ -50,15 +55,31 @@ def unit(text, prefix=''):
 	return u"%s\\si{%s}" % (prefix, text)
 
 def a2r(angle):
+	'''
+	Converts a given angle in degrees to radians
+	:param angle: the angle in degrees
+	:return: the angle in rad
+	'''
 	if isinstance(angle, list):
 		angle = np.array(angle)
 	return angle/180.*np.pi
+
 def r2a(rad):
+	'''
+	Converts the given angle from radians to degrees
+	:param rad: the angle in rad
+	:return: the angle in degees
+	'''
 	if isinstance(rad, list):
 		rad = np.array(rad)
 	return rad/np.pi*180.
 
+
 def savefig(filename=None, suffix='', figures_path=figures_path, ext='pdf', **kwargs):
+	"""
+	saves a file, isn't obvious?,
+	the default format is PDF
+	"""
 	import sys
 	if '-build' not in sys.argv:
 		return False
@@ -86,7 +107,7 @@ def figure(size_cm=(3, 3), dpi=600, num=0):
 
 def set_xlabel(text, ax=None, fontsize=fontsize_xylabel, **kwargs):
 	"""
-	applies the x label text
+	sets the label for the x-axis
 	:param ax: if None gca is used
 	:return: axes_label
 	"""
@@ -96,7 +117,7 @@ def set_xlabel(text, ax=None, fontsize=fontsize_xylabel, **kwargs):
 
 def set_ylabel(text, ax=None, fontsize=fontsize_xylabel, **kwargs):
 	"""
-	applies the y label text
+	sets the label for the y-axis
 	:param ax: if None gca is used
 	:return: axes_label
 	"""
@@ -106,7 +127,7 @@ def set_ylabel(text, ax=None, fontsize=fontsize_xylabel, **kwargs):
 
 def set_title(text, ax=None, fontsize=fontsize_title, **kwargs):
 	"""
-	applies the title text
+	sets the text of the title
 	:param ax: if None gca is used
 	:return: label
 	"""
@@ -116,7 +137,7 @@ def set_title(text, ax=None, fontsize=fontsize_title, **kwargs):
 
 def set_label(text, ax, fontsize=fontsize_xylabel, **kwargs):
 	"""
-	applies the label text
+	sets a text label
 	:return: label
 	"""
 	return ax.set_label(text, fontsize=fontsize, **kwargs)
@@ -140,7 +161,7 @@ def legend(axis=None, handles=None, labels=None, loc=None, fontsize=fontsize_xyl
 	return leg
 
 ###########################################
-# matplotlib colormap
+# matplotlib colormap definitions
 ###########################################
 
 BuOrRd = {'red':   ((0.0,  8./256., 8./256.),

@@ -1,8 +1,8 @@
 __author__ = 'hartelt'
 '''
-This script provides tools for conversion between types of representations.
+This script provides tools for conversions of units.
 As long as it's not specified otherwise, it should be kept in SI!
-All functions shall be designed so they work with float variables, as well as numpy arrays.
+All functions must be programed to work with float variables, as well as numpy arrays.
 '''
 
 import numpy
@@ -10,7 +10,7 @@ import constants
 
 def deg2rad(angle):
 	'''
-	Converts an angle to a radian measure
+	Converts the given angle in degrees to radians
 	:param angle: the angle in degrees
 	:return: the angle in rad
 	'''
@@ -19,7 +19,7 @@ def deg2rad(angle):
 
 def rad2deg(rad):
 	'''
-	Converts an angle from radian measure to degrees
+	Converts the given angle from radians to degrees
 	:param rad: the angle in rad
 	:return: the angle in degees
 	'''
@@ -28,7 +28,7 @@ def rad2deg(rad):
 
 def lambda2omega(lambda_):
 	'''
-	Converts a light wavelength to the corresponding angular frequency.
+	Converts the given wavelength to the corresponding angular frequency.
 	:param lambda_: the wavelength value in m
 	:return: the angular frequency in Hz (rad/s)
 	'''
@@ -37,7 +37,7 @@ def lambda2omega(lambda_):
 
 def omega2lambda(omega):
 	'''
-	Converts an angular frequency to the corresponding light wavelength.
+	Converts the given angular frequency to the corresponding wavelength.
 	:param omega: the angular frequency in Hz (rad/s)
 	:return: the wavelength lambda in m
 	'''
@@ -46,7 +46,7 @@ def omega2lambda(omega):
 
 def k2lambda(k):
 	'''
-	Converts a angular wavenumber k to the corresponding wavelength.
+	Converts the given angular wavenumber, k, to the corresponding wavelength.
 	:param k: the angular wavenumber in 1/m (rad/m)
 	:return: the wavelength in m
 	'''
@@ -55,7 +55,7 @@ def k2lambda(k):
 
 def lambda2k(lambda_):
 	'''
-	Converts a wavelength to the corresponding angular wavenumber k.
+	Converts the given wavelength to the corresponding angular wavenumber, k.
 	:param lambda_: the wavelength in meters
 	:return: the angular wavenumber in 1/m (rad/m)
 	'''
@@ -64,16 +64,17 @@ def lambda2k(lambda_):
 
 def k_beat2k_spp(k_b,k_l,angle):
 	'''
-	Extracts the SPP wavenumber out of the PEEM beating wavenumber.
-	:param k_b: the beating wavenumber in 1/m (rad/m)
+	Extracts the SPP wavenumber out of the PEEM beat pattern wavenumber
+	for a certain angle of incidence.
+	:param k_b: the beat pattern wavenumber in 1/m (rad/m)
 	:param k_l: the laser wavenumber in 1/m (rad/m)
-	:param angle: the excitation incidence angle in degrees
-	:return: the plasmon beating wavenumber in 1/m (rad/m)
+	:param angle: the incidence angle of light in degrees
+	:return: the plasmon beat pattern wavenumber in 1/m (rad/m)
 	'''
 	k_spp=k_b+k_l*numpy.sin(angle*constants.pi/180.0)
 	return k_spp
 
-#for testing:
+# Just for testing purposes:
 test = numpy.linspace(0,10,100)
 if __name__ == "__main__":
 	print (test + test*.5)
