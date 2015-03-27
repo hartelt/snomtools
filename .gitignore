@@ -1,7 +1,7 @@
 #Custom entries (rest is from gitignore template):
 .idea/
 *~
-
+*.orig
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
