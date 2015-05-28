@@ -2,7 +2,7 @@ __author__ = 'hartelt'
 '''
 This file provides the central unit registry that should be used in all scripts that use snomtools.
 This avoids errors between quantities of different unit registries that occur when using multiple imports.
-
+Custom units and prefixes that we use frequently should be defined here to get consistency.
 '''
 
 #Import pint and initialize a standard unit registry:
