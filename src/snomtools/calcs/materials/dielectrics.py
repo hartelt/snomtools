@@ -12,7 +12,7 @@ class Dielectric:
 	"""
 	The base class for dielectric materials.
 	"""
-	def __init__(self,name,epsilon=1,n=1):
+	def __init__(self,name,epsilon=1.,n=1.):
 		"""
 		The constructor.
 		Can be initialized with an epsilon or an n value. If you give neither, you'll end up with Vacuum.
@@ -23,10 +23,10 @@ class Dielectric:
 		:return: nothing
 		"""
 		self.name = name
-		if epsilon!=1:
+		if epsilon!=1.:
 			self.dielconstant = epsilon
 			self.refracindex = numpy.sqrt(epsilon)
-		elif n != 1:
+		elif n != 1.:
 			self.dielconstant = n**2
 			self.refracindex = n
 		else:
@@ -42,7 +42,7 @@ class Dielectric:
 		eps = omega * 0 + self.dielconstant #to conserve format
 		return eps
 
-	def n(self,omega=0):
+	def n(self,omega=0.):
 		"""
 		The complex refraction index of the medium.
 		:param omega: just for compatibility with the metal function, and for determining the output type.
@@ -59,7 +59,7 @@ ITO = Dielectric("ITO",n=1.5999+0.0056700j)
 #for testing:
 if __name__=="__main__":
 	import snomtools.calcs.prefixes as pref
-	test = numpy.linspace(2000,4000,20)
+	test = 100.
 	hz = test * pref.tera
 	moep = Vacuum
 	print(moep.n(hz))
