@@ -5,6 +5,7 @@ It reads the data files in literature as extracted from the papers, and converts
 The data array will be in the following form:
 wavelength, dielectric constant, refraction index
 """
+#TODO: Compatibility with pint
 
 import numpy
 import os

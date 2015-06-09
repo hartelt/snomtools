@@ -7,6 +7,7 @@ Functions should be coded compatible to the ones in metals.py, and should work w
 
 import numpy
 
+#TODO: Compatibility with pint.
 #TODO: We should implement tabulated literature data. Then we can always take the nearest value or so.
 class Dielectric:
 	"""
