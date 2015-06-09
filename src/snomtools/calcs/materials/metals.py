@@ -98,7 +98,7 @@ class Metal:
 		:param omega: the frequency at which the dielectric function shall be calculated (float or numpy array) in rad/s
 		:return: value of the dielectric function w/o interband transitions (dimensionless)
 		"""
-		eps = 1 + self.epsilon_plasma(omega)
+		eps = self.epsilon_plasma(omega)+1
 		return eps
 
 	def epsilon(self,omega):
@@ -108,7 +108,7 @@ class Metal:
 		:param omega: the frequency at which the dielectric function shall be calculated (float or numpy array) in rad/s
 		:return: the complex dielectric function (dimensionless)
 		"""
-		eps = 1 + self.epsilon_plasma(omega)
+		eps = self.epsilon_plasma(omega) + 1.
 		for trans in self.interbands:
 			eps = eps + trans.epsilon(omega)
 		return eps
