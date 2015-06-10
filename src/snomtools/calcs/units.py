@@ -7,6 +7,7 @@ Custom units and prefixes that we use frequently should be defined here to get c
 
 #Import pint and initialize a standard unit registry:
 import pint
+import pint.quantity
 ureg = pint.UnitRegistry()
 
 # Custom units that we use frequently can be defined here:
@@ -14,6 +15,14 @@ ureg = pint.UnitRegistry()
 
 # Custom prefixes we use frequently can be defined here:
 #ureg.define('myprefix- = 30 = my-')
+
+def is_quantity(tocheck):
+	'''
+	Tries if the given object is a pint quantity.
+	:param tocheck: The object to check.
+	:return: Bool.
+	'''
+	return isinstance(tocheck,pint.quantity._Quantity)
 
 def to_ureg(input_,unit=None):
 	'''
@@ -24,7 +33,7 @@ def to_ureg(input_,unit=None):
 	'''
 
 	#Check if input is quantity:
-	if hasattr(input_,'_REGISTRY'):
+	if is_quantity(input_):
 		#If output unit is specified, make sure it has a compatible dimension. Else a DimensionalityError will be raised by trying to convert:
 		if unit:
 			input_.to(unit)
