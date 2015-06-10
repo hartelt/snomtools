@@ -129,6 +129,7 @@ class Metal:
 
 #Gold with the parameters determined in Christian Schneider's dissertation:
 Au_Schneider = Metal("Au",13.202e15,102.033e12,[InterbandTransition(4.5e15,896e12,4.184e15)])
+#Au_Schneider = Metal("Au",13.202e15,102.033*units.ureg('THz'),[InterbandTransition(4.5e15,896e12,4.184e15)]) #This would also work.
 
 #for testing:
 if __name__=="__main__":
