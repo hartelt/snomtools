@@ -9,8 +9,6 @@ import numpy
 import constants
 import units as u
 
-#TODO: pint integration
-
 def deg2rad(angle,return_numeric=None):
 	'''
 	Converts the given angle in degrees to radians
@@ -212,6 +210,6 @@ def epsilon2n(epsilon,return_numeric=None):
 		return myn
 
 # Just for testing purposes:
-test = numpy.linspace(0,10,100)*u.ureg('um')
 if __name__ == "__main__":
+	test = numpy.linspace(0,10,100)*u.ureg('um')
 	print (lambda2omega(test))
