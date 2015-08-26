@@ -6,6 +6,7 @@ Functions should be coded compatible to the ones in metals.py, and should work w
 '''
 
 import numpy
+import snomtools.calcs.units as u
 
 #TODO: We should implement tabulated literature data. Then we can always take the nearest value or so.
 class Dielectric:
@@ -23,6 +24,8 @@ class Dielectric:
 		:return: nothing
 		"""
 		self.name = name
+		epsilon = u.to_ureg(epsilon,'dimensionless')
+		n = u.to_ureg(n,'dimensionless')
 		if epsilon!=1.:
 			self.dielconstant = epsilon
 			self.refracindex = numpy.sqrt(epsilon)
@@ -30,8 +33,8 @@ class Dielectric:
 			self.dielconstant = n**2
 			self.refracindex = n
 		else:
-			self.dielconstant=1.0
-			self.refracindex=1.0
+			self.dielconstant=1.0*u.ureg('dimensionless')
+			self.refracindex=1.0*u.ureg('dimensionless')
 
 	def epsilon(self,omega=0):
 		"""
@@ -39,16 +42,20 @@ class Dielectric:
 		:param omega: just for compatibility with the metal function, and for determining the output type.
 		:return: the dielectric function. will be the same type as omega
 		"""
-		eps = omega * 0 + self.dielconstant #to conserve format
+		omega = u.to_ureg(omega,'THz') # Just to check if input is valid.
+		omega = omega.magnitude # For addition with dimensionless epsilon
+		eps = omega * 0 + self.dielconstant #to conserve format of input array
 		return eps
 
 	def n(self,omega=0.):
 		"""
 		The complex refraction index of the medium.
 		:param omega: just for compatibility with the metal function, and for determining the output type.
-		:return: the refraction indes. will be the same type as omega
+		:return: the refraction index. will be the same type as omega
 		"""
-		myn = omega * 0 + self.refracindex #to conserve format
+		omega = u.to_ureg(omega,'THz') # Just to check if input is valid.
+		omega = omega.magnitude # For addition with dimensionless epsilon
+		myn = omega * 0 + self.refracindex # to conserve format of input array
 		return myn
 
 Vacuum = Dielectric("Vacuum")
@@ -61,5 +68,5 @@ if __name__=="__main__":
 	import snomtools.calcs.prefixes as pref
 	test = 100.
 	hz = test * pref.tera
-	moep = Vacuum
+	moep = ITO
 	print(moep.n(hz))

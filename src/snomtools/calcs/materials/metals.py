@@ -1,11 +1,12 @@
 __author__ = 'hartelt'
 '''
 This script provides a class for calculating the properties of metals, as well as instances for metals we know.
-Functions take and give SI values! Use conversion tools in snomtools/calcs/conversions for different formats.
+Functions take pint quantities of the right dimension or floats in SI and give pint quantities in SI! Use conversion tools in snomtools/calcs/conversions or pint quantity methods for different formats.
 '''
 
 import numpy
 import snomtools.calcs.prefixes as pref
+import snomtools.calcs.units as units
 
 class InterbandTransition:
 	"""
@@ -19,9 +20,9 @@ class InterbandTransition:
 		:param damping_freq: the damping frequency of the bound electrons
 		:param central_freq: the central frequency of the interband transition
 		"""
-		self.omega_p = plasma_freq
-		self.gamma = damping_freq
-		self.omega_0 = central_freq
+		self.omega_p = units.to_ureg(plasma_freq,'rad/s')
+		self.gamma = units.to_ureg(damping_freq,'rad/s')
+		self.omega_0 = units.to_ureg(central_freq,'rad/s')
 
 	def epsilon(self,omega):
 		"""
@@ -30,14 +31,15 @@ class InterbandTransition:
 		the final dielectric function.
 		The formula is:
 		omega_p^2 / (omega_0^2 - omega^2 - i omega gamma)
-		:param omega: the frequency at which the dielectric function shall be calculated (float or numpy array) in rad/s
+		:param omega: the frequency at which the dielectric function shall be calculated in rad/s
 		:return: the contribution to the dielectric function (dimensionless)
 		"""
+		#Make sure ureg is compatible:
+		omega_tera = units.to_ureg(omega,'THz').to('THz')
 		#Convert all values to terahertz to avoid numerical errors due to huge exponents.
-		omega_tera = omega * pref.tera
-		omega_0_tera = self.omega_0 * pref.tera
-		omega_p_tera = self.omega_p * pref.tera
-		gamma_tera = self.gamma * pref.tera
+		omega_0_tera = self.omega_0.to('THz')
+		omega_p_tera = self.omega_p.to('THz')
+		gamma_tera = self.gamma.to('THz')
 		omegasquare = omega_tera**2
 		denominator = (omega_0_tera**2) - omegasquare - (1j*gamma_tera*omega_tera)
 		eps = omega_p_tera**2 / denominator
@@ -61,8 +63,8 @@ class Metal:
 		:return: nothing
 		"""
 		self.name = name
-		self.omega_p = plasma_freq
-		self.gamma = damping_freq
+		self.omega_p = units.to_ureg(plasma_freq,'rad/s')
+		self.gamma = units.to_ureg(damping_freq,'rad/s')
 		self.interbands = []
 		if interband_transitions:
 			for trans in interband_transitions:
@@ -83,10 +85,11 @@ class Metal:
 		:param omega: the frequency at which the dielectric function shall be calculated (float or numpy array) in rad/s
 		:return:the contribution to the dielectric function (dimensionless)
 		"""
+		#Make sure ureg is compatible:
+		omega_tera = units.to_ureg(omega,'THz').to('THz')
 		#Convert all values to terahertz to avoid numerical errors due to huge exponents.
-		omega_tera = omega / pref.tera
-		omega_p_tera = self.omega_p / pref.tera
-		gamma_tera = self.gamma / pref.tera
+		omega_p_tera = self.omega_p.to('THz')
+		gamma_tera = self.gamma.to('THz')
 		#Calculate the dielectric function
 		eps = - omega_p_tera**2 / (omega_tera**2 + (0+1j)*omega_tera*gamma_tera)
 		return eps
@@ -126,6 +129,7 @@ class Metal:
 
 #Gold with the parameters determined in Christian Schneider's dissertation:
 Au_Schneider = Metal("Au",13.202e15,102.033e12,[InterbandTransition(4.5e15,896e12,4.184e15)])
+#Au_Schneider = Metal("Au",13.202e15,102.033*units.ureg('THz'),[InterbandTransition(4.5e15,896e12,4.184e15)]) #This would also work.
 
 #for testing:
 if __name__=="__main__":
