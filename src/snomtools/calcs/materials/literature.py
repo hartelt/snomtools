@@ -24,7 +24,6 @@ Au by Johnson and Christy
   Number                   = {12},
   Pages                    = {4370},
   Volume                   = {6},
-
   Doi                      = {http://dx.doi.org/10.1103/PhysRevB.6.4370},
   File                     = {:Paper/Johnson-Christy-Dielectric constants/PhysRevB.6.4370.pdf:PDF},
   Publisher                = {APS},
