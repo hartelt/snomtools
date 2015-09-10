@@ -7,6 +7,7 @@ z-dimensions represent the position on a sample (x, y in micrometers) and a time
 
 import snomtools.calcs.units as u
 import numpy
+from termcolor import colored, cprint
 
 
 class DataArray:
@@ -116,7 +117,7 @@ class Axis(DataArray):
 	def __init__(self, dataarray, unit=None, label=None, plotlabel=None):
 		DataArray.__init__(self, dataarray, unit=unit, label=label, plotlabel=plotlabel)
 		if len(self.data.shape) != 1:  # The given array is not 1D
-			print("ERROR: Axis must be initialized with 1D array-like object.")
+			cprint("ERROR: Axis must be initialized with 1D array-like object.",'red')
 			raise ValueError('dimension mismatch')
 
 	def __str__(self):
@@ -143,10 +144,10 @@ class Axis(DataArray):
 
 
 if False:  # just for testing
-	testarray = numpy.arange(10).reshape((2,5))
+	testarray = numpy.arange(10)
 	testaxis = Axis(testarray, 'meter')
 	print(testaxis)
 	testaxis.set_unit('mm')
 	print(testaxis.get_unit())
-	test2 = testaxis ** 2 * u.ureg('J')
+	test2 = testaxis ** 2
 	print test2.get_data()
