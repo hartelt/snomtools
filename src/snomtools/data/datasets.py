@@ -6,8 +6,8 @@ This file contains the base class for datasets.
 import snomtools.calcs.units as u
 import numpy
 import os
-# import h5py
-from termcolor import colored#, cprint
+import h5py
+from termcolor import colored, cprint
 
 
 class DataArray:
@@ -23,6 +23,9 @@ class DataArray:
 
 	def get_data(self):
 		return self.data
+
+	def get_data_raw(self):
+		return self.data.magnitude
 
 	def set_data(self, newdata, unit=None):
 		self.data = u.to_ureg(newdata, unit)
@@ -45,6 +48,15 @@ class DataArray:
 
 	def set_plotlabel(self, newlabel):
 		self.plotlabel = str(newlabel)
+
+	def store_to_h5file(self, h5dest, subgrp_name=None):
+		if not subgrp_name:
+			subgrp_name = self.label
+		grp = h5dest.create_group(subgrp_name)
+		grp.create_dataset("data", data=self.get_data_raw())
+		grp.create_dataset("unit", data=self.get_unit())
+		grp.create_dataset("label", data=self.get_label())
+		grp.create_dataset("plotlabel", data=self.get_plotlabel())
 
 	def __pos__(self):
 		return self.__class__(self.data, label=self.label, plotlabel=self.plotlabel)
@@ -210,7 +222,17 @@ class DataSet:
 			assert (len(self.axes[i]) == self.datafields[0].shape[i]), "Axes lenghts don't fit to data dimensions."
 
 	def saveh5(self, path):
-		pass
+		path = os.path.abspath(path)
+		outfile = h5py.File(path, 'w')
+		datafieldgrp = outfile.create_group("datafields")
+		for field in self.datafields:
+			field.store_to_h5file(datafieldgrp)
+		axesgrp = outfile.create_group("axes")
+		for axis in self.axes:
+			axis.store_to_h5file(axesgrp)
+		outfile.create_dataset("label", data=self.label)
+		#outfile.create_dataset("plotconf", data=self.plotconf)  Doesnt work yet because h5 no like dict.
+		outfile.close()
 
 	def loadh5(self, path):
 		pass
@@ -220,12 +242,16 @@ class DataSet:
 
 
 if False:  # just for testing
-	print(colored('Testing...', 'green'))
+	print colored('Testing...', 'yellow'),
 	testarray = numpy.arange(0, 20, 2.)
-	testaxis = DataArray(testarray, 'meter')
+	testaxis = DataArray(testarray, 'meter', label="xaxis")
 	testaxis2 = testaxis / 2.
+	testaxis2.set_label("yaxis")
 	X, Y = numpy.meshgrid(testaxis, testaxis2)
 	# testaxis = DataArray(testarray[testarray<5], 'meter')
-	testdata = numpy.sin((X + Y) * u.ureg('rad')) * u.ureg('counts')
-	#print(testdata)
+	testdata = DataArray(numpy.sin((X + Y) * u.ureg('rad')) * u.ureg('counts'), label="testdaten")
+	# print(testdata)
 	testdataset = DataSet("test", [testdata], [testaxis, testaxis2])
+	testdataset.saveh5('test.hdf5')
+
+	cprint("OK", 'green')
