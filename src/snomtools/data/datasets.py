@@ -7,7 +7,7 @@ import snomtools.calcs.units as u
 import numpy
 import os
 # import h5py
-from termcolor import colored, cprint
+from termcolor import colored#, cprint
 
 
 class DataArray:
@@ -118,9 +118,7 @@ class Axis(DataArray):
 
 	def __init__(self, dataarray, unit=None, label=None, plotlabel=None):
 		DataArray.__init__(self, dataarray, unit=unit, label=label, plotlabel=plotlabel)
-		if len(self.data.shape) != 1:  # The given array is not 1D
-			cprint("ERROR: Axis must be initialized with 1D array-like object.", 'red')
-			raise ValueError('dimension mismatch')
+		assert (len(self.data.shape) == 1), "Axis not initialized with 1D array-like object."
 
 	@classmethod
 	def from_dataarray(cls, da):
@@ -156,11 +154,12 @@ class DataSet:
 	3D-array of count rates, in which the x- y- and z-dimensions represent the position on a sample (x,
 	y in micrometers) and a time delay (z = t in femtoseconds).
 	"""
+
 	def __init__(self, label="", datafields=(), axes=(), plotconf=()):
 		self.label = label
 		# check data format and convert it do correct DataArray and Axis objects before assigning it to members:
 		self.datafields = []
-		for field in datafields:
+		for field in datafields:  # Fill datafield list with correctly formatted datafield objects.
 			if isinstance(field, DataArray):
 				self.datafields.append(field)
 			elif u.is_quantity(field):
@@ -169,11 +168,9 @@ class DataSet:
 				self.datafields.append(DataArray(numpy.array(eval(field))))
 			else:
 				self.datafields.append(DataArray(numpy.array(field)))
-		for field in self.datafields:
-			assert (field.shape == self.datafields[0].shape), "Dataset datafields with different shapes."
 
 		self.axes = []
-		for ax in axes:
+		for ax in axes:  # Fill axes list with correctly formatted axes objects.
 			if isinstance(ax, Axis):
 				self.axes.append(ax)
 			elif isinstance(ax, DataArray):
@@ -184,8 +181,8 @@ class DataSet:
 				self.axes.append(Axis(numpy.array(eval(ax))))
 			else:
 				self.axes.append(Axis(numpy.array(ax)))
-		for i in range(len(axes)):
-			assert (len(axes[i])==self.datafields[0].shape[i]), "Axes lenghts don't fit to data dimensions."
+
+		self.check_data_consistency()
 
 		if type(plotconf) == str:
 			self.plotconf = dict(eval(plotconf))
@@ -200,6 +197,18 @@ class DataSet:
 		dataset.loadh5(path)
 		return dataset
 
+	def check_data_consistency(self):
+		for field in self.datafields:  # Check if all datafields have the same shape.
+			assert (field.shape == self.datafields[0].shape), "Dataset datafields with different shapes."
+		if self.datafields:  # If we have data at all...
+			# Check if we have the same number of axes as the number of datafield dimensions:
+			assert len(self.datafields[0].shape) == len(self.axes), "Number of axes don't fit to data dimensionality."
+		for i in range(len(self.axes)):  # Check if axes have the same lengths as the corresponding datafield dimension.
+			# print "Axis "+str(i)+":"
+			# print("axis len: "+str(len(self.axes[i])))
+			# print("data len: "+str(self.datafields[0].shape[i]))
+			assert (len(self.axes[i]) == self.datafields[0].shape[i]), "Axes lenghts don't fit to data dimensions."
+
 	def saveh5(self, path):
 		pass
 
@@ -212,13 +221,11 @@ class DataSet:
 
 if False:  # just for testing
 	print(colored('Testing...', 'green'))
-	testarray = numpy.arange(10)
+	testarray = numpy.arange(0, 20, 2.)
 	testaxis = DataArray(testarray, 'meter')
-	testarray2 = testarray.reshape((5, 2))
-	print(isinstance(testaxis, Axis))
-	print(isinstance(testaxis, DataArray))
-
-	try:
-		testdataset = DataSet("test", [testaxis, testarray2])
-	except AssertionError:
-		print("Nevermind...")
+	testaxis2 = testaxis / 2.
+	X, Y = numpy.meshgrid(testaxis, testaxis2)
+	# testaxis = DataArray(testarray[testarray<5], 'meter')
+	testdata = numpy.sin((X + Y) * u.ureg('rad')) * u.ureg('counts')
+	#print(testdata)
+	testdataset = DataSet("test", [testdata], [testaxis, testaxis2])
