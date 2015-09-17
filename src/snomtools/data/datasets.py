@@ -7,6 +7,7 @@ import snomtools.calcs.units as u
 import numpy
 import os
 import h5py
+import h5tools
 from termcolor import colored, cprint
 
 
@@ -20,6 +21,12 @@ class DataArray:
 		self.label = str(label)
 		self.plotlabel = str(plotlabel)
 		self.shape = self.data.shape
+
+	@classmethod
+	def from_h5(cls, h5source):
+		out = cls([])
+		out.load_from_h5file(h5source)
+		return out
 
 	def get_data(self):
 		return self.data
@@ -57,6 +64,11 @@ class DataArray:
 		grp.create_dataset("unit", data=self.get_unit())
 		grp.create_dataset("label", data=self.get_label())
 		grp.create_dataset("plotlabel", data=self.get_plotlabel())
+
+	def load_from_h5file(self, h5source):
+		self.set_data(numpy.array(h5source["data"]), h5source["unit"][()])
+		self.set_label(h5source["label"][()])
+		self.set_plotlabel(h5source["plotlabel"][()])
 
 	def __pos__(self):
 		return self.__class__(self.data, label=self.label, plotlabel=self.plotlabel)
@@ -231,17 +243,28 @@ class DataSet:
 		for axis in self.axes:
 			axis.store_to_h5file(axesgrp)
 		outfile.create_dataset("label", data=self.label)
-		#outfile.create_dataset("plotconf", data=self.plotconf)  Doesnt work yet because h5 no like dict.
+		plotconfgrp = outfile.create_group("plotconf")
+		h5tools.store_dictionary(self.plotconf, plotconfgrp)
 		outfile.close()
 
 	def loadh5(self, path):
-		pass
+		path = os.path.abspath(path)
+		infile = h5py.File(path, 'r')
+		self.label = str(infile["label"][()])
+		datafieldgrp = infile["datafields"]
+		for datafield in datafieldgrp:
+			self.datafields.append(DataArray.from_h5(datafieldgrp[datafield]))
+		axesgrp = infile["axes"]
+		for axes in axesgrp:
+			self.axes.append(Axis.from_h5(axesgrp[axes]))
+		self.plotconf = h5tools.load_dictionary(infile['plotconf'])
+		self.check_data_consistency()
 
 	def __del__(self):
 		pass
 
 
-if False:  # just for testing
+if True:  # just for testing
 	print colored('Testing...', 'yellow'),
 	testarray = numpy.arange(0, 20, 2.)
 	testaxis = DataArray(testarray, 'meter', label="xaxis")
@@ -249,9 +272,15 @@ if False:  # just for testing
 	testaxis2.set_label("yaxis")
 	X, Y = numpy.meshgrid(testaxis, testaxis2)
 	# testaxis = DataArray(testarray[testarray<5], 'meter')
-	testdata = DataArray(numpy.sin((X + Y) * u.ureg('rad')) * u.ureg('counts'), label="testdaten")
+	testdata = DataArray(numpy.sin((X + Y) * u.ureg('rad')) * u.ureg('counts'), label="testdaten", plotlabel="pl")
 	# print(testdata)
-	testdataset = DataSet("test", [testdata], [testaxis, testaxis2])
+	pc = {'a': 1.0, 'b': "moep", 'c': 3, 'de': "eins/zwo"}
+	print(pc)
+	testdataset = DataSet("test", [testdata], [testaxis, testaxis2], plotconf=pc)
+	print("Store...")
 	testdataset.saveh5('test.hdf5')
-
+	print("Load...")
+	newdataset = DataSet.from_h5file('test.hdf5')
+	print(newdataset.axes)
+	print(newdataset.plotconf)
 	cprint("OK", 'green')
