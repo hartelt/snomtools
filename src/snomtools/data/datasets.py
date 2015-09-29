@@ -8,7 +8,7 @@ import numpy
 import os
 import h5py
 import h5tools
-import string
+import re
 from termcolor import colored, cprint
 
 
@@ -262,10 +262,12 @@ class DataSet:
 		self.plotconf = h5tools.load_dictionary(infile['plotconf'])
 		self.check_data_consistency()
 
-	def load_textfile(self, path, axis=0, comments='#', delimiter=None, **kwargs):
+	def load_textfile(self, path, axis=0, comments='#', delimiter=None,  unitsplitter="[-\/ ]+", **kwargs):
 		"""
 		Loads the contents of a textfile to the dataset instance. The text files are two-dimensional arrays of lines
-		and n columns, so it can hold up to one axis and (n-1) or n DataFields.
+		and n columns, so it can hold up to one axis and (n-1) or n DataFields. See axis parameter for information on
+		how to set axis. Data consistency is checked at the end, so shapes of data and axis arrays must fit (as
+		always),
 		Uses numpy.loadtxt() under the hood!
 		Defaults fit for gnuplot friendly files. Tries to cast the heading comment line(s) as labels and units for
 		the data fields.
@@ -274,6 +276,8 @@ class DataSet:
 		correct shape OR None for unchanged axes of the DataSet. Default is 0 for the first column of the text file.
 		:param comments: the character used to indicate the start of a comment line
 		:param delimiter: character used to separate values. By default, this is any whitespace.
+		:param unitsplitter: Regular expression to split comment columns in labels and units. Default is "[-\/ ]+",
+		which matches combinations of the chars '-'. '/' and ' '.
 		:param kwargs: Keyword arguments as used for the numpy.loadtxt() method
 		:return: Nothing
 		"""
@@ -284,26 +288,45 @@ class DataSet:
 		# All columns contain data by default:
 		datacolumns = range(datacontent.shape[1])
 
-		#TODO: Handle heading comment lines.
+		# TODO: Handle heading comment lines.
+		commentsentries = []
+		textfile = open(path, 'r')
+		try:
+			for line in textfile:
+				line = line.strip()
+				if line.startswith(comments):
+					commentsentries.append(line.strip(comments).strip().split(delimiter))
+		finally:
+			textfile.close()
+		print(commentsentries)
+		# Find the comment line in which the units are given, if any:
+		unitsline = None
+		for comments_line_i in range(len(commentsentries)):
+			for column in commentsentries[comments_line_i]:
+				for part in re.split(unitsplitter,column):
+					if u.is_valid_unit(part):
+						unitsline = comments_line_i
+		print("Units line: ",unitsline)
+		# Hier weitermachen!
 
 		# If we should handle axis:
 		if not (axis is None):
-			if type(axis)==int: # Column number was given.
-				datacolumns.remove(axis) # Column contains axis and not data.
-				self.axes=[Axis(datacontent[:,axis])] # Initialize axis
-			elif type(axis)==Axis: # Complete axis was given.
-				self.axes=[axis]
-			elif type(axis)==DataArray: # DataArray was given for axis.
-				self.axes=[Axis.from_dataarray(axis)]
-			else: # We don't know what was given... Let's try to cast it as an axis.
+			if type(axis) == int:  # Column number was given.
+				datacolumns.remove(axis)  # Column contains axis and not data.
+				self.axes = [Axis(datacontent[:, axis])]  # Initialize axis
+			elif type(axis) == Axis:  # Complete axis was given.
+				self.axes = [axis]
+			elif type(axis) == DataArray:  # DataArray was given for axis.
+				self.axes = [Axis.from_dataarray(axis)]
+			else:  # We don't know what was given... Let's try to cast it as an axis.
 				try:
-					self.axes=[Axis(axis)]
+					self.axes = [Axis(axis)]
 				except Exception as e:
-					print colored("ERROR! Axis initialization in load_textfile failed.","red")
+					print colored("ERROR! Axis initialization in load_textfile failed.", "red")
 					raise e
-		self.datafields = [] # Reseet datafields
-		for i in datacolumns: # Initialize new datafields
-			self.datafields.append(DataArray(datacontent[:,i]))
+		self.datafields = []  # Reseet datafields
+		for i in datacolumns:  # Initialize new datafields
+			self.datafields.append(DataArray(datacontent[:, i]))
 
 		return self.check_data_consistency()
 
@@ -328,8 +351,12 @@ if True:  # just for testing
 	testdataset.saveh5('test.hdf5')
 	print("Load...")
 	newdataset = DataSet.from_h5file('test.hdf5')
-	newdataset.load_textfile('test.txt', dtype='float', comments='#')
+	newdataset.load_textfile('test.txt', dtype='float', comments='#', delimiter='\t')
 	print(newdataset)
-	print(newdataset.axes)
-	print(newdataset.datafields)
+	#print(newdataset.axes)
+	#print(newdataset.datafields)
+	newdataset.load_textfile('test2.txt', dtype='float', comments='#')
+	print(newdataset)
+	#print(newdataset.axes)
+	#print(newdataset.datafields)
 	cprint("OK", 'green')
