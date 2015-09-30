@@ -31,6 +31,19 @@ def is_valid_unit(tocheck):
 		return False
 
 
+def unit_from_str(tocheck):
+	"""
+	Checks if a string can be interpreted as a unit and returns the corresponding unit.
+	:param tocheck: String, The input to check.
+	:return: Quantity with magnitude 1 and the corresponding unit, or None if not castable.
+	"""
+	try:
+		unit = ureg(tocheck)
+		return unit
+	except pint.UndefinedUnitError:
+		return None
+
+
 def is_quantity(tocheck):
 	"""
 	Tries if the given object is a pint quantity.

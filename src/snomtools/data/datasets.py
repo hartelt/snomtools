@@ -216,13 +216,45 @@ class DataSet:
 
 	@classmethod
 	def from_h5file(cls, path):
+		"""
+		Initializes a new DataSet from an existing HDF5 file. The file must be structured in accordance to the
+		saveh5() and loadh5() methods in this class. Uses loadh5 under the hood!
+		:param path: The (absolute or relative) path of the HDF5 file to read.
+		:return: The initialized DataSet
+		"""
 		path = os.path.abspath(path)
+		# Initalize empty DataSet with the filename as label:
 		filename = os.path.basename(path)
 		dataset = cls(filename)
+		# Load data:
 		dataset.loadh5(path)
 		return dataset
 
+	@classmethod
+	def from_textfile(cls, path, **kwargs):
+		"""
+		Initializes a new DataSet from an existing text file. The file must contain the data in a column structure
+		and can contain additional metadata in comment lines.
+		Uses load_textfile() under the hood! See doc of this method for more details!
+		:param path: The (absolute or relative) path of the text file to read.
+		:param kwargs: Keyword arguments for load_textfile and the underlying numpy.loadtxt(). See there
+		documentation for specifics,
+		:return: The initialized DataSet
+		"""
+		path = os.path.abspath(path)
+		# Initalize empty DataSet with the filename as label:
+		filename = os.path.basename(path)
+		dataset = cls(filename)
+		# Load data:
+		dataset.load_textfile(path, **kwargs)
+		return dataset
+
 	def check_data_consistency(self):
+		"""
+		Self test method which checks the dimensionality and shapes of the axes and datafields. Raises
+		AssertionError if one of the tests fails.
+		:return: True if the test is successful.
+		"""
 		for field in self.datafields:  # Check if all datafields have the same shape.
 			assert (field.shape == self.datafields[0].shape), "Dataset datafields with different shapes."
 		if self.datafields:  # If we have data at all...
@@ -262,7 +294,8 @@ class DataSet:
 		self.plotconf = h5tools.load_dictionary(infile['plotconf'])
 		self.check_data_consistency()
 
-	def load_textfile(self, path, axis=0, comments='#', delimiter=None,  unitsplitter="[-\/ ]+", **kwargs):
+	def load_textfile(self, path, axis=0, comments='#', delimiter=None, unitsplitter="[-\/ ]+", labelline=0,
+					  unitsline=0, **kwargs):
 		"""
 		Loads the contents of a textfile to the dataset instance. The text files are two-dimensional arrays of lines
 		and n columns, so it can hold up to one axis and (n-1) or n DataFields. See axis parameter for information on
@@ -278,6 +311,9 @@ class DataSet:
 		:param delimiter: character used to separate values. By default, this is any whitespace.
 		:param unitsplitter: Regular expression to split comment columns in labels and units. Default is "[-\/ ]+",
 		which matches combinations of the chars '-'. '/' and ' '.
+		:param labelline: Index (starting with 0) of the comment line in which the labels are stored. (Default 0)
+		:param unitsline: Index (starting with 0) of the comment line in which the units are stored. (Default 0) If
+		this is different from labelline, it is assumed that ONLY the unit is in that line.
 		:param kwargs: Keyword arguments as used for the numpy.loadtxt() method
 		:return: Nothing
 		"""
@@ -285,11 +321,13 @@ class DataSet:
 		path = os.path.abspath(path)
 		# Load data from text file:
 		datacontent = numpy.loadtxt(path, comments=comments, delimiter=delimiter, **kwargs)
-		# All columns contain data by default:
+		# All columns contain data by default. This can change if there is an Axis:
 		datacolumns = range(datacontent.shape[1])
 
-		# TODO: Handle heading comment lines.
-		commentsentries = []
+		# Handle comment lines which hold metadata like labels and units of the data columns:
+		commentsentries = []  # The list which will hold the strings of the comment lines.
+		labels = ["" for i in datacolumns]  # The list which will hold the label for each data column.
+		units = [None for i in datacolumns]  # The list which will hold the unit string for each data column.
 		textfile = open(path, 'r')
 		try:
 			for line in textfile:
@@ -298,22 +336,38 @@ class DataSet:
 					commentsentries.append(line.strip(comments).strip().split(delimiter))
 		finally:
 			textfile.close()
-		print(commentsentries)
-		# Find the comment line in which the units are given, if any:
-		unitsline = None
-		for comments_line_i in range(len(commentsentries)):
-			for column in commentsentries[comments_line_i]:
-				for part in re.split(unitsplitter,column):
-					if u.is_valid_unit(part):
-						unitsline = comments_line_i
-		print("Units line: ",unitsline)
-		# Hier weitermachen!
+
+		# Check if relevant comments lines have the correct number of columns:
+		lines_not_ok = []
+		for comments_line_i in {labelline, unitsline}:
+			if len(commentsentries[comments_line_i]) != len(datacolumns):
+				lines_not_ok.append(comments_line_i)
+		if lines_not_ok:  # The list is not empty.
+			print(colored("WARNING: Comment line(s) {0} in textfile {1} has wrong number of columns. "
+						  "No metadata can be read.".format(lines_not_ok, path), 'yellow'))
+		else:  # There is a corresponding column in the comment line to each data line.
+			if labelline == unitsline:  # Labels and units in same line. We need to extract units, rest are labels:
+				for column in datacolumns:
+					for part in re.split(unitsplitter, commentsentries[unitsline][column]):
+						if u.is_valid_unit(part):
+							units[column] = part
+						else:
+							labels[column] += part
+			else:  # Two different lines for units and labels.
+				for column in datacolumns:
+					unit = commentsentries[unitsline][column]
+					if u.is_valid_unit(unit):
+						units[column] = unit
+					else:
+						print(colored("WARNING: Invalid unit string '{2}' in unit line {0} in textfile {1}".format(
+							unitsline, path, unit), 'yellow'))
+					labels[column] = commentsentries[labelline][column]
 
 		# If we should handle axis:
 		if not (axis is None):
 			if type(axis) == int:  # Column number was given.
 				datacolumns.remove(axis)  # Column contains axis and not data.
-				self.axes = [Axis(datacontent[:, axis])]  # Initialize axis
+				self.axes = [Axis(datacontent[:, axis], unit=units[axis], label=labels[axis])]  # Initialize axis
 			elif type(axis) == Axis:  # Complete axis was given.
 				self.axes = [axis]
 			elif type(axis) == DataArray:  # DataArray was given for axis.
@@ -324,9 +378,11 @@ class DataSet:
 				except Exception as e:
 					print colored("ERROR! Axis initialization in load_textfile failed.", "red")
 					raise e
-		self.datafields = []  # Reseet datafields
+
+		# Write the remaining data to datafields:
+		self.datafields = []  # Reset datafields
 		for i in datacolumns:  # Initialize new datafields
-			self.datafields.append(DataArray(datacontent[:, i]))
+			self.datafields.append(DataArray(datacontent[:, i], unit=units[i], label=labels[i]))
 
 		return self.check_data_consistency()
 
@@ -334,7 +390,7 @@ class DataSet:
 		pass
 
 
-if True:  # just for testing
+if False:  # just for testing
 	print colored('Testing...', 'yellow'),
 	testarray = numpy.arange(0, 20, 2.)
 	testaxis = DataArray(testarray, 'meter', label="xaxis")
@@ -351,12 +407,10 @@ if True:  # just for testing
 	testdataset.saveh5('test.hdf5')
 	print("Load...")
 	newdataset = DataSet.from_h5file('test.hdf5')
-	newdataset.load_textfile('test.txt', dtype='float', comments='#', delimiter='\t')
-	print(newdataset)
-	#print(newdataset.axes)
-	#print(newdataset.datafields)
-	newdataset.load_textfile('test2.txt', dtype='float', comments='#')
-	print(newdataset)
-	#print(newdataset.axes)
-	#print(newdataset.datafields)
+
+	print("Load textfile...")
+	newestdataset = DataSet.from_textfile('test2.txt', comments='#', delimiter='\t', unitsline=1)
+	print(newestdataset)
+	print("Store...")
+	newestdataset.saveh5("test2.hdf5")
 	cprint("OK", 'green')
