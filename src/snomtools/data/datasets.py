@@ -249,6 +249,24 @@ class DataSet:
 		dataset.load_textfile(path, **kwargs)
 		return dataset
 
+	def __getattr__(self, item):
+		"""
+		This method provides dynamical naming in instances. It is called any time an attribute of the intstance is
+		not found with the normal naming mechanism. Raises an AttributeError if the name cannot be resolved.
+		:param item: The name to get the corresponding attribute.
+		:return: The attribute corresponding to the given name.
+		"""
+		if item == "alldata":
+			return self.datafields+self.axes
+		if item == "labels":
+			labels=[]
+			for e in self.alldata:
+				labels.append(e.get_label())
+			return labels
+		# TODO: address the labels!
+		# TODO: address xyz.
+		raise AttributeError("Name in DataSet object cannot be resolved!")
+
 	def check_data_consistency(self):
 		"""
 		Self test method which checks the dimensionality and shapes of the axes and datafields. Raises
@@ -266,6 +284,21 @@ class DataSet:
 			# print("data len: "+str(self.datafields[0].shape[i]))
 			assert (len(self.axes[i]) == self.datafields[0].shape[i]), "Axes lenghts don't fit to data dimensions."
 		return True
+
+	def check_label_uniqueness(self,newlabel=None):
+		"""
+		Checks if the labels of the DataSets datafields and axes are unique. This is important to call them directly
+		by their labels.
+		:newlabel: If given, this method checks the viability of a new label to add to the DataSet.
+		:return: True if test is successful.
+		"""
+		allok = True
+		if newlabel:
+			for e in self.alldata:
+				if newlabel==e.get_label():
+					allok=False
+			return allok
+		# TODO: Implement selfcheck without newlabel.
 
 	def saveh5(self, path):
 		path = os.path.abspath(path)
@@ -384,6 +417,7 @@ class DataSet:
 		for i in datacolumns:  # Initialize new datafields
 			self.datafields.append(DataArray(datacontent[:, i], unit=units[i], label=labels[i]))
 
+		self.check_label_uniqueness()
 		return self.check_data_consistency()
 
 	def __del__(self):
@@ -413,4 +447,7 @@ if False:  # just for testing
 	print(newestdataset)
 	print("Store...")
 	newestdataset.saveh5("test2.hdf5")
+
+	print(newestdataset.labels)
+
 	cprint("OK", 'green')
