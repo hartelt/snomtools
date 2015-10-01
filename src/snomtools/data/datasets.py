@@ -257,15 +257,48 @@ class DataSet:
 		:return: The attribute corresponding to the given name.
 		"""
 		if item == "alldata":
-			return self.datafields+self.axes
-		if item == "labels":
-			labels=[]
+			return self.datafields + self.axes
+		elif item == "labels":
+			labels = []
 			for e in self.alldata:
 				labels.append(e.get_label())
 			return labels
-		# TODO: address the labels!
+		elif item in self.labels:
+			for darray in self.alldata:
+				if item == darray.get_label():
+					return darray
 		# TODO: address xyz.
 		raise AttributeError("Name in DataSet object cannot be resolved!")
+
+	def get_datafield(self, label_or_index):
+		"""
+		Tries to assign a DataField to a given parameter, that can be an integer as an index in the
+		datafields list or a label string. Raises exceptions if there is no matching field.
+		:param label_or_index: Identifier of the DataField
+		:return: The corresponding DataField.
+		"""
+		try:
+			return self.datafields[label_or_index]
+		except TypeError:
+			if label_or_index in self.labels:
+				return self.__getattr__(label_or_index)
+			else:
+				raise AttributeError("DataField not found.")
+
+	def get_axis(self, label_or_index):
+		"""
+		Tries to assign an Axis to a given parameter, that can be an integer as an index in the
+		axes list or a label string. Raises exceptions if there is no matching element.
+		:param label_or_index: Identifier of the Axis.
+		:return: The corresponding Axis.
+		"""
+		try:
+			return self.axes[label_or_index]
+		except TypeError:
+			if label_or_index in self.labels:
+				return self.__getattr__(label_or_index)
+			else:
+				raise AttributeError("Axis not found.")
 
 	def check_data_consistency(self):
 		"""
@@ -285,20 +318,18 @@ class DataSet:
 			assert (len(self.axes[i]) == self.datafields[0].shape[i]), "Axes lenghts don't fit to data dimensions."
 		return True
 
-	def check_label_uniqueness(self,newlabel=None):
+	def check_label_uniqueness(self, newlabel=None):
 		"""
 		Checks if the labels of the DataSets datafields and axes are unique. This is important to call them directly
 		by their labels.
 		:newlabel: If given, this method checks the viability of a new label to add to the DataSet.
 		:return: True if test is successful.
 		"""
-		allok = True
-		if newlabel:
-			for e in self.alldata:
-				if newlabel==e.get_label():
-					allok=False
-			return allok
-		# TODO: Implement selfcheck without newlabel.
+		if newlabel:  # we check if a new label would be viable:
+			return not (newlabel in self.labels)
+		else:  # selfcheck without newlabel:
+			assert (len(self.labels) == len(set(self.labels))), "DataSet data array and axes labels not unique."
+			return True
 
 	def saveh5(self, path):
 		path = os.path.abspath(path)
@@ -449,5 +480,6 @@ if False:  # just for testing
 	newestdataset.saveh5("test2.hdf5")
 
 	print(newestdataset.labels)
+	#print newestdataset.get_axis(0)
 
 	cprint("OK", 'green')
