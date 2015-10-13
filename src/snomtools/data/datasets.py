@@ -18,6 +18,7 @@ class DataArray:
 	"""
 
 	def __init__(self, dataarray, unit=None, label=None, plotlabel=None):
+		# TODO: Should take different input formats.
 		self.data = u.to_ureg(dataarray, unit)
 		self.label = str(label)
 		self.plotlabel = str(plotlabel)
@@ -28,6 +29,8 @@ class DataArray:
 		out = cls([])
 		out.load_from_h5file(h5source)
 		return out
+
+	# TODO: gettattr including self.shape
 
 	def get_data(self):
 		return self.data
@@ -185,6 +188,7 @@ class DataSet:
 		# check data format and convert it do correct DataArray and Axis objects before assigning it to members:
 		self.datafields = []
 		for field in datafields:  # Fill datafield list with correctly formatted datafield objects.
+			# TODO: This should be in DataArray init.
 			if isinstance(field, DataArray):
 				self.datafields.append(field)
 			elif u.is_quantity(field):
@@ -196,6 +200,7 @@ class DataSet:
 
 		self.axes = []
 		for ax in axes:  # Fill axes list with correctly formatted axes objects.
+			# TODO: Dito Axis.
 			if isinstance(ax, Axis):
 				self.axes.append(ax)
 			elif isinstance(ax, DataArray):
@@ -270,6 +275,18 @@ class DataSet:
 		# TODO: address xyz.
 		raise AttributeError("Name in DataSet object cannot be resolved!")
 
+	def add_datafield(self, data, unit=None, label=None, plotlabel=None):
+		"""
+		Initalizes a datafield and adds it to the list. All parameters have to be given like the __init__ of DataSets
+		expects them.
+		:param data:
+		:param unit:
+		:param label:
+		:param plotlabel:
+		:return:
+		"""
+		self.datafields.append(DataArray(data, unit=None, label=None, plotlabel=None))
+
 	def get_datafield(self, label_or_index):
 		"""
 		Tries to assign a DataField to a given parameter, that can be an integer as an index in the
@@ -284,6 +301,18 @@ class DataSet:
 				return self.__getattr__(label_or_index)
 			else:
 				raise AttributeError("DataField not found.")
+
+	def add_axis(self, data, unit=None, label=None, plotlabel=None):
+		"""
+		Initalizes a datafield and adds it to the list. All parameters have to be given like the __init__ of Axis
+		expects them.
+		:param data:
+		:param unit:
+		:param label:
+		:param plotlabel:
+		:return:
+		"""
+		self.axes.append(Axis(data, unit=None, label=None, plotlabel=None))
 
 	def get_axis(self, label_or_index):
 		"""
