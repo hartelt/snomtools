@@ -12,5 +12,3 @@ http://docs.h5py.org/en/latest/index.html
 if False:
 	import h5py
 	h5py.run_tests()
-
-#TODO: everything XD

@@ -51,6 +51,8 @@ class DataArray:
 			elif type(data) == str:  # If it's a string, try to evaluate it as an array.
 				self.data = u.to_ureg(numpy.array(eval(data)), unit)
 			else:  # If it's none of the above, it hopefully is an array-like. So let's try to cast it.
+				#print data
+				#print unit
 				self.data = u.to_ureg(numpy.array(data), unit)
 			self.label = str(label)
 			self.plotlabel = str(plotlabel)
@@ -209,6 +211,7 @@ class Axis(DataArray):
 		:return:
 		"""
 		DataArray.__init__(self, data, unit=unit, label=label, plotlabel=plotlabel)
+		self.assure_1D()
 		assert (len(self.data.shape) == 1), "Axis not initialized with 1D array-like object."
 
 	@classmethod
@@ -230,6 +233,19 @@ class Axis(DataArray):
 		if item == "shape":
 			return self.data.shape
 		raise AttributeError("Attribute of Axis instance cannot be resolved.")
+
+	def assure_1D(self):
+		"""
+		Makes sure the data is onedimensional. Try a consistent conversion, if that fails raise error.
+		"""
+		if len(self.data.shape) == 1: # Array itself is 1D
+			return
+		# Else we have a moredimensional array. Try to flatten it:
+		flatarray = self.data.flatten()
+		if not (len(flatarray) in self.data.shape): # an invalid conversion.
+			raise ArithmeticError("Non-1D convertable data array in Axis.")
+		else:
+			self.data = flatarray
 
 	def __str__(self):
 		out = "Axis"
@@ -565,7 +581,7 @@ class DataSet:
 		pass
 
 
-if True:  # just for testing
+if False:  # just for testing
 	print colored('Testing...', 'yellow'),
 	testarray = numpy.arange(0, 20, 2.)
 	testaxis = DataArray(testarray, 'meter', label="xaxis")
