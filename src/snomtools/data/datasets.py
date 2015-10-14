@@ -17,20 +17,65 @@ class DataArray:
 	A data array that holds additional metadata.
 	"""
 
-	def __init__(self, dataarray, unit=None, label=None, plotlabel=None):
-		# TODO: Should take different input formats.
-		self.data = u.to_ureg(dataarray, unit)
-		self.label = str(label)
-		self.plotlabel = str(plotlabel)
-		self.shape = self.data.shape
+	def __init__(self, data, unit=None, label=None, plotlabel=None):
+		"""
+		Guess what, this is an initializer. It differences between input formats, which should be clear from the
+		parameter doc and the comments in the code.
+		:param data: required. If this is already a DataArray instance, it is just copied by default, so if the
+		other parameters are set, the contents of the instance are overwritten.
+		:param unit: Request a unit for the data to be in. If the data holds a unit (quantity), it must be the same
+		dimensionality. If it doesn't (array-like), it is assumed to be in the given unit! Default is None for
+		unchanged in the first case and dimensionless in the second.
+		:param label: A short identifier label that should be meaningful to get the physical context of the data.
+		:param plotlabel: A label for the data that should be plotted in a diagram.
+		:return:
+		"""
+		if isinstance(data, DataArray):  # If the data already comes in a DataArray, just take it.
+			self.data = data.get_data()
+			if unit:  # If a unit is explicitly requested anyway, make sure we set it.
+				self.set_unit(unit)
+			if label:  # Same with label, else take the one that's already with the data
+				self.label = label
+			else:
+				self.label = data.get_label()
+			if plotlabel:  # Same as with label.
+				self.plotlabel = label
+			else:
+				self.plotlabel = data.get_plotlabel()
+			# A DataArray contains everything we need, so we should be done here!
+		else:  # We DON'T have everything contained in data, so we need to process it seperately.
+			if u.is_quantity(data):  # Kind of the same as above, just for the data itself.
+				self.data = data
+				if unit:  # If a unit is explicitly requested anyway, make sure we set it.
+					self.set_unit(unit)
+			elif type(data) == str:  # If it's a string, try to evaluate it as an array.
+				self.data = u.to_ureg(numpy.array(eval(data)), unit)
+			else:  # If it's none of the above, it hopefully is an array-like. So let's try to cast it.
+				self.data = u.to_ureg(numpy.array(data), unit)
+			self.label = str(label)
+			self.plotlabel = str(plotlabel)
 
 	@classmethod
 	def from_h5(cls, h5source):
+		"""
+		This method initializes a DataArray from a HDF5 source.
+		:param h5source: The HDF5 source to read from. This is generally the subgroup for the DataArray.
+		:return: The initialized DataArray.
+		"""
 		out = cls([])
-		out.load_from_h5file(h5source)
+		out.load_from_h5(h5source)
 		return out
 
-	# TODO: gettattr including self.shape
+	def __getattr__(self, item):
+		"""
+		This method provides dynamical naming in instances. It is called any time an attribute of the intstance is
+		not found with the normal naming mechanism. Raises an AttributeError if the name cannot be resolved.
+		:param item: The name to get the corresponding attribute.
+		:return: The attribute corresponding to the given name.
+		"""
+		if item == "shape":
+			return self.data.shape
+		raise AttributeError("Attribute of DataArray instance cannot be resolved.")
 
 	def get_data(self):
 		return self.data
@@ -40,7 +85,6 @@ class DataArray:
 
 	def set_data(self, newdata, unit=None):
 		self.data = u.to_ureg(newdata, unit)
-		self.shape = self.data.shape
 
 	def get_unit(self):
 		return str(self.data.units)
@@ -60,7 +104,13 @@ class DataArray:
 	def set_plotlabel(self, newlabel):
 		self.plotlabel = str(newlabel)
 
-	def store_to_h5file(self, h5dest, subgrp_name=None):
+	def store_to_h5(self, h5dest, subgrp_name=None):
+		"""
+		Stores the DataArray into a HDF5 file. It will create a subgroup and store the data there in a unified format.
+		:param h5dest: The destination. This is a HDF5 file or subgroup.
+		:param subgrp_name: Optional. The name for the subgroup that is created to store the data in, Default is the
+		label of the DataArray.
+		"""
 		if not subgrp_name:
 			subgrp_name = self.label
 		grp = h5dest.create_group(subgrp_name)
@@ -69,7 +119,11 @@ class DataArray:
 		grp.create_dataset("label", data=self.get_label())
 		grp.create_dataset("plotlabel", data=self.get_plotlabel())
 
-	def load_from_h5file(self, h5source):
+	def load_from_h5(self, h5source):
+		"""
+		Loads the data from a HDF5 source.
+		:param h5source: The source to read from. This is the subgroup of the DataArray.
+		"""
 		self.set_data(numpy.array(h5source["data"]), h5source["unit"][()])
 		self.set_label(h5source["label"][()])
 		self.set_plotlabel(h5source["plotlabel"][()])
@@ -144,13 +198,38 @@ class Axis(DataArray):
 	An axis is a data array that holds the data for an axis of a dataset.
 	"""
 
-	def __init__(self, dataarray, unit=None, label=None, plotlabel=None):
-		DataArray.__init__(self, dataarray, unit=unit, label=label, plotlabel=plotlabel)
+	def __init__(self, data, unit=None, label=None, plotlabel=None):
+		"""
+		So far, an Axis is the same as a DaraArray, with the exception that it is one-dimensional. Therefore this
+		method uses the __init__ of the parent class and parameters are exactly as there.
+		:param data:
+		:param unit:
+		:param label:
+		:param plotlabel:
+		:return:
+		"""
+		DataArray.__init__(self, data, unit=unit, label=label, plotlabel=plotlabel)
 		assert (len(self.data.shape) == 1), "Axis not initialized with 1D array-like object."
 
 	@classmethod
 	def from_dataarray(cls, da):
+		"""
+		Initializes an Axis instance from a DataArray instance (which is mostly, but not completely the same).
+		:param da: An instance of the DataArray class.
+		:return: The new initialized instance of Axis.
+		"""
 		return cls(da.data, label=da.label, plotlabel=da.plotlabel)
+
+	def __getattr__(self, item):
+		"""
+		This method provides dynamical naming in instances. It is called any time an attribute of the intstance is
+		not found with the normal naming mechanism. Raises an AttributeError if the name cannot be resolved.
+		:param item: The name to get the corresponding attribute.
+		:return: The attribute corresponding to the given name.
+		"""
+		if item == "shape":
+			return self.data.shape
+		raise AttributeError("Attribute of Axis instance cannot be resolved.")
 
 	def __str__(self):
 		out = "Axis"
@@ -188,29 +267,31 @@ class DataSet:
 		# check data format and convert it do correct DataArray and Axis objects before assigning it to members:
 		self.datafields = []
 		for field in datafields:  # Fill datafield list with correctly formatted datafield objects.
-			# TODO: This should be in DataArray init.
-			if isinstance(field, DataArray):
-				self.datafields.append(field)
-			elif u.is_quantity(field):
-				self.datafields.append(DataArray(field))
-			elif type(field) == str:
-				self.datafields.append(DataArray(numpy.array(eval(field))))
-			else:
-				self.datafields.append(DataArray(numpy.array(field)))
+			self.datafields.append(field)
+			# The previous line is in place of the following part that was moved to the DataArray init.
+			# if isinstance(field, DataArray):
+			# 	self.datafields.append(field)
+			# elif u.is_quantity(field):
+			# 	self.datafields.append(DataArray(field))
+			# elif type(field) == str:
+			# 	self.datafields.append(DataArray(numpy.array(eval(field))))
+			# else:
+			# 	self.datafields.append(DataArray(numpy.array(field)))
 
 		self.axes = []
 		for ax in axes:  # Fill axes list with correctly formatted axes objects.
-			# TODO: Dito Axis.
-			if isinstance(ax, Axis):
-				self.axes.append(ax)
-			elif isinstance(ax, DataArray):
-				self.axes.append(Axis.from_dataarray(ax))
-			elif u.is_quantity(ax):
-				self.axes.append(Axis(ax))
-			elif type(ax) == str:
-				self.axes.append(Axis(numpy.array(eval(ax))))
-			else:
-				self.axes.append(Axis(numpy.array(ax)))
+			self.axes.append(ax)
+			# The previous line is in place of the following part that was moved to the DataArray init.
+			# if isinstance(ax, Axis):
+			# 	self.axes.append(ax)
+			# elif isinstance(ax, DataArray):
+			# 	self.axes.append(Axis.from_dataarray(ax))
+			# elif u.is_quantity(ax):
+			# 	self.axes.append(Axis(ax))
+			# elif type(ax) == str:
+			# 	self.axes.append(Axis(numpy.array(eval(ax))))
+			# else:
+			# 	self.axes.append(Axis(numpy.array(ax)))
 
 		self.check_data_consistency()
 
@@ -285,7 +366,7 @@ class DataSet:
 		:param plotlabel:
 		:return:
 		"""
-		self.datafields.append(DataArray(data, unit=None, label=None, plotlabel=None))
+		self.datafields.append(DataArray(data, unit, label, plotlabel))
 
 	def get_datafield(self, label_or_index):
 		"""
@@ -312,7 +393,7 @@ class DataSet:
 		:param plotlabel:
 		:return:
 		"""
-		self.axes.append(Axis(data, unit=None, label=None, plotlabel=None))
+		self.axes.append(Axis(data, unit, label, plotlabel))
 
 	def get_axis(self, label_or_index):
 		"""
@@ -365,10 +446,10 @@ class DataSet:
 		outfile = h5py.File(path, 'w')
 		datafieldgrp = outfile.create_group("datafields")
 		for field in self.datafields:
-			field.store_to_h5file(datafieldgrp)
+			field.store_to_h5(datafieldgrp)
 		axesgrp = outfile.create_group("axes")
 		for axis in self.axes:
-			axis.store_to_h5file(axesgrp)
+			axis.store_to_h5(axesgrp)
 		outfile.create_dataset("label", data=self.label)
 		plotconfgrp = outfile.create_group("plotconf")
 		h5tools.store_dictionary(self.plotconf, plotconfgrp)
@@ -484,7 +565,7 @@ class DataSet:
 		pass
 
 
-if False:  # just for testing
+if True:  # just for testing
 	print colored('Testing...', 'yellow'),
 	testarray = numpy.arange(0, 20, 2.)
 	testaxis = DataArray(testarray, 'meter', label="xaxis")
@@ -509,6 +590,6 @@ if False:  # just for testing
 	newestdataset.saveh5("test2.hdf5")
 
 	print(newestdataset.labels)
-	#print newestdataset.get_axis(0)
+	# print newestdataset.get_axis(0)
 
 	cprint("OK", 'green')
