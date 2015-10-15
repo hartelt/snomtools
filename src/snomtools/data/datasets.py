@@ -51,8 +51,6 @@ class DataArray:
 			elif type(data) == str:  # If it's a string, try to evaluate it as an array.
 				self.data = u.to_ureg(numpy.array(eval(data)), unit)
 			else:  # If it's none of the above, it hopefully is an array-like. So let's try to cast it.
-				# print data
-				#print unit
 				self.data = u.to_ureg(numpy.array(data), unit)
 			self.label = str(label)
 			self.plotlabel = str(plotlabel)
@@ -77,6 +75,8 @@ class DataArray:
 		"""
 		if item == "shape":
 			return self.data.shape
+		if item == "units":
+			return self.data.units
 		raise AttributeError("Attribute of DataArray instance cannot be resolved.")
 
 	def get_data(self):
@@ -95,7 +95,7 @@ class DataArray:
 		:param axis2: int: Second axis.
 		:return: The data after the transformation.
 		"""
-		self.data = u.to_ureg(self.get_data_raw().swapaxes(axis1, axis2),self.get_unit())
+		self.data = u.to_ureg(self.get_data_raw().swapaxes(axis1, axis2), self.get_unit())
 		return self.data
 
 	def get_unit(self):
@@ -244,6 +244,8 @@ class Axis(DataArray):
 		"""
 		if item == "shape":
 			return self.data.shape
+		if item == "units":
+			return self.data.units
 		raise AttributeError("Attribute of Axis instance cannot be resolved.")
 
 	def assure_1D(self):
@@ -295,7 +297,8 @@ class DataSet:
 		# check data format and convert it do correct DataArray and Axis objects before assigning it to members:
 		self.datafields = []
 		for field in datafields:  # Fill datafield list with correctly formatted datafield objects.
-			self.datafields.append(field)
+			moep = DataArray(field)
+			self.datafields.append(moep)
 		# The previous line is in place of the following part that was moved to the DataArray init.
 		# if isinstance(field, DataArray):
 		# self.datafields.append(field)
@@ -308,7 +311,8 @@ class DataSet:
 
 		self.axes = []
 		for ax in axes:  # Fill axes list with correctly formatted axes objects.
-			self.axes.append(ax)
+			moep = Axis(ax)
+			self.axes.append(moep)
 		# The previous line is in place of the following part that was moved to the DataArray init.
 		# if isinstance(ax, Axis):
 		# self.axes.append(ax)
@@ -382,7 +386,7 @@ class DataSet:
 				if item == darray.get_label():
 					return darray
 		# TODO: address xyz.
-		raise AttributeError("Name in DataSet object cannot be resolved!")
+		raise AttributeError("Name '" + item + "' in DataSet object cannot be resolved!")
 
 	def add_datafield(self, data, unit=None, label=None, plotlabel=None):
 		"""
@@ -411,7 +415,7 @@ class DataSet:
 			else:
 				raise AttributeError("DataField not found.")
 
-	def get_datafield_index(self,label_or_index):
+	def get_datafield_index(self, label_or_index):
 		try:
 			self.datafields[label_or_index]  # If this works it is an int (or int-like) and addressable as it is.
 			return label_or_index
@@ -531,13 +535,13 @@ class DataSet:
 		datafieldgrp = infile["datafields"]
 		self.datafields = [None for i in range(len(datafieldgrp))]
 		for datafield in datafieldgrp:
-			index =  datafieldgrp[datafield]['index'][()]
-			self.datafields[index]=(DataArray.from_h5(datafieldgrp[datafield]))
+			index = datafieldgrp[datafield]['index'][()]
+			self.datafields[index] = (DataArray.from_h5(datafieldgrp[datafield]))
 		axesgrp = infile["axes"]
 		self.axes = [None for i in range(len(axesgrp))]
 		for axis in axesgrp:
-			index =  axesgrp[axis]['index'][()]
-			self.axes[index]=(Axis.from_h5(axesgrp[axis]))
+			index = axesgrp[axis]['index'][()]
+			self.axes[index] = (Axis.from_h5(axesgrp[axis]))
 		self.plotconf = h5tools.load_dictionary(infile['plotconf'])
 		self.check_data_consistency()
 
