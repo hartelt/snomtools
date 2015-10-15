@@ -64,8 +64,12 @@ def Efield_3d(filepath, first_coord='l', second_coord='x', third_coord='y', firs
 												 plotlabel=coord_label_list[i]+" / "+unit_list[i]))
 	return snomtools.data.datasets.DataSet(os.path.basename(filepath),dataarrays,axes)
 
-if True: # Just for testing
+if False: # Just for testing
 	infile = "2015-08-03-Sphere4-substrate-532nm-bottomfieldE.mat"
 	outfile = infile.replace('.mat','.hdf5')
 	dataset = Efield_3d(infile)
+	dataset.swapaxis('l','x')
+	dataset.swapaxis(1,2)
 	dataset.saveh5(outfile)
+	datareload = snomtools.data.datasets.DataSet.from_h5file(outfile)
+	print(datareload)

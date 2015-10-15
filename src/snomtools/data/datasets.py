@@ -51,7 +51,7 @@ class DataArray:
 			elif type(data) == str:  # If it's a string, try to evaluate it as an array.
 				self.data = u.to_ureg(numpy.array(eval(data)), unit)
 			else:  # If it's none of the above, it hopefully is an array-like. So let's try to cast it.
-				#print data
+				# print data
 				#print unit
 				self.data = u.to_ureg(numpy.array(data), unit)
 			self.label = str(label)
@@ -88,6 +88,16 @@ class DataArray:
 	def set_data(self, newdata, unit=None):
 		self.data = u.to_ureg(newdata, unit)
 
+	def swapaxes(self, axis1, axis2):
+		"""
+		Swaps two axes of the data. Uses numpy.swapaxes.
+		:param axis1: int: First axis.
+		:param axis2: int: Second axis.
+		:return: The data after the transformation.
+		"""
+		self.data = u.to_ureg(self.get_data_raw().swapaxes(axis1, axis2),self.get_unit())
+		return self.data
+
 	def get_unit(self):
 		return str(self.data.units)
 
@@ -112,6 +122,7 @@ class DataArray:
 		:param h5dest: The destination. This is a HDF5 file or subgroup.
 		:param subgrp_name: Optional. The name for the subgroup that is created to store the data in, Default is the
 		label of the DataArray.
+		:return The subgroup that was created and holds the data.
 		"""
 		if not subgrp_name:
 			subgrp_name = self.label
@@ -120,6 +131,7 @@ class DataArray:
 		grp.create_dataset("unit", data=self.get_unit())
 		grp.create_dataset("label", data=self.get_label())
 		grp.create_dataset("plotlabel", data=self.get_plotlabel())
+		return grp
 
 	def load_from_h5(self, h5source):
 		"""
@@ -238,11 +250,11 @@ class Axis(DataArray):
 		"""
 		Makes sure the data is onedimensional. Try a consistent conversion, if that fails raise error.
 		"""
-		if len(self.data.shape) == 1: # Array itself is 1D
+		if len(self.data.shape) == 1:  # Array itself is 1D
 			return
 		# Else we have a moredimensional array. Try to flatten it:
 		flatarray = self.data.flatten()
-		if not (len(flatarray) in self.data.shape): # an invalid conversion.
+		if not (len(flatarray) in self.data.shape):  # an invalid conversion.
 			raise ArithmeticError("Non-1D convertable data array in Axis.")
 		else:
 			self.data = flatarray
@@ -284,30 +296,30 @@ class DataSet:
 		self.datafields = []
 		for field in datafields:  # Fill datafield list with correctly formatted datafield objects.
 			self.datafields.append(field)
-			# The previous line is in place of the following part that was moved to the DataArray init.
-			# if isinstance(field, DataArray):
-			# 	self.datafields.append(field)
-			# elif u.is_quantity(field):
-			# 	self.datafields.append(DataArray(field))
-			# elif type(field) == str:
-			# 	self.datafields.append(DataArray(numpy.array(eval(field))))
-			# else:
-			# 	self.datafields.append(DataArray(numpy.array(field)))
+		# The previous line is in place of the following part that was moved to the DataArray init.
+		# if isinstance(field, DataArray):
+		# self.datafields.append(field)
+		# elif u.is_quantity(field):
+		# 	self.datafields.append(DataArray(field))
+		# elif type(field) == str:
+		# 	self.datafields.append(DataArray(numpy.array(eval(field))))
+		# else:
+		# 	self.datafields.append(DataArray(numpy.array(field)))
 
 		self.axes = []
 		for ax in axes:  # Fill axes list with correctly formatted axes objects.
 			self.axes.append(ax)
-			# The previous line is in place of the following part that was moved to the DataArray init.
-			# if isinstance(ax, Axis):
-			# 	self.axes.append(ax)
-			# elif isinstance(ax, DataArray):
-			# 	self.axes.append(Axis.from_dataarray(ax))
-			# elif u.is_quantity(ax):
-			# 	self.axes.append(Axis(ax))
-			# elif type(ax) == str:
-			# 	self.axes.append(Axis(numpy.array(eval(ax))))
-			# else:
-			# 	self.axes.append(Axis(numpy.array(ax)))
+		# The previous line is in place of the following part that was moved to the DataArray init.
+		# if isinstance(ax, Axis):
+		# self.axes.append(ax)
+		# elif isinstance(ax, DataArray):
+		# 	self.axes.append(Axis.from_dataarray(ax))
+		# elif u.is_quantity(ax):
+		# 	self.axes.append(Axis(ax))
+		# elif type(ax) == str:
+		# 	self.axes.append(Axis(numpy.array(eval(ax))))
+		# else:
+		# 	self.axes.append(Axis(numpy.array(ax)))
 
 		self.check_data_consistency()
 
@@ -399,6 +411,16 @@ class DataSet:
 			else:
 				raise AttributeError("DataField not found.")
 
+	def get_datafield_index(self,label_or_index):
+		try:
+			self.datafields[label_or_index]  # If this works it is an int (or int-like) and addressable as it is.
+			return label_or_index
+		except TypeError:
+			if label_or_index in self.labels:
+				return self.datafields.index(self.__getattr__(label_or_index))
+			else:
+				raise AttributeError("DataField not found.")
+
 	def add_axis(self, data, unit=None, label=None, plotlabel=None):
 		"""
 		Initalizes a datafield and adds it to the list. All parameters have to be given like the __init__ of Axis
@@ -425,6 +447,35 @@ class DataSet:
 				return self.__getattr__(label_or_index)
 			else:
 				raise AttributeError("Axis not found.")
+
+	def get_axis_index(self, label_or_index):
+		try:
+			self.axes[label_or_index]  # If this works it is an int (or int-like) and addressable as it is.
+			return label_or_index
+		except TypeError:
+			if label_or_index in self.labels:
+				return self.axes.index(self.__getattr__(label_or_index))
+			else:
+				raise AttributeError("Axis not found.")
+
+	def swapaxis(self, axis1, axis2):
+		"""
+		Interchanges the place of two axes.
+		:param axis1: The first axis, addressed by its label or index.
+		:param axis2: The second axis, addressed by its label or index.
+		:return: Nothing.
+		"""
+		# Assure numerical indices:
+		axis1 = self.get_axis_index(axis1)
+		axis2 = self.get_axis_index(axis2)
+
+		# Swap data axes and order of axes list:
+		for field in self.datafields:
+			field.swapaxes(axis1, axis2)
+		self.axes[axis2], self.axes[axis1] = self.axes[axis1], self.axes[axis2]
+
+		# Assure we did nothing wrong:
+		self.check_data_consistency()
 
 	def check_data_consistency(self):
 		"""
@@ -461,11 +512,13 @@ class DataSet:
 		path = os.path.abspath(path)
 		outfile = h5py.File(path, 'w')
 		datafieldgrp = outfile.create_group("datafields")
-		for field in self.datafields:
-			field.store_to_h5(datafieldgrp)
+		for i in range(len(self.datafields)):
+			grp = self.datafields[i].store_to_h5(datafieldgrp)
+			grp.create_dataset("index", data=i)
 		axesgrp = outfile.create_group("axes")
-		for axis in self.axes:
-			axis.store_to_h5(axesgrp)
+		for i in range(len(self.axes)):
+			grp = self.axes[i].store_to_h5(axesgrp)
+			grp.create_dataset("index", data=i)
 		outfile.create_dataset("label", data=self.label)
 		plotconfgrp = outfile.create_group("plotconf")
 		h5tools.store_dictionary(self.plotconf, plotconfgrp)
@@ -476,11 +529,15 @@ class DataSet:
 		infile = h5py.File(path, 'r')
 		self.label = str(infile["label"][()])
 		datafieldgrp = infile["datafields"]
+		self.datafields = [None for i in range(len(datafieldgrp))]
 		for datafield in datafieldgrp:
-			self.datafields.append(DataArray.from_h5(datafieldgrp[datafield]))
+			index =  datafieldgrp[datafield]['index'][()]
+			self.datafields[index]=(DataArray.from_h5(datafieldgrp[datafield]))
 		axesgrp = infile["axes"]
-		for axes in axesgrp:
-			self.axes.append(Axis.from_h5(axesgrp[axes]))
+		self.axes = [None for i in range(len(axesgrp))]
+		for axis in axesgrp:
+			index =  axesgrp[axis]['index'][()]
+			self.axes[index]=(Axis.from_h5(axesgrp[axis]))
 		self.plotconf = h5tools.load_dictionary(infile['plotconf'])
 		self.check_data_consistency()
 
