@@ -8,6 +8,7 @@ Custom units and prefixes that we use frequently should be defined here to get c
 # Import pint and initialize a standard unit registry:
 import pint
 import pint.quantity
+import numpy
 
 ureg = pint.UnitRegistry()
 
@@ -83,3 +84,19 @@ def to_ureg(input_, unit=None):
 				return importedquantity
 	else:  # we are dealing with numerial data
 		return input_ * ureg(unit)
+
+
+def meshgrid(*args):
+	"""
+	Does the same as numpy.meshgrid, but preserves units.
+	:param *xi:
+	:return:
+	"""
+	unitbuffer = []
+	for x in args:
+		unitbuffer.append(str(x.units))
+	gridtup = numpy.meshgrid(*args)
+	outlist = []
+	for i in range(len(gridtup)):
+		outlist.append(to_ureg(gridtup[i],unitbuffer[i]))
+	return tuple(outlist)
