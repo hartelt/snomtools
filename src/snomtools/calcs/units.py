@@ -64,7 +64,7 @@ def to_ureg(input_, unit=None):
 	:return: The imported quantity.
 	"""
 
-	#Check if input is quantity:
+	# Check if input is quantity:
 	if is_quantity(input_):
 		# If output unit is specified, make sure it has a compatible dimension. Else a DimensionalityError will be
 		# raised by trying to convert:
@@ -98,5 +98,5 @@ def meshgrid(*args):
 	gridtup = numpy.meshgrid(*args)
 	outlist = []
 	for i in range(len(gridtup)):
-		outlist.append(to_ureg(gridtup[i],unitbuffer[i]))
+		outlist.append(to_ureg(gridtup[i], unitbuffer[i]))
 	return tuple(outlist)
