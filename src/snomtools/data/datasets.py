@@ -77,7 +77,7 @@ class DataArray:
 			return self.data.shape
 		if item == "units":
 			return self.data.units
-		raise AttributeError("Attribute of DataArray instance cannot be resolved.")
+		raise AttributeError("Attribute \'{0}\' of DataArray instance cannot be resolved.".format(item))
 
 	def get_data(self):
 		return self.data
@@ -246,7 +246,7 @@ class Axis(DataArray):
 			return self.data.shape
 		if item == "units":
 			return self.data.units
-		raise AttributeError("Attribute of Axis instance cannot be resolved.")
+		raise AttributeError("Attribute \'{0}\' of Axis instance cannot be resolved.".format(item))
 
 	def assure_1D(self):
 		"""
@@ -386,7 +386,7 @@ class DataSet:
 				if item == darray.get_label():
 					return darray
 		# TODO: address xyz.
-		raise AttributeError("Name '" + item + "' in DataSet object cannot be resolved!")
+		raise AttributeError("Name \'{0}\' in DataSet object cannot be resolved!".format(item))
 
 	def add_datafield(self, data, unit=None, label=None, plotlabel=None):
 		"""
