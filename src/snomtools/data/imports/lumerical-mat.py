@@ -71,5 +71,3 @@ if False: # Just for testing
 	dataset.swapaxis('l','x')
 	dataset.swapaxis(1,2)
 	dataset.saveh5(outfile)
-	datareload = snomtools.data.datasets.DataSet.from_h5file(outfile)
-	print(datareload)

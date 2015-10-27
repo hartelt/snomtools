@@ -2,6 +2,10 @@
 .idea/
 *~
 *.orig
+*.hdf5
+*.mat
+test*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
