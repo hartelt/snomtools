@@ -102,7 +102,22 @@ class DataArray:
 		return str(self.data.units)
 
 	def set_unit(self, unitstr):
+		"""
+		Set the unit of the dataarray as specified.
+		Warning: The plotlabel typically includes a unit, so this might get invalid!
+		:param unitstr: A valid unit string.
+		:return: Nothing.
+		"""
 		self.data = u.to_ureg(self.data, unitstr)
+
+	def to(self,unitstr):
+		"""
+		Returns a copy of the dataarray with the unit set as specified. For compatibility with pint quantity.
+		Warning: The plotlabel typically includes a unit, so this might get invalid!
+		:param unitstr: A valid unit string.
+		:return: The dataset copy with the specified unit.
+		"""
+		return self.__class__(self.data.to(unitstr), label=self.label, plotlabel=self.plotlabel)
 
 	def get_label(self):
 		return self.label
@@ -461,6 +476,20 @@ class DataSet:
 				return self.axes.index(self.__getattr__(label_or_index))
 			else:
 				raise AttributeError("Axis not found.")
+
+	def meshgrid(self,axes=None):
+		"""
+		This function returns coordinate arrays corresponding to the axes. See numpy.meshgrid. If axes are not
+		constricted by axes argument, the output arrays will have the same shape as the data arrays of the dataset.
+		Uses snomtools.calcs.units.meshgrid() under the hood to preserve units.
+		:param axes: optional: a list of axes identifiers to be included. If none is given, all axes are included.
+		:return: A tuple of coordinate arrays.
+		"""
+		if axes:
+			#TODO: implement selected case
+			pass
+		else:
+			return u.meshgrid(*self.axes)
 
 	def swapaxis(self, axis1, axis2):
 		"""

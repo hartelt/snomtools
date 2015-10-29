@@ -21,28 +21,36 @@ def griddata(dataset, xi, method='linear', fill_value=numpy.nan, rescale=False):
 	:param rescale:
 	:return:
 	"""
-	assert isinstance(dataset,datasets.DataSet), "ERROR: No DataSet instance given."
+	assert isinstance(dataset, datasets.DataSet), "ERROR: No DataSet instance given."
 
-if True: # Just for testing:
+
+if True:  # Just for testing:
 	print("Testing...")
 	import snomtools.data.imports.lumerical_mat
 
 	print("Processing input data...")
 	infile = "2015-08-03-Sphere4-substrate-532nm-bottomfieldE.mat"
-	outfile = infile.replace('.mat','.hdf5')
+	outfile = infile.replace('.mat', '.hdf5')
 	dataset = snomtools.data.imports.lumerical_mat.Efield_3d(infile)
-	dataset.swapaxis('l','x')
-	dataset.swapaxis(1,2)
+	dataset.swapaxis('l', 'x')
+	dataset.swapaxis(1, 2)
 	dataset.saveh5(outfile)
 
+	print("Getting coordinates...")
+	x,y,l = dataset.meshgrid()
+
+	print("Generating interpolator...")
+	data = dataset.get_datafield(0).get_data()[:, :, 15]
+	interpolator = scipy.interpolate.RectBivariateSpline(dataset.get_axis('x'),dataset.get_axis('y'),data)
+
 	print("Generating grid...")
-	newx = numpy.arange(-3.,3.,.5)*units.ureg('um').to('m')
-	newy = numpy.arange(-3.,3.,.5)*units.ureg('um').to('m')
+	newx = numpy.arange(-3., 3., .5) * units.ureg('um')
+	newy = numpy.arange(-3., 3., .5) * units.ureg('um')
 	print(newx, newy)
+	newgrid = numpy.meshgrid(newx,newy)
 
 	print("Interpolating...")
-	print dataset.get_datafield(0).get_data()[:,:,15]
-	interp = scipy.interpolate.griddata((dataset.get_axis('x'),dataset.get_axis('y')),dataset.get_datafield(
-		0).get_data()[:,:,15],(newx,newy))
+	data = dataset.get_datafield(0).get_data()[:, :, 15]
+	interp = scipy.interpolate.griddata((dataset.get_axis('x').to('um'), dataset.get_axis('y').to('um')), data, newgrid)
 	print(interp)
 	print("DONE")
