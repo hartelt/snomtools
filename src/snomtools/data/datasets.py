@@ -486,8 +486,12 @@ class DataSet:
 		:return: A tuple of coordinate arrays.
 		"""
 		if axes:
-			#TODO: implement selected case
-			pass
+			# Assemble axes:
+			list_of_axes = []
+			for identifier in axes:
+				list_of_axes.append(self.get_axis(identifier))
+			# Build grid:
+			return u.meshgrid(*list_of_axes)
 		else:
 			return u.meshgrid(*self.axes)
 

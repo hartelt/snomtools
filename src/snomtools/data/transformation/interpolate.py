@@ -37,7 +37,7 @@ if True:  # Just for testing:
 	dataset.saveh5(outfile)
 
 	print("Getting coordinates...")
-	x,y,l = dataset.meshgrid()
+	x,y = dataset.meshgrid(['x','y'])
 
 	print("Generating interpolator...")
 	data = dataset.get_datafield(0).get_data()[:, :, 15]
