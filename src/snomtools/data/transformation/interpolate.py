@@ -36,21 +36,22 @@ if True:  # Just for testing:
 	dataset.swapaxis(1, 2)
 	dataset.saveh5(outfile)
 
-	print("Getting coordinates...")
+	print("Assembling data...")
 	x,y = dataset.meshgrid(['x','y'])
-
-	print("Generating interpolator...")
 	data = dataset.get_datafield(0).get_data()[:, :, 15]
-	interpolator = scipy.interpolate.RectBivariateSpline(dataset.get_axis('x'),dataset.get_axis('y'),data)
 
 	print("Generating grid...")
-	newx = numpy.arange(-3., 3., .5) * units.ureg('um')
-	newy = numpy.arange(-3., 3., .5) * units.ureg('um')
-	print(newx, newy)
-	newgrid = numpy.meshgrid(newx,newy)
+	newgrid = numpy.mgrid[-3.:3.:64j, -3.:3.:64j]
+	# newx = numpy.arange(-3., 3., .5) * units.ureg('um')
+	# newy = numpy.arange(-3., 3., .5) * units.ureg('um')
+	# print(newx, newy)
+	# newgrid = numpy.meshgrid(newx,newy)
 
 	print("Interpolating...")
-	data = dataset.get_datafield(0).get_data()[:, :, 15]
-	interp = scipy.interpolate.griddata((dataset.get_axis('x').to('um'), dataset.get_axis('y').to('um')), data, newgrid)
-	print(interp)
+	interp = scipy.interpolate.griddata((x.to('um').flatten(),y.to('um').flatten()), data.flatten(), tuple(newgrid),
+										method='cubic')
+
+	print("Plotting...")
+	import matplotlib.pyplot as plt
+	plt.imsave('interpolated.png', interp, cmap='gray')
 	print("DONE")
