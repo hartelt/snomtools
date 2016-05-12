@@ -45,7 +45,7 @@ class InterbandTransition:
 		eps = omega_p_tera**2 / denominator
 		return eps
 
-#TODO: We should implement tabulated literature data. Then we can always take the nearest value or so.
+#TODO: We should implement tabulated literature data. Then we can always take the nearest value or so. No! Fit it!
 class Metal:
 	"""
 	This is the base class for a metal.

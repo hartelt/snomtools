@@ -110,7 +110,7 @@ class DataArray:
 		"""
 		self.data = u.to_ureg(self.data, unitstr)
 
-	def to(self,unitstr):
+	def to(self, unitstr):
 		"""
 		Returns a copy of the dataarray with the unit set as specified. For compatibility with pint quantity.
 		Warning: The plotlabel typically includes a unit, so this might get invalid!
@@ -477,7 +477,7 @@ class DataSet:
 			else:
 				raise AttributeError("Axis not found.")
 
-	def meshgrid(self,axes=None):
+	def meshgrid(self, axes=None):
 		"""
 		This function returns coordinate arrays corresponding to the axes. See numpy.meshgrid. If axes are not
 		constricted by axes argument, the output arrays will have the same shape as the data arrays of the dataset.
@@ -536,7 +536,7 @@ class DataSet:
 		"""
 		Checks if the labels of the DataSets datafields and axes are unique. This is important to call them directly
 		by their labels.
-		:newlabel: If given, this method checks the viability of a new label to add to the DataSet.
+		:param newlabel: If given, this method checks the viability of a new label to add to the DataSet.
 		:return: True if test is successful.
 		"""
 		if newlabel:  # we check if a new label would be viable:
