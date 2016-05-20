@@ -196,6 +196,15 @@ class DataArray:
 	def __iter__(self):
 		return iter(self.data)
 
+	def __getitem__(self, key):
+		"""
+		To allow adressing parts or elements of the DataArray with [], including slicing as in numpy. This just
+		forwards to the underlying __getitem__ method of the data object.
+		:param key: The key which is given as adressed in dataarray[key]. Can be an integer or a slice object.
+		:return: The sliced data as returned by self.data[key].
+		"""
+		return self.data[key]
+
 	def __len__(self):  # len of data array
 		return len(self.data)
 
@@ -297,6 +306,15 @@ class Axis(DataArray):
 		out = out.rstrip(', ')
 		out += ')'
 		return out
+
+
+class ROI():
+	"""
+	A Region of Interest: This is a way to define a (rectangular) mask in the multidimensional DataSet,
+	and then interfacing the generated ROI, as you would the overlying DataSet.
+	Consequently, the ROI shall be implemented to behave as a DataSet.
+	"""
+	pass
 
 
 class DataSet:
@@ -675,9 +693,9 @@ class DataSet:
 		pass
 
 
-if False:  # just for testing
+if True:  # just for testing
 	print colored('Testing...', 'yellow'),
-	testarray = numpy.arange(0, 20, 2.)
+	testarray = numpy.arange(0, 10, 2.)
 	testaxis = DataArray(testarray, 'meter', label="xaxis")
 	testaxis2 = testaxis / 2.
 	testaxis2.set_label("yaxis")
@@ -690,6 +708,9 @@ if False:  # just for testing
 	testdataset = DataSet("test", [testdata], [testaxis, testaxis2], plotconf=pc)
 	print("Store...")
 	testdataset.saveh5('test.hdf5')
+	unsliced = testdataset.testdaten
+	sliced = testdataset.testdaten[0:3:, 0:3:]
+
 	print("Load...")
 	newdataset = DataSet.from_h5file('test.hdf5')
 

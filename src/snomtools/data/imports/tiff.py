@@ -37,7 +37,9 @@ def peem_dld_read(filepath):
 	return snomtools.data.datasets.DataSet(label=filebase,datafields=[dataarray],axes=[taxis,xaxis,yaxis])
 
 
-if True:  # Just for testing...
+if False:  # Just for testing...
 	filename = "12-1h19m-D1,4-G05-2O1R-530nm-FoV7um.tif"
 	testdata = peem_dld_read(filename)
-	print "Done."
+	outname = filename.replace('.tif','.hdf5')
+	testdata.saveh5(outname)
+	print('done.')
