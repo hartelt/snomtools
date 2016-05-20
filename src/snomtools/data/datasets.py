@@ -203,7 +203,7 @@ class DataArray:
 		:param key: The key which is given as adressed in dataarray[key]. Can be an integer or a slice object.
 		:return: The sliced data as returned by self.data[key].
 		"""
-		return self.data[key]
+		return self.__class__(self.data[key], label=self.label, plotlabel=self.plotlabel)
 
 	def __len__(self):  # len of data array
 		return len(self.data)
@@ -314,7 +314,24 @@ class ROI():
 	and then interfacing the generated ROI, as you would the overlying DataSet.
 	Consequently, the ROI shall be implemented to behave as a DataSet.
 	"""
-	pass
+
+	def __init__(self, dataset, limitlist=None):
+		"""
+		The constructor. Translates the given limits to the corresponding array indices and stores them as instance
+		variables. Each set of limits must be given as 2-tuples of the form (start,stop), where start and stop can be
+		a valid axis array index, a quantity with a value on the axis which will be cast as the next nearest index, or
+		None for no limitation.
+
+		:param dataset: The DataSet instance to work on. A ROI only makes sense on a specific dataset...
+
+		:param limitlist: A list or dict containing the limits for each axis. If a dict is given, the keys must be
+		valid identifiers of an axis of the DataSet (see DataSet.get_axis()). If a list is given, each entry must
+		contain the limit set for one axis in the same order as in the axes list of the DataSet, Limit sets must
+		2-tuples as described above.
+
+		:return: The constructed ROI instance.
+		"""
+		self.dataset = dataset
 
 
 class DataSet:
