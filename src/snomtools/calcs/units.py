@@ -1,9 +1,9 @@
 __author__ = 'hartelt'
-'''
+"""
 This file provides the central unit registry that should be used in all scripts that use snomtools.
 This avoids errors between quantities of different unit registries that occur when using multiple imports.
 Custom units and prefixes that we use frequently should be defined here to get consistency.
-'''
+"""
 
 # Import pint and initialize a standard unit registry:
 import pint
@@ -24,7 +24,9 @@ ureg.define('count = [] = cts')
 def is_valid_unit(tocheck):
 	"""
 	Checks if a string can be interpreted as a unit.
+
 	:param tocheck: String, The input to check.
+
 	:return: Boolean if the input can be interpreted as a unit.
 	"""
 	try:
@@ -37,7 +39,9 @@ def is_valid_unit(tocheck):
 def unit_from_str(tocheck):
 	"""
 	Checks if a string can be interpreted as a unit and returns the corresponding unit.
+
 	:param tocheck: String, The input to check.
+
 	:return: Quantity with magnitude 1 and the corresponding unit, or None if not castable.
 	"""
 	try:
@@ -50,7 +54,9 @@ def unit_from_str(tocheck):
 def is_quantity(tocheck):
 	"""
 	Tries if the given object is a pint quantity.
+
 	:param tocheck: The object to check.
+
 	:return: Bool.
 	"""
 	return isinstance(tocheck, pint.quantity._Quantity)
@@ -60,9 +66,12 @@ def to_ureg(input_, unit=None):
 	"""
 	This method is an import function to import alien quantities (of different unit registries) or numeric formats into
 	the ureg.
+
 	:param input_: The input quantity or numeric format (e.g. float, int, numpy array)
+
 	:param unit: Given as a valid unit string. If a numeric format is used, this specifies the unit of it. If a quantity
 	is used, the output quantity will be converted to it.
+
 	:return: The imported quantity.
 	"""
 
@@ -91,7 +100,9 @@ def to_ureg(input_, unit=None):
 def meshgrid(*args):
 	"""
 	Does the same as numpy.meshgrid, but preserves units.
+
 	:param *xi:
+
 	:return:
 	"""
 	unitbuffer = []

@@ -17,10 +17,15 @@ def Efield_3d(filepath, first_coord='l', second_coord='x', third_coord='y', firs
 	three coordinates. The components Ex, Ey, Ez and the Intensity E^2 are included.
 	CAUTION! The right order of the axes cannot be checked. This means the coordinates have to be given in the same
 	order as the corresponding values are stored in the electric field arrays!
+
 	:param filepath: String: The (absolute or relative) path of input file.
+
 	:param first_coord: String: The label of the first coordinate, by default 'x'.
+
 	:param second_coord: String: The label of the second coordinate, by default 'y'.
+
 	:param third_coord: String: The label of the third coordinate, by default 'l' (for lambda).
+
 	:return: The DataSet instance.
 	"""
 	# Initialize the input file object:

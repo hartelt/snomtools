@@ -18,9 +18,13 @@ class Dielectric:
 		The constructor.
 		Can be initialized with an epsilon or an n value. If you give neither, you'll end up with Vacuum.
 		All values can be complex.
+
 		:param name: The name of the material. E.g. ITO
+
 		:param epsilon: The relative dielectric constant of the medium.
+
 		:param n: The refraction index,
+
 		:return: nothing
 		"""
 		self.name = name
@@ -39,7 +43,9 @@ class Dielectric:
 	def epsilon(self,omega=0):
 		"""
 		The dielectric constant of the medium.
+
 		:param omega: just for compatibility with the metal function, and for determining the output type.
+
 		:return: the dielectric function. will be the same type as omega
 		"""
 		omega = u.to_ureg(omega,'THz') # Just to check if input is valid.
@@ -50,7 +56,9 @@ class Dielectric:
 	def n(self,omega=0.):
 		"""
 		The complex refraction index of the medium.
+
 		:param omega: just for compatibility with the metal function, and for determining the output type.
+
 		:return: the refraction index. will be the same type as omega
 		"""
 		omega = u.to_ureg(omega,'THz') # Just to check if input is valid.

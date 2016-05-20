@@ -21,13 +21,18 @@ class DataArray:
 		"""
 		Guess what, this is an initializer. It differences between input formats, which should be clear from the
 		parameter doc and the comments in the code.
+
 		:param data: required. If this is already a DataArray instance, it is just copied by default, so if the
 		other parameters are set, the contents of the instance are overwritten.
+
 		:param unit: Request a unit for the data to be in. If the data holds a unit (quantity), it must be the same
 		dimensionality. If it doesn't (array-like), it is assumed to be in the given unit! Default is None for
 		unchanged in the first case and dimensionless in the second.
+
 		:param label: A short identifier label that should be meaningful to get the physical context of the data.
+
 		:param plotlabel: A label for the data that should be plotted in a diagram.
+
 		:return:
 		"""
 		if isinstance(data, DataArray):  # If the data already comes in a DataArray, just take it.
@@ -59,7 +64,9 @@ class DataArray:
 	def from_h5(cls, h5source):
 		"""
 		This method initializes a DataArray from a HDF5 source.
+
 		:param h5source: The HDF5 source to read from. This is generally the subgroup for the DataArray.
+
 		:return: The initialized DataArray.
 		"""
 		out = cls([])
@@ -70,7 +77,9 @@ class DataArray:
 		"""
 		This method provides dynamical naming in instances. It is called any time an attribute of the intstance is
 		not found with the normal naming mechanism. Raises an AttributeError if the name cannot be resolved.
+
 		:param item: The name to get the corresponding attribute.
+
 		:return: The attribute corresponding to the given name.
 		"""
 		if item == "shape":
@@ -91,8 +100,11 @@ class DataArray:
 	def swapaxes(self, axis1, axis2):
 		"""
 		Swaps two axes of the data. Uses numpy.swapaxes.
+
 		:param axis1: int: First axis.
+
 		:param axis2: int: Second axis.
+
 		:return: The data after the transformation.
 		"""
 		self.data = u.to_ureg(self.get_data_raw().swapaxes(axis1, axis2), self.get_unit())
@@ -105,7 +117,9 @@ class DataArray:
 		"""
 		Set the unit of the dataarray as specified.
 		Warning: The plotlabel typically includes a unit, so this might get invalid!
+
 		:param unitstr: A valid unit string.
+
 		:return: Nothing.
 		"""
 		self.data = u.to_ureg(self.data, unitstr)
@@ -114,7 +128,9 @@ class DataArray:
 		"""
 		Returns a copy of the dataarray with the unit set as specified. For compatibility with pint quantity.
 		Warning: The plotlabel typically includes a unit, so this might get invalid!
+
 		:param unitstr: A valid unit string.
+
 		:return: The dataset copy with the specified unit.
 		"""
 		return self.__class__(self.data.to(unitstr), label=self.label, plotlabel=self.plotlabel)
@@ -134,9 +150,12 @@ class DataArray:
 	def store_to_h5(self, h5dest, subgrp_name=None):
 		"""
 		Stores the DataArray into a HDF5 file. It will create a subgroup and store the data there in a unified format.
+
 		:param h5dest: The destination. This is a HDF5 file or subgroup.
+
 		:param subgrp_name: Optional. The name for the subgroup that is created to store the data in, Default is the
 		label of the DataArray.
+
 		:return The subgroup that was created and holds the data.
 		"""
 		if not subgrp_name:
@@ -151,6 +170,7 @@ class DataArray:
 	def load_from_h5(self, h5source):
 		"""
 		Loads the data from a HDF5 source.
+
 		:param h5source: The source to read from. This is the subgroup of the DataArray.
 		"""
 		self.set_data(numpy.array(h5source["data"]), h5source["unit"][()])
@@ -200,7 +220,9 @@ class DataArray:
 		"""
 		To allow adressing parts or elements of the DataArray with [], including slicing as in numpy. This just
 		forwards to the underlying __getitem__ method of the data object.
+
 		:param key: The key which is given as adressed in dataarray[key]. Can be an integer or a slice object.
+
 		:return: The sliced data as returned by self.data[key].
 		"""
 		return self.__class__(self.data[key], label=self.label, plotlabel=self.plotlabel)
@@ -240,10 +262,15 @@ class Axis(DataArray):
 		"""
 		So far, an Axis is the same as a DaraArray, with the exception that it is one-dimensional. Therefore this
 		method uses the __init__ of the parent class and parameters are exactly as there.
+
 		:param data:
+
 		:param unit:
+
 		:param label:
+
 		:param plotlabel:
+
 		:return:
 		"""
 		DataArray.__init__(self, data, unit=unit, label=label, plotlabel=plotlabel)
@@ -254,7 +281,9 @@ class Axis(DataArray):
 	def from_dataarray(cls, da):
 		"""
 		Initializes an Axis instance from a DataArray instance (which is mostly, but not completely the same).
+
 		:param da: An instance of the DataArray class.
+
 		:return: The new initialized instance of Axis.
 		"""
 		return cls(da.data, label=da.label, plotlabel=da.plotlabel)
@@ -263,7 +292,9 @@ class Axis(DataArray):
 		"""
 		This method provides dynamical naming in instances. It is called any time an attribute of the intstance is
 		not found with the normal naming mechanism. Raises an AttributeError if the name cannot be resolved.
+
 		:param item: The name to get the corresponding attribute.
+
 		:return: The attribute corresponding to the given name.
 		"""
 		if item == "shape":
@@ -387,7 +418,9 @@ class DataSet:
 		"""
 		Initializes a new DataSet from an existing HDF5 file. The file must be structured in accordance to the
 		saveh5() and loadh5() methods in this class. Uses loadh5 under the hood!
+
 		:param path: The (absolute or relative) path of the HDF5 file to read.
+
 		:return: The initialized DataSet
 		"""
 		path = os.path.abspath(path)
@@ -404,9 +437,12 @@ class DataSet:
 		Initializes a new DataSet from an existing text file. The file must contain the data in a column structure
 		and can contain additional metadata in comment lines.
 		Uses load_textfile() under the hood! See doc of this method for more details!
+
 		:param path: The (absolute or relative) path of the text file to read.
+
 		:param kwargs: Keyword arguments for load_textfile and the underlying numpy.loadtxt(). See there
 		documentation for specifics,
+
 		:return: The initialized DataSet
 		"""
 		path = os.path.abspath(path)
@@ -421,7 +457,9 @@ class DataSet:
 		"""
 		This method provides dynamical naming in instances. It is called any time an attribute of the intstance is
 		not found with the normal naming mechanism. Raises an AttributeError if the name cannot be resolved.
+
 		:param item: The name to get the corresponding attribute.
+
 		:return: The attribute corresponding to the given name.
 		"""
 		if item == "alldata":
@@ -442,10 +480,15 @@ class DataSet:
 		"""
 		Initalizes a datafield and adds it to the list. All parameters have to be given like the __init__ of DataSets
 		expects them.
+
 		:param data:
+
 		:param unit:
+
 		:param label:
+
 		:param plotlabel:
+
 		:return:
 		"""
 		self.datafields.append(DataArray(data, unit, label, plotlabel))
@@ -454,7 +497,9 @@ class DataSet:
 		"""
 		Tries to assign a DataField to a given parameter, that can be an integer as an index in the
 		datafields list or a label string. Raises exceptions if there is no matching field.
+
 		:param label_or_index: Identifier of the DataField
+
 		:return: The corresponding DataField.
 		"""
 		try:
@@ -479,10 +524,15 @@ class DataSet:
 		"""
 		Initalizes a datafield and adds it to the list. All parameters have to be given like the __init__ of Axis
 		expects them.
+
 		:param data:
+
 		:param unit:
+
 		:param label:
+
 		:param plotlabel:
+
 		:return:
 		"""
 		self.axes.append(Axis(data, unit, label, plotlabel))
@@ -491,7 +541,9 @@ class DataSet:
 		"""
 		Tries to assign an Axis to a given parameter, that can be an integer as an index in the
 		axes list or a label string. Raises exceptions if there is no matching element.
+
 		:param label_or_index: Identifier of the Axis.
+
 		:return: The corresponding Axis.
 		"""
 		try:
@@ -517,7 +569,9 @@ class DataSet:
 		This function returns coordinate arrays corresponding to the axes. See numpy.meshgrid. If axes are not
 		constricted by axes argument, the output arrays will have the same shape as the data arrays of the dataset.
 		Uses snomtools.calcs.units.meshgrid() under the hood to preserve units.
+
 		:param axes: optional: a list of axes identifiers to be included. If none is given, all axes are included.
+
 		:return: A tuple of coordinate arrays.
 		"""
 		if axes:
@@ -533,8 +587,11 @@ class DataSet:
 	def swapaxis(self, axis1, axis2):
 		"""
 		Interchanges the place of two axes.
+
 		:param axis1: The first axis, addressed by its label or index.
+
 		:param axis2: The second axis, addressed by its label or index.
+
 		:return: Nothing.
 		"""
 		# Assure numerical indices:
@@ -553,6 +610,7 @@ class DataSet:
 		"""
 		Self test method which checks the dimensionality and shapes of the axes and datafields. Raises
 		AssertionError if one of the tests fails.
+
 		:return: True if the test is successful.
 		"""
 		for field in self.datafields:  # Check if all datafields have the same shape.
@@ -571,7 +629,9 @@ class DataSet:
 		"""
 		Checks if the labels of the DataSets datafields and axes are unique. This is important to call them directly
 		by their labels.
+
 		:param newlabel: If given, this method checks the viability of a new label to add to the DataSet.
+
 		:return: True if test is successful.
 		"""
 		if newlabel:  # we check if a new label would be viable:
@@ -623,17 +683,26 @@ class DataSet:
 		Uses numpy.loadtxt() under the hood!
 		Defaults fit for gnuplot friendly files. Tries to cast the heading comment line(s) as labels and units for
 		the data fields.
+
 		:param path: The (relative or absolute) path of the text file to read.
+
 		:param axis: Integer that specifies the column of the axis in the data file OR a whole axis instance of the
 		correct shape OR None for unchanged axes of the DataSet. Default is 0 for the first column of the text file.
+
 		:param comments: the character used to indicate the start of a comment line
+
 		:param delimiter: character used to separate values. By default, this is any whitespace.
+
 		:param unitsplitter: Regular expression to split comment columns in labels and units. Default is "[-\/ ]+",
 		which matches combinations of the chars '-'. '/' and ' '.
+
 		:param labelline: Index (starting with 0) of the comment line in which the labels are stored. (Default 0)
+
 		:param unitsline: Index (starting with 0) of the comment line in which the units are stored. (Default 0) If
 		this is different from labelline, it is assumed that ONLY the unit is in that line.
+
 		:param kwargs: Keyword arguments as used for the numpy.loadtxt() method
+
 		:return: Nothing
 		"""
 		# Normalize path:
