@@ -14,8 +14,8 @@ ureg = pint.UnitRegistry()
 
 # Custom units that we use frequently can be defined here:
 # ureg.define('dog_year = 52 * day = dy')
-ureg.define('pixel = [] = px')
-ureg.define('count = [] = cts')
+ureg.define('pixel = []')
+ureg.define('count = []')
 
 # Custom prefixes we use frequently can be defined here:
 # ureg.define('myprefix- = 30 = my-')

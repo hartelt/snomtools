@@ -177,6 +177,29 @@ class DataArray:
 		self.set_label(h5source["label"][()])
 		self.set_plotlabel(h5source["plotlabel"][()])
 
+	def get_nearest_index(self,value):
+		"""
+		Get the index of the value in the DataArray nearest to a given value.
+
+		:param value: A value to look for in the array.
+
+		:return: The index tuple of the array entry nearest to the given value.
+		"""
+		value = u.to_ureg(value,unit=self.get_unit())
+		idx_flat = (numpy.abs(self.data-value)).argmin()
+		idx_tup = numpy.unravel_index(idx_flat,self.shape)
+		return idx_tup
+
+	def get_nearest_value(self,value):
+		"""
+		Like get_nearest_index, but return the value instead of the index.
+
+		:param value: value: A value to look for in the array.
+
+		:return: The value in the array nearest to the given one.
+		"""
+		return self.data[self.get_nearest_index(value)]
+
 	def __pos__(self):
 		return self.__class__(self.data, label=self.label, plotlabel=self.plotlabel)
 
@@ -316,6 +339,20 @@ class Axis(DataArray):
 		else:
 			self.data = flatarray
 
+	def get_index_searchsort(self,values):
+		"""
+		Assuming the axis elements are sorted (which should be the case, the way all is implemented atm), for every
+		value given, there is a corresponding index in the array, where the value could be inserted while maintaining
+		order of the array.
+		This function searches these indexes by using the numpy.searchsorted function.
+
+		:param values: array_like: Values to insert into the axis.
+
+		:return: array of ints: The corresponding indexes with the same shape as values.
+		"""
+		return numpy.searchsorted(self.data,values)
+
+
 	def __str__(self):
 		out = "Axis"
 		if self.label:
@@ -363,6 +400,7 @@ class ROI():
 		:return: The constructed ROI instance.
 		"""
 		self.dataset = dataset
+
 
 
 class DataSet:
@@ -796,6 +834,8 @@ if True:  # just for testing
 	testdataset.saveh5('test.hdf5')
 	unsliced = testdataset.testdaten
 	sliced = testdataset.testdaten[0:3:, 0:3:]
+	testvalue = 500*u.ureg('millicounts')
+	near = testdataset.testdaten.get_nearest_index(testvalue)
 
 	print("Load...")
 	newdataset = DataSet.from_h5file('test.hdf5')
