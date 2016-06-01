@@ -177,7 +177,7 @@ class DataArray:
 		self.set_label(h5source["label"][()])
 		self.set_plotlabel(h5source["plotlabel"][()])
 
-	def get_nearest_index(self,value):
+	def get_nearest_index(self, value):
 		"""
 		Get the index of the value in the DataArray nearest to a given value.
 
@@ -185,12 +185,12 @@ class DataArray:
 
 		:return: The index tuple of the array entry nearest to the given value.
 		"""
-		value = u.to_ureg(value,unit=self.get_unit())
-		idx_flat = (numpy.abs(self.data-value)).argmin()
-		idx_tup = numpy.unravel_index(idx_flat,self.shape)
+		value = u.to_ureg(value, unit=self.get_unit())
+		idx_flat = (numpy.abs(self.data - value)).argmin()
+		idx_tup = numpy.unravel_index(idx_flat, self.shape)
 		return idx_tup
 
-	def get_nearest_value(self,value):
+	def get_nearest_value(self, value):
 		"""
 		Like get_nearest_index, but return the value instead of the index.
 
@@ -339,7 +339,7 @@ class Axis(DataArray):
 		else:
 			self.data = flatarray
 
-	def get_index_searchsort(self,values):
+	def get_index_searchsort(self, values):
 		"""
 		Assuming the axis elements are sorted (which should be the case, the way all is implemented atm), for every
 		value given, there is a corresponding index in the array, where the value could be inserted while maintaining
@@ -350,8 +350,7 @@ class Axis(DataArray):
 
 		:return: array of ints: The corresponding indexes with the same shape as values.
 		"""
-		return numpy.searchsorted(self.data,values)
-
+		return numpy.searchsorted(self.data, values)
 
 	def __str__(self):
 		out = "Axis"
@@ -397,10 +396,121 @@ class ROI():
 		contain the limit set for one axis in the same order as in the axes list of the DataSet, Limit sets must
 		2-tuples as described above.
 
-		:return: The constructed ROI instance.
+		:return:
 		"""
 		self.dataset = dataset
+		# create empty limit list:
+		self.limits = [[None, None] for i in range(len(self.dataset.axes))]
+		# iterate over keys in the limit list if given:
+		if limitlist:
+			self.set_limits_all(limitlist)
 
+	def set_limits_all(self, limitlist):
+		"""
+		Each set of limits must be given as 2-tuples of the form (start,stop), where start and stop can be
+		a valid axis array index, a quantity with a value on the axis which will be cast as the next nearest index, or
+		None an unchanged limit.
+
+		:param limitlist: A list or dict containing the limits for each axis. If a dict is given, the keys must be
+		valid identifiers of an axis of the DataSet (see DataSet.get_axis()). If a list is given, each entry must
+		contain the limit set for one axis in the same order as in the axes list of the DataSet, Limit sets must
+		2-tuples as described above.
+
+		:return:
+		"""
+		for key in limitlist:
+			# key is a dict key or the correct index, so get_axis_index works...
+			keyindex = self.dataset.get_axis_index(key)
+			# get the corresponding axis:
+			ax = self.dataset.axes[keyindex]
+			# get the axis index corresponding to the limit and store it:
+			if limitlist[key][0]:
+				left_limit_index = ax.get_nearest_index(limitlist[key][0])
+				self.limits[keyindex][0] = left_limit_index
+			if limitlist[key][1]:
+				right_limit_index = ax.get_nearest_index(limitlist[key][1])
+				self.limits[keyindex][1] = right_limit_index
+
+	def set_limits(self, key, values):
+		"""
+		Sets both limits for one axis:
+
+		:param key: A valid identifier of an axis of the DataSet (see DataSet.get_axis())
+
+		:param values: Tuple or list of length 2 with the new values for the limits.
+
+		:return:
+		"""
+		assert (len(values) == 2), "Invalid set for values."
+		keyindex = self.dataset.get_axis_index(key)
+		ax = self.dataset.axes[keyindex]
+		left_limit_index = ax.get_nearest_index(values[0])
+		right_limit_index = ax.get_nearest_index(values[1])
+		self.limits[keyindex][0] = left_limit_index
+		self.limits[keyindex][1] = right_limit_index
+
+	def unset_limits(self, key):
+		"""
+		Unset both limits for one axis:
+
+		:param key: A valid identifier of an axis of the DataSet (see DataSet.get_axis())
+
+		:return:
+		"""
+		keyindex = self.dataset.get_axis_index(key)
+		self.limits[keyindex] = [None, None]
+
+	def set_limit_left(self, key, value):
+		"""
+		Sets the left limit for one axis.
+
+		:param key: A valid identifier of an axis of the DataSet (see DataSet.get_axis())
+
+		:param value: The new value for the left limit.
+
+		:return:
+		"""
+		keyindex = self.dataset.get_axis_index(key)
+		ax = self.dataset.axes[keyindex]
+		left_limit_index = ax.get_nearest_index(value)
+		self.limits[keyindex][0] = left_limit_index
+
+	def unset_limit_left(self, key):
+		"""
+		Unset left limit for one axis.
+
+		:param key: A valid identifier of an axis of the DataSet (see DataSet.get_axis())
+
+		:return:
+		"""
+		keyindex = self.dataset.get_axis_index(key)
+		self.limits[keyindex][0] = None
+
+	def set_limit_right(self, key, value):
+		"""
+		Sets the right limit for one axis:
+
+		:param key: A valid identifier of an axis of the DataSet (see DataSet.get_axis())
+
+		:param value: Tuple or list of length 2 with the new values for the limits.
+
+		:return:
+		"""
+		keyindex = self.dataset.get_axis_index(key)
+		ax = self.dataset.axes[keyindex]
+		right_limit_index = ax.get_nearest_index(value)
+		self.limits[keyindex][1] = right_limit_index
+
+	def unset_limit_right(self, key):
+		"""
+		Unset right limit for one axis.
+
+		:param key: A valid identifier of an axis of the DataSet (see DataSet.get_axis())
+
+		:return:
+		"""
+		keyindex = self.dataset.get_axis_index(key)
+		self.limits[keyindex][1] = None
 
 
 class DataSet:
@@ -834,7 +944,7 @@ if True:  # just for testing
 	testdataset.saveh5('test.hdf5')
 	unsliced = testdataset.testdaten
 	sliced = testdataset.testdaten[0:3:, 0:3:]
-	testvalue = 500*u.ureg('millicounts')
+	testvalue = 500 * u.ureg('millicounts')
 	near = testdataset.testdaten.get_nearest_index(testvalue)
 
 	print("Load...")
