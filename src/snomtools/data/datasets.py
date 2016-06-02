@@ -375,7 +375,7 @@ class Axis(DataArray):
 		return out
 
 
-class ROI():
+class ROI:
 	"""
 	A Region of Interest: This is a way to define a (rectangular) mask in the multidimensional DataSet,
 	and then interfacing the generated ROI, as you would the overlying DataSet.
@@ -433,14 +433,14 @@ class ROI():
 					left_limit_index = limitlist[key][0]
 				else:
 					left_limit_index = ax.get_nearest_index(limitlist[key][0])
-				assert ((type(left_limit_index)==int) and (0 <= left_limit_index < len(ax))), "Invalid ROI index."
+				assert ((type(left_limit_index) == int) and (0 <= left_limit_index < len(ax))), "Invalid ROI index."
 				self.limits[keyindex][0] = left_limit_index
 			if limitlist[key][1]:
 				if by_index:
 					right_limit_index = limitlist[key][1]
 				else:
 					right_limit_index = ax.get_nearest_index(limitlist[key][1])
-				assert ((type(right_limit_index)==int) and (0 <= right_limit_index < len(ax))), "Invalid ROI index."
+				assert ((type(right_limit_index) == int) and (0 <= right_limit_index < len(ax))), "Invalid ROI index."
 				self.limits[keyindex][1] = right_limit_index
 
 	def set_limits(self, key, values, by_index=False):
@@ -464,8 +464,8 @@ class ROI():
 		else:
 			left_limit_index = ax.get_nearest_index(values[0])
 			right_limit_index = ax.get_nearest_index(values[1])
-		assert ((type(left_limit_index)==int) and (0 <= left_limit_index < len(ax))), "Invalid ROI index."
-		assert ((type(right_limit_index)==int) and (0 <= right_limit_index < len(ax))), "Invalid ROI index."
+		assert ((type(left_limit_index) == int) and (0 <= left_limit_index < len(ax))), "Invalid ROI index."
+		assert ((type(right_limit_index) == int) and (0 <= right_limit_index < len(ax))), "Invalid ROI index."
 		self.limits[keyindex][0] = left_limit_index
 		self.limits[keyindex][1] = right_limit_index
 
@@ -498,7 +498,7 @@ class ROI():
 			left_limit_index = value
 		else:
 			left_limit_index = ax.get_nearest_index(value)
-		assert ((type(left_limit_index)==int) and (0 <= left_limit_index < len(ax))), "Invalid ROI index."
+		assert ((type(left_limit_index) == int) and (0 <= left_limit_index < len(ax))), "Invalid ROI index."
 		self.limits[keyindex][0] = left_limit_index
 
 	def unset_limit_left(self, key):
@@ -530,7 +530,7 @@ class ROI():
 			right_limit_index = value
 		else:
 			right_limit_index = ax.get_nearest_index(value)
-		assert ((type(right_limit_index)==int) and (0 <= right_limit_index < len(ax))), "Invalid ROI index."
+		assert ((type(right_limit_index) == int) and (0 <= right_limit_index < len(ax))), "Invalid ROI index."
 		self.limits[keyindex][1] = right_limit_index
 
 	def unset_limit_right(self, key):
