@@ -382,12 +382,12 @@ class ROI():
 	Consequently, the ROI shall be implemented to behave as a DataSet.
 	"""
 
-	def __init__(self, dataset, limitlist=None):
+	def __init__(self, dataset, limitlist=None, by_index=False):
 		"""
 		The constructor. Translates the given limits to the corresponding array indices and stores them as instance
-		variables. Each set of limits must be given as 2-tuples of the form (start,stop), where start and stop can be
-		a valid axis array index, a quantity with a value on the axis which will be cast as the next nearest index, or
-		None for no limitation.
+		variables. Each set of limits must be given as 2-tuples of the form (start,stop), where start and stop can be a
+		quantity with a value on the axis which will be cast as the next nearest index, a valid axis array index
+		(see by_index), or None for no limitation.
 
 		:param dataset: The DataSet instance to work on. A ROI only makes sense on a specific dataset...
 
@@ -396,6 +396,8 @@ class ROI():
 		contain the limit set for one axis in the same order as in the axes list of the DataSet, Limit sets must
 		2-tuples as described above.
 
+		:param by_index: Bool flag to interpret limits not as positions, but as array indices.
+
 		:return:
 		"""
 		self.dataset = dataset
@@ -403,20 +405,22 @@ class ROI():
 		self.limits = [[None, None] for i in range(len(self.dataset.axes))]
 		# iterate over keys in the limit list if given:
 		if limitlist:
-			self.set_limits_all(limitlist)
+			self.set_limits_all(limitlist, by_index)
 
-	def set_limits_all(self, limitlist):
+	def set_limits_all(self, limitlist, by_index=False):
 		"""
-		Each set of limits must be given as 2-tuples of the form (start,stop), where start and stop can be
-		a valid axis array index, a quantity with a value on the axis which will be cast as the next nearest index, or
-		None an unchanged limit.
+		Each set of limits must be given as 2-tuples of the form (start,stop), where start and stop can be a quantity
+		with a value on the axis which will be cast as the next nearest index, a valid axis array index (see by_index),
+		or None for an unchanged limit.
 
 		:param limitlist: A list or dict containing the limits for each axis. If a dict is given, the keys must be
 		valid identifiers of an axis of the DataSet (see DataSet.get_axis()). If a list is given, each entry must
 		contain the limit set for one axis in the same order as in the axes list of the DataSet, Limit sets must
 		2-tuples as described above.
 
-		:return:
+		:param by_index: Bool flag to interpret limits not as positions, but as array indices.
+
+		:return: Nothing
 		"""
 		for key in limitlist:
 			# key is a dict key or the correct index, so get_axis_index works...
@@ -425,13 +429,21 @@ class ROI():
 			ax = self.dataset.axes[keyindex]
 			# get the axis index corresponding to the limit and store it:
 			if limitlist[key][0]:
-				left_limit_index = ax.get_nearest_index(limitlist[key][0])
+				if by_index:
+					left_limit_index = limitlist[key][0]
+				else:
+					left_limit_index = ax.get_nearest_index(limitlist[key][0])
+				assert ((type(left_limit_index)==int) and (0 <= left_limit_index < len(ax))), "Invalid ROI index."
 				self.limits[keyindex][0] = left_limit_index
 			if limitlist[key][1]:
-				right_limit_index = ax.get_nearest_index(limitlist[key][1])
+				if by_index:
+					right_limit_index = limitlist[key][1]
+				else:
+					right_limit_index = ax.get_nearest_index(limitlist[key][1])
+				assert ((type(right_limit_index)==int) and (0 <= right_limit_index < len(ax))), "Invalid ROI index."
 				self.limits[keyindex][1] = right_limit_index
 
-	def set_limits(self, key, values):
+	def set_limits(self, key, values, by_index=False):
 		"""
 		Sets both limits for one axis:
 
@@ -439,13 +451,21 @@ class ROI():
 
 		:param values: Tuple or list of length 2 with the new values for the limits.
 
+		:param by_index: Bool flag to interpret limits not as positions, but as array indices.
+
 		:return:
 		"""
 		assert (len(values) == 2), "Invalid set for values."
 		keyindex = self.dataset.get_axis_index(key)
 		ax = self.dataset.axes[keyindex]
-		left_limit_index = ax.get_nearest_index(values[0])
-		right_limit_index = ax.get_nearest_index(values[1])
+		if by_index:
+			left_limit_index = values[0]
+			right_limit_index = values[1]
+		else:
+			left_limit_index = ax.get_nearest_index(values[0])
+			right_limit_index = ax.get_nearest_index(values[1])
+		assert ((type(left_limit_index)==int) and (0 <= left_limit_index < len(ax))), "Invalid ROI index."
+		assert ((type(right_limit_index)==int) and (0 <= right_limit_index < len(ax))), "Invalid ROI index."
 		self.limits[keyindex][0] = left_limit_index
 		self.limits[keyindex][1] = right_limit_index
 
@@ -460,7 +480,7 @@ class ROI():
 		keyindex = self.dataset.get_axis_index(key)
 		self.limits[keyindex] = [None, None]
 
-	def set_limit_left(self, key, value):
+	def set_limit_left(self, key, value, by_index=False):
 		"""
 		Sets the left limit for one axis.
 
@@ -468,11 +488,17 @@ class ROI():
 
 		:param value: The new value for the left limit.
 
+		:param by_index: Bool flag to interpret limits not as positions, but as array indices.
+
 		:return:
 		"""
 		keyindex = self.dataset.get_axis_index(key)
 		ax = self.dataset.axes[keyindex]
-		left_limit_index = ax.get_nearest_index(value)
+		if by_index:
+			left_limit_index = value
+		else:
+			left_limit_index = ax.get_nearest_index(value)
+		assert ((type(left_limit_index)==int) and (0 <= left_limit_index < len(ax))), "Invalid ROI index."
 		self.limits[keyindex][0] = left_limit_index
 
 	def unset_limit_left(self, key):
@@ -486,7 +512,7 @@ class ROI():
 		keyindex = self.dataset.get_axis_index(key)
 		self.limits[keyindex][0] = None
 
-	def set_limit_right(self, key, value):
+	def set_limit_right(self, key, value, by_index=False):
 		"""
 		Sets the right limit for one axis:
 
@@ -494,11 +520,17 @@ class ROI():
 
 		:param value: Tuple or list of length 2 with the new values for the limits.
 
+		:param by_index: Bool flag to interpret limits not as positions, but as array indices.
+
 		:return:
 		"""
 		keyindex = self.dataset.get_axis_index(key)
 		ax = self.dataset.axes[keyindex]
-		right_limit_index = ax.get_nearest_index(value)
+		if by_index:
+			right_limit_index = value
+		else:
+			right_limit_index = ax.get_nearest_index(value)
+		assert ((type(right_limit_index)==int) and (0 <= right_limit_index < len(ax))), "Invalid ROI index."
 		self.limits[keyindex][1] = right_limit_index
 
 	def unset_limit_right(self, key):
