@@ -382,7 +382,7 @@ class ROI:
 	Consequently, the ROI shall be implemented to behave as a DataSet.
 	"""
 
-	def __init__(self, dataset, limitlist=None, by_index=False):
+	def __init__(self, dataset, limitlist=None, by_index=False, label=""):
 		"""
 		The constructor. Translates the given limits to the corresponding array indices and stores them as instance
 		variables. Each set of limits must be given as 2-tuples of the form (start,stop), where start and stop can be a
@@ -398,14 +398,48 @@ class ROI:
 
 		:param by_index: Bool flag to interpret limits not as positions, but as array indices.
 
+		:param label: String: A label describing the ROI.
+
 		:return:
 		"""
 		self.dataset = dataset
+		self.label = label
 		# create empty limit list:
 		self.limits = [[None, None] for i in range(len(self.dataset.axes))]
 		# iterate over keys in the limit list if given:
 		if limitlist:
 			self.set_limits_all(limitlist, by_index)
+
+	def __getattr__(self, item):
+		"""
+		This method provides dynamical naming in instances. It is called any time an attribute of the intstance is
+		not found with the normal naming mechanism. Raises an AttributeError if the name cannot be resolved.
+
+		:param item: The name to get the corresponding attribute.
+
+		:return: The attribute corresponding to the given name.
+		"""
+		if item == "alldata":
+			return self.dataset.datafields + self.dataset.axes
+		elif item == "axlabels":
+			labels = []
+			for e in self.dataset.axes:
+				labels.append(e.get_label())
+			return labels
+		elif item == "dlabels":
+			labels = []
+			for e in self.dataset.datafields:
+				labels.append(e.get_label())
+			return labels
+		elif item == "labels":
+			return self.dlabels + self.axlabels
+		elif item in self.labels:
+			for darray in self.alldata:
+				if item == darray.get_label():
+					lim = self.get_slice(item)
+					return darray[lim]
+		# TODO: address xyz.
+		raise AttributeError("Name \'{0}\' in ROI object cannot be resolved!".format(item))
 
 	def set_limits_all(self, limitlist, by_index=False):
 		"""
@@ -544,6 +578,59 @@ class ROI:
 		keyindex = self.dataset.get_axis_index(key)
 		self.limits[keyindex][1] = None
 
+	def get_slice(self, data_key=None):
+		"""
+		Creates a slice object (or tuple of them) out of the limits of the ROI This can be used directly in the [] for
+		adressing the part of the arrays corresponding to the ROI.
+		See:
+		http://docs.scipy.org/doc/numpy-1.10.0/reference/generated/numpy.s_.html
+		https://docs.python.org/2/c-api/slice.html
+
+		:param data_key: A valid identifier of an axis or datafield of the DataSet (see DataSet.get_axis()) If given,
+		return a slice applicable to an axis of the dataset instead of the whole data array. If the identifier
+		corresponds to a datafield, the whole slice as with None will be returned.
+
+		:return: The create slice object.
+		"""
+		if (data_key is None) or (data_key in self.dlabels):
+			slicelist = []
+			for i in range(len(self.limits)):
+				slicelist.append(numpy.s_[self.limits[i][0]:self.limits[i][1]])
+			return tuple(slicelist)
+		else:
+			axis_index = self.get_axis_index(data_key)
+			return numpy.s_[self.limits[axis_index][0]:self.limits[axis_index][1]]
+
+	def get_datafield(self, label_or_index):
+		"""
+		Tries to assign a DataField to a given parameter, that can be an integer as an index in the
+		datafields list or a label string. Raises exceptions if there is no matching field.
+		Uses the underlying method of the DataSet.
+
+		:param label_or_index: Identifier of the DataField
+
+		:return: The corresponding DataField.
+		"""
+		return self.dataset.get_datafield(label_or_index)[self.get_slice()]
+
+	def get_datafield_index(self, label_or_index):
+		return self.dataset.get_datafield_index(label_or_index)
+
+	def get_axis(self, label_or_index):
+		"""
+		Tries to assign an Axis to a given parameter, that can be an integer as an index in the
+		axes list or a label string. Raises exceptions if there is no matching element.
+		Uses the underlying method of the DataSet.
+
+		:param label_or_index: Identifier of the Axis.
+
+		:return: The corresponding Axis.
+		"""
+		return self.dataset.get_axis(label_or_index)[self.get_slice(label_or_index)]
+
+	def get_axis_index(self, label_or_index):
+		return self.dataset.get_axis_index(label_or_index)
+
 
 class DataSet:
 	"""
@@ -644,11 +731,18 @@ class DataSet:
 		"""
 		if item == "alldata":
 			return self.datafields + self.axes
-		elif item == "labels":
+		elif item == "axlabels":
 			labels = []
-			for e in self.alldata:
+			for e in self.axes:
 				labels.append(e.get_label())
 			return labels
+		elif item == "dlabels":
+			labels = []
+			for e in self.datafields:
+				labels.append(e.get_label())
+			return labels
+		elif item == "labels":
+			return self.dlabels + self.axlabels
 		elif item in self.labels:
 			for darray in self.alldata:
 				if item == darray.get_label():
