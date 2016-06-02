@@ -467,14 +467,36 @@ class ROI:
 					left_limit_index = limitlist[key][0]
 				else:
 					left_limit_index = ax.get_nearest_index(limitlist[key][0])
-				assert ((type(left_limit_index) == int) and (0 <= left_limit_index < len(ax))), "Invalid ROI index."
+					# get_nearest_index returns an index tuple, which has only 1 element for the 1D axis.
+					assert (len(left_limit_index) == 1), "Index tuple for axis must have one element!"
+					left_limit_index = left_limit_index[0]
+				# Try to address the place of the index:
+				try:
+					ax.get_data()[left_limit_index]
+				except TypeError as e:
+					print("ERROR: ROI index not int as in indexing.")
+					raise e
+				except IndexError as e:
+					print("ERROR: ROI index not valid (typically out of bounds).")
+					raise e
 				self.limits[keyindex][0] = left_limit_index
 			if limitlist[key][1]:
 				if by_index:
 					right_limit_index = limitlist[key][1]
 				else:
 					right_limit_index = ax.get_nearest_index(limitlist[key][1])
-				assert ((type(right_limit_index) == int) and (0 <= right_limit_index < len(ax))), "Invalid ROI index."
+					# get_nearest_index returns an index tuple, which has only 1 element for the 1D axis.
+					assert (len(right_limit_index) == 1), "Index tuple for axis must have one element!"
+					right_limit_index = right_limit_index[0]
+				# Try to address the place of the index:
+				try:
+					ax.get_data()[right_limit_index]
+				except TypeError as e:
+					print("ERROR: ROI index not int as in indexing.")
+					raise e
+				except IndexError as e:
+					print("ERROR: ROI index not valid (typically out of bounds).")
+					raise e
 				self.limits[keyindex][1] = right_limit_index
 
 	def set_limits(self, key, values, by_index=False):
@@ -497,9 +519,23 @@ class ROI:
 			right_limit_index = values[1]
 		else:
 			left_limit_index = ax.get_nearest_index(values[0])
+			# get_nearest_index returns an index tuple, which has only 1 element for the 1D axis.
+			assert (len(left_limit_index) == 1), "Index tuple for axis must have one element!"
+			left_limit_index = left_limit_index[0]
 			right_limit_index = ax.get_nearest_index(values[1])
-		assert ((type(left_limit_index) == int) and (0 <= left_limit_index < len(ax))), "Invalid ROI index."
-		assert ((type(right_limit_index) == int) and (0 <= right_limit_index < len(ax))), "Invalid ROI index."
+			# get_nearest_index returns an index tuple, which has only 1 element for the 1D axis.
+			assert (len(right_limit_index) == 1), "Index tuple for axis must have one element!"
+			right_limit_index = right_limit_index[0]
+		# Try to address the place of the index:
+		try:
+			ax.get_data()[left_limit_index]
+			ax.get_data()[right_limit_index]
+		except TypeError as e:
+			print("ERROR: ROI index not int as in indexing.")
+			raise e
+		except IndexError as e:
+			print("ERROR: ROI index not valid (typically out of bounds).")
+			raise e
 		self.limits[keyindex][0] = left_limit_index
 		self.limits[keyindex][1] = right_limit_index
 
@@ -532,7 +568,18 @@ class ROI:
 			left_limit_index = value
 		else:
 			left_limit_index = ax.get_nearest_index(value)
-		assert ((type(left_limit_index) == int) and (0 <= left_limit_index < len(ax))), "Invalid ROI index."
+			# get_nearest_index returns an index tuple, which has only 1 element for the 1D axis.
+			assert (len(left_limit_index) == 1), "Index tuple for axis must have one element!"
+			left_limit_index = left_limit_index[0]
+		# Try to address the place of the index:
+		try:
+			ax.get_data()[left_limit_index]
+		except TypeError as e:
+			print("ERROR: ROI index not int as in indexing.")
+			raise e
+		except IndexError as e:
+			print("ERROR: ROI index not valid (typically out of bounds).")
+			raise e
 		self.limits[keyindex][0] = left_limit_index
 
 	def unset_limit_left(self, key):
@@ -564,7 +611,17 @@ class ROI:
 			right_limit_index = value
 		else:
 			right_limit_index = ax.get_nearest_index(value)
-		assert ((type(right_limit_index) == int) and (0 <= right_limit_index < len(ax))), "Invalid ROI index."
+			# get_nearest_index returns an index tuple, which has only 1 element for the 1D axis.
+			assert (len(right_limit_index) == 1), "Index tuple for axis must have one element!"
+			right_limit_index = right_limit_index[0]
+		try:
+			ax.get_data()[right_limit_index]
+		except TypeError as e:
+			print("ERROR: ROI index not int as in indexing.")
+			raise e
+		except IndexError as e:
+			print("ERROR: ROI index not valid (typically out of bounds).")
+			raise e
 		self.limits[keyindex][1] = right_limit_index
 
 	def unset_limit_right(self, key):
@@ -1072,6 +1129,10 @@ if True:  # just for testing
 	sliced = testdataset.testdaten[0:3:, 0:3:]
 	testvalue = 500 * u.ureg('millicounts')
 	near = testdataset.testdaten.get_nearest_index(testvalue)
+
+	llim = 3 * u.ureg('m')
+	rlim = 7 * u.ureg('m')
+	roi = ROI(testdataset, {'xaxis': [llim, rlim]})
 
 	print("Load...")
 	newdataset = DataSet.from_h5file('test.hdf5')
