@@ -902,6 +902,26 @@ class DataSet:
 			else:
 				raise AttributeError("DataField not found.")
 
+	def replace_datafield(self, datafield_id, new_datafield):
+		"""
+		Replaces a datafield of the dataset with another. For this to make sense, the new datafield must describe the
+		same coordinates in the dataset as the old one: Obviously, the shape must therefore be the same.
+
+		:param datafield_id: Identifier of the Axis to replace. Must be a valid identifier as in get_datafield_index
+		and get_datafield.
+
+		:param new_datafield: Axis: An Axis instance that shall be put in place of the old one.
+
+		:return:
+		"""
+		old_datafield_index = self.get_datafield_index(datafield_id)
+		old_datafield = self.get_datafield(datafield_id)
+		assert isinstance(new_datafield, DataArray), "ERROR in replace_datafield: Datafield can only be replaced with " \
+													 "DataArray instance."
+		assert (old_datafield.shape == new_datafield.shape), "ERROR in replace_datafield: New Datafield must have " \
+															 "same shape as old one."
+		self.datafields[old_datafield_index] = new_datafield
+
 	def add_axis(self, data, unit=None, label=None, plotlabel=None):
 		"""
 		Initalizes a datafield and adds it to the list. All parameters have to be given like the __init__ of Axis
@@ -945,6 +965,23 @@ class DataSet:
 				return self.axes.index(self.__getattr__(label_or_index))
 			else:
 				raise AttributeError("Axis not found.")
+
+	def replace_axis(self, axis_id, new_axis):
+		"""
+		Replaces an axis of the dataset with another. For this to make sense, the new axis must describe the same
+		coordinates in the dataset as the old one: Obviously, the shape must therefore be the same.
+
+		:param axis_id: Identifier of the Axis to replace. Must be a valid identifier as in get_axis_index and get_axis.
+
+		:param new_axis: Axis: An Axis instance that shall be put in place of the old one.
+
+		:return:
+		"""
+		old_axis_index = self.get_axis_index(axis_id)
+		old_axis = self.get_axis(axis_id)
+		assert isinstance(new_axis, Axis), "ERROR in replace_axis: Axis can only be replaced with Axis instance."
+		assert (old_axis.shape == new_axis.shape), "ERROR in replace_axis: New Axis must have same shape as old one."
+		self.axes[old_axis_index] = new_axis
 
 	def meshgrid(self, axes=None):
 		"""
