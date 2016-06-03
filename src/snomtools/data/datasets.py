@@ -659,23 +659,27 @@ class ROI:
 		:return: The create slice object.
 		"""
 		if (data_key is None) or (data_key in self.dlabels):
+			# Generate slice tuple for all axes:
 			slicelist = []
 			for i in range(len(self.limits)):
-				llim = self.limits[i][0]
-				rlim = self.limits[i][1]
-				if rlim is None:
-					slicelist.append(numpy.s_[llim:rlim])
-				else: # if there is a right limit, the corresponding slice index (works excluding) is rlim+1:
-					slicelist.append(numpy.s_[llim:rlim+1])
+				slicelist.append(self.get_slice(i)) # recursive call for single axis slice element.
 			return tuple(slicelist)
 		else:
+			# Generate slice for single axis:
 			axis_index = self.get_axis_index(data_key)
 			llim = self.limits[axis_index][0]
 			rlim = self.limits[axis_index][1]
-			if rlim is None:
-				return numpy.s_[llim:rlim]
-			else: # if there is a right limit, the corresponding slice index (works excluding) is rlim+1:
+			if rlim is None: # there is no right limit, so the left limit is llim, which can be a number or None:
+				return numpy.s_[llim:None]
+			elif llim is None: # if there is a right but no left limit, the slice index (works excluding) is rlim+1:
+				return numpy.s_[None:rlim+1]
+			elif llim <= rlim: # both limits given, standard order:
 				return numpy.s_[llim:rlim+1]
+			else: # both limits given, reverse order:
+				if rlim == 0: # 0 as index is only adressable like follows, b/c excluding:
+					return numpy.s_[llim::-1]
+				else: # rlim must be shifted like above, b/c excluding:
+					return numpy.s_[llim:rlim-1:-1]
 
 	def get_limits(self, data_key=None, by_index=False):
 		"""
