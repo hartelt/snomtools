@@ -248,6 +248,15 @@ class DataArray:
 
 		:return: The sliced data as returned by self.data[key].
 		"""
+		# if an int is used as an index in a 1D dataarray, a single element is adressed:
+		if isinstance(key,int) and len(self.data.shape) == 1:
+			return self.data[key]
+		# if tuple of ints with length of the number of dimensions of the data is given, we have a single element again:
+		elif type(key)==tuple and len(key)==len(self.data.shape):
+			if all(isinstance(key[i],int) for i in range(len(key))):
+				assert self.data[key].shape == () # a single element must have shape () because it is 0D
+				return self.data[key]
+		# else a part of the array is adressed (even if all dimensions of len 1, this will still be an dataarray...
 		return self.__class__(self.data[key], label=self.label, plotlabel=self.plotlabel)
 
 	def __len__(self):  # len of data array
@@ -652,11 +661,49 @@ class ROI:
 		if (data_key is None) or (data_key in self.dlabels):
 			slicelist = []
 			for i in range(len(self.limits)):
-				slicelist.append(numpy.s_[self.limits[i][0]:self.limits[i][1]])
+				llim = self.limits[i][0]
+				rlim = self.limits[i][1]
+				if rlim is None:
+					slicelist.append(numpy.s_[llim:rlim])
+				else: # if there is a right limit, the corresponding slice index (works excluding) is rlim+1:
+					slicelist.append(numpy.s_[llim:rlim+1])
 			return tuple(slicelist)
 		else:
 			axis_index = self.get_axis_index(data_key)
-			return numpy.s_[self.limits[axis_index][0]:self.limits[axis_index][1]]
+			llim = self.limits[axis_index][0]
+			rlim = self.limits[axis_index][1]
+			if rlim is None:
+				return numpy.s_[llim:rlim]
+			else: # if there is a right limit, the corresponding slice index (works excluding) is rlim+1:
+				return numpy.s_[llim:rlim+1]
+
+	def get_limits(self, data_key=None, by_index=False):
+		"""
+		Returns the limits that define the ROI. Normally, the physical positions of the limits are given,
+		see by_index. The limits of the axes are given as lists of length 2 (2-lists).
+
+		:param data_key: A valid identifier of an axis or datafield of the DataSet (see DataSet.get_axis()) If given,
+		return the limits of an axis of the dataset instead of the whole data array. If the identifier
+		corresponds to a datafield, the whole limit list as with None will be returned.
+
+		:param by_index: Boolean flag: If True, return the limit axis indices instead of physical positions on the
+		axis.
+
+		:return: A 2-list or list of 2-lists as specified before.
+		"""
+		if (data_key is None) or (data_key in self.dlabels):
+			limlist = []
+			for i in range(len(self.limits)):
+				ax = self.get_axis(i)
+				limlist.append([ax[0],ax[-1]])
+			return limlist
+		else:
+			ax_index = self.get_axis_index(data_key)
+			if by_index:
+				return self.limits[ax_index]
+			else:
+				ax = self.get_axis(data_key)
+				return [ax[0],ax[-1]]
 
 	def get_datafield(self, label_or_index):
 		"""
@@ -1133,6 +1180,12 @@ if True:  # just for testing
 	llim = 3 * u.ureg('m')
 	rlim = 7 * u.ureg('m')
 	roi = ROI(testdataset, {'xaxis': [llim, rlim]})
+	# print(roi.xaxis[0:1])
+	# print(roi.xaxis[0])
+	# print(roi.testdaten[0,0])
+	# print(roi.testdaten[0])
+	# print(roi.testdaten[0,1:3])
+	# print(roi.testdaten[0,])
 
 	print("Load...")
 	newdataset = DataSet.from_h5file('test.hdf5')
