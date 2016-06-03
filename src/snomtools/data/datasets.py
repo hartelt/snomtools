@@ -249,12 +249,12 @@ class DataArray:
 		:return: The sliced data as returned by self.data[key].
 		"""
 		# if an int is used as an index in a 1D dataarray, a single element is adressed:
-		if isinstance(key,int) and len(self.data.shape) == 1:
+		if isinstance(key, int) and len(self.data.shape) == 1:
 			return self.data[key]
 		# if tuple of ints with length of the number of dimensions of the data is given, we have a single element again:
-		elif type(key)==tuple and len(key)==len(self.data.shape):
-			if all(isinstance(key[i],int) for i in range(len(key))):
-				assert self.data[key].shape == () # a single element must have shape () because it is 0D
+		elif type(key) == tuple and len(key) == len(self.data.shape):
+			if all(isinstance(key[i], int) for i in range(len(key))):
+				assert self.data[key].shape == ()  # a single element must have shape () because it is 0D
 				return self.data[key]
 		# else a part of the array is adressed (even if all dimensions of len 1, this will still be an dataarray...
 		return self.__class__(self.data[key], label=self.label, plotlabel=self.plotlabel)
@@ -662,24 +662,24 @@ class ROI:
 			# Generate slice tuple for all axes:
 			slicelist = []
 			for i in range(len(self.limits)):
-				slicelist.append(self.get_slice(i)) # recursive call for single axis slice element.
+				slicelist.append(self.get_slice(i))  # recursive call for single axis slice element.
 			return tuple(slicelist)
 		else:
 			# Generate slice for single axis:
 			axis_index = self.get_axis_index(data_key)
 			llim = self.limits[axis_index][0]
 			rlim = self.limits[axis_index][1]
-			if rlim is None: # there is no right limit, so the left limit is llim, which can be a number or None:
+			if rlim is None:  # there is no right limit, so the left limit is llim, which can be a number or None:
 				return numpy.s_[llim:None]
-			elif llim is None: # if there is a right but no left limit, the slice index (works excluding) is rlim+1:
-				return numpy.s_[None:rlim+1]
-			elif llim <= rlim: # both limits given, standard order:
-				return numpy.s_[llim:rlim+1]
-			else: # both limits given, reverse order:
-				if rlim == 0: # 0 as index is only adressable like follows, b/c excluding:
+			elif llim is None:  # if there is a right but no left limit, the slice index (works excluding) is rlim+1:
+				return numpy.s_[None:rlim + 1]
+			elif llim <= rlim:  # both limits given, standard order:
+				return numpy.s_[llim:rlim + 1]
+			else:  # both limits given, reverse order:
+				if rlim == 0:  # 0 as index is only adressable like follows, b/c excluding:
 					return numpy.s_[llim::-1]
-				else: # rlim must be shifted like above, b/c excluding:
-					return numpy.s_[llim:rlim-1:-1]
+				else:  # rlim must be shifted like above, b/c excluding:
+					return numpy.s_[llim:rlim - 1:-1]
 
 	def get_limits(self, data_key=None, by_index=False):
 		"""
@@ -699,7 +699,7 @@ class ROI:
 			limlist = []
 			for i in range(len(self.limits)):
 				ax = self.get_axis(i)
-				limlist.append([ax[0],ax[-1]])
+				limlist.append([ax[0], ax[-1]])
 			return limlist
 		else:
 			ax_index = self.get_axis_index(data_key)
@@ -707,7 +707,7 @@ class ROI:
 				return self.limits[ax_index]
 			else:
 				ax = self.get_axis(data_key)
-				return [ax[0],ax[-1]]
+				return [ax[0], ax[-1]]
 
 	def get_datafield(self, label_or_index):
 		"""
@@ -1181,9 +1181,9 @@ if True:  # just for testing
 	testvalue = 500 * u.ureg('millicounts')
 	near = testdataset.testdaten.get_nearest_index(testvalue)
 
-	llim = 3 * u.ureg('m')
-	rlim = 7 * u.ureg('m')
-	roi = ROI(testdataset, {'xaxis': [llim, rlim]})
+	llim_ = 3 * u.ureg('m')
+	rlim_ = 7 * u.ureg('m')
+	roi = ROI(testdataset, {'xaxis': [llim_, rlim_]})
 	# print(roi.xaxis[0:1])
 	# print(roi.xaxis[0])
 	# print(roi.testdaten[0,0])
