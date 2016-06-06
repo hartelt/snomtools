@@ -31,9 +31,9 @@ def peem_dld_read(filepath):
 
 	# Initialize data for dataset:
 	dataarray = snomtools.data.datasets.DataArray(realdata,unit='count',label='Counts')
-	taxis = snomtools.data.datasets.Axis(numpy.arange(0,realdata.shape[0]),label='ch',plotlabel='Time Channel')
-	xaxis = snomtools.data.datasets.Axis(numpy.arange(0,realdata.shape[1]),unit='px',label='x',plotlabel='x')
-	yaxis = snomtools.data.datasets.Axis(numpy.arange(0,realdata.shape[2]),unit='px',label='y',plotlabel='y')
+	taxis = snomtools.data.datasets.Axis(numpy.arange(0,realdata.shape[0]),label='channel',plotlabel='Time Channel')
+	xaxis = snomtools.data.datasets.Axis(numpy.arange(0,realdata.shape[1]),unit='pixel',label='x',plotlabel='x')
+	yaxis = snomtools.data.datasets.Axis(numpy.arange(0,realdata.shape[2]),unit='pixel',label='y',plotlabel='y')
 
 	# Return dataset:
 	return snomtools.data.datasets.DataSet(label=filebase,datafields=[dataarray],axes=[taxis,xaxis,yaxis])

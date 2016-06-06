@@ -259,6 +259,19 @@ class DataArray:
 		# else a part of the array is adressed (even if all dimensions of len 1, this will still be an dataarray...
 		return self.__class__(self.data[key], label=self.label, plotlabel=self.plotlabel)
 
+	def __setitem__(self, key, value):
+		"""
+		To allow adressing parts or elements of the DataArray with [], including slicing as in numpy. This just
+		forwards to the underlying __setitem__ method of the data object.
+
+		:param key: the key in the []
+
+		:param value: the value to set it to
+
+		:return:
+		"""
+		self.data[key] = value
+
 	def __len__(self):  # len of data array
 		return len(self.data)
 
@@ -1198,7 +1211,7 @@ class DataSet:
 		pass
 
 
-if True:  # just for testing
+if False:  # just for testing
 	print colored('Testing...', 'yellow'),
 	testarray = numpy.arange(0, 10, 2.)
 	testaxis = DataArray(testarray, 'meter', label="xaxis")
