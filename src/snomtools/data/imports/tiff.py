@@ -9,6 +9,19 @@ import os
 import numpy
 import tifffile
 
+def search_tag(tif,tag_id):
+	"""
+	Searches for a tag in all pages of a tiff file and returns the first match as
+	:param tif: An open TiffFile. See tifffile.TiffFile.
+	:param tag_id: String: The ID of the tag to search for.
+	:return: The tag, object, instance of tifffile.TiffTag.
+	"""
+	for page in tif:
+		for tag in page.tags.values():
+			if tag.name == tag_id:
+				return tag
+	print("WARNING: Tiff tag not found.")
+	return None
 
 def peem_dld_read(filepath):
 	"""
@@ -24,14 +37,27 @@ def peem_dld_read(filepath):
 	filebase = os.path.basename(filepath)
 
 	# Read tif file to numpy array. Axes will be (timechannel, x, y):
-	indata = tifffile.imread(filepath)
+	infile = tifffile.TiffFile(filepath)
+	indata = infile.asarray()
+
+	# Read time binning metadata from tags:
+	roi_and_bin_id = "41010" # as defined by Christian Schneider #define TIFFTAG_ROI_AND_BIN 41010
+	tag = search_tag(infile,roi_and_bin_id)
+	#roi_and_bin_list = tag.value
+	T, St, Tbin = int(tag.value[2]), int(tag.value[5]), int(tag.value[8])
+	infile.close()
 
 	# Remove sum and error image:
 	realdata = numpy.delete(indata,[0,1],axis=0)
 
 	# Initialize data for dataset:
 	dataarray = snomtools.data.datasets.DataArray(realdata,unit='count',label='Counts')
-	taxis = snomtools.data.datasets.Axis(numpy.arange(0,realdata.shape[0]),label='channel',plotlabel='Time Channel')
+	if tag:
+		assert (realdata.shape[0] == St / Tbin), "ERROR: Tifffile metadata time binning does not fit to data size."
+		uplim = T+(St/Tbin)*Tbin # upper limit calculation because of Terras strange floordiv behaviour.
+		taxis = snomtools.data.datasets.Axis(numpy.arange(T,uplim,Tbin),label='channel',plotlabel='Time Channel')
+	else:
+		taxis = snomtools.data.datasets.Axis(numpy.arange(0,realdata.shape[0]),label='channel',plotlabel='Time Channel')
 	xaxis = snomtools.data.datasets.Axis(numpy.arange(0,realdata.shape[1]),unit='pixel',label='x',plotlabel='x')
 	yaxis = snomtools.data.datasets.Axis(numpy.arange(0,realdata.shape[2]),unit='pixel',label='y',plotlabel='y')
 
