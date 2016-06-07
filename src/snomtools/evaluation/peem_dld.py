@@ -7,3 +7,79 @@ For furter info about data structures, see:
 data.imports.tiff.py
 data.datasets.py
 '''
+
+import snomtools.calcs.units as u
+import snomtools.data.datasets
+import snomtools.data.imports.tiff
+import numpy
+
+
+def energy_scale_quadratic(channel_axis, C, t_0):
+	"""
+	Energy scaling calculated for the time channel axis of a DataSet containing DLD PEEM data, Quadratic version.
+
+	:param channel_axis: The Axis instance containing the channel numbers as data.
+
+	:param C: The fit parameter C as in the energy calibration files from Terra (.kalfit.txt).
+
+	:param t_0: The fit parameter C as in the energy calibration files from Terra (.kalfit.txt).
+
+	:return: A new Axis instance with energy scaling, that can replace the channel axis in the DataSet.
+	"""
+	t_0 = u.to_ureg(t_0, '')
+	c_square = u.to_ureg(C ** 2, 'eV')
+	channels = channel_axis.get_data()
+	energy_points = c_square / (channels - t_0) ** 2
+	return snomtools.data.datasets.Axis(energy_points, label="energy",
+										plotlabel="Electron Energy / \\SI{\electronvolt}")
+
+
+def energy_scale_linear(channel_axis, a, b):
+	"""
+	Energy scaling calculated for the time channel axis of a DataSet containing DLD PEEM data, Linear version.
+
+	:param channel_axis: The Axis instance containing the channel numbers as data.
+
+	:param a: The fit parameter a as in the energy calibration files from Terra (.kalfit.txt).
+
+	:param b: The fit parameter b as in the energy calibration files from Terra (.kalfit.txt).
+
+	:return: A new Axis instance with energy scaling, that can replace the channel axis in the DataSet.
+	"""
+	a = u.to_ureg(a, 'eV')
+	b = u.to_ureg(b, 'eV')
+	channels = channel_axis.get_data()
+	energy_points = a * channels + b
+	return snomtools.data.datasets.Axis(energy_points, label="energy",
+										plotlabel="Electron Energy / \\SI{\electronvolt}")
+
+
+def normalize_by_flatfield_sum(data, flatfield_data, data_id=0, flat_id=0, newlabel='norm_int',
+							   new_plotlabel="Normalized Intensity"):
+	"""
+	Normalizes a dataset by the data of another set, that was obtained on an unstructured surface and should
+	therefore be "flat" (flatfield). The data is normalized by the sum over all energy channels, so only the spacial
+	image is normalized, while all time channels are kept at constant relative values.
+	The normalized data is written into a new DataArray in the given DataSet.
+
+	:param data: The DataSet instance of the data to normalize.
+
+	:param flatfield_data: The DataSet instance of the flatfield correction to apply.
+
+	:param data_id: A valid identifier of the DataArray in the DataSet instance to apply normalization to. Per
+	default, the first DataArray is taken.
+
+	:param flat_id: A valid identifier of the DataArray in the flatfield DataSet instance to take as reference. Per
+	default, the first DataArray is taken.
+
+	:param newlabel: The label to set for the created DataArray.
+
+	:param new_plotlabel: The plotlabel to set for the created DataArray.
+
+	:return: The modified dataset.
+	"""
+	flatfield_sumimage = flatfield_data.get_datafield(flat_id).get_data().sum(0)
+	data_normalized = data.get_datafield(data_id) / flatfield_sumimage
+	data_normalized[~ numpy.isfinite(data_normalized)] = 0  # set inf, and NaN to 0
+	data.add_datafield(data_normalized, label=newlabel, plotlabel=new_plotlabel)
+	return data

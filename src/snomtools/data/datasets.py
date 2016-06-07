@@ -44,7 +44,7 @@ class DataArray:
 			else:
 				self.label = data.get_label()
 			if plotlabel:  # Same as with label.
-				self.plotlabel = label
+				self.plotlabel = plotlabel
 			else:
 				self.plotlabel = data.get_plotlabel()
 			# A DataArray contains everything we need, so we should be done here!
