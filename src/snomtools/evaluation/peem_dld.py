@@ -11,6 +11,7 @@ data.datasets.py
 import snomtools.calcs.units as u
 import snomtools.data.datasets
 import snomtools.data.imports.tiff
+import os.path
 import numpy
 
 
@@ -54,6 +55,106 @@ def energy_scale_linear(channel_axis, a, b):
 										plotlabel="Electron Energy / \\SI{\electronvolt}")
 
 
+def energy_get_fitparams_quadratic(filename):
+	"""
+	Reads the quadratic fit parameters from the kalfit.txt files.
+	Usage;
+	C,t0 = energy_get_fitparams_quadratic('04-Energiekalibrierung.kalfit.txt')
+
+	:param filename: The absolute or relative path of the textfile with the fit parameters.
+
+	:return: The fitparameters as a tuple C,t0
+	"""
+	filepath = os.path.abspath(filename)
+	fitfile = open(filepath, 'r')
+	lines = fitfile.readlines()
+	# The lines we are looking for look like this:
+	# C=118259,8710948820
+	# t0=-24977,8555008616
+	C = None
+	t0 = None
+	for line in lines:
+		line = line.strip()
+		if line.startswith('C='):
+			line = line.replace('C=', '')
+			line = line.replace(',', '.')
+			C = float(line)
+		if line.startswith('t0='):
+			line = line.replace('t0=', '')
+			line = line.replace(',', '.')
+			t0 = float(line)
+		if C and t0:
+			return C, t0
+	raise RuntimeError("Fit Parameters not found in file.")
+
+
+def energy_get_fitparams_linear(filename):
+	"""
+	Reads the quadratic fit parameters from the kalfit.txt files.
+	Usage:
+	a,b = energy_get_fitparams_linear('04-Energiekalibrierung.kalfit.txt')
+
+	:param filename: The absolute or relative path of the textfile with the fit parameters.
+
+	:return: The fitparameters as a tuple C,t0
+	"""
+	filepath = os.path.abspath(filename)
+	fitfile = open(filepath, 'r')
+	lines = fitfile.readlines()
+	# The lines we are looking for look like this:
+	# a=-0,0015635827  +- 0,0000316005
+	# b=22,2875623476  +- 0,0375883697
+	a = None
+	b = None
+	for line in lines:
+		line = line.strip()
+		if line.startswith('a='):
+			line = line.replace('a=', '')
+			line = line.replace(',', '.')
+			astr, aerr = line.split(' +- ')
+			a = float(astr)
+		if line.startswith('b='):
+			line = line.replace('b=', '')
+			line = line.replace(',', '.')
+			bstr, berr = line.split(' +- ')
+			b = float(bstr)
+		if a and b:
+			return a, b
+	raise RuntimeError("Fit Parameters not found in file.")
+
+
+def energy_apply_calibration(data, kalfitfilename, mode='quadratic'):
+	"""
+	Applies an energy calibration from a kalfit.txt file to a DLD DataSet. The channel axis will be replaced with an
+	energy axis.
+
+	:param data: The DataSet instance of the data to normalize or a string with the filepath of the Tiff file from PEEM.
+
+	:param kalfitfilename: The filename of the text file from Terra that contains Energy Calibration fit parameters.
+	Usually this file's name ends with "kalfit.txt".
+
+	:param mode: The mode for the energy calculation. Options:
+	'quadradic' (default) and 'linear'
+
+	:return: The modified dataset.
+	"""
+	if type(data) == str:  # if tiff file is given, import it.
+		filepath = os.path.abspath(data)
+		data = snomtools.data.imports.tiff.peem_dld_read(filepath)
+	assert isinstance(data, snomtools.data.datasets.DataSet), "ERROR: No DataSet given or imported."
+
+	if mode == 'quadratic':
+		C, t0 = energy_get_fitparams_quadratic(kalfitfilename)
+		energy_axis = energy_scale_quadratic(data.get_axis('channel'), C, t0)
+	elif mode == 'linear':
+		a, b = energy_get_fitparams_linear(kalfitfilename)
+		energy_axis = energy_scale_quadratic(data.get_axis('channel'), a, b)
+	else:
+		raise RuntimeError("Invalid energy calibration mode.")
+	data.replace_axis('channel', energy_axis)
+	return data
+
+
 def normalize_by_flatfield_sum(data, flatfield_data, data_id=0, flat_id=0, newlabel='norm_int',
 							   new_plotlabel="Normalized Intensity"):
 	"""
@@ -62,9 +163,10 @@ def normalize_by_flatfield_sum(data, flatfield_data, data_id=0, flat_id=0, newla
 	image is normalized, while all time channels are kept at constant relative values.
 	The normalized data is written into a new DataArray in the given DataSet.
 
-	:param data: The DataSet instance of the data to normalize.
+	:param data: The DataSet instance of the data to normalize or a string with the filepath of the Tiff file from PEEM.
 
-	:param flatfield_data: The DataSet instance of the flatfield correction to apply.
+	:param flatfield_data: The DataSet instance of the flatfield correction to apply or a string with the filepath of
+	the Tiff file from PEEM.
 
 	:param data_id: A valid identifier of the DataArray in the DataSet instance to apply normalization to. Per
 	default, the first DataArray is taken.
@@ -78,6 +180,16 @@ def normalize_by_flatfield_sum(data, flatfield_data, data_id=0, flat_id=0, newla
 
 	:return: The modified dataset.
 	"""
+	if type(data) == str:
+		filepath = os.path.abspath(data)
+		data = snomtools.data.imports.tiff.peem_dld_read(filepath)
+	if type(flatfield_data) == str:
+		filepath = os.path.abspath(flatfield_data)
+		flatfield_data = snomtools.data.imports.tiff.peem_dld_read(filepath)
+
+	assert isinstance(data, snomtools.data.datasets.DataSet), "ERROR: No DataSet given or imported."
+	assert isinstance(flatfield_data, snomtools.data.datasets.DataSet), "ERROR: No DataSet given or imported."
+
 	flatfield_sumimage = flatfield_data.get_datafield(flat_id).get_data().sum(0)
 	data_normalized = data.get_datafield(data_id) / flatfield_sumimage
 	data_normalized[~ numpy.isfinite(data_normalized)] = 0  # set inf, and NaN to 0
