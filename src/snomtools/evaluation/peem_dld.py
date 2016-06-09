@@ -32,7 +32,7 @@ def energy_scale_quadratic(channel_axis, C, t_0):
 	channels = channel_axis.get_data()
 	energy_points = c_square / (channels - t_0) ** 2
 	return snomtools.data.datasets.Axis(energy_points, label="energy",
-										plotlabel="Electron Energy / \\SI{\electronvolt}")
+										plotlabel="Electron Energy / \\si{\electronvolt}")
 
 
 def energy_scale_linear(channel_axis, a, b):
@@ -52,7 +52,7 @@ def energy_scale_linear(channel_axis, a, b):
 	channels = channel_axis.get_data()
 	energy_points = a * channels + b
 	return snomtools.data.datasets.Axis(energy_points, label="energy",
-										plotlabel="Electron Energy / \\SI{\electronvolt}")
+										plotlabel="Electron Energy / \\si{\electronvolt}")
 
 
 def energy_get_fitparams_quadratic(filename):

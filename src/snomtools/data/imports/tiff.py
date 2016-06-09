@@ -51,7 +51,7 @@ def peem_dld_read(filepath):
 	realdata = numpy.delete(indata,[0,1],axis=0)
 
 	# Initialize data for dataset:
-	dataarray = snomtools.data.datasets.DataArray(realdata,unit='count',label='Counts')
+	dataarray = snomtools.data.datasets.DataArray(realdata,unit='count',label='counts',plotlabel='Counts')
 	if tag:
 		assert (realdata.shape[0] == St / Tbin), "ERROR: Tifffile metadata time binning does not fit to data size."
 		uplim = T+(St/Tbin)*Tbin # upper limit calculation because of Terras strange floordiv behaviour.
