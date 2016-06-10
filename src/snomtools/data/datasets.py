@@ -487,6 +487,8 @@ class ROI:
 			return labels
 		elif item == "labels":
 			return self.dlabels + self.axlabels
+		elif item == "dimensions":
+			return len(self.dataset.axes)
 		elif item in self.labels:
 			for darray in self.alldata:
 				if item == darray.get_label():
@@ -726,7 +728,7 @@ class ROI:
 				else:  # rlim must be shifted like above, b/c excluding:
 					return numpy.s_[llim:rlim - 1:-1]
 
-	def get_limits(self, data_key=None, by_index=False):
+	def get_limits(self, data_key=None, by_index=False, raw=False):
 		"""
 		Returns the limits that define the ROI. Normally, the physical positions of the limits are given,
 		see by_index. The limits of the axes are given as lists of length 2 (2-lists).
@@ -738,13 +740,18 @@ class ROI:
 		:param by_index: Boolean flag: If True, return the limit axis indices instead of physical positions on the
 		axis.
 
+		:param raw: Boolean flag: If True, return floats instead of quantities.
+
 		:return: A 2-list or list of 2-lists as specified before.
 		"""
 		if (data_key is None) or (data_key in self.dlabels):
 			limlist = []
 			for i in range(len(self.limits)):
 				ax = self.get_axis(i)
-				limlist.append([ax[0], ax[-1]])
+				if raw:
+					limlist.append([ax[0].magnitude, ax[-1].magnitude])
+				else:
+					limlist.append([ax[0], ax[-1]])
 			return limlist
 		else:
 			ax_index = self.get_axis_index(data_key)
@@ -752,7 +759,10 @@ class ROI:
 				return self.limits[ax_index]
 			else:
 				ax = self.get_axis(data_key)
-				return [ax[0], ax[-1]]
+				if raw:
+					return [ax[0].magnitude, ax[-1].magnitude]
+				else:
+					return [ax[0], ax[-1]]
 
 	def get_datafield(self, label_or_index):
 		"""
@@ -783,6 +793,31 @@ class ROI:
 
 	def get_axis_index(self, label_or_index):
 		return self.dataset.get_axis_index(label_or_index)
+
+	def meshgrid(self, axes=None):
+		"""
+		This function returns coordinate arrays corresponding to the axes. See numpy.meshgrid. If axes are not
+		constricted by axes argument, the output arrays will have the same shape as the data arrays of the dataset.
+		Uses snomtools.calcs.units.meshgrid() under the hood to preserve units.
+
+		:param axes: optional: a list of axes identifiers to be included. If none is given, all axes are included.
+
+		:return: A tuple of coordinate arrays.
+		"""
+		if axes:
+			# Assemble axes:
+			list_of_axes = []
+			for identifier in axes:
+				list_of_axes.append(self.get_axis(identifier))
+			# Build grid:
+			return u.meshgrid(*list_of_axes)
+		else:
+			# Assemble axes:
+			list_of_axes = []
+			for identifier in range(len(self.dataset.axes)):
+				list_of_axes.append(self.get_axis(identifier))
+			# Build grid:
+			return u.meshgrid(*list_of_axes)
 
 
 class DataSet:
@@ -896,6 +931,10 @@ class DataSet:
 			return labels
 		elif item == "labels":
 			return self.dlabels + self.axlabels
+		elif item == "dimensions":
+			return len(self.axes)
+		elif item == "shape":
+			return self.datafields[0].shape
 		elif item in self.labels:
 			for darray in self.alldata:
 				if item == darray.get_label():

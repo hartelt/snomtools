@@ -58,8 +58,11 @@ def peem_dld_read(filepath):
 		taxis = snomtools.data.datasets.Axis(numpy.arange(T,uplim,Tbin),label='channel',plotlabel='Time Channel')
 	else:
 		taxis = snomtools.data.datasets.Axis(numpy.arange(0,realdata.shape[0]),label='channel',plotlabel='Time Channel')
-	xaxis = snomtools.data.datasets.Axis(numpy.arange(0,realdata.shape[1]),unit='pixel',label='x',plotlabel='x')
-	yaxis = snomtools.data.datasets.Axis(numpy.arange(0,realdata.shape[2]),unit='pixel',label='y',plotlabel='y')
+	# Careful about orientation! This is like a matrix:
+	# rows go first and are numbered in vertical direction -> Y
+	# columns go last and are numbered in horizontal direction -> X
+	xaxis = snomtools.data.datasets.Axis(numpy.arange(0,realdata.shape[1]),unit='pixel',label='y',plotlabel='y')
+	yaxis = snomtools.data.datasets.Axis(numpy.arange(0,realdata.shape[2]),unit='pixel',label='x',plotlabel='x')
 
 	# Return dataset:
 	return snomtools.data.datasets.DataSet(label=filebase,datafields=[dataarray],axes=[taxis,xaxis,yaxis])
