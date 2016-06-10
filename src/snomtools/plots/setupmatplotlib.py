@@ -106,6 +106,13 @@ def figure(size_cm=(3, 3), dpi=600, num=0):
 	size_inch = (size_cm[0] * in_cm, size_cm[1] * in_cm)
 	return plt.figure(num, size_inch, dpi=dpi)
 
+def set_size_cm(size_cm=(3, 3),fig=None):
+	if fig is None:
+		fig = plt.gcf()
+	in_cm = 1. / 2.514  # 1 inch = 2.514 cm
+	size_inch = (size_cm[0] * in_cm, size_cm[1] * in_cm)
+	fig.set_size_inches(size_inch)
+
 def set_xlabel(text, ax=None, fontsize=fontsize_xylabel, **kwargs):
 	"""
 	sets the label for the x-axis
