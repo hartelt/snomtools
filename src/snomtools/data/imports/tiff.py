@@ -53,8 +53,9 @@ def peem_dld_read(filepath):
 	# Initialize data for dataset:
 	dataarray = snomtools.data.datasets.DataArray(realdata,unit='count',label='counts',plotlabel='Counts')
 	if tag:
-		assert (realdata.shape[0] == St / Tbin), "ERROR: Tifffile metadata time binning does not fit to data size."
-		uplim = T+(St/Tbin)*Tbin # upper limit calculation because of Terras strange floordiv behaviour.
+		assert (realdata.shape[0] == round(St / float(Tbin))), \
+			"ERROR: Tifffile metadata time binning does not fit to data size."
+		uplim = T+(round(St/float(Tbin)))*Tbin # upper limit calculation because of Terras strange floordiv behaviour.
 		taxis = snomtools.data.datasets.Axis(numpy.arange(T,uplim,Tbin),label='channel',plotlabel='Time Channel')
 	else:
 		taxis = snomtools.data.datasets.Axis(numpy.arange(0,realdata.shape[0]),label='channel',plotlabel='Time Channel')
