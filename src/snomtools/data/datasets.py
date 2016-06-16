@@ -810,20 +810,20 @@ class ROI:
 		:return: The normalized DataArray instance.
 		"""
 		ds = self.get_datafield(label_or_index)
-		if method in ["maximum","max"]:
-			return ds/ds.max()
-		elif method in ["minimum","min"]:
-			return ds/ds.min()
+		if method in ["maximum", "max"]:
+			return ds / ds.max()
+		elif method in ["minimum", "min"]:
+			return ds / ds.min()
 		elif method in ["mean"]:
-			return ds/ds.mean()
-		elif method in ["absolute maximum","max"]:
-			return ds/ds.absmax()
-		elif method in ["absolute minimum","min"]:
-			return ds/ds.absmin()
+			return ds / ds.mean()
+		elif method in ["absolute maximum", "max"]:
+			return ds / ds.absmax()
+		elif method in ["absolute minimum", "min"]:
+			return ds / ds.absmin()
 		else:
 			print "WARNING: Normalization method not valid. Returning unnormalized data."
 			return ds
-		#TODO: Testing of this method.
+		# TODO: Testing of this method.
 
 	def get_axis(self, label_or_index):
 		"""
@@ -1048,20 +1048,20 @@ class DataSet:
 		:return: The normalized DataArray instance.
 		"""
 		ds = self.get_datafield(label_or_index)
-		if method in ["maximum","max"]:
-			return ds/ds.max()
-		elif method in ["minimum","min"]:
-			return ds/ds.min()
+		if method in ["maximum", "max"]:
+			return ds / ds.max()
+		elif method in ["minimum", "min"]:
+			return ds / ds.min()
 		elif method in ["mean"]:
-			return ds/ds.mean()
-		elif method in ["absolute maximum","max"]:
-			return ds/ds.absmax()
-		elif method in ["absolute minimum","min"]:
-			return ds/ds.absmin()
+			return ds / ds.mean()
+		elif method in ["absolute maximum", "max"]:
+			return ds / ds.absmax()
+		elif method in ["absolute minimum", "min"]:
+			return ds / ds.absmin()
 		else:
 			print "WARNING: Normalization method not valid. Returning unnormalized data."
 			return ds
-		#TODO: Testing of this method.
+		# TODO: Testing of this method.
 
 	def replace_datafield(self, datafield_id, new_datafield):
 		"""
