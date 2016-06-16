@@ -9,7 +9,7 @@ import numpy
 import os.path
 
 
-def project_1d(data, plot_dest, axis_id=0, data_id=0, **kwargs):
+def project_1d(data, plot_dest, axis_id=0, data_id=0, normalization=None, **kwargs):
 	"""
 	Plots a projection of the data onto one axis. Therefore, it sums the values over all the other axes.
 
@@ -21,7 +21,15 @@ def project_1d(data, plot_dest, axis_id=0, data_id=0, **kwargs):
 
 	:param data_id: An identifier of the dataarray to take data from.
 
-	:param kwargs: Keyword arguments for the plot() method of the plot object.
+	:param normalization: Method for a normalization to apply to the data before plotting. Valid options:
+	* None, "None" (default): No normalization.
+	* "maximum", "max": divide every value by the maximum value in the set
+	* "mean": divide every value by the average value in the set
+	* "minimum", "min": divide every value by the minimum value in the set
+	* "absolute maximum", "absmax": divide every value by the maximum absolute value in the set
+	* "absolute minimum", "absmin": divide every value by the minimum absolute value in the set
+
+	:param kwargs: Keyword arguments for the plot() normalization of the plot object.
 
 	:return:
 	"""
@@ -34,7 +42,26 @@ def project_1d(data, plot_dest, axis_id=0, data_id=0, **kwargs):
 	sumlist = range(data.dimensions)
 	sumlist.remove(ax_index)
 	sumtup = tuple(sumlist)
-	plotdat = data.get_datafield(data_id).sum(sumtup)
+	sumdat = data.get_datafield(data_id).sum(sumtup)
+
+	if normalization:
+		if normalization == "None":
+			plotdat = sumdat
+		elif normalization in ["maximum", "max"]:
+			plotdat = sumdat / sumdat.max()
+		elif normalization in ["minimum", "min"]:
+			plotdat = sumdat / sumdat.min()
+		elif normalization in ["mean"]:
+			plotdat = sumdat / sumdat.mean()
+		elif normalization in ["absolute maximum", "max"]:
+			plotdat = sumdat / sumdat.absmax()
+		elif normalization in ["absolute minimum", "min"]:
+			plotdat = sumdat / sumdat.absmin()
+		else:
+			print "WARNING: Normalization normalization not valid. Returning unnormalized data."
+			plotdat = sumdat
+	else:
+		plotdat = sumdat
 
 	assert (plotdat.shape == ax.shape), "Plot data shapes don't match."
 
@@ -56,7 +83,7 @@ def project_2d(data, plot_dest, axis_vert=0, axis_hori=1, data_id=0, **kwargs):
 
 	:param data_id: An identifier of the dataarray to take data from.
 
-	:param kwargs: Keyword arguments for the plot() method of the plot object.
+	:param kwargs: Keyword arguments for the plot() normalization of the plot object.
 
 	:return:
 	"""
@@ -107,13 +134,13 @@ def mark_roi_1d(roi, plot_dest, axis_id=0, **kwargs):
 
 	# Set default style kwargs for rectangle if not explicitly given:
 	if not kwargs:
-		kwargs['fc'] = 'k' # black as face color
-		kwargs['alpha'] = 0.2 # transparent
-		kwargs['fill'] = True # filled (default)
+		kwargs['fc'] = 'k'  # black as face color
+		kwargs['alpha'] = 0.2  # transparent
+		kwargs['fill'] = True  # filled (default)
 
 	lims = roi.get_limits(axis_id, raw=True)
 
-	plot_dest.axvspan(lims[0],lims[1],**kwargs)
+	plot_dest.axvspan(lims[0], lims[1], **kwargs)
 
 
 def mark_roi_2d(roi, plot_dest, axis_vert=0, axis_hori=1, **kwargs):
