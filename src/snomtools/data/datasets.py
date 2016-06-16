@@ -232,6 +232,21 @@ class DataArray:
 		"""
 		return self.data.sum(axis=axis, dtype=dtype, out=out, keepdims=keepdims)
 
+	def max(self):
+		return self.data.max()
+
+	def min(self):
+		return self.data.min()
+
+	def absmax(self):
+		return abs(self.data).max()
+
+	def absmin(self):
+		return abs(self.data).min()
+
+	def mean(self):
+		return self.data.mean()
+
 	def __pos__(self):
 		return self.__class__(self.data, label=self.label, plotlabel=self.plotlabel)
 
@@ -779,6 +794,37 @@ class ROI:
 	def get_datafield_index(self, label_or_index):
 		return self.dataset.get_datafield_index(label_or_index)
 
+	def get_datafield_normalized(self, label_or_index, method="maximum"):
+		"""
+		Like get_datafield, but returns a normalized DataArray.
+
+		:param label_or_index: Identifier of the DataField
+
+		:param method: Method to normalize with: Valid options:
+		* "maximum", "max" (default): divide every value by the maximum value in the set
+		* "mean": divide every value by the average value in the set
+		* "minimum", "min": divide every value by the minimum value in the set
+		* "absolute maximum", "absmax": divide every value by the maximum absolute value in the set
+		* "absolute minimum", "absmin": divide every value by the minimum absolute value in the set
+
+		:return: The normalized DataArray instance.
+		"""
+		ds = self.get_datafield(label_or_index)
+		if method in ["maximum","max"]:
+			return ds/ds.max()
+		elif method in ["minimum","min"]:
+			return ds/ds.min()
+		elif method in ["mean"]:
+			return ds/ds.mean()
+		elif method in ["absolute maximum","max"]:
+			return ds/ds.absmax()
+		elif method in ["absolute minimum","min"]:
+			return ds/ds.absmin()
+		else:
+			print "WARNING: Normalization method not valid. Returning unnormalized data."
+			return ds
+		#TODO: Testing of this method.
+
 	def get_axis(self, label_or_index):
 		"""
 		Tries to assign an Axis to a given parameter, that can be an integer as an index in the
@@ -985,6 +1031,37 @@ class DataSet:
 				return self.datafields.index(self.__getattr__(label_or_index))
 			else:
 				raise AttributeError("DataField not found.")
+
+	def get_datafield_normalized(self, label_or_index, method="maximum"):
+		"""
+		Like get_datafield, but returns a normalized DataArray.
+
+		:param label_or_index: Identifier of the DataField
+
+		:param method: Method to normalize with: Valid options:
+		* "maximum", "max" (default): divide every value by the maximum value in the set
+		* "mean": divide every value by the average value in the set
+		* "minimum", "min": divide every value by the minimum value in the set
+		* "absolute maximum", "absmax": divide every value by the maximum absolute value in the set
+		* "absolute minimum", "absmin": divide every value by the minimum absolute value in the set
+
+		:return: The normalized DataArray instance.
+		"""
+		ds = self.get_datafield(label_or_index)
+		if method in ["maximum","max"]:
+			return ds/ds.max()
+		elif method in ["minimum","min"]:
+			return ds/ds.min()
+		elif method in ["mean"]:
+			return ds/ds.mean()
+		elif method in ["absolute maximum","max"]:
+			return ds/ds.absmax()
+		elif method in ["absolute minimum","min"]:
+			return ds/ds.absmin()
+		else:
+			print "WARNING: Normalization method not valid. Returning unnormalized data."
+			return ds
+		#TODO: Testing of this method.
 
 	def replace_datafield(self, datafield_id, new_datafield):
 		"""
