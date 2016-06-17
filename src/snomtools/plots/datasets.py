@@ -74,7 +74,7 @@ def project_1d(data, plot_dest, axis_id=0, data_id=0, normalization=None, **kwar
 	plot_dest.plot(ax.get_data(), plotdat, **kwargs)
 
 
-def project_2d(data, plot_dest, axis_vert=0, axis_hori=1, data_id=0, **kwargs):
+def project_2d(data, plot_dest, axis_vert=0, axis_hori=1, data_id=0, normalization=None, **kwargs):
 	"""
 	Plots a projection of the data onto two axes as a pseudocolor 2d map. Therefore, it sums the values over all the
 	other axes. Using the pcolor function for matplotlib ensures correct representation of data on nonlinear grids.
@@ -88,6 +88,15 @@ def project_2d(data, plot_dest, axis_vert=0, axis_hori=1, data_id=0, **kwargs):
 	:param axis_hori: An identifier of the second axis to project onto. This will be the horizontal axis in the plot.
 
 	:param data_id: An identifier of the dataarray to take data from.
+
+	:param normalization: Method for a normalization to apply to the data before plotting. Valid options:
+	* None, "None" (default): No normalization.
+	* "maximum", "max": divide every value by the maximum value in the set
+	* "mean": divide every value by the average value in the set
+	* "minimum", "min": divide every value by the minimum value in the set
+	* "absolute maximum", "absmax": divide every value by the maximum absolute value in the set
+	* "absolute minimum", "absmin": divide every value by the minimum absolute value in the set
+	* "size": divide every value by the number of pixels that have been summed in the projection (ROI size)
 
 	:param kwargs: Keyword arguments for the plot() normalization of the plot object.
 
@@ -107,9 +116,33 @@ def project_2d(data, plot_dest, axis_vert=0, axis_hori=1, data_id=0, **kwargs):
 	sumtup = tuple(sumlist)
 	dat = data.get_datafield(data_id).sum(sumtup)
 	if axv_index > axh_index:  # transpose if axes are not in array-like order
-		plotdat = dat.T
+		sumdat = dat.T
 	else:
-		plotdat = dat
+		sumdat = dat
+
+	if normalization:
+		if normalization == "None":
+			plotdat = sumdat
+		elif normalization in ["maximum", "max"]:
+			plotdat = sumdat / sumdat.max()
+		elif normalization in ["minimum", "min"]:
+			plotdat = sumdat / sumdat.min()
+		elif normalization in ["mean"]:
+			plotdat = sumdat / sumdat.mean()
+		elif normalization in ["absolute maximum", "max"]:
+			plotdat = sumdat / sumdat.absmax()
+		elif normalization in ["absolute minimum", "min"]:
+			plotdat = sumdat / sumdat.absmin()
+		elif normalization in ["size"]:
+			number_of_pixels = 1
+			for ax_id in sumtup:
+				number_of_pixels *= len(data.get_axis(ax_id))
+			plotdat = sumdat / number_of_pixels
+		else:
+			print "WARNING: Normalization normalization not valid. Returning unnormalized data."
+			plotdat = sumdat
+	else:
+		plotdat = sumdat
 
 	H, V = data.meshgrid([axh_index, axv_index])
 
