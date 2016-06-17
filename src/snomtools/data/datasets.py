@@ -504,6 +504,8 @@ class ROI:
 			return self.dlabels + self.axlabels
 		elif item == "dimensions":
 			return len(self.dataset.axes)
+		elif item == "shape":
+			return self.get_datafield(0).shape
 		elif item in self.labels:
 			for darray in self.alldata:
 				if item == darray.get_label():

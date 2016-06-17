@@ -28,6 +28,7 @@ def project_1d(data, plot_dest, axis_id=0, data_id=0, normalization=None, **kwar
 	* "minimum", "min": divide every value by the minimum value in the set
 	* "absolute maximum", "absmax": divide every value by the maximum absolute value in the set
 	* "absolute minimum", "absmin": divide every value by the minimum absolute value in the set
+	* "size": divide every value by the number of pixels that have been summed in the projection (ROI size)
 
 	:param kwargs: Keyword arguments for the plot() normalization of the plot object.
 
@@ -57,6 +58,11 @@ def project_1d(data, plot_dest, axis_id=0, data_id=0, normalization=None, **kwar
 			plotdat = sumdat / sumdat.absmax()
 		elif normalization in ["absolute minimum", "min"]:
 			plotdat = sumdat / sumdat.absmin()
+		elif normalization in ["size"]:
+			number_of_pixels = 1
+			for ax_id in sumtup:
+				number_of_pixels *= len(data.get_axis(ax_id))
+			plotdat = sumdat / number_of_pixels
 		else:
 			print "WARNING: Normalization normalization not valid. Returning unnormalized data."
 			plotdat = sumdat
