@@ -451,7 +451,7 @@ class ROI:
 	Consequently, the ROI shall be implemented to behave as a DataSet.
 	"""
 
-	def __init__(self, dataset, limitlist=None, by_index=False, label=""):
+	def __init__(self, dataset, limitlist=None, by_index=False, label="", plotlabel=""):
 		"""
 		The constructor. Translates the given limits to the corresponding array indices and stores them as instance
 		variables. Each set of limits must be given as 2-tuples of the form (start,stop), where start and stop can be a
@@ -469,10 +469,13 @@ class ROI:
 
 		:param label: String: A label describing the ROI.
 
+		:param plotlabel: String: A label describing the ROI for plots.
+
 		:return:
 		"""
 		self.dataset = dataset
 		self.label = label
+		self.plotlabel = plotlabel
 		# create empty limit list:
 		self.limits = [[None, None] for i in range(len(self.dataset.axes))]
 		# iterate over keys in the limit list if given:
