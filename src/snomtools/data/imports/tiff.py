@@ -9,7 +9,8 @@ import os
 import numpy
 import tifffile
 
-def search_tag(tif,tag_id):
+
+def search_tag(tif, tag_id):
 	"""
 	Searches for a tag in all pages of a tiff file and returns the first match as
 	:param tif: An open TiffFile. See tifffile.TiffFile.
@@ -22,6 +23,7 @@ def search_tag(tif,tag_id):
 				return tag
 	print("WARNING: Tiff tag not found.")
 	return None
+
 
 def peem_dld_read(filepath):
 	"""
@@ -41,37 +43,41 @@ def peem_dld_read(filepath):
 	indata = infile.asarray()
 
 	# Read time binning metadata from tags:
-	roi_and_bin_id = "41010" # as defined by Christian Schneider #define TIFFTAG_ROI_AND_BIN 41010
-	tag = search_tag(infile,roi_and_bin_id)
-	#roi_and_bin_list = tag.value
+	roi_and_bin_id = "41010"  # as defined by Christian Schneider #define TIFFTAG_ROI_AND_BIN 41010
+	tag = search_tag(infile, roi_and_bin_id)
+	# roi_and_bin_list = tag.value
 	T, St, Tbin = int(tag.value[2]), int(tag.value[5]), int(tag.value[8])
 	infile.close()
 
 	# Remove sum and error image:
-	realdata = numpy.delete(indata,[0,1],axis=0)
+	realdata = numpy.delete(indata, [0, 1], axis=0)
 
 	# Initialize data for dataset:
-	dataarray = snomtools.data.datasets.DataArray(realdata,unit='count',label='counts',plotlabel='Counts')
+	dataarray = snomtools.data.datasets.DataArray(realdata, unit='count', label='counts', plotlabel='Counts')
 	if tag:
-		assert (realdata.shape[0] == round(St / float(Tbin))), \
-			"ERROR: Tifffile metadata time binning does not fit to data size."
-		uplim = T+(round(St/float(Tbin)))*Tbin # upper limit calculation because of Terras strange floordiv behaviour.
-		taxis = snomtools.data.datasets.Axis(numpy.arange(T,uplim,Tbin),label='channel',plotlabel='Time Channel')
+		# The following commented lines won't work because of Terras irreproducible channel assignment and saving...
+		# assert (realdata.shape[0] == round(St / float(Tbin))), \
+		# 	"ERROR: Tifffile metadata time binning does not fit to data size."
+		# uplim = T+(round(St/float(Tbin)))*Tbin # upper limit calculation
+		# So just take the data dimensions... and pray the channels start at the set T value:
+		taxis = snomtools.data.datasets.Axis([T + i * Tbin for i in range(realdata.shape[0])], label='channel',
+											 plotlabel='Time Channel')
 	else:
-		taxis = snomtools.data.datasets.Axis(numpy.arange(0,realdata.shape[0]),label='channel',plotlabel='Time Channel')
+		taxis = snomtools.data.datasets.Axis(numpy.arange(0, realdata.shape[0]), label='channel',
+											 plotlabel='Time Channel')
 	# Careful about orientation! This is like a matrix:
 	# rows go first and are numbered in vertical direction -> Y
 	# columns go last and are numbered in horizontal direction -> X
-	xaxis = snomtools.data.datasets.Axis(numpy.arange(0,realdata.shape[1]),unit='pixel',label='y',plotlabel='y')
-	yaxis = snomtools.data.datasets.Axis(numpy.arange(0,realdata.shape[2]),unit='pixel',label='x',plotlabel='x')
+	xaxis = snomtools.data.datasets.Axis(numpy.arange(0, realdata.shape[1]), unit='pixel', label='y', plotlabel='y')
+	yaxis = snomtools.data.datasets.Axis(numpy.arange(0, realdata.shape[2]), unit='pixel', label='x', plotlabel='x')
 
 	# Return dataset:
-	return snomtools.data.datasets.DataSet(label=filebase,datafields=[dataarray],axes=[taxis,xaxis,yaxis])
+	return snomtools.data.datasets.DataSet(label=filebase, datafields=[dataarray], axes=[taxis, xaxis, yaxis])
 
 
 if False:  # Just for testing...
 	filename = "12-1h19m-D1,4-G05-2O1R-530nm-FoV7um.tif"
 	testdata = peem_dld_read(filename)
-	outname = filename.replace('.tif','.hdf5')
+	outname = filename.replace('.tif', '.hdf5')
 	testdata.saveh5(outname)
 	print('done.')
