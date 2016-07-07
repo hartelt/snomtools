@@ -73,7 +73,9 @@ def project_1d(data, plot_dest, axis_id=0, data_id=0, normalization=None, **kwar
 
 	assert (plotdat.shape == ax.shape), "Plot data shapes don't match."
 
-	plot_dest.plot(ax.get_data(), plotdat, **kwargs)
+	# Plot and return the line object:
+	line, = plot_dest.plot(ax.get_data(), plotdat, **kwargs)
+	return line
 
 
 def project_2d(data, plot_dest, axis_vert=0, axis_hori=1, data_id=0, normalization=None, **kwargs):

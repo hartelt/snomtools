@@ -37,7 +37,7 @@ def project_1d(data, axis_id=0, data_id=None, outlabel=None):
 
 	dfields = []
 	if data_id:
-		dlabels = data_id
+		dlabels = [data_id]
 	else:
 		dlabels = data.dlabels
 
@@ -47,7 +47,7 @@ def project_1d(data, axis_id=0, data_id=None, outlabel=None):
 		outfield = datasets.DataArray(sumdat, label=df.get_label(), plotlabel="projected " + df.get_plotlabel())
 		dfields.append(outfield)
 
-	return datasets.DataSet(outlabel, dfields, ax)
+	return datasets.DataSet(outlabel, dfields, [ax])
 
 def project_2d(data, axis1_id=0, axis2_id=0, data_id=None, outlabel=None):
 	"""
@@ -91,7 +91,7 @@ def project_2d(data, axis1_id=0, axis2_id=0, data_id=None, outlabel=None):
 
 	dfields = []
 	if data_id:
-		dlabels = data_id
+		dlabels = [data_id]
 	else:
 		dlabels = data.dlabels
 
