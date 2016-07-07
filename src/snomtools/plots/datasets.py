@@ -6,7 +6,6 @@ They use matplotlib.
 import snomtools.data.datasets
 import matplotlib.patches
 import numpy
-import os.path
 
 
 def project_1d(data, plot_dest, axis_id=0, data_id=0, normalization=None, **kwargs):
