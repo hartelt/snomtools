@@ -421,6 +421,22 @@ class Axis(DataArray):
 		"""
 		return numpy.searchsorted(self.data, values)
 
+	def scale_linear(self, scaling=1., offset=None, unit=None, label=None, plotlabel=None):
+		"""
+		Transforms the Axis by scaling it with a linear factor and optionally shifting it by an offset.
+		:param inaxis: The Axis to transform.
+		:param scaling: The scaling factor.
+		:param offset: The offset. Must have the same dimension as the scaled axis.
+		:param unit: Specifies the output unit for the Axis, Must evaluate a unit with same dimension as the scaled axis.
+		:return: The transformed Axis.
+		"""
+		points_scaled = scaling * self.data
+		if unit:
+			points_scaled = u.to_ureg(points_scaled,unit)
+		if offset:
+			points_scaled = points_scaled + offset
+		self.data = points_scaled
+
 	def __str__(self):
 		out = "Axis"
 		if self.label:
