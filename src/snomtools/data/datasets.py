@@ -1165,6 +1165,9 @@ class DataSet:
 		assert (old_axis.shape == new_axis.shape), "ERROR in replace_axis: New Axis must have same shape as old one."
 		self.axes[old_axis_index] = new_axis
 
+	def get_plotconf(self):
+		return self.plotconf
+
 	def meshgrid(self, axes=None):
 		"""
 		This function returns coordinate arrays corresponding to the axes. See numpy.meshgrid. If axes are not
@@ -1380,7 +1383,7 @@ class DataSet:
 		pass
 
 
-def stack_DataArrays(datastack, axis=0, label=None, plotlabel=None):
+def stack_DataArrays(datastack, axis=0, unit=None, label=None, plotlabel=None):
 	"""
 	Stacks a sequence of DataArrays to a new DataArray.
 	See numpy.stack, as this method is used.
@@ -1388,6 +1391,9 @@ def stack_DataArrays(datastack, axis=0, label=None, plotlabel=None):
 	:param datastack: sequence of DataArrays: The Data to be stacked.
 
 	:param axis: int, optional: The axis in the result array along which the input arrays are stacked.
+
+	:param unit: string, optional: The unit for the stacked DataArray. All data must be convertible to that unit. If
+	not given, the unit of the first DataArray in the input stack is used.
 
 	:param label: string, optional: The label for the new DataSet. If not given, the label of the first DataArray in
 	the input stack is used.
@@ -1397,7 +1403,14 @@ def stack_DataArrays(datastack, axis=0, label=None, plotlabel=None):
 
 	:return: The stacked DataArray.
 	"""
-	pass
+	for da in datastack:
+		assert (isinstance(da, DataArray)), "ERROR: Non-DataArray object given to stack_DataArrays"
+	if unit is None:
+		unit = datastack[0].get_unit()
+	if label is None:
+		label = datastack[0].get_label()
+	if plotlabel is None:
+		plotlabel = datastack[0].get_plotlabel()
 
 
 def stack_DataSets(datastack, new_axis, axis=0, label=None, plotconf=None):
@@ -1420,10 +1433,15 @@ def stack_DataSets(datastack, new_axis, axis=0, label=None, plotconf=None):
 
 	:return: The stacked DataSet.
 	"""
-	pass
+	for ds in datastack:
+		assert (isinstance(ds, DataSet)), "ERROR: Non-DataSet object given to stack_DataSets"
+	if label is None:
+		label = datastack[0].get_label()
+	if plotconf is None:
+		plotconf = datastack[0].get_plotconf()
 
 
-if False:  # just for testing
+if True:  # just for testing
 	print colored('Testing...', 'yellow'),
 	testarray = numpy.arange(0, 10, 2.)
 	testaxis = DataArray(testarray, 'meter', label="xaxis")
@@ -1432,6 +1450,7 @@ if False:  # just for testing
 	X, Y = numpy.meshgrid(testaxis, testaxis2)
 	# testaxis = DataArray(testarray[testarray<5], 'meter')
 	testdata = DataArray(numpy.sin((X + Y) * u.ureg('rad')) * u.ureg('counts'), label="testdaten", plotlabel="pl")
+	testdatastacklist = [testdata * i for i in range(3)]
 	# print(testdata)
 	pc = {'a': 1.0, 'b': "moep", 'c': 3, 'de': "eins/zwo"}
 	print(pc)
