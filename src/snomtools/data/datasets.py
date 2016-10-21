@@ -432,7 +432,7 @@ class Axis(DataArray):
 		"""
 		points_scaled = scaling * self.data
 		if unit:
-			points_scaled = u.to_ureg(points_scaled,unit)
+			points_scaled = u.to_ureg(points_scaled, unit)
 		if offset:
 			points_scaled = points_scaled + offset
 		self.data = points_scaled
@@ -1378,6 +1378,49 @@ class DataSet:
 
 	def __del__(self):
 		pass
+
+
+def stack_DataArrays(datastack, axis=0, label=None, plotlabel=None):
+	"""
+	Stacks a sequence of DataArrays to a new DataArray.
+	See numpy.stack, as this method is used.
+
+	:param datastack: sequence of DataArrays: The Data to be stacked.
+
+	:param axis: int, optional: The axis in the result array along which the input arrays are stacked.
+
+	:param label: string, optional: The label for the new DataSet. If not given, the label of the first DataArray in
+	the input stack is used.
+
+	:param plotlabel: string, optional: The plotlabel for the new DataArray. If not given, the label of the first
+	DataArray in the input stack is used.
+
+	:return: The stacked DataArray.
+	"""
+	pass
+
+
+def stack_DataSets(datastack, new_axis, axis=0, label=None, plotconf=None):
+	"""
+	Stacks a sequence of DataSets to a new DataSet.
+	Therefore it stacks the DataArrays with stack_DataArrays() and inserts a new Axis.
+
+	:param datastack: sequence of DataSets: The Data to be stacked.
+
+	:param new_axis: Axis or castable as Axis: The new axis to be inserted for the dimension along which the data is
+	stacked.
+
+	:param axis: int, optional: The axis in the result array along which the input arrays are stacked.
+
+	:param label: string, optional: The label for the new DataSet. If not given, the label of the first DataArray in
+	the input stack is used.
+
+	:param plotconf: The plot configuration to be used for the new DataSet. If not given, the configuration of the
+	first DataSet in the input stack is used.
+
+	:return: The stacked DataSet.
+	"""
+	pass
 
 
 if False:  # just for testing

@@ -47,5 +47,5 @@ setup(name='snomtools',
       version=get_version_from_git(),
       packages=packages,
       package_dir={'': source_path},
-      install_requirements=install_requirements, requires=['numpy', 'pint', 'h5py', 'termcolor', 'scipy']
+      install_requirements=install_requirements, requires=['numpy', 'pint', 'h5py', 'termcolor', 'scipy', 'tifffile']
 )
