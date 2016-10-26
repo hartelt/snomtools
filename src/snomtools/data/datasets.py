@@ -1001,7 +1001,10 @@ class DataSet:
 		elif item == "dimensions":
 			return len(self.axes)
 		elif item == "shape":
-			return self.datafields[0].shape
+			if self.datafields:
+				return self.datafields[0].shape
+			else:
+				return ()
 		elif item in self.labels:
 			for darray in self.alldata:
 				if item == darray.get_label():
@@ -1167,6 +1170,12 @@ class DataSet:
 
 	def get_plotconf(self):
 		return self.plotconf
+
+	def get_label(self):
+		return self.label
+
+	def set_label(self,newlabel):
+		self.label = newlabel
 
 	def meshgrid(self, axes=None):
 		"""
@@ -1411,6 +1420,9 @@ def stack_DataArrays(datastack, axis=0, unit=None, label=None, plotlabel=None):
 		label = datastack[0].get_label()
 	if plotlabel is None:
 		plotlabel = datastack[0].get_plotlabel()
+	onlydata = [da.get_data() for da in datastack]
+	stacked_data = numpy.stack(onlydata, axis)
+	return DataArray(stacked_data, unit=unit, label=label, plotlabel=plotlabel)
 
 
 def stack_DataSets(datastack, new_axis, axis=0, label=None, plotconf=None):
@@ -1433,12 +1445,44 @@ def stack_DataSets(datastack, new_axis, axis=0, label=None, plotconf=None):
 
 	:return: The stacked DataSet.
 	"""
+	# Check if input data types are ok and cast defaults if necessary:
 	for ds in datastack:
 		assert (isinstance(ds, DataSet)), "ERROR: Non-DataSet object given to stack_DataSets"
+	new_axis = Axis(new_axis)
 	if label is None:
 		label = datastack[0].get_label()
 	if plotconf is None:
 		plotconf = datastack[0].get_plotconf()
+
+	# Check if data is compatible: All DataSets must have same dimensions and number of datafields:
+	for ds in datastack:
+		assert (ds.shape == datastack[0].shape), "ERROR: DataSets of inconsistent dimensions given to stack_DataSets"
+		assert (len(ds.datafields) == len(datastack[0].datafields)), "ERROR: DataSets with different number of " \
+																  "datafields given to stack_DataSets"
+
+	# Initialize new DataSet:
+	stack = DataSet(label=label, plotconf=plotconf)
+
+	# Build axes list by taking the axes from the first element of the stack and inserting the new one.
+	# This makes sense because for stacking to be meaningful, the axes sets of the stack need to be identical in
+	# their physical meaning.
+	axes = datastack[0].axes
+	# Case-like due to different indexing of python's builtin insert method and numpy's stack:
+	if axis == -1: # last element
+		axes.append(new_axis)
+	elif axis < -1: # n'th to last element (count from back)
+		axes.insert(axis+1, new_axis)
+	else: # normal count from front
+		axes.insert(axis, new_axis)
+	stack.axes = axes
+
+	# Stack the datafields all the DataSets and add them to the stacked Set:
+	for i in range(len(datastack[0].datafields)):
+		dfstack = [ds.get_datafield(i) for ds in datastack]
+		stack.add_datafield(stack_DataArrays(dfstack, axis=axis))
+
+	stack.check_data_consistency()
+	return stack
 
 
 if True:  # just for testing
@@ -1452,9 +1496,16 @@ if True:  # just for testing
 	testdata = DataArray(numpy.sin((X + Y) * u.ureg('rad')) * u.ureg('counts'), label="testdaten", plotlabel="pl")
 	testdatastacklist = [testdata * i for i in range(3)]
 	# print(testdata)
+	stack = stack_DataArrays(testdatastacklist)
+
 	pc = {'a': 1.0, 'b': "moep", 'c': 3, 'de': "eins/zwo"}
 	print(pc)
 	testdataset = DataSet("test", [testdata], [testaxis, testaxis2], plotconf=pc)
+
+	testdatastacklist = [DataSet("test", [da], [testaxis, testaxis2], plotconf=pc) for da in testdatastacklist]
+	stackaxis = Axis(range(3),"mW","power")
+	stack = stack_DataSets(testdatastacklist, stackaxis, axis=-1)
+
 	print("Store...")
 	testdataset.saveh5('test.hdf5')
 	unsliced = testdataset.testdaten
