@@ -9,6 +9,8 @@ import snomtools.data.datasets
 import os
 import numpy
 import tifffile
+import re
+import snomtools.calcs.units as u
 
 
 def search_tag(tif, tag_id):
@@ -104,6 +106,48 @@ def peem_camera_read(filepath):
 
 	# Return dataset:
 	return snomtools.data.datasets.DataSet(label=filebase, datafields=[dataarray], axes=[xaxis, yaxis])
+
+
+def powerlaw_folder_peem_camera(folderpath,pattern="mW",powerunit=None):
+	"""
+
+	:param folderpath: The (relative or absolute) path of the folders containing the powerlaw measurement series.
+
+	:param pattern: string: A pattern the powers in the filenames are named with. For example in the default case
+	"mW", the filename containing '50,2mW' or '50.2mW' or '50.2 mW' would accord to a power of 50.2 milliwatts. The
+	power units for the axis quantities are also cast from this pattern if not explicitly given with powerunit.
+
+	:param powerunit: A valid unit string that will be cast as the unit for the power axis values. If not given,
+	the pattern parameter will be cast as unit.
+
+	:return: The dataset containing the images stacked along a power axis.
+	"""
+	if powerunit is None:
+		powerunit = pattern
+	pat = re.compile('(\d*[,|.]?\d+)\s?'+pattern)
+
+	# Translate input path to absolute path:
+	folderpath = os.path.abspath(folderpath)
+	filelist = os.listdir(folderpath)
+
+	# Inspect the given folder for the tif files of the powerlaw:
+	powerfiles = {}
+	for filename in filelist:
+		base, ext = os.path.splitext(filename)
+		if ext in [".tif", ".tiff"]:
+			found = re.search(pat,base)
+			if found:
+				power = float(found.group(1).replace(',','.'))
+				powerfiles[filename] = power
+
+	axlist = []
+	datastack = []
+	for powerfile in powerfiles:
+		datastack.append(peem_camera_read(folderpath+powerfile))
+		axlist.append(powerfiles[powerfile])
+	powers = u.to_ureg(axlist,powerunit)
+
+	# TODO: Sort powers and datastack accordingly and stack them.
 
 
 if True:  # Just for testing...
