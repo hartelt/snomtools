@@ -13,6 +13,18 @@ import re
 import snomtools.calcs.units as u
 
 
+def tiff_files(files):
+	"""
+	Generator for iterating only over tiff files.
+	:param files: Stream of strings with filenames.
+	:return: Only the tiff files.
+	"""
+	for file in files:
+		base, ext = os.path.splitext(file)
+		if ext in [".tif", ".tiff"]:
+			yield file
+
+
 def search_tag(tif, tag_id):
 	"""
 	Searches for a tag in all pages of a tiff file and returns the first match as
@@ -108,7 +120,7 @@ def peem_camera_read(filepath):
 	return snomtools.data.datasets.DataSet(label=filebase, datafields=[dataarray], axes=[xaxis, yaxis])
 
 
-def powerlaw_folder_peem_camera(folderpath,pattern="mW",powerunit=None):
+def powerlaw_folder_peem_camera(folderpath, pattern="mW", powerunit=None, powerunitlabel=None):
 	"""
 
 	:param folderpath: The (relative or absolute) path of the folders containing the powerlaw measurement series.
@@ -120,46 +132,54 @@ def powerlaw_folder_peem_camera(folderpath,pattern="mW",powerunit=None):
 	:param powerunit: A valid unit string that will be cast as the unit for the power axis values. If not given,
 	the pattern parameter will be cast as unit.
 
+	:param powerunitlabel: string: Will be used as the unit for the power axis plotlabel. Can be for example a LaTeX
+	siunitx command. If not given, the powerunit parameter will be used.
+
 	:return: The dataset containing the images stacked along a power axis.
 	"""
 	if powerunit is None:
 		powerunit = pattern
-	pat = re.compile('(\d*[,|.]?\d+)\s?'+pattern)
+	if powerunitlabel is None:
+		powerunitlabel = powerunit
+	pat = re.compile('(\d*[,|.]?\d+)\s?' + pattern)
 
 	# Translate input path to absolute path:
 	folderpath = os.path.abspath(folderpath)
-	filelist = os.listdir(folderpath)
 
 	# Inspect the given folder for the tif files of the powerlaw:
 	powerfiles = {}
-	for filename in filelist:
-		base, ext = os.path.splitext(filename)
-		if ext in [".tif", ".tiff"]:
-			found = re.search(pat,base)
-			if found:
-				power = float(found.group(1).replace(',','.'))
-				powerfiles[filename] = power
+	for filename in tiff_files(os.listdir(folderpath)):
+		found = re.search(pat, filename)
+		if found:
+			power = float(found.group(1).replace(',', '.'))
+			powerfiles[power] = filename
 
 	axlist = []
 	datastack = []
-	for powerfile in powerfiles:
-		datastack.append(peem_camera_read(folderpath+powerfile))
-		axlist.append(powerfiles[powerfile])
-	powers = u.to_ureg(axlist,powerunit)
+	for power in iter(sorted(powerfiles.iterkeys())):
+		datastack.append(peem_camera_read(os.path.join(folderpath, powerfiles[power])))
+		axlist.append(power)
+	powers = u.to_ureg(axlist, powerunit)
 
-	# TODO: Sort powers and datastack accordingly and stack them.
+	pl = 'Power / '+powerunitlabel  # Plot label for power axis.
+	poweraxis = snomtools.data.datasets.Axis(powers, label='power', plotlabel=pl)
+
+	return snomtools.data.datasets.stack_DataSets(datastack, poweraxis, axis=-1, label="Powerlaw " + folderpath)
 
 
 if True:  # Just for testing...
-	filename = "14_800nm_Micha_crosspol_ppol320_t-80fs_50µm.tif"
-	testdata = peem_camera_read(filename)
-	outname = filename.replace('.tif', '.hdf5')
-	testdata.saveh5(outname)
+	test_camera_read = False
+	if test_camera_read:
+		filename = "14_800nm_Micha_crosspol_ppol320_t-80fs_50µm.tif"
+		testdata = peem_camera_read(filename)
+		outname = filename.replace('.tif', '.hdf5')
+		testdata.saveh5(outname)
 
-	testplot = True
-	if testplot:
+	test_plot = False
+	if test_plot:
 		import snomtools.plots.setupmatplotlib as plt
 		import snomtools.plots.datasets
+
 		fig = plt.figure((12, 12), 1200)
 		ax = fig.add_subplot(111)
 		ax.cla()
@@ -169,5 +189,10 @@ if True:  # Just for testing...
 		ax.set_aspect('equal')
 		snomtools.plots.datasets.project_2d(testdata, ax, axis_vert=vert, axis_hori=hori, data_id='counts')
 		plt.savefig(filename="test.png", figures_path=os.getcwd(), transparent=False)
+
+	test_powerlaw = True
+	if test_powerlaw:
+		plfolder = "Powerlaw"
+		pldata = powerlaw_folder_peem_camera(plfolder,powerunitlabel='\\SI{\\milli\\watt}')
 
 	print('done.')

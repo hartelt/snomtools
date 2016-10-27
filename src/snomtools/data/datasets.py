@@ -1485,7 +1485,7 @@ def stack_DataSets(datastack, new_axis, axis=0, label=None, plotconf=None):
 	return stack
 
 
-if True:  # just for testing
+if False:  # just for testing
 	print colored('Testing...', 'yellow'),
 	testarray = numpy.arange(0, 10, 2.)
 	testaxis = DataArray(testarray, 'meter', label="xaxis")
