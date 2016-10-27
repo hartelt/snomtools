@@ -167,7 +167,7 @@ def powerlaw_folder_peem_camera(folderpath, pattern="mW", powerunit=None, poweru
 	return snomtools.data.datasets.stack_DataSets(datastack, poweraxis, axis=-1, label="Powerlaw " + folderpath)
 
 
-if True:  # Just for testing...
+if False:  # Just for testing...
 	test_camera_read = False
 	if test_camera_read:
 		filename = "14_800nm_Micha_crosspol_ppol320_t-80fs_50µm.tif"
