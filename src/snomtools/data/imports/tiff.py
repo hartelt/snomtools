@@ -163,7 +163,7 @@ def powerlaw_folder_peem_camera(folderpath, pattern="mW", powerunit=None, poweru
 		axlist.append(power)
 	powers = u.to_ureg(axlist, powerunit)
 
-	pl = 'Power / '+powerunitlabel  # Plot label for power axis.
+	pl = 'Power / ' + powerunitlabel  # Plot label for power axis.
 	poweraxis = snomtools.data.datasets.Axis(powers, label='power', plotlabel=pl)
 
 	return snomtools.data.datasets.stack_DataSets(datastack, poweraxis, axis=-1, label="Powerlaw " + folderpath)
@@ -195,6 +195,6 @@ if False:  # Just for testing...
 	test_powerlaw = True
 	if test_powerlaw:
 		plfolder = "Powerlaw"
-		pldata = powerlaw_folder_peem_camera(plfolder,powerunitlabel='\\SI{\\milli\\watt}')
+		pldata = powerlaw_folder_peem_camera(plfolder, powerunitlabel='\\SI{\\milli\\watt}')
 
 	print('done.')

@@ -17,6 +17,7 @@ ureg = pint.UnitRegistry()
 ureg.define('pixel = []')
 ureg.define('count = []')
 
+
 # Custom prefixes we use frequently can be defined here:
 # ureg.define('myprefix- = 30 = my-')
 
@@ -108,7 +109,7 @@ def to_ureg(input_, unit=None):
 				return importedquantity.to(unit)
 			else:
 				return importedquantity
-	elif (isinstance(input_,str) or isinstance(input_,unicode)):
+	elif (isinstance(input_, str) or isinstance(input_, unicode)):
 		if unit:
 			return ureg(input_).to(unit)
 		else:
@@ -116,9 +117,11 @@ def to_ureg(input_, unit=None):
 	else:  # we are dealing with numerial data
 		return input_ * ureg(unit)
 
+
 def as_ureg_quantities(stream):
 	for e in stream:
 		yield to_ureg(e)
+
 
 def meshgrid(*args):
 	"""

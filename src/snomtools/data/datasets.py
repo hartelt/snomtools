@@ -1087,7 +1087,7 @@ class DataSet:
 			return ds
 		# TODO: Testing of this method.
 
-	def get_datafield_by_dimension(self,unit):
+	def get_datafield_by_dimension(self, unit):
 		"""
 		Returns the first datafield that corresponds to a given unit in its physical dimensionality.
 
@@ -1096,10 +1096,11 @@ class DataSet:
 		:return: the datafield
 		"""
 		for df in self.datafields:
-			if u.same_dimension(df.get_data(),unit):
+			if u.same_dimension(df.get_data(), unit):
 				return df
 		raise ValueError("No Axis with dimensionsality found.")
-		# TODO: Testing of this method.
+
+	# TODO: Testing of this method.
 
 	def replace_datafield(self, datafield_id, new_datafield):
 		"""
@@ -1165,7 +1166,7 @@ class DataSet:
 			else:
 				raise AttributeError("Axis not found.")
 
-	def get_axis_by_dimension(self,unit):
+	def get_axis_by_dimension(self, unit):
 		"""
 		Returns the first axis that corresponds to a given unit in its physical dimensionality.
 
@@ -1174,7 +1175,7 @@ class DataSet:
 		:return: the Axis
 		"""
 		for ax in self.axes:
-			if u.same_dimension(ax.get_data(),unit):
+			if u.same_dimension(ax.get_data(), unit):
 				return ax
 		raise ValueError("No Axis with dimensionsality found.")
 
@@ -1201,7 +1202,7 @@ class DataSet:
 	def get_label(self):
 		return self.label
 
-	def set_label(self,newlabel):
+	def set_label(self, newlabel):
 		self.label = newlabel
 
 	def meshgrid(self, axes=None):
@@ -1487,7 +1488,7 @@ def stack_DataSets(datastack, new_axis, axis=0, label=None, plotconf=None):
 	for ds in datastack:
 		assert (ds.shape == datastack[0].shape), "ERROR: DataSets of inconsistent dimensions given to stack_DataSets"
 		assert (len(ds.datafields) == len(datastack[0].datafields)), "ERROR: DataSets with different number of " \
-																  "datafields given to stack_DataSets"
+																	 "datafields given to stack_DataSets"
 
 	# Initialize new DataSet:
 	stack = DataSet(label=label, plotconf=plotconf)
@@ -1497,11 +1498,11 @@ def stack_DataSets(datastack, new_axis, axis=0, label=None, plotconf=None):
 	# their physical meaning.
 	axes = datastack[0].axes
 	# Case-like due to different indexing of python's builtin insert method and numpy's stack:
-	if axis == -1: # last element
+	if axis == -1:  # last element
 		axes.append(new_axis)
-	elif axis < -1: # n'th to last element (count from back)
-		axes.insert(axis+1, new_axis)
-	else: # normal count from front
+	elif axis < -1:  # n'th to last element (count from back)
+		axes.insert(axis + 1, new_axis)
+	else:  # normal count from front
 		axes.insert(axis, new_axis)
 	stack.axes = axes
 
@@ -1532,7 +1533,7 @@ if False:  # just for testing
 	testdataset = DataSet("test", [testdata], [testaxis, testaxis2], plotconf=pc)
 
 	testdatastacklist = [DataSet("test", [da], [testaxis, testaxis2], plotconf=pc) for da in testdatastacklist]
-	stackaxis = Axis(range(3),"mW","power")
+	stackaxis = Axis(range(3), "mW", "power")
 	stack = stack_DataSets(testdatastacklist, stackaxis, axis=-1)
 
 	print("Store...")
