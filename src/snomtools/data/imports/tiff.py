@@ -13,23 +13,25 @@ import re
 import snomtools.calcs.units as u
 
 
-def tiff_files(files):
+def is_tif(filename):
 	"""
-	Generator for iterating only over tiff files.
-	:param files: Stream of strings with filenames.
-	:return: Only the tiff files.
+	Checks if a filename is a tifffile.
+
+	:param filename: string: The filename.
+
+	:return: Boolean.
 	"""
-	for file in files:
-		base, ext = os.path.splitext(file)
-		if ext in [".tif", ".tiff"]:
-			yield file
+	return os.path.splitext(filename)[1] in [".tiff", ".tif"]
 
 
 def search_tag(tif, tag_id):
 	"""
 	Searches for a tag in all pages of a tiff file and returns the first match as
+
 	:param tif: An open TiffFile. See tifffile.TiffFile.
+
 	:param tag_id: String: The ID of the tag to search for.
+
 	:return: The tag, object, instance of tifffile.TiffTag.
 	"""
 	for page in tif:
@@ -148,7 +150,7 @@ def powerlaw_folder_peem_camera(folderpath, pattern="mW", powerunit=None, poweru
 
 	# Inspect the given folder for the tif files of the powerlaw:
 	powerfiles = {}
-	for filename in tiff_files(os.listdir(folderpath)):
+	for filename in filter(is_tif, os.listdir(folderpath)):
 		found = re.search(pat, filename)
 		if found:
 			power = float(found.group(1).replace(',', '.'))
