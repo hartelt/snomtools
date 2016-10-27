@@ -20,6 +20,21 @@ ureg.define('count = []')
 # Custom prefixes we use frequently can be defined here:
 # ureg.define('myprefix- = 30 = my-')
 
+def same_dimension(*args):
+	"""
+	Checks if all of the given arguments are of the same (physical) dimension.
+
+	:param args:
+
+	:return: Boolean.
+	"""
+	with as_ureg_quantities(args) as a:
+		arg0 = next(a)
+		for arg in a:
+			if arg0.dimensionality != arg.dimensionality:
+				return False
+	return True
+
 
 def is_valid_unit(tocheck):
 	"""
@@ -67,7 +82,7 @@ def to_ureg(input_, unit=None):
 	This method is an import function to import alien quantities (of different unit registries) or numeric formats into
 	the ureg.
 
-	:param input_: The input quantity or numeric format (e.g. float, int, numpy array)
+	:param input_: The input quantity or numeric format (e.g. float, int, numpy array) or string (e.g. "5 nm")
 
 	:param unit: Given as a valid unit string. If a numeric format is used, this specifies the unit of it. If a quantity
 	is used, the output quantity will be converted to it.
@@ -93,9 +108,17 @@ def to_ureg(input_, unit=None):
 				return importedquantity.to(unit)
 			else:
 				return importedquantity
+	elif (isinstance(input_,str) or isinstance(input_,unicode)):
+		if unit:
+			return ureg(input_).to(unit)
+		else:
+			return ureg(input_)
 	else:  # we are dealing with numerial data
 		return input_ * ureg(unit)
 
+def as_ureg_quantities(stream):
+	for e in stream:
+		yield to_ureg(e)
 
 def meshgrid(*args):
 	"""

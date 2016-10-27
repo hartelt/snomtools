@@ -1087,6 +1087,20 @@ class DataSet:
 			return ds
 		# TODO: Testing of this method.
 
+	def get_datafield_by_dimension(self,unit):
+		"""
+		Returns the first datafield that corresponds to a given unit in its physical dimensionality.
+
+		:param unit: Quantity or anything that can be cast as quantity by the UnitRegistry.
+
+		:return: the datafield
+		"""
+		for df in self.datafields:
+			if u.same_dimension(df.get_data(),unit):
+				return df
+		raise ValueError("No Axis with dimensionsality found.")
+		# TODO: Testing of this method.
+
 	def replace_datafield(self, datafield_id, new_datafield):
 		"""
 		Replaces a datafield of the dataset with another. For this to make sense, the new datafield must describe the
@@ -1150,6 +1164,19 @@ class DataSet:
 				return self.axes.index(self.__getattr__(label_or_index))
 			else:
 				raise AttributeError("Axis not found.")
+
+	def get_axis_by_dimension(self,unit):
+		"""
+		Returns the first axis that corresponds to a given unit in its physical dimensionality.
+
+		:param unit: Quantity or anything that can be cast as quantity by the UnitRegistry.
+
+		:return: the Axis
+		"""
+		for ax in self.axes:
+			if u.same_dimension(ax.get_data(),unit):
+				return ax
+		raise ValueError("No Axis with dimensionsality found.")
 
 	def replace_axis(self, axis_id, new_axis):
 		"""
@@ -1387,6 +1414,8 @@ class DataSet:
 
 		self.check_label_uniqueness()
 		return self.check_data_consistency()
+
+	# TODO: Projection of the dataset along one or more axes.
 
 	def __del__(self):
 		pass
