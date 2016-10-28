@@ -9,7 +9,6 @@ data.datasets.py
 import snomtools.calcs.units as u
 import snomtools.data.datasets
 import snomtools.data.imports.tiff
-import os.path
 import numpy
 
 
@@ -51,7 +50,8 @@ class Powerlaw:
 		data = snomtools.data.imports.tiff.powerlaw_folder_peem_camera(folderpath, pattern, powerunit, powerunitlabel)
 		return cls(data)
 
-	def extract_data(self, data, data_id=0, axis_id=None):
+	@staticmethod
+	def extract_data(data, data_id=0, axis_id=None):
 		"""
 		Extracts the powers and intensities out of a dataset. Therefore, it takes the power axis of the input data,
 		and projects the datafield onto that axis by summing over all the other axes.

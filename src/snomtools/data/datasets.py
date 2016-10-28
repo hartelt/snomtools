@@ -1296,7 +1296,7 @@ class DataSet:
 		return self.__class__(datafields=[self.datafields[i].project_nd(*indexlist) for i in indexlist],
 							  axes=[self.axes[i] for i in indexlist])
 
-	def bin(self,bin_size=()):
+	def bin(self, bin_size=()):
 		"""
 		To be implemented (imported from Ben's script)
 		:param bin_size:
