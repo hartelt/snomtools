@@ -232,6 +232,22 @@ class DataArray:
 		"""
 		return self.data.sum(axis=axis, dtype=dtype, out=out, keepdims=keepdims)
 
+	def project_nd(self, *args):
+		"""
+		Projects the datafield onto the given axes. Uses sum() method, but adresses axes to keep instead of axes to
+		sum over.
+
+		:param args: Integer indices for the axes to project onto.
+
+		:return: ndarray quantity: The projected data.
+		"""
+		sumlist = range(len(self.shape))  # initialize list of axes to sum over
+		for arg in args:
+			assert (type(arg) == int), "ERROR: Invalid type. Axis index must be integer."
+			sumlist.remove(arg)
+		sumtup = tuple(sumlist)
+		return self.sum(sumtup)
+
 	def max(self):
 		return self.data.max()
 
@@ -424,7 +440,6 @@ class Axis(DataArray):
 	def scale_linear(self, scaling=1., offset=None, unit=None, label=None, plotlabel=None):
 		"""
 		Transforms the Axis by scaling it with a linear factor and optionally shifting it by an offset.
-		:param inaxis: The Axis to transform.
 		:param scaling: The scaling factor.
 		:param offset: The offset. Must have the same dimension as the scaled axis.
 		:param unit: Specifies the output unit for the Axis, Must evaluate a unit with same dimension as the scaled axis.
@@ -846,6 +861,16 @@ class ROI:
 			return ds
 		# TODO: Testing of this method.
 
+	def get_datafield_by_dimension(self, unit):
+		"""
+		Returns the first datafield that corresponds to a given unit in its physical dimensionality.
+
+		:param unit: Quantity or anything that can be cast as quantity by the UnitRegistry.
+
+		:return: the datafield
+		"""
+		return self.dataset.get_datafield_by_dimension(unit)[self.get_slice()]
+
 	def get_axis(self, label_or_index):
 		"""
 		Tries to assign an Axis to a given parameter, that can be an integer as an index in the
@@ -860,6 +885,17 @@ class ROI:
 
 	def get_axis_index(self, label_or_index):
 		return self.dataset.get_axis_index(label_or_index)
+
+	def get_axis_by_dimension(self, unit):
+		"""
+		Returns the first axis that corresponds to a given unit in its physical dimensionality.
+
+		:param unit: Quantity or anything that can be cast as quantity by the UnitRegistry.
+
+		:return: the Axis
+		"""
+		ax = self.dataset.get_axis_by_dimension(unit)
+		return ax[self.get_slice(ax.label)]
 
 	def meshgrid(self, axes=None):
 		"""
@@ -1247,6 +1283,27 @@ class DataSet:
 		# Assure we did nothing wrong:
 		self.check_data_consistency()
 
+	def project_nd(self, *args):
+		"""
+		Projects the datafield onto the given axes. Uses the DataSet.project_nd() method for every datset and returns a
+		new DataSet with the projected DataFields and the chosen axes.
+
+		:param args: Valid identifiers for the axes to project onto.
+
+		:return: DataSet: Projected DataSet.
+		"""
+		indexlist = [self.get_datafield_index(arg) for arg in args]
+		return self.__class__(datafields=[self.datafields[i].project_nd(*indexlist) for i in indexlist],
+							  axes=[self.axes[i] for i in indexlist])
+
+	def bin(self,bin_size=()):
+		"""
+		To be implemented (imported from Ben's script)
+		:param bin_size:
+		:return:
+		"""
+		raise NotImplementedError()
+
 	def check_data_consistency(self):
 		"""
 		Self test method which checks the dimensionality and shapes of the axes and datafields. Raises
@@ -1284,6 +1341,7 @@ class DataSet:
 	def saveh5(self, path):
 		path = os.path.abspath(path)
 		outfile = h5py.File(path, 'w')
+		# TODO: Store snomtools version that data was saved with!
 		datafieldgrp = outfile.create_group("datafields")
 		for i in range(len(self.datafields)):
 			grp = self.datafields[i].store_to_h5(datafieldgrp)
