@@ -30,13 +30,26 @@ class Powerlaw:
 	def from_coeffs(cls, coeffs):
 		pl = cls()
 		pl.coeffs = coeffs
+		pl.poly = numpy.poly1d(pl.coeffs)
 		return pl
 
 	@classmethod
 	def from_xy(cls, powers, intensities):
 		pl = cls()
 		pl.coeffs = cls.fit_powerlaw(powers, intensities)
+		pl.poly = numpy.poly1d(pl.coeffs)
 		return pl
+
+	@classmethod
+	def from_folder_camera(cls, folderpath, pattern="mW", powerunit=None, powerunitlabel=None):
+		"""
+		Reads a powerlaw data from a folder with snomtools.data.imports.tiff.powerlaw_folder_peem_camera() (see that
+		method for details on parameters) and evaluates a powerlaw.
+
+		:return: The Powerlaw instance.
+		"""
+		data = snomtools.data.imports.tiff.powerlaw_folder_peem_camera(folderpath, pattern, powerunit, powerunitlabel)
+		return cls(data)
 
 	def extract_data(self, data, data_id=0, axis_id=None):
 		"""
@@ -52,15 +65,18 @@ class Powerlaw:
 
 		:return: powers, intensities: tuple of quantities with the projected data.
 		"""
+		assert isinstance(data, snomtools.data.datasets.DataSet), \
+			"ERROR: No dataset instance given to Powerlaw data extraction."
 		if axis_id is None:
 			power_axis = data.get_axis_by_dimension("watts")
 		else:
 			power_axis = data.get_axis(axis_id)
 		count_data = data.get_datafield(data_id)
 		power_axis_index = data.get_axis_index(power_axis)
-		# TODO: Project data onto power axis. To be implemented in datasets.py
-		return power_axis.get_data(), projected_data
+		# DONE: Project data onto power axis. To be implemented in datasets.py
+		return power_axis.get_data(), count_data.project_nd(power_axis_index)
 
+	@staticmethod
 	def fit_powerlaw(powers, intensities):
 		"""
 		This function fits a powerlaw to data.
@@ -69,10 +85,14 @@ class Powerlaw:
 
 		:param intensities: Quantity or array: The corresponding intensity values to powers.
 
-		:return: A Powerlaw instance.
+		:return: The powerlaw coefficients of the fitted polynom.
 		"""
-		powers = u.to_ureg(powers, 'mW')
-		intensities = u.to_ureg(intensities, 'counts')
+		if u.is_quantity(powers):
+			assert u.same_dimension(powers, "watts")
+			powers = u.to_ureg(powers)
+		else:
+			powers = u.to_ureg(powers, 'mW')
+		intensities = u.to_ureg(intensities)
 
 		return numpy.polyfit(numpy.log(powers.magnitude), numpy.log(intensities.magnitude), deg=1, full=False)
 
@@ -91,13 +111,13 @@ class Powerlaw:
 
 def fit_powerlaw(powers, intensities):
 	"""
-		This function fits a powerlaw to data.
-		:param powers: A quantity or array of powers. If no quantity, milliwatts are assumed.
-		:param intensities: Quantity or array: The corresponding intensity values to powers.
-		:return: A Powerlaw instance.
-		"""
-	powers = u.to_ureg(powers, 'mW')
-	intensities = u.to_ureg(intensities, 'counts')
+	Shadows Powerlaw.fit_powerlaw. This function fits a powerlaw to data and returns the result as a Powerlaw instance.
 
-	coeffs = numpy.polyfit(numpy.log(powers.magnitude), numpy.log(intensities.magnitude), deg=1, full=False)
-	return Powerlaw(coeffs)
+	:param powers: A quantity or array of powers. If no quantity, milliwatts are assumed.
+
+	:param intensities: Quantity or array: The corresponding intensity values to powers.
+
+	:return: A Powerlaw instance.
+	"""
+	coeffs = Powerlaw.fit_powerlaw(powers, intensities)
+	return Powerlaw.from_coeffs(coeffs)
