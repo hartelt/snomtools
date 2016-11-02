@@ -65,14 +65,14 @@ class Powerlaw:
 
 		:return: powers, intensities: tuple of quantities with the projected data.
 		"""
-		assert isinstance(data, snomtools.data.datasets.DataSet), \
-			"ERROR: No dataset instance given to Powerlaw data extraction."
+		assert isinstance(data, snomtools.data.datasets.DataSet) or isinstance(data, snomtools.data.datasets.ROI), \
+			"ERROR: No dataset or ROI instance given to Powerlaw data extraction."
 		if axis_id is None:
 			power_axis = data.get_axis_by_dimension("watts")
 		else:
 			power_axis = data.get_axis(axis_id)
 		count_data = data.get_datafield(data_id)
-		power_axis_index = data.get_axis_index(power_axis)
+		power_axis_index = data.get_axis_index(power_axis.get_label())
 		# DONE: Project data onto power axis. To be implemented in datasets.py
 		return power_axis.get_data(), count_data.project_nd(power_axis_index)
 
@@ -121,3 +121,34 @@ def fit_powerlaw(powers, intensities):
 	"""
 	coeffs = Powerlaw.fit_powerlaw(powers, intensities)
 	return Powerlaw.from_coeffs(coeffs)
+
+
+if __name__ == '__main__':  # Just for testing.
+	print("testing...")
+
+	powerdata = snomtools.data.imports.tiff.powerlaw_folder_peem_camera("Powerlaw")
+	roilimits = {'x': [600, 800], 'y': [400, 600]}
+	plroi = snomtools.data.datasets.ROI(powerdata, roilimits)
+	pl = Powerlaw(plroi)
+
+	picturefilename = "Powerlaw/117mW.tif"
+	picturedata = snomtools.data.imports.tiff.peem_camera_read(picturefilename)
+
+	test_plot = True
+	if test_plot:
+		import snomtools.plots.setupmatplotlib as plt
+		import snomtools.plots.datasets
+		import os
+
+		fig = plt.figure((12, 12), 1200)
+		ax = fig.add_subplot(111)
+		ax.cla()
+		vert = 'y'
+		hori = 'x'
+		ax.autoscale(tight=True)
+		ax.set_aspect('equal')
+		snomtools.plots.datasets.project_2d(picturedata, ax, axis_vert=vert, axis_hori=hori, data_id='counts')
+		snomtools.plots.datasets.mark_roi_2d(plroi, ax, axis_vert=vert, axis_hori=hori, ec="w")
+		plt.savefig(filename="test.png", figures_path=os.getcwd(), transparent=False)
+
+	print("...done.")

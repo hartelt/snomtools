@@ -29,11 +29,12 @@ def same_dimension(*args):
 
 	:return: Boolean.
 	"""
-	with as_ureg_quantities(args) as a:
-		arg0 = next(a)
-		for arg in a:
-			if arg0.dimensionality != arg.dimensionality:
-				return False
+	uregargs = as_ureg_quantities(args)
+	#with as_ureg_quantities(args) as a:
+	arg0 = next(uregargs)
+	for arg in uregargs:
+		if arg0.dimensionality != arg.dimensionality:
+			return False
 	return True
 
 
