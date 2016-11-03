@@ -169,6 +169,53 @@ def powerlaw_folder_peem_camera(folderpath, pattern="mW", powerunit=None, poweru
 	return snomtools.data.datasets.stack_DataSets(datastack, poweraxis, axis=-1, label="Powerlaw " + folderpath)
 
 
+def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunitlabel=None):
+	"""
+
+	:param folderpath: The (relative or absolute) path of the folders containing the powerlaw measurement series.
+
+	:param pattern: string: A pattern the powers in the filenames are named with. For example in the default case
+	"mW", the filename containing '50,2mW' or '50.2mW' or '50.2 mW' would accord to a power of 50.2 milliwatts. The
+	power units for the axis quantities are also cast from this pattern if not explicitly given with powerunit.
+
+	:param powerunit: A valid unit string that will be cast as the unit for the power axis values. If not given,
+	the pattern parameter will be cast as unit.
+
+	:param powerunitlabel: string: Will be used as the unit for the power axis plotlabel. Can be for example a LaTeX
+	siunitx command. If not given, the powerunit parameter will be used.
+
+	:return: The dataset containing the images stacked along a power axis.
+	"""
+	if powerunit is None:
+		powerunit = pattern
+	if powerunitlabel is None:
+		powerunitlabel = powerunit
+	pat = re.compile('(\d*[,|.]?\d+)\s?' + pattern)
+
+	# Translate input path to absolute path:
+	folderpath = os.path.abspath(folderpath)
+
+	# Inspect the given folder for the tif files of the powerlaw:
+	powerfiles = {}
+	for filename in filter(is_tif, os.listdir(folderpath)):
+		found = re.search(pat, filename)
+		if found:
+			power = float(found.group(1).replace(',', '.'))
+			powerfiles[power] = filename
+
+	axlist = []
+	datastack = []
+	for power in iter(sorted(powerfiles.iterkeys())):
+		datastack.append(peem_dld_read(os.path.join(folderpath, powerfiles[power])))
+		axlist.append(power)
+	powers = u.to_ureg(axlist, powerunit)
+
+	pl = 'Power / ' + powerunitlabel  # Plot label for power axis.
+	poweraxis = snomtools.data.datasets.Axis(powers, label='power', plotlabel=pl)
+
+	return snomtools.data.datasets.stack_DataSets(datastack, poweraxis, axis=-1, label="Powerlaw " + folderpath)
+
+
 if False:  # Just for testing...
 	test_camera_read = False
 	if test_camera_read:
