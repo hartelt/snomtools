@@ -19,10 +19,15 @@ class Powerlaw:
 
 	# TODO: Test this.
 
-	def __init__(self, data=None):
+	def __init__(self, data=None, keepdata=True):
 		if data:
-			powers, intensities = self.extract_data(data)
-			self.coeffs = self.fit_powerlaw(powers, intensities)
+			if keepdata:
+				self.data = self.extract_data(data)
+				self.coeffs = self.fit_powerlaw(self.data.get_axis(0).get_data(), self.data.get_datafield(0).get_data())
+			else:
+				self.data = None
+				powers, intensities = self.extract_data_raw(data)
+				self.coeffs = self.fit_powerlaw(powers, intensities)
 			self.poly = numpy.poly1d(self.coeffs)
 
 	@classmethod
@@ -51,7 +56,7 @@ class Powerlaw:
 		return cls(data)
 
 	@staticmethod
-	def extract_data(data, data_id=0, axis_id=None):
+	def extract_data_raw(data, data_id=0, axis_id=None):
 		"""
 		Extracts the powers and intensities out of a dataset. Therefore, it takes the power axis of the input data,
 		and projects the datafield onto that axis by summing over all the other axes.
@@ -75,6 +80,32 @@ class Powerlaw:
 		power_axis_index = data.get_axis_index(power_axis.get_label())
 		# DONE: Project data onto power axis. To be implemented in datasets.py
 		return power_axis.get_data(), count_data.project_nd(power_axis_index)
+
+	@staticmethod
+	def extract_data(data, data_id=0, axis_id=None, label="powerlaw"):
+		"""
+		Extracts the powers and intensities out of a dataset. Therefore, it takes the power axis of the input data,
+		and projects the datafield onto that axis by summing over all the other axes.
+
+		:param data: Dataset containing the powerlaw data.
+
+		:param data_id: Identifier of the DataField to use.
+
+		:param axis_id: optional, Identifier of the power axis to use. If not given, the first axis that corresponds
+		to a Power in its physical dimension is taken.
+
+		:return: powers, intensities: tuple of quantities with the projected data.
+		"""
+		assert isinstance(data, snomtools.data.datasets.DataSet) or isinstance(data, snomtools.data.datasets.ROI), \
+			"ERROR: No dataset or ROI instance given to Powerlaw data extraction."
+		if axis_id is None:
+			power_axis = data.get_axis_by_dimension("watts")
+		else:
+			power_axis = data.get_axis(axis_id)
+		count_data = data.get_datafield(data_id)
+		power_axis_index = data.get_axis_index(power_axis.get_label())
+		# Initialize the DataSet containing only the projected powerlaw data;
+		return snomtools.data.datasets.DataSet(label, [count_data.project_nd(power_axis_index)], [power_axis])
 
 	@staticmethod
 	def fit_powerlaw(powers, intensities):
@@ -104,9 +135,9 @@ class Powerlaw:
 
 	def logy(self, x, logx=False):
 		if logx:
-			return self.poly(numpy.log(x))
-		else:
 			return self.poly(x)
+		else:
+			return self.poly(numpy.log(x))
 
 
 def fit_powerlaw(powers, intensities):
@@ -126,12 +157,17 @@ def fit_powerlaw(powers, intensities):
 if __name__ == '__main__':  # Just for testing.
 	print("testing...")
 
-	powerdata = snomtools.data.imports.tiff.powerlaw_folder_peem_camera("Powerlaw")
-	roilimits = {'x': [600, 800], 'y': [400, 600]}
+	powerfolder = "Powerlaw"
+	# powerfolder = "/home/hartelt/Promotion/Auswertung/2016/06_Juni/20160623_Circles"
+	powerdata = snomtools.data.imports.tiff.powerlaw_folder_peem_camera(powerfolder)
+	# powerdata = snomtools.data.imports.tiff.powerlaw_folder_peem_dld(powerfolder)
+	#roilimits = {'x': [400, 600], 'y': [400, 600], 'power': [u.ureg("45 mW"), None]}
+	roilimits = {'x': [400, 600], 'y': [400, 600]}
 	plroi = snomtools.data.datasets.ROI(powerdata, roilimits)
 	pl = Powerlaw(plroi)
 
 	picturefilename = "Powerlaw/117mW.tif"
+	# picturefilename = "/home/hartelt/Promotion/Auswertung/2016/06_Juni/20160623_Circles/01-147mW.tif"
 	picturedata = snomtools.data.imports.tiff.peem_camera_read(picturefilename)
 
 	test_plot = True
@@ -150,5 +186,19 @@ if __name__ == '__main__':  # Just for testing.
 		snomtools.plots.datasets.project_2d(picturedata, ax, axis_vert=vert, axis_hori=hori, data_id='counts')
 		snomtools.plots.datasets.mark_roi_2d(plroi, ax, axis_vert=vert, axis_hori=hori, ec="w")
 		plt.savefig(filename="test.png", figures_path=os.getcwd(), transparent=False)
+
+		fig.clf()
+		ax = fig.add_subplot(111)
+		ax.cla()
+		# ax.invert_yaxis()
+		xforfunc = numpy.linspace(pl.data.get_axis(0).min(), pl.data.get_axis(0).max(), 1000)
+		ax.plot(pl.data.get_axis(0).get_data(),
+				pl.data.get_datafield(0).get_data(),
+				'o', label="Counts in Slice")
+		ax.plot(xforfunc, pl.y(xforfunc), '-', label="Fit with " + str(pl.poly))
+		ax.set_xscale("log")
+		ax.set_yscale("log")
+		plt.legend(loc="lower right")
+		fig.savefig(filename="testpowerlaw.png", figures_path=os.getcwd(), transparent=False)
 
 	print("...done.")
