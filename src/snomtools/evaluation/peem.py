@@ -17,8 +17,6 @@ class Powerlaw:
 	A powerlaw.
 	"""
 
-	# TODO: Test this.
-
 	def __init__(self, data=None, keepdata=True):
 		if data:
 			if keepdata:
@@ -94,7 +92,9 @@ class Powerlaw:
 		:param axis_id: optional, Identifier of the power axis to use. If not given, the first axis that corresponds
 		to a Power in its physical dimension is taken.
 
-		:return: powers, intensities: tuple of quantities with the projected data.
+		:param label: string: label for the produced DataSet
+
+		:return: 1D-DataSet with projected Intensity Data and Power Axis.
 		"""
 		assert isinstance(data, snomtools.data.datasets.DataSet) or isinstance(data, snomtools.data.datasets.ROI), \
 			"ERROR: No dataset or ROI instance given to Powerlaw data extraction."
@@ -161,10 +161,10 @@ if __name__ == '__main__':  # Just for testing.
 	# powerfolder = "/home/hartelt/Promotion/Auswertung/2016/06_Juni/20160623_Circles"
 	powerdata = snomtools.data.imports.tiff.powerlaw_folder_peem_camera(powerfolder)
 	# powerdata = snomtools.data.imports.tiff.powerlaw_folder_peem_dld(powerfolder)
-	#roilimits = {'x': [400, 600], 'y': [400, 600], 'power': [u.ureg("45 mW"), None]}
+	# roilimits = {'x': [400, 600], 'y': [400, 600], 'power': [u.ureg("45 mW"), None]}
 	roilimits = {'x': [400, 600], 'y': [400, 600]}
 	plroi = snomtools.data.datasets.ROI(powerdata, roilimits)
-	pl = Powerlaw(plroi)
+	testpl = Powerlaw(plroi)
 
 	picturefilename = "Powerlaw/117mW.tif"
 	# picturefilename = "/home/hartelt/Promotion/Auswertung/2016/06_Juni/20160623_Circles/01-147mW.tif"
@@ -191,11 +191,11 @@ if __name__ == '__main__':  # Just for testing.
 		ax = fig.add_subplot(111)
 		ax.cla()
 		# ax.invert_yaxis()
-		xforfunc = numpy.linspace(pl.data.get_axis(0).min(), pl.data.get_axis(0).max(), 1000)
-		ax.plot(pl.data.get_axis(0).get_data(),
-				pl.data.get_datafield(0).get_data(),
+		xforfunc = numpy.linspace(testpl.data.get_axis(0).min(), testpl.data.get_axis(0).max(), 1000)
+		ax.plot(testpl.data.get_axis(0).get_data(),
+				testpl.data.get_datafield(0).get_data(),
 				'o', label="Counts in Slice")
-		ax.plot(xforfunc, pl.y(xforfunc), '-', label="Fit with " + str(pl.poly))
+		ax.plot(xforfunc, testpl.y(xforfunc), '-', label="Fit with " + str(testpl.poly))
 		ax.set_xscale("log")
 		ax.set_yscale("log")
 		plt.legend(loc="lower right")

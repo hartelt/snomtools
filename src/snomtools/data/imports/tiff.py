@@ -217,15 +217,17 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 
 
 if False:  # Just for testing...
+	testdata = None
+
 	test_camera_read = False
 	if test_camera_read:
-		filename = "14_800nm_Micha_crosspol_ppol320_t-80fs_50µm.tif"
-		testdata = peem_camera_read(filename)
-		outname = filename.replace('.tif', '.hdf5')
+		testfilename = "14_800nm_Micha_crosspol_ppol320_t-80fs_50µm.tif"
+		testdata = peem_camera_read(testfilename)
+		outname = testfilename.replace('.tif', '.hdf5')
 		testdata.saveh5(outname)
 
 	test_plot = False
-	if test_plot:
+	if test_plot and testdata:
 		import snomtools.plots.setupmatplotlib as plt
 		import snomtools.plots.datasets
 
