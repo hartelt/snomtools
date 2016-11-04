@@ -1136,8 +1136,6 @@ class DataSet:
 				return df
 		raise ValueError("No Axis with dimensionsality found.")
 
-	# TODO: Testing of this method.
-
 	def replace_datafield(self, datafield_id, new_datafield):
 		"""
 		Replaces a datafield of the dataset with another. For this to make sense, the new datafield must describe the
@@ -1473,8 +1471,6 @@ class DataSet:
 
 		self.check_label_uniqueness()
 		return self.check_data_consistency()
-
-	# TODO: Projection of the dataset along one or more axes.
 
 	def __del__(self):
 		pass

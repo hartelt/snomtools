@@ -161,8 +161,8 @@ if __name__ == '__main__':  # Just for testing.
 	# powerfolder = "/home/hartelt/Promotion/Auswertung/2016/06_Juni/20160623_Circles"
 	powerdata = snomtools.data.imports.tiff.powerlaw_folder_peem_camera(powerfolder)
 	# powerdata = snomtools.data.imports.tiff.powerlaw_folder_peem_dld(powerfolder)
-	# roilimits = {'x': [400, 600], 'y': [400, 600], 'power': [u.ureg("45 mW"), None]}
-	roilimits = {'x': [400, 600], 'y': [400, 600]}
+	roilimits = {'x': [400, 600], 'y': [400, 600], 'power': [u.ureg("13 mW"), None]}
+	#roilimits = {'x': [400, 600], 'y': [400, 600]}
 	plroi = snomtools.data.datasets.ROI(powerdata, roilimits)
 	testpl = Powerlaw(plroi)
 
@@ -190,14 +190,18 @@ if __name__ == '__main__':  # Just for testing.
 		fig.clf()
 		ax = fig.add_subplot(111)
 		ax.cla()
+
 		# ax.invert_yaxis()
-		xforfunc = numpy.linspace(testpl.data.get_axis(0).min(), testpl.data.get_axis(0).max(), 1000)
-		ax.plot(testpl.data.get_axis(0).get_data(),
-				testpl.data.get_datafield(0).get_data(),
-				'o', label="Counts in Slice")
-		ax.plot(xforfunc, testpl.y(xforfunc), '-', label="Fit with " + str(testpl.poly))
-		ax.set_xscale("log")
-		ax.set_yscale("log")
+		# xforfunc = numpy.linspace(testpl.data.get_axis(0).min(), testpl.data.get_axis(0).max(), 1000)
+		# ax.plot(testpl.data.get_axis(0).get_data(),
+		# 		testpl.data.get_datafield(0).get_data(),
+		# 		'o', label="Counts in Slice")
+		# ax.plot(xforfunc, testpl.y(xforfunc), '-', label="Fit with " + str(testpl.poly))
+		# ax.set_xscale("log")
+		# ax.set_yscale("log")
+
+		import snomtools.plots.evaluations
+		snomtools.plots.evaluations.plot_powerlaw(testpl,ax,legend_loc=False)
 		plt.legend(loc="lower right")
 		fig.savefig(filename="testpowerlaw.png", figures_path=os.getcwd(), transparent=False)
 
