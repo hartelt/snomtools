@@ -104,8 +104,13 @@ class Powerlaw:
 			power_axis = data.get_axis(axis_id)
 		count_data = data.get_datafield(data_id)
 		power_axis_index = data.get_axis_index(power_axis.get_label())
+		count_data_projected = count_data.project_nd(power_axis_index)
+		count_data_projected = snomtools.data.datasets.DataArray(count_data_projected,label='counts')
+		# Normalize by subtracting dark counts:
+		count_data_projected_norm = count_data_projected - count_data_projected.min()
+		count_data_projected_norm.set_label("counts_normalized")
 		# Initialize the DataSet containing only the projected powerlaw data;
-		return snomtools.data.datasets.DataSet(label, [count_data.project_nd(power_axis_index)], [power_axis])
+		return snomtools.data.datasets.DataSet(label, [count_data_projected_norm,count_data_projected], [power_axis])
 
 	@staticmethod
 	def fit_powerlaw(powers, intensities):
@@ -124,6 +129,11 @@ class Powerlaw:
 		else:
 			powers = u.to_ureg(powers, 'mW')
 		intensities = u.to_ureg(intensities)
+
+		if intensities[0].magnitude == 0: # data is subtracted by dark counts
+			# remove first datapoint, which does not make sense then in a logarithmic fit
+			intensities = intensities[1:]
+			powers = powers[1:]
 
 		return numpy.polyfit(numpy.log(powers.magnitude), numpy.log(intensities.magnitude), deg=1, full=False)
 
@@ -157,16 +167,18 @@ def fit_powerlaw(powers, intensities):
 if __name__ == '__main__':  # Just for testing.
 	print("testing...")
 
-	powerfolder = "Powerlaw"
+	powerfolder = "Powerlaw_befCS"
+	# powerfolder = "Powerlaw"
 	# powerfolder = "/home/hartelt/Promotion/Auswertung/2016/06_Juni/20160623_Circles"
 	powerdata = snomtools.data.imports.tiff.powerlaw_folder_peem_camera(powerfolder)
 	# powerdata = snomtools.data.imports.tiff.powerlaw_folder_peem_dld(powerfolder)
-	roilimits = {'x': [400, 600], 'y': [400, 600], 'power': [u.ureg("13 mW"), None]}
-	#roilimits = {'x': [400, 600], 'y': [400, 600]}
+	# roilimits = {'x': [400, 600], 'y': [400, 600], 'power': [u.ureg("13 mW"), None]}
+	roilimits = {'y': [470, 550], 'x': [580, 660]}
 	plroi = snomtools.data.datasets.ROI(powerdata, roilimits)
 	testpl = Powerlaw(plroi)
 
-	picturefilename = "Powerlaw/117mW.tif"
+	picturefilename = "Powerlaw_befCS/48,2mW.tif"
+	# picturefilename = "Powerlaw/117mW.tif"
 	# picturefilename = "/home/hartelt/Promotion/Auswertung/2016/06_Juni/20160623_Circles/01-147mW.tif"
 	picturedata = snomtools.data.imports.tiff.peem_camera_read(picturefilename)
 
@@ -201,7 +213,8 @@ if __name__ == '__main__':  # Just for testing.
 		# ax.set_yscale("log")
 
 		import snomtools.plots.evaluations
-		snomtools.plots.evaluations.plot_powerlaw(testpl,ax,legend_loc=False)
+
+		snomtools.plots.evaluations.plot_powerlaw(testpl, ax, legend_loc=False)
 		plt.legend(loc="lower right")
 		fig.savefig(filename="testpowerlaw.png", figures_path=os.getcwd(), transparent=False)
 
