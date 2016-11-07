@@ -232,6 +232,22 @@ class DataArray:
 		"""
 		return self.data.sum(axis=axis, dtype=dtype, out=out, keepdims=keepdims)
 
+	def project_nd(self, *args):
+		"""
+		Projects the datafield onto the given axes. Uses sum() method, but adresses axes to keep instead of axes to
+		sum over.
+
+		:param args: Integer indices for the axes to project onto.
+
+		:return: ndarray quantity: The projected data.
+		"""
+		sumlist = range(len(self.shape))  # initialize list of axes to sum over
+		for arg in args:
+			assert (type(arg) == int), "ERROR: Invalid type. Axis index must be integer."
+			sumlist.remove(arg)
+		sumtup = tuple(sumlist)
+		return self.sum(sumtup)
+
 	def max(self):
 		return self.data.max()
 
@@ -424,7 +440,6 @@ class Axis(DataArray):
 	def scale_linear(self, scaling=1., offset=None, unit=None, label=None, plotlabel=None):
 		"""
 		Transforms the Axis by scaling it with a linear factor and optionally shifting it by an offset.
-		:param inaxis: The Axis to transform.
 		:param scaling: The scaling factor.
 		:param offset: The offset. Must have the same dimension as the scaled axis.
 		:param unit: Specifies the output unit for the Axis, Must evaluate a unit with same dimension as the scaled axis.
@@ -846,6 +861,16 @@ class ROI:
 			return ds
 		# TODO: Testing of this method.
 
+	def get_datafield_by_dimension(self, unit):
+		"""
+		Returns the first datafield that corresponds to a given unit in its physical dimensionality.
+
+		:param unit: Quantity or anything that can be cast as quantity by the UnitRegistry.
+
+		:return: the datafield
+		"""
+		return self.dataset.get_datafield_by_dimension(unit)[self.get_slice()]
+
 	def get_axis(self, label_or_index):
 		"""
 		Tries to assign an Axis to a given parameter, that can be an integer as an index in the
@@ -860,6 +885,17 @@ class ROI:
 
 	def get_axis_index(self, label_or_index):
 		return self.dataset.get_axis_index(label_or_index)
+
+	def get_axis_by_dimension(self, unit):
+		"""
+		Returns the first axis that corresponds to a given unit in its physical dimensionality.
+
+		:param unit: Quantity or anything that can be cast as quantity by the UnitRegistry.
+
+		:return: the Axis
+		"""
+		ax = self.dataset.get_axis_by_dimension(unit)
+		return ax[self.get_slice(ax.label)]
 
 	def meshgrid(self, axes=None):
 		"""
@@ -1087,6 +1123,19 @@ class DataSet:
 			return ds
 		# TODO: Testing of this method.
 
+	def get_datafield_by_dimension(self, unit):
+		"""
+		Returns the first datafield that corresponds to a given unit in its physical dimensionality.
+
+		:param unit: Quantity or anything that can be cast as quantity by the UnitRegistry.
+
+		:return: the datafield
+		"""
+		for df in self.datafields:
+			if u.same_dimension(df.get_data(), unit):
+				return df
+		raise ValueError("No Axis with dimensionsality found.")
+
 	def replace_datafield(self, datafield_id, new_datafield):
 		"""
 		Replaces a datafield of the dataset with another. For this to make sense, the new datafield must describe the
@@ -1151,6 +1200,19 @@ class DataSet:
 			else:
 				raise AttributeError("Axis not found.")
 
+	def get_axis_by_dimension(self, unit):
+		"""
+		Returns the first axis that corresponds to a given unit in its physical dimensionality.
+
+		:param unit: Quantity or anything that can be cast as quantity by the UnitRegistry.
+
+		:return: the Axis
+		"""
+		for ax in self.axes:
+			if u.same_dimension(ax.get_data(), unit):
+				return ax
+		raise ValueError("No Axis with dimensionsality found.")
+
 	def replace_axis(self, axis_id, new_axis):
 		"""
 		Replaces an axis of the dataset with another. For this to make sense, the new axis must describe the same
@@ -1174,7 +1236,7 @@ class DataSet:
 	def get_label(self):
 		return self.label
 
-	def set_label(self,newlabel):
+	def set_label(self, newlabel):
 		self.label = newlabel
 
 	def meshgrid(self, axes=None):
@@ -1219,6 +1281,27 @@ class DataSet:
 		# Assure we did nothing wrong:
 		self.check_data_consistency()
 
+	def project_nd(self, *args):
+		"""
+		Projects the datafield onto the given axes. Uses the DataSet.project_nd() method for every datset and returns a
+		new DataSet with the projected DataFields and the chosen axes.
+
+		:param args: Valid identifiers for the axes to project onto.
+
+		:return: DataSet: Projected DataSet.
+		"""
+		indexlist = [self.get_datafield_index(arg) for arg in args]
+		return self.__class__(datafields=[self.datafields[i].project_nd(*indexlist) for i in indexlist],
+							  axes=[self.axes[i] for i in indexlist])
+
+	def bin(self, bin_size=()):
+		"""
+		To be implemented (imported from Ben's script)
+		:param bin_size:
+		:return:
+		"""
+		raise NotImplementedError()
+
 	def check_data_consistency(self):
 		"""
 		Self test method which checks the dimensionality and shapes of the axes and datafields. Raises
@@ -1256,6 +1339,7 @@ class DataSet:
 	def saveh5(self, path):
 		path = os.path.abspath(path)
 		outfile = h5py.File(path, 'w')
+		# TODO: Store snomtools version that data was saved with!
 		datafieldgrp = outfile.create_group("datafields")
 		for i in range(len(self.datafields)):
 			grp = self.datafields[i].store_to_h5(datafieldgrp)
@@ -1458,7 +1542,7 @@ def stack_DataSets(datastack, new_axis, axis=0, label=None, plotconf=None):
 	for ds in datastack:
 		assert (ds.shape == datastack[0].shape), "ERROR: DataSets of inconsistent dimensions given to stack_DataSets"
 		assert (len(ds.datafields) == len(datastack[0].datafields)), "ERROR: DataSets with different number of " \
-																  "datafields given to stack_DataSets"
+																	 "datafields given to stack_DataSets"
 
 	# Initialize new DataSet:
 	stack = DataSet(label=label, plotconf=plotconf)
@@ -1468,11 +1552,11 @@ def stack_DataSets(datastack, new_axis, axis=0, label=None, plotconf=None):
 	# their physical meaning.
 	axes = datastack[0].axes
 	# Case-like due to different indexing of python's builtin insert method and numpy's stack:
-	if axis == -1: # last element
+	if axis == -1:  # last element
 		axes.append(new_axis)
-	elif axis < -1: # n'th to last element (count from back)
-		axes.insert(axis+1, new_axis)
-	else: # normal count from front
+	elif axis < -1:  # n'th to last element (count from back)
+		axes.insert(axis + 1, new_axis)
+	else:  # normal count from front
 		axes.insert(axis, new_axis)
 	stack.axes = axes
 
@@ -1485,7 +1569,7 @@ def stack_DataSets(datastack, new_axis, axis=0, label=None, plotconf=None):
 	return stack
 
 
-if True:  # just for testing
+if False:  # just for testing
 	print colored('Testing...', 'yellow'),
 	testarray = numpy.arange(0, 10, 2.)
 	testaxis = DataArray(testarray, 'meter', label="xaxis")
@@ -1503,7 +1587,7 @@ if True:  # just for testing
 	testdataset = DataSet("test", [testdata], [testaxis, testaxis2], plotconf=pc)
 
 	testdatastacklist = [DataSet("test", [da], [testaxis, testaxis2], plotconf=pc) for da in testdatastacklist]
-	stackaxis = Axis(range(3),"mW","power")
+	stackaxis = Axis(range(3), "mW", "power")
 	stack = stack_DataSets(testdatastacklist, stackaxis, axis=-1)
 
 	print("Store...")
