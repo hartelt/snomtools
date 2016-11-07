@@ -24,28 +24,31 @@ install_requirements = ['']
 
 packages = find_packages(source_path)
 
+
 # Define your setup
 # version should be considered using git's short or better the full hash
 def get_version_from_git():
-    """
+	"""
     Get the short version string of a git repository
     :return: (str) version information
     """
-    import subprocess
-    try:
-        v = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'])
-        return __version__ + v
-    except Exception as ex:
+	import subprocess
+	try:
+		v = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'])
+		return __version__ + v
+	except Exception as ex:
 
-        print("Could not retrieve git version information")
-        print("#"*30)
-        print(ex)
+		print("Could not retrieve git version information")
+		print("#" * 30)
+		print(ex)
 
-    return __version__  # default
+	return __version__  # default
+
 
 setup(name='snomtools',
-      version=get_version_from_git(),
-      packages=packages,
-      package_dir={'': source_path},
-      install_requirements=install_requirements, requires=['numpy', 'pint']
-)
+	  version=get_version_from_git(),
+	  packages=packages,
+	  package_dir={'': source_path},
+	  install_requirements=install_requirements, requires=['numpy>=1.10.0', 'pint', 'h5py', 'termcolor', 'scipy',
+														   'tifffile']
+	  )
