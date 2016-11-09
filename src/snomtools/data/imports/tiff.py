@@ -274,6 +274,43 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 	return snomtools.data.datasets.stack_DataSets(datastack, poweraxis, axis=-1, label="Powerlaw " + folderpath)
 
 
+def tr_folder_peem_camera_terra(folderpath, pattern="D", delayunit="um", delayunitlabel=None):
+	"""
+
+	:param folderpath:
+	:param pattern:
+	:param delayunit:
+	:param delayunitlabel:
+	:return:
+	"""
+	if delayunitlabel is None:
+		delayunitlabel = delayunit
+	pat = re.compile(pattern + "(-?\d*).tif")
+
+	# Translate input path to absolute path:
+	folderpath = os.path.abspath(folderpath)
+
+	# Inspect the given folder for time step files:
+	timefiles = {}
+	for filename in filter(is_tif, os.listdir(folderpath)):
+		found = re.search(pat, filename)
+		if found:
+			timestep = float(found.group(1))
+			timefiles[timestep] = filename
+
+	axlist = []
+	datastack = []
+	for timestep in iter(sorted(timefiles.iterkeys())):
+		datastack.append(peem_camera_read_terra(os.path.join(folderpath, timefiles[timestep])))
+		axlist.append(timestep)
+	delays = u.to_ureg(axlist, delayunit)
+
+	pl = 'Pulse Delay / ' + delayunitlabel  # Plot label for power axis.
+	delayaxis = snomtools.data.datasets.Axis(delays, label='delay', plotlabel=pl)
+
+	return snomtools.data.datasets.stack_DataSets(datastack, delayaxis, axis=0, label="TR " + folderpath)
+
+
 if False:  # Just for testing...
 	testdata = None
 
@@ -299,9 +336,15 @@ if False:  # Just for testing...
 		snomtools.plots.datasets.project_2d(testdata, ax, axis_vert=vert, axis_hori=hori, data_id='counts')
 		plt.savefig(filename="test.png", figures_path=os.getcwd(), transparent=False)
 
-	test_powerlaw = True
+	test_powerlaw = False
 	if test_powerlaw:
 		plfolder = "Powerlaw"
 		pldata = powerlaw_folder_peem_camera(plfolder, powerunitlabel='\\SI{\\milli\\watt}')
+
+	test_timeresolved = True
+	if test_timeresolved:
+		trfolder = "02-800nm-FoV50um-exp10s-sq30um_xpol_sp_scan0to120fs/1. Durchlauf"
+		trdata = tr_folder_peem_camera_terra(trfolder, delayunit="as")
+		trdata.saveh5(trfolder+'.hdf5')
 
 	print('done.')
