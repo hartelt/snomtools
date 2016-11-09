@@ -140,7 +140,7 @@ def energy_apply_calibration(data, kalfitfilename, mode='quadratic'):
 	"""
 	if type(data) == str:  # if tiff file is given, import it.
 		filepath = os.path.abspath(data)
-		data = snomtools.data.imports.tiff.peem_dld_read(filepath)
+		data = snomtools.data.imports.tiff.peem_dld_read_terra(filepath)
 	assert isinstance(data, snomtools.data.datasets.DataSet), "ERROR: No DataSet given or imported."
 
 	if mode == 'quadratic':
@@ -182,10 +182,10 @@ def normalize_by_flatfield_sum(data, flatfield_data, data_id=0, flat_id=0, newla
 	"""
 	if type(data) == str:
 		filepath = os.path.abspath(data)
-		data = snomtools.data.imports.tiff.peem_dld_read(filepath)
+		data = snomtools.data.imports.tiff.peem_dld_read_terra(filepath)
 	if type(flatfield_data) == str:
 		filepath = os.path.abspath(flatfield_data)
-		flatfield_data = snomtools.data.imports.tiff.peem_dld_read(filepath)
+		flatfield_data = snomtools.data.imports.tiff.peem_dld_read_terra(filepath)
 
 	assert isinstance(data, snomtools.data.datasets.DataSet), "ERROR: No DataSet given or imported."
 	assert isinstance(flatfield_data, snomtools.data.datasets.DataSet), "ERROR: No DataSet given or imported."
