@@ -11,6 +11,7 @@ import pint.quantity
 import numpy
 
 ureg = pint.UnitRegistry()
+Quantity = ureg.Quantity
 
 # Custom units that we use frequently can be defined here:
 # ureg.define('dog_year = 52 * day = dy')
@@ -105,18 +106,17 @@ def to_ureg(input_, unit=None):
 			else:
 				return input_
 		else:  # Use inputs magnitude, but our corresponding ureg unit.
-			importedquantity = input_.magnitude * ureg(str(input_.units))
 			if unit:
-				return importedquantity.to(unit)
+				return Quantity(input_.magnitude, str(input_.units)).to(unit)
 			else:
-				return importedquantity
+				return Quantity(input_.magnitude, str(input_.units))
 	elif (isinstance(input_, str) or isinstance(input_, unicode)):
 		if unit:
 			return ureg(input_).to(unit)
 		else:
 			return ureg(input_)
 	else:  # we are dealing with numerial data
-		return input_ * ureg(unit)
+		return Quantity(input_,unit)
 
 
 def as_ureg_quantities(stream):

@@ -384,7 +384,7 @@ if __name__ == "__main__":
 		# trfolder = "02-800nm-FoV50um-exp10s-sq30um_xpol_sp_scan0to120fs/1. Durchlauf"
 		# trdata = tr_folder_peem_camera_terra(trfolder, delayunit="as")
 		# trdata.saveh5(trfolder+'.hdf5')
-		trfolder = "06-800nm-DLD-xpol_sp-scan-10fsto120fs/1. Durchlauf"
+		trfolder = "06-800nm-DLD-xpol_sp-scan-10fsto120fs-EK/SUM"
 		trdata = tr_folder_peem_dld_terra(trfolder, delayunit="as")
 		trdata.saveh5(trfolder+'.hdf5')
 
