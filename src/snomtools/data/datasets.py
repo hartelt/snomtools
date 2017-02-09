@@ -234,6 +234,15 @@ class DataArray:
 		"""
 		return self.data.sum(axis=axis, dtype=dtype, out=out, keepdims=keepdims)
 
+	def sum_raw(self, axis=None, dtype=None, out=None, keepdims=False):
+		"""
+		As sum(), only on bare numpy array instead of Quantity. See sum() for details.
+		:return: ndarray
+		An array with the same shape as a, with the specified axes removed. If a is a 0-d array, or if axis is None, a
+		scalar is returned. If an output array is specified, a reference to out is returned.
+		"""
+		return self.data.magnitude.sum(axis=axis, dtype=dtype, out=out, keepdims=keepdims)
+
 	def project_nd(self, *args):
 		"""
 		Projects the datafield onto the given axes. Uses sum() method, but adresses axes to keep instead of axes to
