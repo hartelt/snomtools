@@ -59,6 +59,9 @@ def peem_dld_read(filepath, mode="terra"):
 	elif mode == "pne":
 		raise NotImplementedError("ProNanoESCA DLD tiff readin not yet implemented.")
 		# TODO: Implement Focus ProNanoESCA readin.
+	elif mode == "dldgui":
+		raise NotImplementedError("dldgui tiff readin not yet implemented.")
+		# TODO: Implement dldgui readin.
 	else:
 		raise ValueError("Unrecognized readin mode given to peem_dld_read")
 
