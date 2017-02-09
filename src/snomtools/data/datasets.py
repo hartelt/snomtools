@@ -55,6 +55,8 @@ class DataArray:
 					self.set_unit(unit)
 			elif type(data) == str:  # If it's a string, try to evaluate it as an array.
 				self.data = u.to_ureg(numpy.array(eval(data)), unit)
+			elif type(data) == numpy.ndarray: # If it is an ndarray, just make a quantity with it.
+				self.data = u.to_ureg(data, unit)
 			else:  # If it's none of the above, it hopefully is an array-like. So let's try to cast it.
 				self.data = u.to_ureg(numpy.array(data), unit)
 			self.label = str(label)
