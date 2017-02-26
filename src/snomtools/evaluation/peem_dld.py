@@ -213,9 +213,11 @@ def normalize_by_flatfield_sum_raw(data, flatfield_data, data_id=0, flat_id=0, n
 	Normalizes a dataset by the data of another set, but uses raw numpy ndarrays as much as possible instead of
 	DataArrays and Quantities. Hopefully will result in better performance. Functionality as
 	normalize_by_flatfield_sum, see this function's doc for details.
+	WARNING: This doesn't work correctly yet!
 
 	:return: The modified dataset.
 	"""
+	print("WARNING: Function normalize_by_flatfield_sum_raw doesn't work correctly yet!")
 	if type(data) == str:
 		filepath = os.path.abspath(data)
 		data = snomtools.data.imports.tiff.peem_dld_read_terra(filepath)

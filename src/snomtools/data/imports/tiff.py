@@ -277,12 +277,18 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 	return snomtools.data.datasets.stack_DataSets(datastack, poweraxis, axis=-1, label="Powerlaw " + folderpath)
 
 
-def tr_folder_peem_camera_terra(folderpath, pattern="D", delayunit="um", delayunitlabel=None):
+def tr_folder_peem_camera_terra(folderpath, pattern="D", delayunit="um", delayfactor=1, delayunitlabel=None):
 	"""
 
 	:param folderpath:
 	:param pattern:
 	:param delayunit:
+
+	:param delayfactor: A factor that the numbers in the filenames need to be multiplied with to get the real pulse
+	delay. This would be for example:
+	2 (because of stage position) with delayunit "um" for normal Interferometer PROBABLY.
+	0.2 (because of stage position and strange factor 10 in filenames) with delayunit "as" for PR interferometer
+
 	:param delayunitlabel:
 	:return:
 	"""
@@ -306,7 +312,7 @@ def tr_folder_peem_camera_terra(folderpath, pattern="D", delayunit="um", delayun
 	for timestep in iter(sorted(timefiles.iterkeys())):
 		datastack.append(peem_camera_read_terra(os.path.join(folderpath, timefiles[timestep])))
 		axlist.append(timestep)
-	delays = u.to_ureg(axlist, delayunit)
+	delays = u.to_ureg(numpy.array(axlist)*delayfactor, delayunit)
 
 	pl = 'Pulse Delay / ' + delayunitlabel  # Plot label for power axis.
 	delayaxis = snomtools.data.datasets.Axis(delays, label='delay', plotlabel=pl)
@@ -314,12 +320,18 @@ def tr_folder_peem_camera_terra(folderpath, pattern="D", delayunit="um", delayun
 	return snomtools.data.datasets.stack_DataSets(datastack, delayaxis, axis=0, label="TR " + folderpath)
 
 
-def tr_folder_peem_dld_terra(folderpath, pattern="D", delayunit="um", delayunitlabel=None):
+def tr_folder_peem_dld_terra(folderpath, pattern="D", delayunit="um", delayfactor=1, delayunitlabel=None):
 	"""
 
 	:param folderpath:
 	:param pattern:
 	:param delayunit:
+
+	:param delayfactor: A factor that the numbers in the filenames need to be multiplied with to get the real pulse
+	delay. This would be for example:
+	0.2 (because of stage position) with delayunit "um" for normal Interferometer because one decimal is in filenames.
+	0.2 (because of stage position and strange factor 10 in filenames) with delayunit "as" for PR interferometer
+
 	:param delayunitlabel:
 	:return:
 	"""
@@ -343,7 +355,7 @@ def tr_folder_peem_dld_terra(folderpath, pattern="D", delayunit="um", delayunitl
 	for timestep in iter(sorted(timefiles.iterkeys())):
 		datastack.append(peem_dld_read_terra(os.path.join(folderpath, timefiles[timestep])))
 		axlist.append(timestep)
-	delays = u.to_ureg(axlist, delayunit)
+	delays = u.to_ureg(numpy.array(axlist)*delayfactor, delayunit)
 
 	pl = 'Pulse Delay / ' + delayunitlabel  # Plot label for power axis.
 	delayaxis = snomtools.data.datasets.Axis(delays, label='delay', plotlabel=pl)
