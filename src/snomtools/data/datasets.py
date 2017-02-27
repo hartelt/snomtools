@@ -457,10 +457,10 @@ class Axis(DataArray):
 		:return: The transformed Axis.
 		"""
 		points_scaled = scaling * self.data
-		if unit:
-			points_scaled = u.to_ureg(points_scaled, unit)
 		if offset:
 			points_scaled = points_scaled + offset
+		if unit:
+			points_scaled = u.to_ureg(points_scaled, unit)
 		self.data = points_scaled
 
 	def __str__(self):
