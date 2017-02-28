@@ -11,8 +11,8 @@ data.datasets.py
 import snomtools.calcs.units as u
 import snomtools.data.datasets
 import snomtools.data.imports.tiff
+import snomtools.evaluation.microscopy
 import os.path
-import numpy
 
 
 def energy_scale_quadratic(channel_axis, C, t_0):
@@ -162,6 +162,8 @@ def normalize_by_flatfield_sum(data, flatfield_data, data_id=0, flat_id=0, newla
 	therefore be "flat" (flatfield). The data is normalized by the sum over all energy channels, so only the spacial
 	image is normalized, while all time channels are kept at constant relative values.
 	The normalized data is written into a new DataArray in the given DataSet.
+	This function essentialy shadows the function of the same name in snomtools.evaluation.microscopy, but adds a
+	standard import for PEEM DLD tiff files.
 
 	:param data: The DataSet instance of the data to normalize or a string with the filepath of the Tiff file from PEEM.
 
@@ -182,64 +184,14 @@ def normalize_by_flatfield_sum(data, flatfield_data, data_id=0, flat_id=0, newla
 	"""
 	if type(data) == str:
 		filepath = os.path.abspath(data)
-		data = snomtools.data.imports.tiff.peem_dld_read_terra(filepath)
+		filebase, ext = os.path.splitext(filepath)
+		if ext == ".tif":
+			data = snomtools.data.imports.tiff.peem_dld_read_terra(filepath)
 	if type(flatfield_data) == str:
 		filepath = os.path.abspath(flatfield_data)
-		flatfield_data = snomtools.data.imports.tiff.peem_dld_read_terra(filepath)
+		filebase, ext = os.path.splitext(filepath)
+		if ext == ".tif":
+			flatfield_data = snomtools.data.imports.tiff.peem_dld_read_terra(filepath)
 
-	assert isinstance(data, snomtools.data.datasets.DataSet), "ERROR: No DataSet given or imported."
-	assert isinstance(flatfield_data, snomtools.data.datasets.DataSet), "ERROR: No DataSet given or imported."
-
-	# Assemble tuple of axis indices to project onto:
-	axis1_id, axis2_id = "x", "y"
-	ax1_index = flatfield_data.get_axis_index(axis1_id)
-	ax2_index = flatfield_data.get_axis_index(axis2_id)
-	sumlist = range(flatfield_data.dimensions)
-	sumlist.remove(ax1_index)
-	sumlist.remove(ax2_index)
-	sumtup = tuple(sumlist)
-
-
-	flatfield_sumimage = flatfield_data.get_datafield(flat_id).sum(sumtup)
-	data_normalized = data.get_datafield(data_id) / flatfield_sumimage
-	data_normalized[~ numpy.isfinite(data_normalized)] = 0  # set inf, and NaN to 0
-	data.add_datafield(data_normalized, label=newlabel, plotlabel=new_plotlabel)
-	return data
-
-
-def normalize_by_flatfield_sum_raw(data, flatfield_data, data_id=0, flat_id=0, newlabel='norm_int',
-							   new_plotlabel="Normalized Intensity"):
-	"""
-	Normalizes a dataset by the data of another set, but uses raw numpy ndarrays as much as possible instead of
-	DataArrays and Quantities. Hopefully will result in better performance. Functionality as
-	normalize_by_flatfield_sum, see this function's doc for details.
-	WARNING: This doesn't work correctly yet!
-
-	:return: The modified dataset.
-	"""
-	print("WARNING: Function normalize_by_flatfield_sum_raw doesn't work correctly yet!")
-	if type(data) == str:
-		filepath = os.path.abspath(data)
-		data = snomtools.data.imports.tiff.peem_dld_read_terra(filepath)
-	if type(flatfield_data) == str:
-		filepath = os.path.abspath(flatfield_data)
-		flatfield_data = snomtools.data.imports.tiff.peem_dld_read_terra(filepath)
-
-	assert isinstance(data, snomtools.data.datasets.DataSet), "ERROR: No DataSet given or imported."
-	assert isinstance(flatfield_data, snomtools.data.datasets.DataSet), "ERROR: No DataSet given or imported."
-
-	# Assemble tuple of axis indices to project onto:
-	axis1_id, axis2_id = "x", "y"
-	ax1_index = flatfield_data.get_axis_index(axis1_id)
-	ax2_index = flatfield_data.get_axis_index(axis2_id)
-	sumlist = range(flatfield_data.dimensions)
-	sumlist.remove(ax1_index)
-	sumlist.remove(ax2_index)
-	sumtup = tuple(sumlist)
-
-
-	flatfield_sumimage = flatfield_data.get_datafield(flat_id).sum_raw(sumtup)
-	data_normalized = data.get_datafield(data_id).get_data_raw() / flatfield_sumimage
-	data_normalized[~ numpy.isfinite(data_normalized)] = 0  # set inf, and NaN to 0
-	data.add_datafield(data_normalized, label=newlabel, plotlabel=new_plotlabel)
-	return data
+	return snomtools.evaluation.microscopy.normalize_by_flatfield_sum(data, flatfield_data, data_id, flat_id, newlabel,
+																	  new_plotlabel)
