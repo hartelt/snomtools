@@ -53,7 +53,7 @@ def normalize_by_flatfield_sum(data, flatfield_data, data_id=0, flat_id=0, newla
 							   new_plotlabel="Normalized Intensity"):
 	"""
 	Normalizes a dataset by the data of another set, that was obtained on an unstructured surface and should
-	therefore be "flat" (flatfield). The data is normalized by the sum over all other channels int the dataset,
+	therefore be "flat" (flatfield). The data is normalized by the sum over all other channels in the dataset,
 	so only the spacial	image is normalized, while all other axes are kept at constant relative values.
 	The normalized data is written into a new DataArray in the given DataSet.
 
