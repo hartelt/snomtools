@@ -53,12 +53,16 @@ def normalize_by_reference(data, refdata, data_id=0, refdata_id=0, exclude_axes=
 	else:
 		refquantity = refdata.get_datafield(refdata_id).get_data()
 
+	del refdata
+
 	if mode in ["division", "divide", "div"]:
-		data_normalized = data.get_datafield(data_id) / refquantity
+		data_normalized = data.get_datafield(data_id).get_data() / refquantity
 	elif mode in ["subtraction", "subtract", "sub"]:
-		data_normalized = data.get_datafield(data_id) - refquantity
+		data_normalized = data.get_datafield(data_id).get_data() - refquantity
 	else:
 		raise ValueError("Unrecognized mode for normalize_by_reference.")
+
+	del refquantity
 
 	data_normalized[~ numpy.isfinite(data_normalized)] = 0  # set inf, and NaN to 0
 	data.add_datafield(data_normalized, label=newlabel, plotlabel=new_plotlabel)
