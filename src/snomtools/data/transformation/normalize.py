@@ -58,6 +58,8 @@ def normalize_by_reference(data, refdata, data_id=0, refdata_id=0, exclude_axes=
 	if mode in ["division", "divide", "div"]:
 		data_normalized = data.get_datafield(data_id).get_data() / refquantity
 	elif mode in ["subtraction", "subtract", "sub"]:
+		if refquantity.dtype == numpy.dtype('uint'):
+			refquantity = refquantity.astype('int') # To avoid unsigned integer overflow.
 		data_normalized = data.get_datafield(data_id).get_data() - refquantity
 	else:
 		raise ValueError("Unrecognized mode for normalize_by_reference.")

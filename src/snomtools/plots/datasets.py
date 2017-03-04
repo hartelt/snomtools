@@ -8,7 +8,7 @@ import matplotlib.patches
 import numpy
 
 
-def project_1d(data, plot_dest, axis_id=0, data_id=0, normalization=None, **kwargs):
+def project_1d(data, plot_dest, axis_id=0, data_id=0, normalization=None, offset=None, **kwargs):
 	"""
 	Plots a projection of the data onto one axis. Therefore, it sums the values over all the other axes.
 
@@ -28,6 +28,9 @@ def project_1d(data, plot_dest, axis_id=0, data_id=0, normalization=None, **kwar
 	* "absolute maximum", "absmax": divide every value by the maximum absolute value in the set
 	* "absolute minimum", "absmin": divide every value by the minimum absolute value in the set
 	* "size": divide every value by the number of pixels that have been summed in the projection (ROI size)
+
+	:param offset: Offset the data by this value. Will be applied AFTER normalization. Unit must be consistent,
+	accordingly, to normalized data.
 
 	:param kwargs: Keyword arguments for the plot() normalization of the plot object.
 
@@ -70,6 +73,9 @@ def project_1d(data, plot_dest, axis_id=0, data_id=0, normalization=None, **kwar
 				plotdat = sumdat
 	else:
 		plotdat = sumdat
+
+	if offset:
+		plotdat = plotdat + offset
 
 	assert (plotdat.shape == ax.shape), "Plot data shapes don't match."
 
