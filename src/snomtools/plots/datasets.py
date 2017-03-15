@@ -56,10 +56,10 @@ def project_1d(data, plot_dest, axis_id=0, data_id=0, normalization=None, offset
 			plotdat = sumdat / sumdat.min()
 		elif normalization in ["mean"]:
 			plotdat = sumdat / sumdat.mean()
-		elif normalization in ["absolute maximum", "max"]:
-			plotdat = sumdat / sumdat.absmax()
-		elif normalization in ["absolute minimum", "min"]:
-			plotdat = sumdat / sumdat.absmin()
+		elif normalization in ["absolute maximum", "absmax"]:
+			plotdat = sumdat / abs(sumdat).max()
+		elif normalization in ["absolute minimum", "absmin"]:
+			plotdat = sumdat / abs(sumdat).min()
 		elif normalization in ["size"]:
 			number_of_pixels = 1
 			for ax_id in sumtup:
@@ -139,10 +139,10 @@ def project_2d(data, plot_dest, axis_vert=0, axis_hori=1, data_id=0, normalizati
 			plotdat = sumdat / sumdat.min()
 		elif normalization in ["mean"]:
 			plotdat = sumdat / sumdat.mean()
-		elif normalization in ["absolute maximum", "max"]:
-			plotdat = sumdat / sumdat.absmax()
-		elif normalization in ["absolute minimum", "min"]:
-			plotdat = sumdat / sumdat.absmin()
+		elif normalization in ["absolute maximum", "absmax"]:
+			plotdat = sumdat / abs(sumdat).max()
+		elif normalization in ["absolute minimum", "absmin"]:
+			plotdat = sumdat / abs(sumdat).min()
 		elif normalization in ["size"]:
 			number_of_pixels = 1
 			for ax_id in sumtup:
