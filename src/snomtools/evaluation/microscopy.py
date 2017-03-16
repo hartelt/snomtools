@@ -10,6 +10,7 @@ data.datasets.py
 
 import snomtools.data.datasets
 import snomtools.calcs.units as u
+import numpy
 
 
 def fov_scale_absolute(pixel_axis, fov, unit='m'):

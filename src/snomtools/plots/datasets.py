@@ -168,7 +168,7 @@ def project_2d(data, plot_dest, axis_vert=0, axis_hori=1, data_id=0, normalizati
 
 def mark_roi_1d(roi, plot_dest, axis_id=0, **kwargs):
 	"""
-	Marks a ROI in a 2D plot with a box representing the ROI limits.
+	Marks a ROI in a 1D plot with a span representing the ROI limits.
 
 	:param roi: The ROI instance.
 
