@@ -45,6 +45,10 @@ h = h_float * ureg('J s')
 hbar_float = 1.05457168e-34
 hbar = hbar_float * ureg('J s / rad')
 
+#k_B: the Boltzmann constant in J / K
+k_B_float = 1.38064852e-23
+k_B = k_B_float * ureg('J / K')
+
 # Just for testing purposes:
 def test():
 	print pi
@@ -55,3 +59,4 @@ def test():
 	print(m_e)
 	print(h)
 	print(hbar)
+	print(k_B)
