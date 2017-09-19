@@ -14,10 +14,12 @@ from scipy.optimize import curve_fit
 import scipy.special
 import snomtools.calcs.constants as const
 
-Kb = const.k_B # The Boltzmann constant
-Temp = 300*u.to_ureg("Kelvin") # The Temperature, for now hardcoded as room temperature.
+k_B = const.k_B  # The Boltzmann constant
+Temp = 300 * u.to_ureg("Kelvin")  # The Temperature, for now hardcoded as room temperature.
+kBT_in_eV = (k_B.to("eV/K") * Temp)
 
-def fermi_edge(E,E_f,b,c,d):
+
+def fermi_edge(E, E_f, dE, c, d):
 	"""
 	The typical shape of a fermi edge for constant DOS. Suitable as a fit function
 
@@ -25,8 +27,8 @@ def fermi_edge(E,E_f,b,c,d):
 
 	:param E_f: The Fermi energy in eV.
 
-	:param b: The width of the Fermi edge on top of the thermal broadening, which is introduced by all experimental
-	errors, in eV.
+	:param dE: Energy Resolution. The broadening of the Fermi edge on top of the thermal broadening,
+	which is introduced by all experimental errors, in eV.
 
 	:param c: The height of the Fermi edge, in whichever units the data is given, e.g. "counts".
 
@@ -34,7 +36,158 @@ def fermi_edge(E,E_f,b,c,d):
 
 	:return: The value of the Fermi distribution at the energy E.
 	"""
-	return 0.5*(1-scipy.special.erf((E_f-E)/(np.sqrt(((1.7*Kb*Temp)**2)+b**2)*np.sqrt(2))))*c+d
+	return 0.5 * (
+	1 - scipy.special.erf((E_f - E) / (np.sqrt(((1.7 * kBT_in_eV) ** 2) + dE ** 2) * np.sqrt(2)))) * c + d
 
-def fermi_fit(data, energy_axis=None):
+
+class Fermi_Edge:
+	"""
+	A fermi edge in a spectrum...
+	"""
+
+	def __init__(self, data=None, keepdata=True):
+		if data:
+			if keepdata:
+				self.data = self.extract_data(data)
+				self.coeffs, self.accuracy = self.fit_fermi_edge(self.data.get_axis(0).get_data(),
+																 self.data.get_datafield(0).get_data())
+			else:
+				self.data = None
+				energies, intensities = self.extract_data_raw(data)
+				self.coeffs, self.accuracy = self.fit_fermi_edge(energies, intensities)
+
+	def __getattr__(self, item):
+		"""
+		This method provides dynamical naming in instances. It is called any time an attribute of the intstance is
+		not found with the normal naming mechanism. Raises an AttributeError if the name cannot be resolved.
+
+		:param item: The name to get the corresponding attribute.
+
+		:return: The attribute corresponding to the given name.
+		"""
+		if item == "E_f":
+			return self.coeffs[0]
+		if item == "dE":
+			return self.coeffs[1]
+		if item == "c":
+			return self.coeffs[2]
+		if item == "d":
+			return self.coeffs[3]
+		raise AttributeError("Attribute \'{0}\' of DataArray instance cannot be resolved.".format(item))
+
+	@classmethod
+	def from_coeffs(cls, coeffs):
+		pl = cls()
+		pl.coeffs = coeffs
+		return pl
+
+	@classmethod
+	def from_xy(cls, energies, intensities):
+		pl = cls()
+		pl.coeffs, pl.accuracy = cls.fit_powerlaw(energies, intensities)
+		return pl
+
+	def fermi_edge(self, E):
+		"""
+		The shape of a fermi edge for the known fit parameters of the Fermi_Edge instance.
+
+		:param E: Electron Energy in eV
+
+		:return: The value of the Fermi distribution at the energy E.
+		"""
+		return 0.5 * (1 - scipy.special.erf(
+			(self.E_f - E) / (np.sqrt(((1.7 * kBT_in_eV) ** 2) + self.dE ** 2) * np.sqrt(2)))) * self.c + self.d
+
+	@staticmethod
+	def extract_data_raw(data, data_id=0, axis_id=None):
+		"""
+		Extracts the energies and intensities out of a dataset. Therefore, it takes the energy axis of the input data,
+		and projects the datafield onto that axis by summing over all the other axes.
+
+		:param data: Dataset containing the spectral data.
+
+		:param data_id: Identifier of the DataField to use.
+
+		:param axis_id: optional, Identifier of the power axis to use. If not given, the first axis that corresponds
+		to a Power in its physical dimension is taken.
+
+		:return: energies, intensities: tuple of quantities with the projected data.
+		"""
+		assert isinstance(data, snomtools.data.datasets.DataSet) or isinstance(data, snomtools.data.datasets.ROI), \
+			"ERROR: No dataset or ROI instance given to Powerlaw data extraction."
+		if axis_id is None:
+			energy_axis = data.get_axis_by_dimension("eV")
+		else:
+			energy_axis = data.get_axis(axis_id)
+		count_data = data.get_datafield(data_id)
+		energy_axis_index = data.get_axis_index(energy_axis.get_label())
+		return energy_axis.get_data(), count_data.project_nd(energy_axis_index)
+
+	@staticmethod
+	def extract_data(data, data_id=0, axis_id=None, label="fermiedge"):
+		"""
+		Extracts the energies and intensities out of a dataset. Therefore, it takes the energy axis of the input data,
+		and projects the datafield onto that axis by summing over all the other axes.
+
+		:param data: Dataset containing the spectral data.
+
+		:param data_id: Identifier of the DataField to use.
+
+		:param axis_id: optional, Identifier of the power axis to use. If not given, the first axis that corresponds
+		to a Power in its physical dimension is taken.
+
+		:param label: string: label for the produced DataSet
+
+		:return: 1D-DataSet with projected Intensity Data and Power Axis.
+		"""
+		assert isinstance(data, snomtools.data.datasets.DataSet) or isinstance(data, snomtools.data.datasets.ROI), \
+			"ERROR: No dataset or ROI instance given to Powerlaw data extraction."
+		if axis_id is None:
+			energy_axis = data.get_axis_by_dimension("eV")
+		else:
+			energy_axis = data.get_axis(axis_id)
+		count_data = data.get_datafield(data_id)
+		energy_axis_index = data.get_axis_index(energy_axis.get_label())
+		count_data_projected = count_data.project_nd(energy_axis_index)
+		count_data_projected = snomtools.data.datasets.DataArray(count_data_projected, label='intensity')
+		# Normalize by scaling to 1:
+		count_data_projected_norm = count_data_projected / count_data_projected.max()
+		count_data_projected_norm.set_label("intensity_normalized")
+		# Initialize the DataSet containing only the projected powerlaw data;
+		return snomtools.data.datasets.DataSet(label, [count_data_projected_norm, count_data_projected], [energy_axis])
+
+	@staticmethod
+	def fit_fermi_edge(energies, intensities, guess=None):
+		"""
+		This function fits a fermi edge to data. Uses numpy.optimize.curve_fit under the hood.
+
+		:param energies: A quantity or array of energies. If no quantity, electronvolts are assumed.
+
+		:param intensities: Quantity or array: The corresponding intensity values to powers.
+
+		:param guess: optional: A tuple of start parameters (E_f, dE, c, d) as defined in fermi_edge method.
+
+		:return: The coefficients and uncertainties of the fitted fermi edge E_f, dE, c, d, as defined in fermi_edge
+		method.
+		"""
+		if u.is_quantity(energies):
+			assert u.same_dimension(energies, "eV")
+			energies = u.to_ureg(energies)
+		else:
+			energies = u.to_ureg(energies, 'eV')
+		intensities = u.to_ureg(intensities)
+		if guess is None:
+			guess = (34.6, 0.1, 1.0, 0.01)  # Just typical values from Tobi for DLD with drift voltage 30 V.
+		return curve_fit(fermi_edge, energies.magnitude, intensities.magnitude, guess)
+
+
+def fermi_fit(data, energy_axis=None, range=None, guess=None):
+	"""
+	Fit a Fermi Distribution to the given data.
+	:param data:
+	:param energy_axis:
+	:param range:
+	:param guess:
+	:return:
+	"""
 	pass
