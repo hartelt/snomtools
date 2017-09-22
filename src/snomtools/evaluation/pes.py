@@ -15,13 +15,14 @@ import scipy.special
 import snomtools.calcs.constants as const
 
 k_B = const.k_B  # The Boltzmann constant
-Temp = 300 * u.to_ureg("Kelvin")  # The Temperature, for now hardcoded as room temperature.
+Temp = u.to_ureg(300, "Kelvin")  # The Temperature, for now hardcoded as room temperature.
 kBT_in_eV = (k_B.to("eV/K") * Temp)
 
 
 def fermi_edge(E, E_f, dE, c, d):
 	"""
-	The typical shape of a fermi edge for constant DOS. Suitable as a fit function
+	The typical shape of a fermi edge for constant DOS. Suitable as a fit function, therefore it takes only floats,
+	no quantities.
 
 	:param E: The x-Axis of the data consists of energies in eV
 
@@ -37,24 +38,29 @@ def fermi_edge(E, E_f, dE, c, d):
 	:return: The value of the Fermi distribution at the energy E.
 	"""
 	return 0.5 * (
-	1 - scipy.special.erf((E_f - E) / (np.sqrt(((1.7 * kBT_in_eV) ** 2) + dE ** 2) * np.sqrt(2)))) * c + d
+		1 - scipy.special.erf((E_f - E) / (np.sqrt(((1.7 * kBT_in_eV.magnitude) ** 2) + dE ** 2) * np.sqrt(2)))) * c + d
 
 
-class Fermi_Edge:
+class FermiEdge:
 	"""
 	A fermi edge in a spectrum...
 	"""
 
-	def __init__(self, data=None, keepdata=True):
+	def __init__(self, data=None, guess=None, keepdata=True):
 		if data:
-			if keepdata:
-				self.data = self.extract_data(data)
-				self.coeffs, self.accuracy = self.fit_fermi_edge(self.data.get_axis(0).get_data(),
-																 self.data.get_datafield(0).get_data())
-			else:
+			self.data = self.extract_data(data)
+			energyunit = self.data.get_axis(0).get_unit()
+			countsunit = self.data.get_datafield(0).get_unit()
+
+			self.coeffs, self.accuracy = self.fit_fermi_edge(self.data.get_axis(0).get_data(),
+															 self.data.get_datafield(0).get_data(),
+															 guess)
+			self.E_f_unit = energyunit
+			self.dE_unit = energyunit
+			self.c_unit = countsunit
+			self.d_unit = countsunit
+			if not keepdata:
 				self.data = None
-				energies, intensities = self.extract_data_raw(data)
-				self.coeffs, self.accuracy = self.fit_fermi_edge(energies, intensities)
 
 	def __getattr__(self, item):
 		"""
@@ -66,14 +72,14 @@ class Fermi_Edge:
 		:return: The attribute corresponding to the given name.
 		"""
 		if item == "E_f":
-			return self.coeffs[0]
+			return u.to_ureg(self.coeffs[0], self.E_f_unit)
 		if item == "dE":
-			return self.coeffs[1]
+			return u.to_ureg(self.coeffs[1], self.dE_unit)
 		if item == "c":
-			return self.coeffs[2]
+			return u.to_ureg(self.coeffs[2], self.c_unit)
 		if item == "d":
-			return self.coeffs[3]
-		raise AttributeError("Attribute \'{0}\' of DataArray instance cannot be resolved.".format(item))
+			return u.to_ureg(self.coeffs[3], self.d_unit)
+		raise AttributeError("Attribute \'{0}\' of Fermi_Edge instance cannot be resolved.".format(item))
 
 	@classmethod
 	def from_coeffs(cls, coeffs):
@@ -82,19 +88,21 @@ class Fermi_Edge:
 		return pl
 
 	@classmethod
-	def from_xy(cls, energies, intensities):
+	def from_xy(cls, energies, intensities, guess):
 		pl = cls()
-		pl.coeffs, pl.accuracy = cls.fit_powerlaw(energies, intensities)
+		pl.coeffs, pl.accuracy = cls.fit_powerlaw(energies, intensities, guess)
 		return pl
 
 	def fermi_edge(self, E):
 		"""
 		The shape of a fermi edge for the known fit parameters of the Fermi_Edge instance.
 
-		:param E: Electron Energy in eV
+		:param E: Electron Energy (Quantity or numerical in eV).
 
-		:return: The value of the Fermi distribution at the energy E.
+		:return: The value of the Fermi distribution at the energy E. Returned as Quantity in whichever unit the fit
+		data was given.
 		"""
+		E = u.to_ureg(E, "eV")
 		return 0.5 * (1 - scipy.special.erf(
 			(self.E_f - E) / (np.sqrt(((1.7 * kBT_in_eV) ** 2) + self.dE ** 2) * np.sqrt(2)))) * self.c + self.d
 
@@ -178,6 +186,14 @@ class Fermi_Edge:
 		intensities = u.to_ureg(intensities)
 		if guess is None:
 			guess = (34.6, 0.1, 1.0, 0.01)  # Just typical values from Tobi for DLD with drift voltage 30 V.
+		else:  # to assure the guess is represented in the correct units:
+			energyunit = energies.units
+			countsunit = intensities.units
+			unitslist = [energyunit, energyunit, countsunit, countsunit]
+			guesslist = []
+			for guesselement, guessunit in zip(guess, unitslist):
+				guesslist.append(u.to_ureg(guesselement, guessunit).magnitude)
+			guess = tuple(guess)
 		return curve_fit(fermi_edge, energies.magnitude, intensities.magnitude, guess)
 
 
