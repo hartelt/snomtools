@@ -524,6 +524,8 @@ class ROI:
 		if limitlist:
 			self.set_limits_all(limitlist, by_index)
 
+	# TODO: Implement project_nd consistently.
+
 	def __getattr__(self, item):
 		"""
 		This method provides dynamical naming in instances. It is called any time an attribute of the intstance is

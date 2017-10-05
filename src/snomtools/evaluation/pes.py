@@ -15,7 +15,7 @@ import scipy.special
 import snomtools.calcs.constants as const
 
 k_B = const.k_B  # The Boltzmann constant
-Temp = u.to_ureg(300, "Kelvin")  # The Temperature, for now hardcoded as room temperature.
+Temp = u.to_ureg(300, "K")  # The Temperature, for now hardcoded as room temperature.
 kBT_in_eV = (k_B.to("eV/K") * Temp)
 
 
@@ -156,6 +156,7 @@ class FermiEdge:
 			energy_axis = data.get_axis(axis_id)
 		count_data = data.get_datafield(data_id)
 		energy_axis_index = data.get_axis_index(energy_axis.get_label())
+		# BUG: selecting range by inputting ROI fails in following line;
 		count_data_projected = count_data.project_nd(energy_axis_index)
 		count_data_projected = snomtools.data.datasets.DataArray(count_data_projected, label='intensity')
 		# Normalize by scaling to 1:
@@ -185,7 +186,7 @@ class FermiEdge:
 			energies = u.to_ureg(energies, 'eV')
 		intensities = u.to_ureg(intensities)
 		if guess is None:
-			guess = (34.6, 0.1, 1.0, 0.01)  # Just typical values from Tobi for DLD with drift voltage 30 V.
+			guess = (29.6, 0.1, 1.0, 0.01)  # Just typical values from Tobi for DLD with drift voltage 30 V.
 		else:  # to assure the guess is represented in the correct units:
 			energyunit = energies.units
 			countsunit = intensities.units
