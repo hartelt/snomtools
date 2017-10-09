@@ -37,8 +37,8 @@ def fermi_edge(E, E_f, dE, c, d):
 
 	:return: The value of the Fermi distribution at the energy E.
 	"""
-	return 0.5 * (
-		1 - scipy.special.erf((E_f - E) / (np.sqrt(((1.7 * kBT_in_eV.magnitude) ** 2) + dE ** 2) * np.sqrt(2)))) * c + d
+	return 0.5 * (1 +
+		scipy.special.erf((E_f - E) / (np.sqrt(((1.7 * kBT_in_eV.magnitude) ** 2) + dE ** 2) * np.sqrt(2)))) * c + d
 
 
 class FermiEdge:
@@ -46,14 +46,18 @@ class FermiEdge:
 	A fermi edge in a spectrum...
 	"""
 
-	def __init__(self, data=None, guess=None, keepdata=True):
+	def __init__(self, data=None, guess=None, keepdata=True, normalize=False):
 		if data:
 			self.data = self.extract_data(data)
 			energyunit = self.data.get_axis(0).get_unit()
 			countsunit = self.data.get_datafield(0).get_unit()
+			if normalize:
+				take_data = 0
+			else:
+				take_data = 1
 
 			self.coeffs, self.accuracy = self.fit_fermi_edge(self.data.get_axis(0).get_data(),
-															 self.data.get_datafield(0).get_data(),
+															 self.data.get_datafield(take_data).get_data(),
 															 guess)
 			self.E_f_unit = energyunit
 			self.dE_unit = energyunit
@@ -103,7 +107,7 @@ class FermiEdge:
 		data was given.
 		"""
 		E = u.to_ureg(E, "eV")
-		return 0.5 * (1 - scipy.special.erf(
+		return 0.5 * (1 + scipy.special.erf(
 			(self.E_f - E) / (np.sqrt(((1.7 * kBT_in_eV) ** 2) + self.dE ** 2) * np.sqrt(2)))) * self.c + self.d
 
 	@staticmethod
@@ -156,7 +160,6 @@ class FermiEdge:
 			energy_axis = data.get_axis(axis_id)
 		count_data = data.get_datafield(data_id)
 		energy_axis_index = data.get_axis_index(energy_axis.get_label())
-		# BUG: selecting range by inputting ROI fails in following line;
 		count_data_projected = count_data.project_nd(energy_axis_index)
 		count_data_projected = snomtools.data.datasets.DataArray(count_data_projected, label='intensity')
 		# Normalize by scaling to 1:
@@ -186,7 +189,7 @@ class FermiEdge:
 			energies = u.to_ureg(energies, 'eV')
 		intensities = u.to_ureg(intensities)
 		if guess is None:
-			guess = (29.6, 0.1, 1.0, 0.01)  # Just typical values from Tobi for DLD with drift voltage 30 V.
+			guess = (29.6, 0.1, 1.0, 0.01)  # Just typical values
 		else:  # to assure the guess is represented in the correct units:
 			energyunit = energies.units
 			countsunit = intensities.units
