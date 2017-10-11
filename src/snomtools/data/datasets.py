@@ -1405,6 +1405,7 @@ class DataSet:
 			self.axes[index] = (Axis.from_h5(axesgrp[axis]))
 		self.plotconf = h5tools.load_dictionary(infile['plotconf'])
 		self.check_data_consistency()
+		infile.close()
 
 	def load_textfile(self, path, axis=0, comments='#', delimiter=None, unitsplitter="[-\/ ]+", labelline=0,
 					  unitsline=0, **kwargs):

@@ -38,5 +38,5 @@ def fit_xy_linear(xdata, ydata):
 	one_xunit = u.to_ureg(str(xdata.units))
 	one_yunit = u.to_ureg(str(ydata.units))
 	m = u.to_ureg(m, one_yunit / one_xunit)
-	c = u.to_ureg(c, one_xunit)
+	c = u.to_ureg(c, one_yunit)
 	return m, c

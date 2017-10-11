@@ -43,7 +43,7 @@ def time_scale_axis(delay_axis, unit='fs', unitplotlabel=None):
 	return snomtools.data.datasets.Axis(scaled_data, label='delay', plotlabel="Pulse Delay / " + unitplotlabel)
 
 
-def delay_apply_timescale(data, unit='fs'):
+def delay_apply_timescale(data, unit='fs', unitplotlabel=None):
 	"""
 	Applies an time scaling to a pump-probe DataSet. The delay axis will be replaced with a new delay axis in time
 	units.
@@ -55,6 +55,6 @@ def delay_apply_timescale(data, unit='fs'):
 	:return: The modified dataset.
 	"""
 	assert isinstance(data, snomtools.data.datasets.DataSet), "ERROR: No DataSet given or imported."
-	time_axis = time_scale_axis(data.get_axis('delay'), unit)
+	time_axis = time_scale_axis(data.get_axis('delay'), unit, unitplotlabel)
 	data.replace_axis('delay', time_axis)
 	return data
