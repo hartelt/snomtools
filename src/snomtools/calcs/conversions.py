@@ -20,7 +20,7 @@ def deg2rad(angle, return_numeric=None):
 
 	:return: the angle in rad
 	"""
-	if return_numeric == None:
+	if return_numeric is None:
 		return_numeric = not u.is_quantity(angle)
 	rad = u.to_ureg(angle, 'deg').to('rad')
 	if return_numeric:
@@ -39,7 +39,7 @@ def rad2deg(rad, return_numeric=None):
 
 	:return: the angle in degees
 	"""
-	if return_numeric == None:
+	if return_numeric is None:
 		return_numeric = not u.is_quantity(rad)
 	angle = u.to_ureg(rad, 'rad').to('deg')
 	if return_numeric:
@@ -58,7 +58,7 @@ def lambda2omega(lambda_, return_numeric=None):
 
 	:return: the angular frequency in Hz (rad/s)
 	"""
-	if return_numeric == None:
+	if return_numeric is None:
 		return_numeric = not u.is_quantity(lambda_)
 	lambda_ = u.to_ureg(lambda_, 'm')
 	omega = 2.0 * constants.c * constants.pi / lambda_  # c*2*pi/lambda
@@ -78,7 +78,7 @@ def omega2lambda(omega, return_numeric=None):
 
 	:return: the wavelength lambda in m
 	"""
-	if return_numeric == None:
+	if return_numeric is None:
 		return_numeric = not u.is_quantity(omega)
 	omega = u.to_ureg(omega, 'Hz')
 	lambda_ = 2.0 * constants.pi * constants.c / omega
@@ -98,7 +98,7 @@ def k2lambda(k, return_numeric=None):
 
 	:return: the wavelength in m
 	"""
-	if return_numeric == None:
+	if return_numeric is None:
 		return_numeric = not u.is_quantity(k)
 	k = u.to_ureg(k, 'rad/m')
 	lambda_ = 2.0 * constants.pi / k  # lambda = 2pi/k
@@ -118,7 +118,7 @@ def lambda2k(lambda_, return_numeric=None):
 
 	:return: the angular wavenumber in 1/m (rad/m)
 	"""
-	if return_numeric == None:
+	if return_numeric is None:
 		return_numeric = not u.is_quantity(lambda_)
 	lambda_ = u.to_ureg(lambda_, 'm')
 	k = 2.0 * constants.pi / lambda_
@@ -139,7 +139,7 @@ def omega2energy(omega, return_numeric=None):
 
 	:return:the energy in J
 	"""
-	if return_numeric == None:
+	if return_numeric is None:
 		return_numeric = not u.is_quantity(omega)
 	omega = u.to_ureg(omega, 'rad/s')
 	E = constants.hbar * omega
@@ -161,7 +161,7 @@ def joule2ev(energy, return_numeric=None):
 
 	:return:the energy in eV
 	"""
-	if return_numeric == None:
+	if return_numeric is None:
 		return_numeric = not u.is_quantity(energy)
 	eV = u.to_ureg(energy, 'J').to('eV')
 	if return_numeric:
@@ -182,7 +182,7 @@ def ev2joule(energy, return_numeric=None):
 
 	:return: the energy in J
 	"""
-	if return_numeric == None:
+	if return_numeric is None:
 		return_numeric = not u.is_quantity(energy)
 	J = u.to_ureg(energy, 'eV').to('J')
 	if return_numeric:
@@ -206,7 +206,7 @@ def k_beat2k_spp(k_b, k_l, angle, return_numeric=None):
 
 	:return: the plasmon beat pattern wavenumber in 1/m (rad/m)
 	"""
-	if return_numeric == None:
+	if return_numeric is None:
 		return_numeric = not u.is_quantity(k_b)
 	k_b = u.to_ureg(k_b, 'rad/m')
 	k_l = u.to_ureg(k_l, 'rad/m')
@@ -229,7 +229,7 @@ def n2epsilon(n, return_numeric=None):
 
 	:return: the complex dielectric constant
 	"""
-	if return_numeric == None:
+	if return_numeric is None:
 		return_numeric = not u.is_quantity(n)
 	n = u.to_ureg(n, 'dimensionless')
 	eps = n ** 2
@@ -250,7 +250,7 @@ def epsilon2n(epsilon, return_numeric=None):
 
 	:return: the complex refractive index
 	"""
-	if return_numeric == None:
+	if return_numeric is None:
 		return_numeric = not u.is_quantity(epsilon)
 	epsilon = u.to_ureg(epsilon, 'dimensionless')
 	myn = numpy.sqrt(epsilon)
@@ -258,6 +258,58 @@ def epsilon2n(epsilon, return_numeric=None):
 		return myn.magnitude
 	else:
 		return myn
+
+
+def length2time(length, n=1., outunit="s", return_numeric=None):
+	"""
+	Converts a length to a time in the context of light travel time.
+
+	:param length: A length, assumed in meters if given as numerical format.
+
+	:param n: Float or dimensionless quantity: The refraction index of the medium.
+
+	:param outunit: A valid time unit string.
+
+	:param return_numeric: flag to return numeric formats instead of quantities. default is input format.
+
+	:return: The time, given in the unit specified in outunit.
+	"""
+	if return_numeric is None:
+		return_numeric = not u.is_quantity(length)
+	length = u.to_ureg(length, 'meter', convert_quantities=False)
+	n = u.to_ureg(n, 'dimensionless')
+	time = n * length / constants.c
+	time = time.to(outunit)
+	if return_numeric:
+		return time.magnitude
+	else:
+		return time
+
+
+def time2length(time, n=1., outunit="m", return_numeric=None):
+	"""
+	Converts a time to a length in the context of light travel time.
+
+	:param time: A time, assumed in seconds if given as numerical format.
+
+	:param n: Float or dimensionless quantity: The refraction index of the medium.
+
+	:param outunit: A valid length unit string.
+
+	:param return_numeric: flag to return numeric formats instead of quantities. default is input format.
+
+	:return: The length, given in the unit specified in outunit.
+	"""
+	if return_numeric is None:
+		return_numeric = not u.is_quantity(time)
+	time = u.to_ureg(time, 'second', convert_quantities=False)
+	n = u.to_ureg(n, 'dimensionless')
+	length = time * constants.c / n
+	length = length.to(outunit)
+	if return_numeric:
+		return length.magnitude
+	else:
+		return length
 
 
 # Just for testing purposes:

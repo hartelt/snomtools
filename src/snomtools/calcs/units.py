@@ -11,15 +11,22 @@ import pint.quantity
 import numpy
 
 ureg = pint.UnitRegistry()
+Quantity = ureg.Quantity
 
 # Custom units that we use frequently can be defined here:
 # ureg.define('dog_year = 52 * day = dy')
 ureg.define('pixel = []')
 ureg.define('count = []')
 
-
 # Custom prefixes we use frequently can be defined here:
 # ureg.define('myprefix- = 30 = my-')
+
+# Custom contexts we use frequently can be defined here:
+c = pint.Context('light')
+c.add_transformation('[length]', '[time]', lambda ureg, x: x / ureg.speed_of_light)
+c.add_transformation('[time]', '[length]', lambda ureg, x: x * ureg.speed_of_light)
+ureg.add_context(c)
+
 
 def same_dimension(*args):
 	"""
@@ -30,10 +37,27 @@ def same_dimension(*args):
 	:return: Boolean.
 	"""
 	uregargs = as_ureg_quantities(args)
-	#with as_ureg_quantities(args) as a:
+	# with as_ureg_quantities(args) as a:
 	arg0 = next(uregargs)
 	for arg in uregargs:
 		if arg0.dimensionality != arg.dimensionality:
+			return False
+	return True
+
+
+def same_unit(*args):
+	"""
+	Checks if all of the given arguments are of the same unit.
+
+	:param args:
+
+	:return: Boolean.
+	"""
+	uregargs = as_ureg_quantities(args)
+	# with as_ureg_quantities(args) as a:
+	arg0 = next(uregargs)
+	for arg in uregargs:
+		if arg0.units != arg.units:
 			return False
 	return True
 
@@ -79,7 +103,7 @@ def is_quantity(tocheck):
 	return isinstance(tocheck, pint.quantity._Quantity)
 
 
-def to_ureg(input_, unit=None):
+def to_ureg(input_, unit=None, convert_quantities=True):
 	"""
 	This method is an import function to import alien quantities (of different unit registries) or numeric formats into
 	the ureg.
@@ -88,6 +112,10 @@ def to_ureg(input_, unit=None):
 
 	:param unit: Given as a valid unit string. If a numeric format is used, this specifies the unit of it. If a quantity
 	is used, the output quantity will be converted to it.
+
+	:param convert_quantities: Boolean: Specifies what should be done if input_ is a quantity.
+	True: convert the quantity to the unit if specified by unit parameter. (The default)
+	False: only assure the dimension is correct and import to ureg, but leave unit of input as is is.
 
 	:return: The imported quantity.
 	"""
@@ -100,23 +128,22 @@ def to_ureg(input_, unit=None):
 			input_.to(unit)
 		# Check if input is already of our ureg. If so, nothing to do other then convert if unit is specified:
 		if input_._REGISTRY is ureg:
-			if unit:
+			if unit and convert_quantities:
 				return input_.to(unit)
 			else:
 				return input_
 		else:  # Use inputs magnitude, but our corresponding ureg unit.
-			importedquantity = input_.magnitude * ureg(str(input_.units))
-			if unit:
-				return importedquantity.to(unit)
+			if unit and convert_quantities:
+				return Quantity(input_.magnitude, str(input_.units)).to(unit)
 			else:
-				return importedquantity
+				return Quantity(input_.magnitude, str(input_.units))
 	elif (isinstance(input_, str) or isinstance(input_, unicode)):
 		if unit:
 			return ureg(input_).to(unit)
 		else:
 			return ureg(input_)
 	else:  # we are dealing with numerial data
-		return input_ * ureg(unit)
+		return Quantity(input_, unit)
 
 
 def as_ureg_quantities(stream):

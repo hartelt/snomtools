@@ -6,7 +6,7 @@ This script holds transformation functions for datasets, that project data onto 
 import snomtools.data.datasets as datasets
 
 
-def project_1d(data, axis_id=0, data_id=None, outlabel=None):
+def project_1d(data, axis_id=0, data_id=None, outlabel=None, normalization=None):
 	"""
 	Plots a projection of the data onto one axis. Therefore, it sums the values over all the other axes.
 
@@ -19,6 +19,15 @@ def project_1d(data, axis_id=0, data_id=None, outlabel=None):
 
 	:param outlabel: String, optional: A label to assign to the projected DataSet. Default: Label of the original
 	DataSet.
+
+	:param normalization: Method for a normalization to apply to the data. Valid options:
+	* None, "None" (default): No normalization.
+	* "maximum", "max": divide every value by the maximum value in the set
+	* "mean": divide every value by the average value in the set
+	* "minimum", "min": divide every value by the minimum value in the set
+	* "absolute maximum", "absmax": divide every value by the maximum absolute value in the set
+	* "absolute minimum", "absmin": divide every value by the minimum absolute value in the set
+	* "size": divide every value by the number of pixels that have been summed in the projection (ROI size)
 
 	:return: A dataset instance with the projected data.
 	"""
@@ -44,12 +53,41 @@ def project_1d(data, axis_id=0, data_id=None, outlabel=None):
 	for label in dlabels:
 		df = data.get_datafield(label)
 		sumdat = df.sum(sumtup)
-		outfield = datasets.DataArray(sumdat, label=df.get_label(), plotlabel="projected " + df.get_plotlabel())
+		if normalization:
+			pl = "normalized projected " + df.get_plotlabel()
+			if normalization == "None":
+				normdat = sumdat
+				pl = "projected " + df.get_plotlabel()
+			elif normalization in ["maximum", "max"]:
+				normdat = sumdat / sumdat.max()
+			elif normalization in ["minimum", "min"]:
+				normdat = sumdat / sumdat.min()
+			elif normalization in ["mean"]:
+				normdat = sumdat / sumdat.mean()
+			elif normalization in ["absolute maximum", "absmax"]:
+				normdat = sumdat / abs(sumdat).max()
+			elif normalization in ["absolute minimum", "absmin"]:
+				normdat = sumdat / abs(sumdat).min()
+			elif normalization in ["size"]:
+				number_of_pixels = 1
+				for ax_id in sumtup:
+					number_of_pixels *= len(data.get_axis(ax_id))
+				normdat = sumdat / number_of_pixels
+			else:
+				try:
+					normdat = sumdat / normalization
+				except TypeError:
+					print "WARNING: Normalization normalization not valid. Returning unnormalized data."
+					normdat = sumdat
+		else:
+			normdat = sumdat
+			pl = "projected " + df.get_plotlabel()
+		outfield = datasets.DataArray(normdat, label=df.get_label(), plotlabel=pl)
 		dfields.append(outfield)
 
 	return datasets.DataSet(outlabel, dfields, [ax])
 
-def project_2d(data, axis1_id=0, axis2_id=0, data_id=None, outlabel=None):
+def project_2d(data, axis1_id=0, axis2_id=0, data_id=None, outlabel=None, normalization=None):
 	"""
 	Plots a projection of the data onto one axis. Therefore, it sums the values over all the other axes.
 
@@ -64,6 +102,15 @@ def project_2d(data, axis1_id=0, axis2_id=0, data_id=None, outlabel=None):
 
 	:param outlabel: String, optional: A label to assign to the projected DataSet. Default: Label of the original
 	DataSet.
+
+	:param normalization: Method for a normalization to apply to the data. Valid options:
+	* None, "None" (default): No normalization.
+	* "maximum", "max": divide every value by the maximum value in the set
+	* "mean": divide every value by the average value in the set
+	* "minimum", "min": divide every value by the minimum value in the set
+	* "absolute maximum", "absmax": divide every value by the maximum absolute value in the set
+	* "absolute minimum", "absmin": divide every value by the minimum absolute value in the set
+	* "size": divide every value by the number of pixels that have been summed in the projection (ROI size)
 
 	:return: A dataset instance with the projected data.
 	"""
@@ -98,7 +145,36 @@ def project_2d(data, axis1_id=0, axis2_id=0, data_id=None, outlabel=None):
 	for label in dlabels:
 		df = data.get_datafield(label)
 		sumdat = df.sum(sumtup)
-		outfield = datasets.DataArray(sumdat, label=df.get_label(), plotlabel="projected " + df.get_plotlabel())
+		if normalization:
+			pl = "normalized projected " + df.get_plotlabel()
+			if normalization == "None":
+				normdat = sumdat
+				pl = "projected " + df.get_plotlabel()
+			elif normalization in ["maximum", "max"]:
+				normdat = sumdat / sumdat.max()
+			elif normalization in ["minimum", "min"]:
+				normdat = sumdat / sumdat.min()
+			elif normalization in ["mean"]:
+				normdat = sumdat / sumdat.mean()
+			elif normalization in ["absolute maximum", "absmax"]:
+				normdat = sumdat / abs(sumdat).max()
+			elif normalization in ["absolute minimum", "absmin"]:
+				normdat = sumdat / abs(sumdat).min()
+			elif normalization in ["size"]:
+				number_of_pixels = 1
+				for ax_id in sumtup:
+					number_of_pixels *= len(data.get_axis(ax_id))
+				normdat = sumdat / number_of_pixels
+			else:
+				try:
+					normdat = sumdat / normalization
+				except TypeError:
+					print "WARNING: Normalization normalization not valid. Returning unnormalized data."
+					normdat = sumdat
+		else:
+			normdat = sumdat
+			pl = "projected " + df.get_plotlabel()
+		outfield = datasets.DataArray(normdat, label=df.get_label(), plotlabel=pl)
 		dfields.append(outfield)
 
 	return datasets.DataSet(outlabel, dfields, axes)

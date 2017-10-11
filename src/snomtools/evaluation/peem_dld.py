@@ -11,8 +11,8 @@ data.datasets.py
 import snomtools.calcs.units as u
 import snomtools.data.datasets
 import snomtools.data.imports.tiff
+import snomtools.evaluation.microscopy
 import os.path
-import numpy
 
 
 def energy_scale_quadratic(channel_axis, C, t_0):
@@ -140,7 +140,7 @@ def energy_apply_calibration(data, kalfitfilename, mode='quadratic'):
 	"""
 	if type(data) == str:  # if tiff file is given, import it.
 		filepath = os.path.abspath(data)
-		data = snomtools.data.imports.tiff.peem_dld_read(filepath)
+		data = snomtools.data.imports.tiff.peem_dld_read_terra(filepath)
 	assert isinstance(data, snomtools.data.datasets.DataSet), "ERROR: No DataSet given or imported."
 
 	if mode == 'quadratic':
@@ -162,6 +162,8 @@ def normalize_by_flatfield_sum(data, flatfield_data, data_id=0, flat_id=0, newla
 	therefore be "flat" (flatfield). The data is normalized by the sum over all energy channels, so only the spacial
 	image is normalized, while all time channels are kept at constant relative values.
 	The normalized data is written into a new DataArray in the given DataSet.
+	This function essentialy shadows the function of the same name in snomtools.evaluation.microscopy, but adds a
+	standard import for PEEM DLD tiff files.
 
 	:param data: The DataSet instance of the data to normalize or a string with the filepath of the Tiff file from PEEM.
 
@@ -182,16 +184,14 @@ def normalize_by_flatfield_sum(data, flatfield_data, data_id=0, flat_id=0, newla
 	"""
 	if type(data) == str:
 		filepath = os.path.abspath(data)
-		data = snomtools.data.imports.tiff.peem_dld_read(filepath)
+		filebase, ext = os.path.splitext(filepath)
+		if ext == ".tif":
+			data = snomtools.data.imports.tiff.peem_dld_read_terra(filepath)
 	if type(flatfield_data) == str:
 		filepath = os.path.abspath(flatfield_data)
-		flatfield_data = snomtools.data.imports.tiff.peem_dld_read(filepath)
+		filebase, ext = os.path.splitext(filepath)
+		if ext == ".tif":
+			flatfield_data = snomtools.data.imports.tiff.peem_dld_read_terra(filepath)
 
-	assert isinstance(data, snomtools.data.datasets.DataSet), "ERROR: No DataSet given or imported."
-	assert isinstance(flatfield_data, snomtools.data.datasets.DataSet), "ERROR: No DataSet given or imported."
-
-	flatfield_sumimage = flatfield_data.get_datafield(flat_id).get_data().sum(0)
-	data_normalized = data.get_datafield(data_id) / flatfield_sumimage
-	data_normalized[~ numpy.isfinite(data_normalized)] = 0  # set inf, and NaN to 0
-	data.add_datafield(data_normalized, label=newlabel, plotlabel=new_plotlabel)
-	return data
+	return snomtools.evaluation.microscopy.normalize_by_flatfield_sum(data, flatfield_data, data_id, flat_id, newlabel,
+																	  new_plotlabel)

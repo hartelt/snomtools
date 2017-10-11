@@ -55,6 +55,8 @@ class DataArray:
 					self.set_unit(unit)
 			elif type(data) == str:  # If it's a string, try to evaluate it as an array.
 				self.data = u.to_ureg(numpy.array(eval(data)), unit)
+			elif type(data) == numpy.ndarray: # If it is an ndarray, just make a quantity with it.
+				self.data = u.to_ureg(data, unit)
 			else:  # If it's none of the above, it hopefully is an array-like. So let's try to cast it.
 				self.data = u.to_ureg(numpy.array(data), unit)
 			self.label = str(label)
@@ -231,6 +233,15 @@ class DataArray:
 		scalar is returned. If an output array is specified, a reference to out is returned.
 		"""
 		return self.data.sum(axis=axis, dtype=dtype, out=out, keepdims=keepdims)
+
+	def sum_raw(self, axis=None, dtype=None, out=None, keepdims=False):
+		"""
+		As sum(), only on bare numpy array instead of Quantity. See sum() for details.
+		:return: ndarray
+		An array with the same shape as a, with the specified axes removed. If a is a 0-d array, or if axis is None, a
+		scalar is returned. If an output array is specified, a reference to out is returned.
+		"""
+		return self.data.magnitude.sum(axis=axis, dtype=dtype, out=out, keepdims=keepdims)
 
 	def project_nd(self, *args):
 		"""
@@ -446,10 +457,10 @@ class Axis(DataArray):
 		:return: The transformed Axis.
 		"""
 		points_scaled = scaling * self.data
-		if unit:
-			points_scaled = u.to_ureg(points_scaled, unit)
 		if offset:
 			points_scaled = points_scaled + offset
+		if unit:
+			points_scaled = u.to_ureg(points_scaled, unit)
 		self.data = points_scaled
 
 	def __str__(self):
@@ -563,48 +574,54 @@ class ROI:
 
 		:return: Nothing
 		"""
-		for key in limitlist:
-			# key is a dict key or the correct index, so get_axis_index works...
-			keyindex = self.dataset.get_axis_index(key)
-			# get the corresponding axis:
-			ax = self.dataset.axes[keyindex]
-			# get the axis index corresponding to the limit and store it:
-			if limitlist[key][0]:
-				if by_index:
-					left_limit_index = limitlist[key][0]
-				else:
-					left_limit_index = ax.get_nearest_index(limitlist[key][0])
-					# get_nearest_index returns an index tuple, which has only 1 element for the 1D axis.
-					assert (len(left_limit_index) == 1), "Index tuple for axis must have one element!"
-					left_limit_index = left_limit_index[0]
-				# Try to address the place of the index:
-				try:
-					ax.get_data()[left_limit_index]
-				except TypeError as e:
-					print("ERROR: ROI index not int as in indexing.")
-					raise e
-				except IndexError as e:
-					print("ERROR: ROI index not valid (typically out of bounds).")
-					raise e
-				self.limits[keyindex][0] = left_limit_index
-			if limitlist[key][1]:
-				if by_index:
-					right_limit_index = limitlist[key][1]
-				else:
-					right_limit_index = ax.get_nearest_index(limitlist[key][1])
-					# get_nearest_index returns an index tuple, which has only 1 element for the 1D axis.
-					assert (len(right_limit_index) == 1), "Index tuple for axis must have one element!"
-					right_limit_index = right_limit_index[0]
-				# Try to address the place of the index:
-				try:
-					ax.get_data()[right_limit_index]
-				except TypeError as e:
-					print("ERROR: ROI index not int as in indexing.")
-					raise e
-				except IndexError as e:
-					print("ERROR: ROI index not valid (typically out of bounds).")
-					raise e
-				self.limits[keyindex][1] = right_limit_index
+		if type(limitlist) == list:
+			for i, lims in enumerate(limitlist):
+				self.set_limits(i, lims, by_index=by_index)
+		elif type(limitlist) == dict:
+			for key in limitlist:
+				# key is a dict key or the correct index, so get_axis_index works...
+				keyindex = self.dataset.get_axis_index(key)
+				# get the corresponding axis:
+				ax = self.dataset.axes[keyindex]
+				# get the axis index corresponding to the limit and store it:
+				if limitlist[key][0]:
+					if by_index:
+						left_limit_index = limitlist[key][0]
+					else:
+						left_limit_index = ax.get_nearest_index(limitlist[key][0])
+						# get_nearest_index returns an index tuple, which has only 1 element for the 1D axis.
+						assert (len(left_limit_index) == 1), "Index tuple for axis must have one element!"
+						left_limit_index = left_limit_index[0]
+					# Try to address the place of the index:
+					try:
+						ax.get_data()[left_limit_index]
+					except TypeError as e:
+						print("ERROR: ROI index not int as in indexing.")
+						raise e
+					except IndexError as e:
+						print("ERROR: ROI index not valid (typically out of bounds).")
+						raise e
+					self.limits[keyindex][0] = left_limit_index
+				if limitlist[key][1]:
+					if by_index:
+						right_limit_index = limitlist[key][1]
+					else:
+						right_limit_index = ax.get_nearest_index(limitlist[key][1])
+						# get_nearest_index returns an index tuple, which has only 1 element for the 1D axis.
+						assert (len(right_limit_index) == 1), "Index tuple for axis must have one element!"
+						right_limit_index = right_limit_index[0]
+					# Try to address the place of the index:
+					try:
+						ax.get_data()[right_limit_index]
+					except TypeError as e:
+						print("ERROR: ROI index not int as in indexing.")
+						raise e
+					except IndexError as e:
+						print("ERROR: ROI index not valid (typically out of bounds).")
+						raise e
+					self.limits[keyindex][1] = right_limit_index
+		else:
+			raise TypeError("ROI set_limits_all input not a list or dict.")
 
 	def set_limits(self, key, values, by_index=False):
 		"""
@@ -796,14 +813,17 @@ class ROI:
 		:return: A 2-list or list of 2-lists as specified before.
 		"""
 		if (data_key is None) or (data_key in self.dlabels):
-			limlist = []
-			for i in range(len(self.limits)):
-				ax = self.get_axis(i)
-				if raw:
-					limlist.append([ax[0].magnitude, ax[-1].magnitude])
-				else:
-					limlist.append([ax[0], ax[-1]])
-			return limlist
+			if by_index:
+				return self.limits
+			else:
+				limlist = []
+				for i in range(len(self.limits)):
+					ax = self.get_axis(i)
+					if raw:
+						limlist.append([ax[0].magnitude, ax[-1].magnitude])
+					else:
+						limlist.append([ax[0], ax[-1]])
+				return limlist
 		else:
 			ax_index = self.get_axis_index(data_key)
 			if by_index:
@@ -921,6 +941,22 @@ class ROI:
 				list_of_axes.append(self.get_axis(identifier))
 			# Build grid:
 			return u.meshgrid(*list_of_axes)
+
+	def project_nd(self, *args):
+		"""
+		Projects the ROI onto the given axes. Uses the DataSet.project_nd() method for every datset and returns a
+		new ROI with the projected DataFields and the chosen axes.
+
+		:param args: Valid identifiers for the axes to project onto.
+
+		:return: DataSet: Projected DataSet.
+		"""
+		indexlist = [self.get_axis_index(arg) for arg in args]
+		newdataset = DataSet(datafields=[self.dataset.datafields[i].project_nd(*indexlist) for i in indexlist],
+							  axes=[self.dataset.axes[i] for i in indexlist])
+		return self.__class__(newdataset,
+							  limitlist=[self.get_limits(by_index=True)[i] for i in indexlist],
+							  by_index=True)
 
 
 class DataSet:
@@ -1290,7 +1326,7 @@ class DataSet:
 
 		:return: DataSet: Projected DataSet.
 		"""
-		indexlist = [self.get_datafield_index(arg) for arg in args]
+		indexlist = [self.get_axis_index(arg) for arg in args]
 		return self.__class__(datafields=[self.datafields[i].project_nd(*indexlist) for i in indexlist],
 							  axes=[self.axes[i] for i in indexlist])
 
