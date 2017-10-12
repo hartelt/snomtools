@@ -286,7 +286,7 @@ def tr_folder_peem_camera_terra(folderpath, pattern="D", delayunit="um", delayfa
 
 	:param delayfactor: A factor that the numbers in the filenames need to be multiplied with to get the real pulse
 	delay. This would be for example:
-	2 (because of stage position) with delayunit "um" for normal Interferometer PROBABLY.
+	0.2 (because of stage position) with delayunit "um" for normal Interferometer because one decimal is in filenames.
 	0.2 (because of stage position and strange factor 10 in filenames) with delayunit "as" for PR interferometer
 
 	:param delayunitlabel:
