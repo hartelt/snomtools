@@ -12,7 +12,7 @@ import re
 from termcolor import colored, cprint
 
 
-class DataArray:
+class DataArray(object):
 	"""
 	A data array that holds additional metadata.
 	"""
@@ -92,13 +92,35 @@ class DataArray:
 		raise AttributeError("Attribute \'{0}\' of DataArray instance cannot be resolved.".format(item))
 
 	def get_data(self):
-		return self.data
-
-	def get_data_raw(self):
-		return self.data.magnitude
+		return self._data
 
 	def set_data(self, newdata, unit=None):
 		self.data = u.to_ureg(newdata, unit)
+
+	def _set_data(self, val):
+		self._data = val
+
+	def del_data(self):
+		print('WARNING: Trying to delete data from DataArray.')
+
+	data = property(get_data,_set_data,del_data,"The data property for the DataArray.")
+
+	@property
+	def rawdata(self):
+		"""
+		Get the data as a raw numpy array, not a quantity. Forwards to get_data_raw().
+
+		:return: ndarray: The data as a numpy array.
+		"""
+		return self.get_data_raw()
+
+	def get_data_raw(self):
+		"""
+		Get the data as a raw numpy array, not a quantity.
+
+		:return: ndarray: The data as a numpy array.
+		"""
+		return self.data.magnitude
 
 	def swapaxes(self, axis1, axis2):
 		"""
@@ -315,6 +337,7 @@ class DataArray:
 		return iter(self.data)
 
 	def __getitem__(self, key):
+		# TODO: This will be changed to a simple forwarding as soon as the new data property is written.
 		"""
 		To allow adressing parts or elements of the DataArray with [], including slicing as in numpy. This just
 		forwards to the underlying __getitem__ method of the data object.
@@ -371,6 +394,9 @@ class DataArray:
 		out = out.rstrip(', ')
 		out += ')'
 		return out
+
+	def __del__(self):
+		pass
 
 
 class Axis(DataArray):
@@ -487,7 +513,7 @@ class Axis(DataArray):
 		return out
 
 
-class ROI:
+class ROI(object):
 	"""
 	A Region of Interest: This is a way to define a (rectangular) mask in the multidimensional DataSet,
 	and then interfacing the generated ROI, as you would the overlying DataSet.
@@ -954,13 +980,13 @@ class ROI:
 		"""
 		indexlist = [self.get_axis_index(arg) for arg in args]
 		newdataset = DataSet(datafields=[self.dataset.datafields[i].project_nd(*indexlist) for i in indexlist],
-							  axes=[self.dataset.axes[i] for i in indexlist])
+							 axes=[self.dataset.axes[i] for i in indexlist])
 		return self.__class__(newdataset,
 							  limitlist=[self.get_limits(by_index=True)[i] for i in indexlist],
 							  by_index=True)
 
 
-class DataSet:
+class DataSet(object):
 	"""
 	A data set is a collection of data arrays combined to have a physical meaning. These are n-dimensional
 	sets of physical values, in which every dimension itself has a physical meaning. This might for example be a
@@ -1607,7 +1633,7 @@ def stack_DataSets(datastack, new_axis, axis=0, label=None, plotconf=None):
 	return stack
 
 
-if False:  # just for testing
+if True:  # just for testing
 	print colored('Testing...', 'yellow'),
 	testarray = numpy.arange(0, 10, 2.)
 	testaxis = DataArray(testarray, 'meter', label="xaxis")
@@ -1616,45 +1642,15 @@ if False:  # just for testing
 	X, Y = numpy.meshgrid(testaxis, testaxis2)
 	# testaxis = DataArray(testarray[testarray<5], 'meter')
 	testdata = DataArray(numpy.sin((X + Y) * u.ureg('rad')) * u.ureg('counts'), label="testdaten", plotlabel="pl")
-	testdatastacklist = [testdata * i for i in range(3)]
-	# print(testdata)
-	stack = stack_DataArrays(testdatastacklist)
+	# testdatastacklist = [testdata * i for i in range(3)]
 
 	pc = {'a': 1.0, 'b': "moep", 'c': 3, 'de': "eins/zwo"}
-	print(pc)
+
 	testdataset = DataSet("test", [testdata], [testaxis, testaxis2], plotconf=pc)
 
-	testdatastacklist = [DataSet("test", [da], [testaxis, testaxis2], plotconf=pc) for da in testdatastacklist]
-	stackaxis = Axis(range(3), "mW", "power")
-	stack = stack_DataSets(testdatastacklist, stackaxis, axis=-1)
+	testroi = ROI(testdataset)
+	testroi.set_limits('xaxis',(2,4))
 
-	print("Store...")
 	testdataset.saveh5('test.hdf5')
-	unsliced = testdataset.testdaten
-	sliced = testdataset.testdaten[0:3:, 0:3:]
-	testvalue = 500 * u.ureg('millicounts')
-	near = testdataset.testdaten.get_nearest_index(testvalue)
-
-	llim_ = 3 * u.ureg('m')
-	rlim_ = 7 * u.ureg('m')
-	roi = ROI(testdataset, {'xaxis': [llim_, rlim_]})
-	# print(roi.xaxis[0:1])
-	# print(roi.xaxis[0])
-	# print(roi.testdaten[0,0])
-	# print(roi.testdaten[0])
-	# print(roi.testdaten[0,1:3])
-	# print(roi.testdaten[0,])
-
-	print("Load...")
-	newdataset = DataSet.from_h5file('test.hdf5')
-
-	print("Load textfile...")
-	newestdataset = DataSet.from_textfile('test2.txt', comments='#', delimiter='\t', unitsline=1)
-	print(newestdataset)
-	print("Store...")
-	newestdataset.saveh5("test2.hdf5")
-
-	print(newestdataset.labels)
-	# print newestdataset.get_axis(0)
 
 	cprint("OK", 'green')
