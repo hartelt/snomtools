@@ -17,7 +17,7 @@ class DataArray:
 	A data array that holds additional metadata.
 	"""
 
-	def __init__(self, data, unit=None, label=None, plotlabel=None):
+	def __init__(self, data, unit=None, label=None, plotlabel=None, h5target=None):
 		"""
 		Guess what, this is an initializer. It differences between input formats, which should be clear from the
 		parameter doc and the comments in the code.
@@ -35,6 +35,7 @@ class DataArray:
 
 		:return:
 		"""
+		self.h5target = h5target
 		if isinstance(data, DataArray):  # If the data already comes in a DataArray, just take it.
 			self.data = data.get_data()
 			if unit:  # If a unit is explicitly requested anyway, make sure we set it.
@@ -149,7 +150,7 @@ class DataArray:
 	def set_plotlabel(self, newlabel):
 		self.plotlabel = str(newlabel)
 
-	def store_to_h5(self, h5dest, subgrp_name=None):
+	def store_to_h5(self, h5dest, subgrp_name=None, chunks=True):
 		"""
 		Stores the DataArray into a HDF5 file. It will create a subgroup and store the data there in a unified format.
 
@@ -163,7 +164,7 @@ class DataArray:
 		if not subgrp_name:
 			subgrp_name = self.label
 		grp = h5dest.create_group(subgrp_name)
-		grp.create_dataset("data", data=self.get_data_raw())
+		grp.create_dataset("data", data=self.get_data_raw(), chunks=chunks)
 		grp.create_dataset("unit", data=self.get_unit())
 		grp.create_dataset("label", data=self.get_label())
 		grp.create_dataset("plotlabel", data=self.get_plotlabel())
