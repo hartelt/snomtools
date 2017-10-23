@@ -43,7 +43,7 @@ class DataArray(object):
 		use as such a Quantity. Of cause this Quantity itself shadows most of the attributes of the underlying numpy
 		array and can therefore be used as one in many contexts.
 		"""
-
+		# TODO: Bug: to_ureg of Data_Handler instance gives nested shit with instance instead of data as magnitude.
 		def __init__(self, data=None, unit=None, shape=None):
 			if data is not None:
 				self.data = u.to_ureg(data, unit)
@@ -92,6 +92,18 @@ class DataArray(object):
 			:return: Nothing.
 			"""
 			self.data = self.data.to(unitstr)
+
+		units = property(get_unit, None, None, "The data property for the DataArray.")
+
+		def to(self, unitstr):
+			"""
+			Returns a copy of the data with the unit set as specified. For compatibility with pint quantity.
+
+			:param unitstr: A valid unit string.
+
+			:return: The data copy with the specified unit.
+			"""
+			return self.data.to(unitstr)
 
 		def get_nearest_index(self, value):
 			"""
@@ -256,7 +268,9 @@ class DataArray(object):
 				self.plotlabel = data.get_plotlabel()
 			# A DataArray contains everything we need, so we should be done here!
 		else:  # We DON'T have everything contained in data, so we need to process it seperately.
-			if u.is_quantity(data):  # Kind of the same as above, just for the data itself.
+			if data is None:
+				self.data = None # No data. Initialize empty instance.
+			elif u.is_quantity(data):  # Kind of the same as above, just for the data itself.
 				self.data = data
 				if unit:  # If a unit is explicitly requested anyway, make sure we set it.
 					self.set_unit(unit)
@@ -1840,7 +1854,7 @@ def stack_DataSets(datastack, new_axis, axis=0, label=None, plotconf=None):
 	return stack
 
 
-if True:  # just for testing
+if __name__ == "__main__":  # just for testing
 	print colored('Testing...', 'yellow'),
 	testarray = numpy.arange(0, 10, 2.)
 	testaxis = DataArray(testarray, 'meter', label="xaxis")
