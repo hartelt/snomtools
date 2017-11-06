@@ -12,228 +12,220 @@ import re
 from termcolor import colored, cprint
 
 
+class Data_Handler_H5(object):
+	def __init__(self, data=None, unit=None, shape=None, h5target=None):
+		pass
+
+	def __get__(self, instance, owner):
+		pass
+
+	def __set__(self, instance, value):
+		pass
+
+	def __delete__(self, instance):
+		pass
+
+	def __getitem__(self, key):
+		pass
+
+	def __setitem__(self, key, value):
+		pass
+
+
+class Data_Handler_np(u.Quantity):
+	"""
+	A Data Handler, emulating a Quantity.
+	This "numpy mode" handler actually just mainly shadows the attributes of the Quantity that is held and should be
+	use as such a Quantity. Of cause this Quantity itself shadows most of the attributes of the underlying numpy
+	array and can therefore be used as one in many contexts.
+	"""
+
+	def __new__(cls, data=None, unit=None, shape=None):
+		if data is not None:
+			compiled_data = u.to_ureg(data, unit)
+			return super(Data_Handler_np, cls).__new__(cls, compiled_data.magnitude, compiled_data.units)
+		elif shape is not None:
+			inst = cls.__new__(cls, numpy.zeros(shape=shape), unit)
+		else:
+			raise ValueError("Initialized Data_Handler_np with wrong parameters.")
+
+	# def __getattr__(self, item):
+	# 	try:
+	# 		return getattr(self.data, item)
+	# 	except AttributeError as e:
+	# 		# print("Attribute \'{0}\' of Data_Handler_np instance cannot be resolved.".format(item))
+	# 		raise e
+
+	# def __getitem__(self, key):
+	# 	if self.data is None:
+	# 		raise ValueError("Tried to access parts of data not yet initialized.")
+	# 	return self.data[key]
+	#
+	# def __setitem__(self, key, value):
+	# 	if self.data is None:
+	# 		raise ValueError("Tried to access parts of data not yet initialized.")
+	# 	self.data[key] = value
+
+	def get_unit(self):
+		return str(self.units)
+
+	def set_unit(self, unitstr):
+		"""
+		Set the unit of the Quantity as specified.
+
+		:param unitstr: A valid unit string.
+
+		:return: Nothing.
+		"""
+		self.ito(unitstr)
+
+	# units = property(get_unit, None, None, "The data property for the DataArray.")
+
+	# def to(self, unitstr):
+	# 	"""
+	# 	Returns a copy of the data with the unit set as specified. For compatibility with pint quantity.
+	#
+	# 	:param unitstr: A valid unit string.
+	#
+	# 	:return: The data copy with the specified unit.
+	# 	"""
+	# 	return self.data.to(unitstr)
+
+	def get_nearest_index(self, value):
+		"""
+		Get the index of the value in the DataArray nearest to a given value.
+
+		:param value: A value to look for in the array.
+
+		:return: The index tuple of the array entry nearest to the given value.
+		"""
+		value = u.to_ureg(value, unit=self.get_unit())
+		idx_flat = (numpy.abs(self - value)).argmin()
+		idx_tup = numpy.unravel_index(idx_flat, self.shape)
+		return idx_tup
+
+	def get_nearest_value(self, value):
+		"""
+		Like get_nearest_index, but return the value instead of the index.
+
+		:param value: value: A value to look for in the array.
+
+		:return: The value in the array nearest to the given one.
+		"""
+		return self[self.get_nearest_index(value)]
+
+	# def sum(self, axis=None, dtype=None, out=None, keepdims=False):
+	# 	"""
+	# 	Behaves as the sum() function of a numpy array.
+	# 	See: http://docs.scipy.org/doc/numpy-1.10.1/reference/generated/numpy.sum.html
+	#
+	# 	:param axis: None or int or tuple of ints, optional
+	# 	Axis or axes along which a sum is performed. The default (axis = None) is perform a sum over all the dimensions
+	# 	of the input array. axis may be negative, in which case it counts from the last to the first axis.
+	# 	New in version 1.7.0.:
+	# 	If this is a tuple of ints, a sum is performed on multiple axes, instead of a single axis or all the axes as
+	# 	before.
+	#
+	# 	:param dtype: dtype, optional
+	# 	The type of the returned array and of the accumulator in which the elements are summed. By default, the dtype
+	# 	of a is used. An exception is when a has an integer type with less precision than the default platform integer.
+	# 	In that case, the default platform integer is used instead.
+	#
+	# 	:param out: ndarray, optional
+	# 	Array into which the output is placed. By default, a new array is created. If out is given, it must be of the
+	# 	appropriate shape (the shape of a with axis removed, i.e., numpy.delete(a.shape, axis)). Its type is preserved.
+	# 	See doc.ufuncs (Section Output arguments) for more details.
+	#
+	# 	:param keepdims: bool, optional
+	# 	If this is set to True, the axes which are reduced are left in the result as dimensions with size one. With this
+	# 	option, the result will broadcast correctly against the original arr.
+	#
+	# 	:return: ndarray Quantity
+	# 	An array with the same shape as a, with the specified axis removed. If a is a 0-d array, or if axis is None, a
+	# 	scalar is returned. If an output array is specified, a reference to out is returned.
+	# 	"""
+	# 	return self.sum(axis=axis, dtype=dtype, out=out, keepdims=keepdims)
+
+	def sum_raw(self, axis=None, dtype=None, out=None, keepdims=False):
+		"""
+		As sum(), only on bare numpy array instead of Quantity. See sum() for details.
+		:return: ndarray
+		An array with the same shape as a, with the specified axes removed. If a is a 0-d array, or if axis is None, a
+		scalar is returned. If an output array is specified, a reference to out is returned.
+		"""
+		return self.magnitude.sum(axis=axis, dtype=dtype, out=out, keepdims=keepdims)
+
+	# def max(self):
+	# 	return self.data.max()
+	#
+	# def min(self):
+	# 	return self.data.min()
+
+	def absmax(self):
+		return abs(self).max()
+
+	def absmin(self):
+		return abs(self).min()
+
+	# def mean(self):
+	# 	return self.mean()
+
+	# def __pos__(self):
+	# 	return self.data
+	#
+	# def __neg__(self):
+	# 	return -self.data
+	#
+	# def __abs__(self):
+	# 	return abs(self.data)
+
+	def __add__(self, other):
+		other = u.to_ureg(other, self.get_unit())
+		return super(Data_Handler_np, self).__add__(other)
+
+	def __sub__(self, other):
+		other = u.to_ureg(other, self.units)
+		return super(Data_Handler_np, self).__sub__(other)
+
+	def __mul__(self, other):
+		other = u.to_ureg(other)
+		return super(Data_Handler_np, self).__mul__(other)
+
+	def __div__(self, other):
+		other = u.to_ureg(other)
+		return super(Data_Handler_np, self).__div__(other)
+
+	def __floordiv__(self, other):
+		other = u.to_ureg(other)
+		return super(Data_Handler_np, self).__floordiv__(other)
+
+	def __pow__(self, other):
+		other = u.to_ureg(other, 'dimensionless')
+		return super(Data_Handler_np, self).__pow__(other)
+
+	# def __array__(self):  # to numpy array
+	# 	return numpy.array(self.data)
+	#
+	# def __iter__(self):
+	# 	return iter(self.data)
+	#
+	# def __len__(self):  # len of data array
+	# 	return len(self.data)
+	#
+	# def __str__(self):
+	# 	return str(self.data)
+
+	def __repr__(self):
+		return "<Data_Handler_np(" + super(Data_Handler_np, self).__repr__() + ")>"
+
+	def __del__(self):
+		pass
+
+
 class DataArray(object):
 	"""
 	A data array that holds additional metadata.
 	"""
-
-	class Data_Handler_H5(object):
-		def __init__(self, data=None, unit=None, shape=None, h5target=None):
-			pass
-
-		def __get__(self, instance, owner):
-			pass
-
-		def __set__(self, instance, value):
-			pass
-
-		def __delete__(self, instance):
-			pass
-
-		def __getitem__(self, key):
-			pass
-
-		def __setitem__(self, key, value):
-			pass
-
-	class Data_Handler_np(object):
-		"""
-		A Data Handler, emulating a Quantity.
-		This "numpy mode" handler actually just mainly shadows the attributes of the Quantity that is held and should be
-		use as such a Quantity. Of cause this Quantity itself shadows most of the attributes of the underlying numpy
-		array and can therefore be used as one in many contexts.
-		"""
-		# TODO: Bug: to_ureg of Data_Handler instance gives nested shit with instance instead of data as magnitude.
-		def __init__(self, data=None, unit=None, shape=None):
-			if data is not None:
-				self.data = u.to_ureg(data, unit)
-			elif shape is not None:
-				self.data = u.to_ureg(numpy.zeros(shape=shape), unit)
-			else:
-				self.data = None
-
-		def __getattr__(self, item):
-			try:
-				return getattr(self.data, item)
-			except AttributeError as e:
-				# print("Attribute \'{0}\' of Data_Handler_np instance cannot be resolved.".format(item))
-				raise e
-
-		# def __get__(self, instance, owner):
-		# 	print "Data_Handler_np getter"
-		# 	return self.data
-		#
-		# def __set__(self, instance, value):
-		# 	print "Data_Handler_np setter"
-		# 	self.data = u.to_ureg(value)
-		#
-		# def __delete__(self, instance):
-		# 	pass
-
-		def __getitem__(self, key):
-			if self.data is None:
-				raise ValueError("Tried to access parts of data not yet initialized.")
-			return self.data[key]
-
-		def __setitem__(self, key, value):
-			if self.data is None:
-				raise ValueError("Tried to access parts of data not yet initialized.")
-			self.data[key] = value
-
-		def get_unit(self):
-			return str(self.data.units)
-
-		def set_unit(self, unitstr):
-			"""
-			Set the unit of the Quantity as specified.
-
-			:param unitstr: A valid unit string.
-
-			:return: Nothing.
-			"""
-			self.data = self.data.to(unitstr)
-
-		units = property(get_unit, None, None, "The data property for the DataArray.")
-
-		def to(self, unitstr):
-			"""
-			Returns a copy of the data with the unit set as specified. For compatibility with pint quantity.
-
-			:param unitstr: A valid unit string.
-
-			:return: The data copy with the specified unit.
-			"""
-			return self.data.to(unitstr)
-
-		def get_nearest_index(self, value):
-			"""
-			Get the index of the value in the DataArray nearest to a given value.
-
-			:param value: A value to look for in the array.
-
-			:return: The index tuple of the array entry nearest to the given value.
-			"""
-			value = u.to_ureg(value, unit=self.get_unit())
-			idx_flat = (numpy.abs(self.data - value)).argmin()
-			idx_tup = numpy.unravel_index(idx_flat, self.shape)
-			return idx_tup
-
-		def get_nearest_value(self, value):
-			"""
-			Like get_nearest_index, but return the value instead of the index.
-
-			:param value: value: A value to look for in the array.
-
-			:return: The value in the array nearest to the given one.
-			"""
-			return self.data[self.get_nearest_index(value)]
-
-		def sum(self, axis=None, dtype=None, out=None, keepdims=False):
-			"""
-			Behaves as the sum() function of a numpy array.
-			See: http://docs.scipy.org/doc/numpy-1.10.1/reference/generated/numpy.sum.html
-
-			:param axis: None or int or tuple of ints, optional
-			Axis or axes along which a sum is performed. The default (axis = None) is perform a sum over all the dimensions
-			of the input array. axis may be negative, in which case it counts from the last to the first axis.
-			New in version 1.7.0.:
-			If this is a tuple of ints, a sum is performed on multiple axes, instead of a single axis or all the axes as
-			before.
-
-			:param dtype: dtype, optional
-			The type of the returned array and of the accumulator in which the elements are summed. By default, the dtype
-			of a is used. An exception is when a has an integer type with less precision than the default platform integer.
-			In that case, the default platform integer is used instead.
-
-			:param out: ndarray, optional
-			Array into which the output is placed. By default, a new array is created. If out is given, it must be of the
-			appropriate shape (the shape of a with axis removed, i.e., numpy.delete(a.shape, axis)). Its type is preserved.
-			See doc.ufuncs (Section Output arguments) for more details.
-
-			:param keepdims: bool, optional
-			If this is set to True, the axes which are reduced are left in the result as dimensions with size one. With this
-			option, the result will broadcast correctly against the original arr.
-
-			:return: ndarray Quantity
-			An array with the same shape as a, with the specified axis removed. If a is a 0-d array, or if axis is None, a
-			scalar is returned. If an output array is specified, a reference to out is returned.
-			"""
-			return self.data.sum(axis=axis, dtype=dtype, out=out, keepdims=keepdims)
-
-		def sum_raw(self, axis=None, dtype=None, out=None, keepdims=False):
-			"""
-			As sum(), only on bare numpy array instead of Quantity. See sum() for details.
-			:return: ndarray
-			An array with the same shape as a, with the specified axes removed. If a is a 0-d array, or if axis is None, a
-			scalar is returned. If an output array is specified, a reference to out is returned.
-			"""
-			return self.data.magnitude.sum(axis=axis, dtype=dtype, out=out, keepdims=keepdims)
-
-		def max(self):
-			return self.data.max()
-
-		def min(self):
-			return self.data.min()
-
-		def absmax(self):
-			return abs(self.data).max()
-
-		def absmin(self):
-			return abs(self.data).min()
-
-		def mean(self):
-			return self.data.mean()
-
-		def __pos__(self):
-			return self.data
-
-		def __neg__(self):
-			return -self.data
-
-		def __abs__(self):
-			return abs(self.data)
-
-		def __add__(self, other):
-			other = u.to_ureg(other, self.data.units)
-			return self.data + other
-
-		def __sub__(self, other):
-			other = u.to_ureg(other, self.data.units)
-			return self.data - other
-
-		def __mul__(self, other):
-			other = u.to_ureg(other)
-			return self.data * other
-
-		def __div__(self, other):
-			other = u.to_ureg(other)
-			return self.data / other
-
-		def __floordiv__(self, other):
-			other = u.to_ureg(other)
-			return self.data // other
-
-		def __pow__(self, other):
-			other = u.to_ureg(other, 'dimensionless')
-			return self.data ** other
-
-		def __array__(self):  # to numpy array
-			return numpy.array(self.data)
-
-		def __iter__(self):
-			return iter(self.data)
-
-		def __len__(self):  # len of data array
-			return len(self.data)
-
-		def __str__(self):
-			return str(self.data)
-
-		def __repr__(self):
-			return "<Data_Handler_np(" + repr(self.data) + ")>"
-
-		def __del__(self):
-			pass
 
 	def __init__(self, data, unit=None, label=None, plotlabel=None, h5target=None):
 		"""
@@ -269,7 +261,7 @@ class DataArray(object):
 			# A DataArray contains everything we need, so we should be done here!
 		else:  # We DON'T have everything contained in data, so we need to process it seperately.
 			if data is None:
-				self.data = None # No data. Initialize empty instance.
+				self.data = None  # No data. Initialize empty instance.
 			elif u.is_quantity(data):  # Kind of the same as above, just for the data itself.
 				self.data = data
 				if unit:  # If a unit is explicitly requested anyway, make sure we set it.
@@ -321,9 +313,9 @@ class DataArray(object):
 	def _set_data(self, val):
 		# print "data property setter"
 		if self.h5target:
-			self._data = self.Data_Handler_H5(val, h5target=self.h5target)
+			self._data = Data_Handler_H5(val, h5target=self.h5target)
 		else:
-			self._data = self.Data_Handler_np(val)
+			self._data = Data_Handler_np(val)
 
 	def del_data(self):
 		print('WARNING: Trying to delete data from DataArray.')
@@ -1872,6 +1864,9 @@ if __name__ == "__main__":  # just for testing
 	testroi = ROI(testdataset)
 	testroi.set_limits('xaxis', (2, 4))
 
-	testdataset.saveh5('test.hdf5')
+	moep = u.to_ureg(testaxis.data)
+	moep2 = moep + moep
+
+	# testdataset.saveh5('test.hdf5')
 
 	cprint("OK", 'green')
