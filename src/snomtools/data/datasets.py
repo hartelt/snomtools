@@ -49,23 +49,6 @@ class Data_Handler_np(u.Quantity):
 		else:
 			raise ValueError("Initialized Data_Handler_np with wrong parameters.")
 
-	# def __getattr__(self, item):
-	# 	try:
-	# 		return getattr(self.data, item)
-	# 	except AttributeError as e:
-	# 		# print("Attribute \'{0}\' of Data_Handler_np instance cannot be resolved.".format(item))
-	# 		raise e
-
-	# def __getitem__(self, key):
-	# 	if self.data is None:
-	# 		raise ValueError("Tried to access parts of data not yet initialized.")
-	# 	return self.data[key]
-	#
-	# def __setitem__(self, key, value):
-	# 	if self.data is None:
-	# 		raise ValueError("Tried to access parts of data not yet initialized.")
-	# 	self.data[key] = value
-
 	def get_unit(self):
 		return str(self.units)
 
@@ -78,18 +61,6 @@ class Data_Handler_np(u.Quantity):
 		:return: Nothing.
 		"""
 		self.ito(unitstr)
-
-	# units = property(get_unit, None, None, "The data property for the DataArray.")
-
-	# def to(self, unitstr):
-	# 	"""
-	# 	Returns a copy of the data with the unit set as specified. For compatibility with pint quantity.
-	#
-	# 	:param unitstr: A valid unit string.
-	#
-	# 	:return: The data copy with the specified unit.
-	# 	"""
-	# 	return self.data.to(unitstr)
 
 	def get_nearest_index(self, value):
 		"""
@@ -114,38 +85,6 @@ class Data_Handler_np(u.Quantity):
 		"""
 		return self[self.get_nearest_index(value)]
 
-	# def sum(self, axis=None, dtype=None, out=None, keepdims=False):
-	# 	"""
-	# 	Behaves as the sum() function of a numpy array.
-	# 	See: http://docs.scipy.org/doc/numpy-1.10.1/reference/generated/numpy.sum.html
-	#
-	# 	:param axis: None or int or tuple of ints, optional
-	# 	Axis or axes along which a sum is performed. The default (axis = None) is perform a sum over all the dimensions
-	# 	of the input array. axis may be negative, in which case it counts from the last to the first axis.
-	# 	New in version 1.7.0.:
-	# 	If this is a tuple of ints, a sum is performed on multiple axes, instead of a single axis or all the axes as
-	# 	before.
-	#
-	# 	:param dtype: dtype, optional
-	# 	The type of the returned array and of the accumulator in which the elements are summed. By default, the dtype
-	# 	of a is used. An exception is when a has an integer type with less precision than the default platform integer.
-	# 	In that case, the default platform integer is used instead.
-	#
-	# 	:param out: ndarray, optional
-	# 	Array into which the output is placed. By default, a new array is created. If out is given, it must be of the
-	# 	appropriate shape (the shape of a with axis removed, i.e., numpy.delete(a.shape, axis)). Its type is preserved.
-	# 	See doc.ufuncs (Section Output arguments) for more details.
-	#
-	# 	:param keepdims: bool, optional
-	# 	If this is set to True, the axes which are reduced are left in the result as dimensions with size one. With this
-	# 	option, the result will broadcast correctly against the original arr.
-	#
-	# 	:return: ndarray Quantity
-	# 	An array with the same shape as a, with the specified axis removed. If a is a 0-d array, or if axis is None, a
-	# 	scalar is returned. If an output array is specified, a reference to out is returned.
-	# 	"""
-	# 	return self.sum(axis=axis, dtype=dtype, out=out, keepdims=keepdims)
-
 	def sum_raw(self, axis=None, dtype=None, out=None, keepdims=False):
 		"""
 		As sum(), only on bare numpy array instead of Quantity. See sum() for details.
@@ -155,29 +94,11 @@ class Data_Handler_np(u.Quantity):
 		"""
 		return self.magnitude.sum(axis=axis, dtype=dtype, out=out, keepdims=keepdims)
 
-	# def max(self):
-	# 	return self.data.max()
-	#
-	# def min(self):
-	# 	return self.data.min()
-
 	def absmax(self):
 		return abs(self).max()
 
 	def absmin(self):
 		return abs(self).min()
-
-	# def mean(self):
-	# 	return self.mean()
-
-	# def __pos__(self):
-	# 	return self.data
-	#
-	# def __neg__(self):
-	# 	return -self.data
-	#
-	# def __abs__(self):
-	# 	return abs(self.data)
 
 	def __add__(self, other):
 		other = u.to_ureg(other, self.get_unit())
@@ -202,18 +123,6 @@ class Data_Handler_np(u.Quantity):
 	def __pow__(self, other):
 		other = u.to_ureg(other, 'dimensionless')
 		return super(Data_Handler_np, self).__pow__(other)
-
-	# def __array__(self):  # to numpy array
-	# 	return numpy.array(self.data)
-	#
-	# def __iter__(self):
-	# 	return iter(self.data)
-	#
-	# def __len__(self):  # len of data array
-	# 	return len(self.data)
-	#
-	# def __str__(self):
-	# 	return str(self.data)
 
 	def __repr__(self):
 		return "<Data_Handler_np(" + super(Data_Handler_np, self).__repr__() + ")>"
@@ -1866,6 +1775,18 @@ if __name__ == "__main__":  # just for testing
 
 	moep = u.to_ureg(testaxis.data)
 	moep2 = moep + moep
+	moep - moep
+	moep * moep
+	moep / moep
+	moep // moep
+	moep ** 2.
+	moep.absmax()
+	moep.absmin()
+	moep.mean()
+	moep.sum()
+	moep.sum_raw()
+	moep.get_nearest_value(2.)
+	moep.set_unit('mm')
 
 	# testdataset.saveh5('test.hdf5')
 
