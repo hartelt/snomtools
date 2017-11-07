@@ -81,12 +81,12 @@ class Data_Handler_H5(u.Quantity):
 			return self.ds_data[()]
 
 	def _set__magnitude(self, val):
-		if numpy.asarray(val).shape == self.ds_data.shape:
+		if numpy.asarray(val).shape == self.ds_data.shape:  # Same shape, so just overwrite everything in place.
 			if self.ds_data.shape:  # array-like
-				self.ds_data[:]=val
+				self.ds_data[:] = val
 			else:  # scalar
-				self.ds_data[()]=val
-		else:
+				self.ds_data[()] = val
+		else:  # Different shape, so generate new h5 dataset.
 			del self.h5target["data"]
 			self.ds_data = self.h5target.create_dataset("data", data=val,
 														chunks=self.chunks,
@@ -96,10 +96,10 @@ class Data_Handler_H5(u.Quantity):
 	_magnitude = property(_get__magnitude, _set__magnitude, None, "The _magnitude property for Quantity emulation.")
 
 	def _get__units(self):
-		return self.ds_unit[()]
+		return u.unit_from_str(self.ds_unit[()]).units
 
 	def _set__units(self, val):
-		pass
+		self.ds_unit[()] = str(u.Quantity(1., val).units)
 
 	_units = property(_get__units, _set__units, None, "The _units property for Quantity emulation.")
 
@@ -1944,6 +1944,8 @@ if __name__ == "__main__":  # just for testing
 	moep.sum_raw()
 	moep.get_nearest_value(2.)
 	moep.set_unit('mm')
+
+	h5data = Data_Handler_H5(testaxis.data)
 
 	# testdataset.saveh5('test.hdf5')
 
