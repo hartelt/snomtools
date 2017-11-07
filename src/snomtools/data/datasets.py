@@ -20,45 +20,55 @@ class Data_Handler_H5(u.Quantity):
 			compression = None
 			compression_opts = None
 		if h5target is None:
-			# tempdir = tempfile.mkdtemp(prefix="snomtools_H5_tempspace-")
-			tempdir = os.getcwd()
-			temp_file_path = os.path.join(tempdir, "snomtools_H5_tempspace.hdf5")
+			temp_dir = tempfile.mkdtemp(prefix="snomtools_H5_tempspace-")
+			# temp_dir = os.getcwd() # upper line can be replaced by this for debugging.
+			temp_file_path = os.path.join(temp_dir, "snomtools_H5_tempspace.hdf5")
 			temp_file = h5py.File(temp_file_path, 'w')
 			h5target = temp_file
-			raise NotImplementedError("Temporary HDF5 Storage without target not yet implemented.")
 		else:
 			temp_file = None
-			temp_file_path = None
+			temp_dir = None
 
 		if data is not None:
-			compiled_data = u.to_ureg(data, unit)
-			inst = super(Data_Handler_H5, cls).__new__(cls, compiled_data.magnitude, compiled_data.units)
-			inst.ds_data = h5target.create_dataset("data", data=inst.magnitude, chunks=chunks,
-												   compression=compression,
-												   compression_opts=compression_opts)
-			inst.ds_unit = h5target.create_dataset("unit", data=str(inst.units))
-			inst.h5target = h5target
-			inst.temp_file = temp_file
-			inst.temp_file_path = temp_file_path
+			inst = object.__new__(cls)
+			inst.__used = False
+			inst.__handling = None
 			inst.chunks = chunks
 			inst.compression = compression
 			inst.compression_opts = compression_opts
+			compiled_data = u.to_ureg(data, unit)
+			if (not hasattr(compiled_data, 'shape')) or compiled_data.shape == ():
+				# Scalar data. No chunking or compression supported.
+				chunks = False
+				compression = None
+				compression_opts = None
+			inst.ds_data = h5target.create_dataset("data", data=compiled_data.magnitude, chunks=chunks,
+												   compression=compression,
+												   compression_opts=compression_opts)
+			inst.ds_unit = h5target.create_dataset("unit", data=str(compiled_data.units))
+			inst.h5target = h5target
+			inst.temp_file = temp_file
+			inst.temp_dir = temp_dir
 			return inst
 		elif shape is not None:
 			inst = object.__new__(cls)
 			inst.__used = False
 			inst.__handling = None
-			inst.ds_data = h5target.create_dataset("data", shape, chunks=chunks, compression=compression,
-												   compression_opts=compression_opts)
-			inst.ds_unit = h5target.create_dataset("unit", data=str(inst.units))
-			inst.h5target = h5target
-			inst.temp_file = temp_file
-			inst.temp_file_path = temp_file_path
 			inst.chunks = chunks
 			inst.compression = compression
 			inst.compression_opts = compression_opts
+			if shape == ():  # Scalar data. No chunking or compression supported.
+				chunks = False
+				compression = None
+				compression_opts = None
+			inst.ds_data = h5target.create_dataset("data", shape, chunks=chunks, compression=compression,
+												   compression_opts=compression_opts)
+			inst.ds_unit = h5target.create_dataset("unit", data=u.normalize_unitstr(unit))
+			inst.h5target = h5target
+			inst.temp_file = temp_file
+			inst.temp_dir = temp_dir
 			return inst
-		elif not temp_mode:
+		elif not temp_file:
 			inst = object.__new__(cls)
 			inst.__used = False
 			inst.__handling = None
@@ -66,7 +76,7 @@ class Data_Handler_H5(u.Quantity):
 			inst.ds_unit = h5target["unit"]
 			inst.h5target = h5target
 			inst.temp_file = temp_file
-			inst.temp_file_path = temp_file_path
+			inst.temp_dir = temp_dir
 			inst.chunks = chunks
 			inst.compression = compression
 			inst.compression_opts = compression_opts
@@ -81,17 +91,25 @@ class Data_Handler_H5(u.Quantity):
 			return self.ds_data[()]
 
 	def _set__magnitude(self, val):
-		if numpy.asarray(val).shape == self.ds_data.shape:  # Same shape, so just overwrite everything in place.
-			if self.ds_data.shape:  # array-like
+		if numpy.asarray(val).shape == self.shape:  # Same shape, so just overwrite everything in place.
+			if self.shape:  # array-like
 				self.ds_data[:] = val
 			else:  # scalar
 				self.ds_data[()] = val
 		else:  # Different shape, so generate new h5 dataset.
 			del self.h5target["data"]
+			if hasattr(val, '__len__'):  # Sequence... so non-scalar data.
+				chunks = self.chunks
+				compression = self.compression
+				compression_opts = self.compression_opts
+			else:  # Scalar data. No chunking or compression supported.
+				chunks = False
+				compression = None
+				compression_opts = None
 			self.ds_data = self.h5target.create_dataset("data", data=val,
-														chunks=self.chunks,
-														compression=self.compression,
-														compression_opts=self.compression_opts)
+														chunks=chunks,
+														compression=compression,
+														compression_opts=compression_opts)
 
 	_magnitude = property(_get__magnitude, _set__magnitude, None, "The _magnitude property for Quantity emulation.")
 
@@ -103,11 +121,39 @@ class Data_Handler_H5(u.Quantity):
 
 	_units = property(_get__units, _set__units, None, "The _units property for Quantity emulation.")
 
+	@property
+	def temp_file_path(self):
+		return os.path.join(self.temp_dir, self.temp_file.filename)
+
+	@property
+	def shape(self):
+		return self.ds_data.shape
+
 	def __getitem__(self, key):
 		pass
 
 	def __setitem__(self, key, value):
 		pass
+
+	def flush(self):
+		"""
+		Flushes the HDF5 buffer to disk.
+		:return: nothing
+		"""
+		self.h5target.flush()
+
+	def get_unit(self):
+		return str(self.units)
+
+	def set_unit(self, unitstr):
+		"""
+		Set the unit of the Quantity as specified.
+
+		:param unitstr: A valid unit string.
+
+		:return: Nothing.
+		"""
+		self.ito(unitstr)
 
 	def get_nearest_index(self, value):
 		"""
@@ -172,14 +218,15 @@ class Data_Handler_H5(u.Quantity):
 		return super(Data_Handler_H5, self).__pow__(other)
 
 	def __repr__(self):
-		return "<Data_Handler_np(" + super(Data_Handler_H5, self).__repr__() + ")>"
+		return "<Data_Handler_np on {0} with shape {1}>".format(repr(self.h5target), self.shape)
 
 	def __del__(self):
-		if self.temp_file:
+		if not (self.temp_file is None):
+			file_to_remove = self.temp_file_path
 			self.temp_file.close()
-			os.remove(self.temp_file_path)
+			os.remove(file_to_remove)
 			try:
-				os.rmdir(os.path.dirname(self.temp_file_path))
+				os.rmdir(self.temp_dir)
 			except OSError as e:
 				print("WARNING: Data_Handler_H5 could not remove tempdir. Propably not empty.")
 				print(e)
@@ -1930,7 +1977,9 @@ if __name__ == "__main__":  # just for testing
 	testroi = ROI(testdataset)
 	testroi.set_limits('xaxis', (2, 4))
 
-	moep = u.to_ureg(testaxis.data)
+	testh5 = h5py.File('test.hdf5', 'w')
+
+	moep = Data_Handler_H5(testaxis.data, h5target=testh5)
 	moep2 = moep + moep
 	moep2 = moep - moep
 	moep2 = moep * moep
@@ -1942,10 +1991,10 @@ if __name__ == "__main__":  # just for testing
 	moep.mean()
 	moep.sum()
 	moep.sum_raw()
-	moep.get_nearest_value(2.)
-	moep.set_unit('mm')
-
-	h5data = Data_Handler_H5(testaxis.data)
+	# works till here
+	# TODO: Support slicing.
+	# moep.get_nearest_value(2.)
+	# moep.set_unit('mm')
 
 	# testdataset.saveh5('test.hdf5')
 
