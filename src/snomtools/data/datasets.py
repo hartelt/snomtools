@@ -10,26 +10,179 @@ import h5py
 import h5tools
 import re
 from termcolor import colored, cprint
+import tempfile
 
 
-class Data_Handler_H5(object):
-	def __init__(self, data=None, unit=None, shape=None, h5target=None):
+class Data_Handler_H5(u.Quantity):
+	def __new__(cls, data=None, unit=None, shape=None, h5target=None,
+				chunks=True, compression="gzip", compression_opts=4):
+		if not chunks:
+			compression = None
+			compression_opts = None
+		if h5target is None:
+			# tempdir = tempfile.mkdtemp(prefix="snomtools_H5_tempspace-")
+			tempdir = os.getcwd()
+			temp_file_path = os.path.join(tempdir, "snomtools_H5_tempspace.hdf5")
+			temp_file = h5py.File(temp_file_path, 'w')
+			h5target = temp_file
+			raise NotImplementedError("Temporary HDF5 Storage without target not yet implemented.")
+		else:
+			temp_file = None
+			temp_file_path = None
+
+		if data is not None:
+			compiled_data = u.to_ureg(data, unit)
+			inst = super(Data_Handler_H5, cls).__new__(cls, compiled_data.magnitude, compiled_data.units)
+			inst.ds_data = h5target.create_dataset("data", data=inst.magnitude, chunks=chunks,
+												   compression=compression,
+												   compression_opts=compression_opts)
+			inst.ds_unit = h5target.create_dataset("unit", data=str(inst.units))
+			inst.h5target = h5target
+			inst.temp_file = temp_file
+			inst.temp_file_path = temp_file_path
+			inst.chunks = chunks
+			inst.compression = compression
+			inst.compression_opts = compression_opts
+			return inst
+		elif shape is not None:
+			inst = object.__new__(cls)
+			inst.__used = False
+			inst.__handling = None
+			inst.ds_data = h5target.create_dataset("data", shape, chunks=chunks, compression=compression,
+												   compression_opts=compression_opts)
+			inst.ds_unit = h5target.create_dataset("unit", data=str(inst.units))
+			inst.h5target = h5target
+			inst.temp_file = temp_file
+			inst.temp_file_path = temp_file_path
+			inst.chunks = chunks
+			inst.compression = compression
+			inst.compression_opts = compression_opts
+			return inst
+		elif not temp_mode:
+			inst = object.__new__(cls)
+			inst.__used = False
+			inst.__handling = None
+			inst.ds_data = h5target["data"]
+			inst.ds_unit = h5target["unit"]
+			inst.h5target = h5target
+			inst.temp_file = temp_file
+			inst.temp_file_path = temp_file_path
+			inst.chunks = chunks
+			inst.compression = compression
+			inst.compression_opts = compression_opts
+			return inst
+		else:
+			raise ValueError("Initialized Data_Handler_np with wrong parameters.")
+
+	def _get__magnitude(self):
+		if self.ds_data.shape:  # array-like
+			return self.ds_data[:]
+		else:  # scalar
+			return self.ds_data[()]
+
+	def _set__magnitude(self, val):
+		if numpy.asarray(val).shape == self.ds_data.shape:
+			if self.ds_data.shape:  # array-like
+				self.ds_data[:]=val
+			else:  # scalar
+				self.ds_data[()]=val
+		else:
+			del self.h5target["data"]
+			self.ds_data = self.h5target.create_dataset("data", data=val,
+														chunks=self.chunks,
+														compression=self.compression,
+														compression_opts=self.compression_opts)
+
+	_magnitude = property(_get__magnitude, _set__magnitude, None, "The _magnitude property for Quantity emulation.")
+
+	def _get__units(self):
+		return self.ds_unit[()]
+
+	def _set__units(self, val):
 		pass
 
-	def __get__(self, instance, owner):
-		pass
-
-	def __set__(self, instance, value):
-		pass
-
-	def __delete__(self, instance):
-		pass
+	_units = property(_get__units, _set__units, None, "The _units property for Quantity emulation.")
 
 	def __getitem__(self, key):
 		pass
 
 	def __setitem__(self, key, value):
 		pass
+
+	def get_nearest_index(self, value):
+		"""
+		Get the index of the value in the DataArray nearest to a given value.
+
+		:param value: A value to look for in the array.
+
+		:return: The index tuple of the array entry nearest to the given value.
+		"""
+		value = u.to_ureg(value, unit=self.get_unit())
+		idx_flat = (numpy.abs(self - value)).argmin()
+		idx_tup = numpy.unravel_index(idx_flat, self.shape)
+		return idx_tup
+
+	def get_nearest_value(self, value):
+		"""
+		Like get_nearest_index, but return the value instead of the index.
+
+		:param value: value: A value to look for in the array.
+
+		:return: The value in the array nearest to the given one.
+		"""
+		return self[self.get_nearest_index(value)]
+
+	def sum_raw(self, axis=None, dtype=None, out=None, keepdims=False):
+		"""
+		As sum(), only on bare numpy array instead of Quantity. See sum() for details.
+		:return: ndarray
+		An array with the same shape as a, with the specified axes removed. If a is a 0-d array, or if axis is None, a
+		scalar is returned. If an output array is specified, a reference to out is returned.
+		"""
+		return self.magnitude.sum(axis=axis, dtype=dtype, out=out, keepdims=keepdims)
+
+	def absmax(self):
+		return abs(self).max()
+
+	def absmin(self):
+		return abs(self).min()
+
+	def __add__(self, other):
+		other = u.to_ureg(other, self.get_unit())
+		return super(Data_Handler_H5, self).__add__(other)
+
+	def __sub__(self, other):
+		other = u.to_ureg(other, self.units)
+		return super(Data_Handler_H5, self).__sub__(other)
+
+	def __mul__(self, other):
+		other = u.to_ureg(other)
+		return super(Data_Handler_H5, self).__mul__(other)
+
+	def __div__(self, other):
+		other = u.to_ureg(other)
+		return super(Data_Handler_H5, self).__div__(other)
+
+	def __floordiv__(self, other):
+		other = u.to_ureg(other)
+		return super(Data_Handler_H5, self).__floordiv__(other)
+
+	def __pow__(self, other):
+		other = u.to_ureg(other, 'dimensionless')
+		return super(Data_Handler_H5, self).__pow__(other)
+
+	def __repr__(self):
+		return "<Data_Handler_np(" + super(Data_Handler_H5, self).__repr__() + ")>"
+
+	def __del__(self):
+		if self.temp_file:
+			self.temp_file.close()
+			os.remove(self.temp_file_path)
+			try:
+				os.rmdir(os.path.dirname(self.temp_file_path))
+			except OSError as e:
+				print("WARNING: Data_Handler_H5 could not remove tempdir. Propably not empty.")
+				print(e)
 
 
 class Data_Handler_np(u.Quantity):
@@ -298,7 +451,7 @@ class DataArray(object):
 	def set_plotlabel(self, newlabel):
 		self.plotlabel = str(newlabel)
 
-	def store_to_h5(self, h5dest, subgrp_name=None, chunks=True):
+	def store_to_h5(self, h5dest, subgrp_name=None, chunks=True, compression="gzip", compression_opts=4):
 		"""
 		Stores the DataArray into a HDF5 file. It will create a subgroup and store the data there in a unified format.
 
@@ -311,8 +464,12 @@ class DataArray(object):
 		"""
 		if not subgrp_name:
 			subgrp_name = self.label
+		if not chunks:
+			compression = None
+			compression_opts = None
 		grp = h5dest.create_group(subgrp_name)
-		grp.create_dataset("data", data=self.get_data_raw(), chunks=chunks)
+		grp.create_dataset("data", data=self.get_data_raw(), chunks=chunks, compression=compression,
+						   compression_opts=compression_opts)
 		grp.create_dataset("unit", data=self.get_unit())
 		grp.create_dataset("label", data=self.get_label())
 		grp.create_dataset("plotlabel", data=self.get_plotlabel())
@@ -1775,11 +1932,11 @@ if __name__ == "__main__":  # just for testing
 
 	moep = u.to_ureg(testaxis.data)
 	moep2 = moep + moep
-	moep - moep
-	moep * moep
-	moep / moep
-	moep // moep
-	moep ** 2.
+	moep2 = moep - moep
+	moep2 = moep * moep
+	moep2 = moep / moep
+	moep2 = moep // moep
+	moep2 = moep ** 2.
 	moep.absmax()
 	moep.absmin()
 	moep.mean()
