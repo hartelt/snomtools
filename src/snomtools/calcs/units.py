@@ -92,6 +92,17 @@ def unit_from_str(tocheck):
 		return None
 
 
+def normalize_unitstr(unitstr):
+	"""
+	Returns the normalized unit string, meaning the string conversion of the casted unit.
+
+	:param unitstr: string: to convert
+
+	:return: string: converted
+	"""
+	return str(ureg(unitstr).units)
+
+
 def is_quantity(tocheck):
 	"""
 	Tries if the given object is a pint quantity.
