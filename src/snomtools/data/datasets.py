@@ -84,6 +84,8 @@ class Data_Handler_H5(u.Quantity):
 		else:
 			raise ValueError("Initialized Data_Handler_np with wrong parameters.")
 
+	# TODO: overwrite __getattr__ to avoid invoking _magnitude for performance reasons (all data loaded to RAM).
+
 	def _get__magnitude(self):
 		if self.ds_data.shape:  # array-like
 			return self.ds_data[:]
@@ -130,17 +132,30 @@ class Data_Handler_H5(u.Quantity):
 		return self.ds_data.shape
 
 	def __getitem__(self, key):
-		pass
+		return self.__class__(self.ds_data[key], self._units)
 
 	def __setitem__(self, key, value):
-		pass
+		"""
+		This method provides write access to indexed elements of the data. It directly writes to the h5 dataset
+		without invoking _magnitude, thereby it avoids loading all data into ram.
+
+		:param key: Index or slice (numpy style as usual) of data to address.
+
+		:param value: Data to write in addressed elements. Input units will be converted
+		to Data_Handler units (error if not possible). Numeric data (non-Quantities) are assumed as dimensionless (
+		pint-style).
+		:return:
+		"""
+		value = u.to_ureg(value).to(self.units)
+		self.ds_data[key] = value.magnitude
 
 	def flush(self):
 		"""
-		Flushes the HDF5 buffer to disk.
+		Flushes the HDF5 buffer to disk. This always concerns the whole H5 file, so the Data_Handler resides on a
+		subgroup, all other datasets on that file are also flushed.
 		:return: nothing
 		"""
-		self.h5target.flush()
+		self.h5target.file.flush()
 
 	def get_unit(self):
 		return str(self.units)
@@ -163,6 +178,7 @@ class Data_Handler_H5(u.Quantity):
 
 		:return: The index tuple of the array entry nearest to the given value.
 		"""
+		# TODO: Adapt and optimize memory performance.
 		value = u.to_ureg(value, unit=self.get_unit())
 		idx_flat = (numpy.abs(self - value)).argmin()
 		idx_tup = numpy.unravel_index(idx_flat, self.shape)
@@ -1992,7 +2008,6 @@ if __name__ == "__main__":  # just for testing
 	moep.sum()
 	moep.sum_raw()
 	# works till here
-	# TODO: Support slicing.
 	# moep.get_nearest_value(2.)
 	# moep.set_unit('mm')
 
