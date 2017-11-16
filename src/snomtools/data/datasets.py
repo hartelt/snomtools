@@ -129,6 +129,15 @@ class Data_Handler_H5(u.Quantity):
 	_units = property(_get__units, _set__units, None, "The _units property for Quantity emulation.")
 
 	@property
+	def q(self):
+		"""
+		The corresponding quantity.
+
+		:return: The data, converted to a quantity.
+		"""
+		return u.to_ureg(self.magnitude, self.units)
+
+	@property
 	def temp_file_path(self):
 		return os.path.join(self.temp_dir, self.temp_file.filename)
 
@@ -185,7 +194,7 @@ class Data_Handler_H5(u.Quantity):
 		"""
 		# TODO: Adapt and optimize memory performance.
 		value = u.to_ureg(value, unit=self.get_unit())
-		idx_flat = (numpy.abs(self - value)).argmin()
+		idx_flat = (abs(self - value)).argmin()
 		idx_tup = numpy.unravel_index(idx_flat, self.shape)
 		return idx_tup
 
@@ -282,6 +291,15 @@ class Data_Handler_np(u.Quantity):
 		:return: Nothing.
 		"""
 		self.ito(unitstr)
+
+	@property
+	def q(self):
+		"""
+		The corresponding quantity.
+
+		:return: The data, converted to a quantity.
+		"""
+		return u.to_ureg(self.magnitude, self.units)
 
 	def get_nearest_index(self, value):
 		"""
@@ -423,9 +441,9 @@ class DataArray(object):
 
 		:return: The initialized DataArray.
 		"""
-		assert isinstance(h5source,h5py.Group), "DataArray.from_h5 requires h5py group as source."
+		assert isinstance(h5source, h5py.Group), "DataArray.from_h5 requires h5py group as source."
 		if h5target:
-			assert isinstance(h5target,h5py.Group), "DataArray.from_h5 requires h5py group as target."
+			assert isinstance(h5target, h5py.Group), "DataArray.from_h5 requires h5py group as target."
 		out = cls(None, h5target=h5target)
 		out.load_from_h5(h5source)
 		return out
@@ -451,10 +469,6 @@ class DataArray(object):
 
 		:return: The attribute corresponding to the given name.
 		"""
-		if item == "shape":
-			return self.data.shape
-		if item == "units":
-			return self.data.units
 		raise AttributeError("Attribute \'{0}\' of DataArray instance cannot be resolved.".format(item))
 
 	def get_data(self):
@@ -487,6 +501,14 @@ class DataArray(object):
 		:return: ndarray: The data as a numpy array.
 		"""
 		return self.get_data_raw()
+
+	@property
+	def shape(self):
+		return self._data.shape
+
+	@property
+	def units(self):
+		return self._data.units
 
 	def get_data_raw(self):
 		"""
@@ -844,7 +866,7 @@ class Axis(DataArray):
 	An axis is a data array that holds the data for an axis of a dataset.
 	"""
 
-	def __init__(self, data, unit=None, label=None, plotlabel=None):
+	def __init__(self, data, unit=None, label=None, plotlabel=None, h5target=None):
 		"""
 		So far, an Axis is the same as a DaraArray, with the exception that it is one-dimensional. Therefore this
 		method uses the __init__ of the parent class and parameters are exactly as there.
@@ -859,7 +881,7 @@ class Axis(DataArray):
 
 		:return:
 		"""
-		DataArray.__init__(self, data, unit=unit, label=label, plotlabel=plotlabel)
+		DataArray.__init__(self, data, unit=unit, label=label, plotlabel=plotlabel, h5target=h5target)
 		self.assure_1D()
 		assert (len(self.data.shape) == 1), "Axis not initialized with 1D array-like object."
 
@@ -872,7 +894,7 @@ class Axis(DataArray):
 
 		:return: The new initialized instance of Axis.
 		"""
-		return cls(da.data, label=da.label, plotlabel=da.plotlabel)
+		return cls(da.data, label=da.label, plotlabel=da.plotlabel, h5target=da.h5target)
 
 	def __getattr__(self, item):
 		"""
@@ -883,10 +905,6 @@ class Axis(DataArray):
 
 		:return: The attribute corresponding to the given name.
 		"""
-		if item == "shape":
-			return self.data.shape
-		if item == "units":
-			return self.data.units
 		raise AttributeError("Attribute \'{0}\' of Axis instance cannot be resolved.".format(item))
 
 	def assure_1D(self):
@@ -2106,8 +2124,8 @@ if __name__ == "__main__":  # just for testing
 	moep.sum()
 	moep.sum_raw()
 	# works till here
-	# moep.get_nearest_value(2.)
-	# moep.set_unit('mm')
+	moep.get_nearest_value(2.)
+	moep.set_unit('mm')
 
 	# testdataset.saveh5('test.hdf5')
 	moep.write_to_h5()
