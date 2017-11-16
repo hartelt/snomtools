@@ -525,7 +525,7 @@ class DataArray(object):
 
 		:return The subgroup that was created and holds the data.
 		"""
-		if not subgrp_name:
+		if subgrp_name is None:
 			subgrp_name = self.label
 		if not chunks:
 			compression = None
@@ -537,6 +537,43 @@ class DataArray(object):
 		grp.create_dataset("label", data=self.get_label())
 		grp.create_dataset("plotlabel", data=self.get_plotlabel())
 		return grp
+
+	def write_h5(self, h5dest=None, chunks=True, compression="gzip", compression_opts=4):
+		"""
+		Writes the DataArray into a HDF5 group. It will store the data there in a unified
+		format. It will overwrite any dataset in the given group that is named with any of the unified names.
+
+		:param h5dest: The destination. This is a HDF5 file or subgroup. Can be None if the DataSet has a h5target (
+		works on a h5 group in file mode), in that case, self.h5target will be taken.
+
+		:return The h5 group (or file) that holds the written data.
+		"""
+		if h5dest is None and self.h5target:
+			h5dest = self.h5target
+		if not chunks:
+			compression = None
+			compression_opts = None
+
+		if h5dest is self.h5target:
+			self._data.flush()
+			ds_label = h5dest.require_dataset("label", shape= ())
+			ds_label[()] = self.get_label()
+			ds_plotlabel = h5dest.require_dataset("plotlabel", shape= ())
+			ds_plotlabel[()] = self.get_plotlabel()
+		else:
+			ds_data = h5dest.require_dataset("data", shape= self.shape, chunks=chunks, compression=compression,
+											 compression_opts=compression_opts)
+			if self.shape:  # array-like
+				ds_data[:] = self.get_data_raw()
+			else:  # scalar
+				ds_data[()] = self.get_data_raw()
+			ds_unit = h5dest.require_dataset("unit", shape= ())
+			ds_unit[()] = self.get_unit()
+			ds_label = h5dest.require_dataset("label", shape= ())
+			ds_label[()] = self.get_label()
+			ds_plotlabel = h5dest.require_dataset("plotlabel", shape= ())
+			ds_plotlabel[()] = self.get_plotlabel()
+		return h5dest
 
 	def load_from_h5(self, h5source):
 		"""
