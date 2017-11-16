@@ -11,6 +11,7 @@ import h5tools
 import re
 from termcolor import colored, cprint
 import tempfile
+from six import string_types
 
 
 class Data_Handler_H5(u.Quantity):
@@ -42,6 +43,10 @@ class Data_Handler_H5(u.Quantity):
 				chunks = False
 				compression = None
 				compression_opts = None
+			if h5target.get("data"):
+				del h5target["data"]
+			if h5target.get("unit"):
+				del h5target["unit"]
 			inst.ds_data = h5target.create_dataset("data", data=compiled_data.magnitude, chunks=chunks,
 												   compression=compression,
 												   compression_opts=compression_opts)
@@ -370,7 +375,14 @@ class DataArray(object):
 
 		:return:
 		"""
-		self.h5target = h5target
+		if isinstance(h5target, h5py.Group):
+			self.h5target = h5target
+		elif isinstance(h5target, string_types):
+			self.h5target = h5py.File(h5target)
+		elif h5target:  # True but no designated target means temp file mode.
+			self.h5target = True
+		else:  # Numpy mode.
+			self.h5target = None
 		if isinstance(data, DataArray):  # If the data already comes in a DataArray, just take it.
 			self.data = data.get_data()
 			if unit:  # If a unit is explicitly requested anyway, make sure we set it.
@@ -401,17 +413,34 @@ class DataArray(object):
 			self.plotlabel = str(plotlabel)
 
 	@classmethod
-	def from_h5(cls, h5source):
+	def from_h5(cls, h5source, h5target=None):
 		"""
 		This method initializes a DataArray from a HDF5 source.
 
 		:param h5source: The HDF5 source to read from. This is generally the subgroup for the DataArray.
 
+		:param h5target: Optional. The HDF5 target to work on, if on-disk h5 mode is desired.
+
 		:return: The initialized DataArray.
 		"""
-		out = cls([])
+		assert isinstance(h5source,h5py.Group), "DataArray.from_h5 requires h5py group as source."
+		if h5target:
+			assert isinstance(h5target,h5py.Group), "DataArray.from_h5 requires h5py group as target."
+		out = cls(None, h5target=h5target)
 		out.load_from_h5(h5source)
 		return out
+
+	@classmethod
+	def in_h5(cls, h5source):
+		"""
+		This method initializes a DataArray from a HDF5 source, which then works on the same H5 File. This is
+		identical to calling DataArray.from_h5(h5source, h5target=h5source), which is actually done here.
+
+		:param h5source: The HDF5 source to read from. This is generally the subgroup for the DataArray.
+
+		:return: The initialized DataArray.
+		"""
+		return cls.from_h5(h5source, h5source)
 
 	def __getattr__(self, item):
 		"""
@@ -438,7 +467,10 @@ class DataArray(object):
 	def _set_data(self, val):
 		# print "data property setter"
 		if self.h5target:
-			self._data = Data_Handler_H5(val, h5target=self.h5target)
+			if isinstance(self.h5target, h5py.Group):  # initialize H5 data in h5target group
+				self._data = Data_Handler_H5(val, h5target=self.h5target)
+			else:  # no group given but h5target==True, so work in h5 tempfile mode.
+				self._data = Data_Handler_H5(val)
 		else:
 			self._data = Data_Handler_np(val)
 
@@ -516,7 +548,8 @@ class DataArray(object):
 
 	def store_to_h5(self, h5dest, subgrp_name=None, chunks=True, compression="gzip", compression_opts=4):
 		"""
-		Stores the DataArray into a HDF5 file. It will create a subgroup and store the data there in a unified format.
+		Stores the DataArray into a HDF5 file. It will create a new subgroup and store the data there in a unified
+		format.
 
 		:param h5dest: The destination. This is a HDF5 file or subgroup.
 
@@ -538,7 +571,7 @@ class DataArray(object):
 		grp.create_dataset("plotlabel", data=self.get_plotlabel())
 		return grp
 
-	def write_h5(self, h5dest=None, chunks=True, compression="gzip", compression_opts=4):
+	def write_to_h5(self, h5dest=None, chunks=True, compression="gzip", compression_opts=4):
 		"""
 		Writes the DataArray into a HDF5 group. It will store the data there in a unified
 		format. It will overwrite any dataset in the given group that is named with any of the unified names.
@@ -556,23 +589,32 @@ class DataArray(object):
 
 		if h5dest is self.h5target:
 			self._data.flush()
-			ds_label = h5dest.require_dataset("label", shape= ())
-			ds_label[()] = self.get_label()
-			ds_plotlabel = h5dest.require_dataset("plotlabel", shape= ())
-			ds_plotlabel[()] = self.get_plotlabel()
+			if h5dest.get("label"):
+				del h5dest["label"]
+			h5dest["label"] = self.get_label()
+			if h5dest.get("plotlabel"):
+				del h5dest["plotlabel"]
+			h5dest["plotlabel"] = self.get_plotlabel()
 		else:
-			ds_data = h5dest.require_dataset("data", shape= self.shape, chunks=chunks, compression=compression,
-											 compression_opts=compression_opts)
-			if self.shape:  # array-like
-				ds_data[:] = self.get_data_raw()
-			else:  # scalar
-				ds_data[()] = self.get_data_raw()
-			ds_unit = h5dest.require_dataset("unit", shape= ())
-			ds_unit[()] = self.get_unit()
-			ds_label = h5dest.require_dataset("label", shape= ())
-			ds_label[()] = self.get_label()
-			ds_plotlabel = h5dest.require_dataset("plotlabel", shape= ())
-			ds_plotlabel[()] = self.get_plotlabel()
+			if self.h5target:
+				# We are in h5 mode, so copying on h5 level is faster because of compression.
+				if h5dest.get("data"):
+					del h5dest["data"]
+				h5dest.copy(self.get_data().h5target["data"], h5dest)
+			else:
+				if h5dest.get("data"):
+					del h5dest["data"]
+				h5dest.create_dataset("data", data=self.get_data_raw(), chunks=chunks, compression=compression,
+									  compression_opts=compression_opts)
+			if h5dest.get("unit"):
+				del h5dest["unit"]
+			h5dest["unit"] = self.get_unit()
+		if h5dest.get("label"):
+			del h5dest["label"]
+		h5dest["label"] = self.get_label()
+		if h5dest.get("plotlabel"):
+			del h5dest["plotlabel"]
+		h5dest["plotlabel"] = self.get_plotlabel()
 		return h5dest
 
 	def load_from_h5(self, h5source):
@@ -581,9 +623,28 @@ class DataArray(object):
 
 		:param h5source: The source to read from. This is the subgroup of the DataArray.
 		"""
-		self.set_data(numpy.array(h5source["data"]), h5source["unit"][()])
+		if self.h5target == h5source:  # We already work on the h5source. Just initialize handler.
+			self._data = Data_Handler_H5(h5target=self.h5target)
+		elif isinstance(self.h5target, h5py.Group):
+			# We work on a h5target, but not h5source. Copy h5source and initialize handler. This should be much more
+			# performant than reading data and storing them again, because of compression.
+			self.h5target.copy(h5source, self.h5target)
+			self._data = Data_Handler_H5(h5target=self.h5target)
+		else:
+			self.set_data(numpy.array(h5source["data"]), h5source["unit"][()])
 		self.set_label(h5source["label"][()])
 		self.set_plotlabel(h5source["plotlabel"][()])
+
+	def flush(self):
+		"""
+		Flushes HDF5 buffers to disk. This only makes sense in h5 disk mode and in non-tempfile mode.
+
+		:return: Nothing.
+		"""
+		if isinstance(self.h5target, h5py.Group):
+			self.write_to_h5()
+		else:
+			print("WARNING: DataSet cannot flush without working on valid HDF5 file.")
 
 	def get_nearest_index(self, value):
 		"""
@@ -2032,7 +2093,7 @@ if __name__ == "__main__":  # just for testing
 
 	testh5 = h5py.File('test.hdf5', 'w')
 
-	moep = Data_Handler_H5(testaxis.data, h5target=testh5)
+	moep = DataArray(testaxis.data, label="test", h5target=testh5)
 	moep2 = moep + moep
 	moep2 = moep - moep
 	moep2 = moep * moep
@@ -2049,5 +2110,11 @@ if __name__ == "__main__":  # just for testing
 	# moep.set_unit('mm')
 
 	# testdataset.saveh5('test.hdf5')
+	moep.write_to_h5()
+	del moep
+	testh5.close()
+
+	testh5 = h5py.File('test.hdf5')
+	moep3 = DataArray.in_h5(testh5)
 
 	cprint("OK", 'green')
