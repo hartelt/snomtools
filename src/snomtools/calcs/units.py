@@ -157,10 +157,17 @@ def to_ureg(input_, unit=None, convert_quantities=True):
 		return Quantity(input_, unit)
 
 
-def as_ureg_quantities(stream):
+def as_ureg_quantities(stream, unit=None):
 	for e in stream:
-		yield to_ureg(e)
+		yield to_ureg(e, unit)
 
+def magnitudes(stream):
+	for e in stream:
+		yield e.magnitude
+
+def units(stream):
+	for e in stream:
+		yield e.units
 
 def meshgrid(*args):
 	"""
