@@ -395,12 +395,16 @@ class DataArray(object):
 		"""
 		if isinstance(h5target, h5py.Group):
 			self.h5target = h5target
+			self.own_h5file = False
 		elif isinstance(h5target, string_types):
 			self.h5target = h5py.File(h5target)
+			self.own_h5file = True
 		elif h5target:  # True but no designated target means temp file mode.
 			self.h5target = True
+			self.own_h5file = False
 		else:  # Numpy mode.
 			self.h5target = None
+			self.own_h5file = False
 		if isinstance(data, DataArray):  # If the data already comes in a DataArray, just take it.
 			self.data = data.get_data()
 			if unit:  # If a unit is explicitly requested anyway, make sure we set it.
@@ -414,6 +418,8 @@ class DataArray(object):
 			else:
 				self.plotlabel = data.get_plotlabel()
 			# A DataArray contains everything we need, so we should be done here!
+		elif isinstance(data,h5py.Group): # If a HDF5 Group was given, load data directly.
+			self.load_from_h5(data)
 		else:  # We DON'T have everything contained in data, so we need to process it seperately.
 			if data is None:
 				self.data = None  # No data. Initialize empty instance.
@@ -582,15 +588,8 @@ class DataArray(object):
 		"""
 		if subgrp_name is None:
 			subgrp_name = self.label
-		if not chunks:
-			compression = None
-			compression_opts = None
-		grp = h5dest.create_group(subgrp_name)
-		grp.create_dataset("data", data=self.get_data_raw(), chunks=chunks, compression=compression,
-						   compression_opts=compression_opts)
-		grp.create_dataset("unit", data=self.get_unit())
-		grp.create_dataset("label", data=self.get_label())
-		grp.create_dataset("plotlabel", data=self.get_plotlabel())
+		grp = h5dest.require_group(subgrp_name)
+		self.write_to_h5(grp, chunks=chunks, compression=compression, compression_opts=compression_opts)
 		return grp
 
 	def write_to_h5(self, h5dest=None, chunks=True, compression="gzip", compression_opts=4):
@@ -611,32 +610,17 @@ class DataArray(object):
 
 		if h5dest is self.h5target:
 			self._data.flush()
-			if h5dest.get("label"):
-				del h5dest["label"]
-			h5dest["label"] = self.get_label()
-			if h5dest.get("plotlabel"):
-				del h5dest["plotlabel"]
-			h5dest["plotlabel"] = self.get_plotlabel()
 		else:
 			if self.h5target:
 				# We are in h5 mode, so copying on h5 level is faster because of compression.
-				if h5dest.get("data"):
-					del h5dest["data"]
+				h5tools.clear_name(h5dest, "data")
 				h5dest.copy(self.get_data().h5target["data"], h5dest)
 			else:
-				if h5dest.get("data"):
-					del h5dest["data"]
-				h5dest.create_dataset("data", data=self.get_data_raw(), chunks=chunks, compression=compression,
+				h5tools.write_dataset(h5dest, "data", data=self.get_data_raw(), chunks=chunks, compression=compression,
 									  compression_opts=compression_opts)
-			if h5dest.get("unit"):
-				del h5dest["unit"]
-			h5dest["unit"] = self.get_unit()
-		if h5dest.get("label"):
-			del h5dest["label"]
-		h5dest["label"] = self.get_label()
-		if h5dest.get("plotlabel"):
-			del h5dest["plotlabel"]
-		h5dest["plotlabel"] = self.get_plotlabel()
+			h5tools.write_dataset(h5dest,"unit", self.get_unit())
+		h5tools.write_dataset(h5dest, "label", self.get_label())
+		h5tools.write_dataset(h5dest, "plotlabel", self.get_plotlabel())
 		return h5dest
 
 	def load_from_h5(self, h5source):
@@ -858,7 +842,8 @@ class DataArray(object):
 		return out
 
 	def __del__(self):
-		pass
+		if self.own_h5file:
+			self.h5target.close()
 
 
 class Axis(DataArray):
@@ -1497,6 +1482,7 @@ class DataSet(object):
 		"""
 		Initializes a new DataSet from an existing HDF5 file. The file must be structured in accordance to the
 		saveh5() and loadh5() methods in this class. Uses loadh5 under the hood!
+		This method is kept for backwards compatibility, while newer from_h5 method expands its function.
 
 		:param path: The (absolute or relative) path of the HDF5 file to read.
 
@@ -1508,6 +1494,22 @@ class DataSet(object):
 		dataset = cls(filename)
 		# Load data:
 		dataset.loadh5(path)
+		return dataset
+
+	@classmethod
+	def from_h5(cls, h5source):
+		"""
+		Initializes a new DataSet from an existing HDF5 source. The file must be structured in accordance to the
+		saveh5() and loadh5() methods in this class. Uses loadh5 under the hood!
+
+		:param h5source: The (absolute or relative) path of the HDF5 file to read, or an existing h5py Group/File of
+		the base of the Dataset.
+
+		:return: The initialized DataSet
+		"""
+		dataset = cls(repr(h5source))
+		# Load data:
+		dataset.loadh5(h5source)
 		return dataset
 
 	@classmethod
@@ -1857,40 +1859,59 @@ class DataSet(object):
 			assert (len(self.labels) == len(set(self.labels))), "DataSet data array and axes labels not unique."
 			return True
 
-	def saveh5(self, path):
-		path = os.path.abspath(path)
-		outfile = h5py.File(path, 'w')
+	def saveh5(self, h5dest):
+		"""
+		Saves the Dataset to a HDF5 destination in a unified format.
+
+		:param h5dest: String or h5py Group/File: The destination to write to.
+		 
+		:return: Noting.
+		"""
+		if isinstance(h5dest, string_types):
+			path = os.path.abspath(h5dest)
+			h5dest = h5py.File(path, 'w')
+		else:
+			path = False
+		assert isinstance(h5dest, h5py.Group), "DataSet.saveh5 needs h5 group or destination path as argument!"
+
 		# TODO: Store snomtools version that data was saved with!
-		datafieldgrp = outfile.create_group("datafields")
+		datafieldgrp = h5dest.require_group("datafields")
 		for i in range(len(self.datafields)):
 			grp = self.datafields[i].store_to_h5(datafieldgrp)
-			grp.create_dataset("index", data=i)
-		axesgrp = outfile.create_group("axes")
+			h5tools.write_dataset(grp, "index", i)
+		axesgrp = h5dest.require_group("axes")
 		for i in range(len(self.axes)):
 			grp = self.axes[i].store_to_h5(axesgrp)
-			grp.create_dataset("index", data=i)
-		outfile.create_dataset("label", data=self.label)
-		plotconfgrp = outfile.create_group("plotconf")
+			h5tools.write_dataset(grp, "index", i)
+		h5tools.write_dataset(h5dest, "label", self.label)
+		plotconfgrp = h5dest.require_group("plotconf")
 		h5tools.store_dictionary(self.plotconf, plotconfgrp)
-		outfile.close()
+		if path: # We got a path and wrote in new h5 file, so we'll close that file.
+			h5dest.close()
 
-	def loadh5(self, path):
-		path = os.path.abspath(path)
-		infile = h5py.File(path, 'r')
-		self.label = str(infile["label"][()])
-		datafieldgrp = infile["datafields"]
+	def loadh5(self, h5source):
+		if isinstance(h5source, string_types):
+			path = os.path.abspath(h5source)
+			h5source = h5py.File(path, 'w')
+		else:
+			path = False
+		assert isinstance(h5source, h5py.Group), "DataSet.saveh5 needs h5 group or destination path as argument!"
+
+		self.label = str(h5source["label"][()])
+		datafieldgrp = h5source["datafields"]
 		self.datafields = [None for i in range(len(datafieldgrp))]
 		for datafield in datafieldgrp:
 			index = datafieldgrp[datafield]['index'][()]
 			self.datafields[index] = (DataArray.from_h5(datafieldgrp[datafield]))
-		axesgrp = infile["axes"]
+		axesgrp = h5source["axes"]
 		self.axes = [None for i in range(len(axesgrp))]
 		for axis in axesgrp:
 			index = axesgrp[axis]['index'][()]
 			self.axes[index] = (Axis.from_h5(axesgrp[axis]))
-		self.plotconf = h5tools.load_dictionary(infile['plotconf'])
+		self.plotconf = h5tools.load_dictionary(h5source['plotconf'])
 		self.check_data_consistency()
-		infile.close()
+		if path: # We got a path and read from opened h5 file, so we'll close that file.
+			h5source.close()
 
 	def load_textfile(self, path, axis=0, comments='#', delimiter=None, unitsplitter="[-\/ ]+", labelline=0,
 					  unitsline=0, **kwargs):
