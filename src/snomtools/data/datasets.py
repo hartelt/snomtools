@@ -15,6 +15,11 @@ from six import string_types
 
 
 class Data_Handler_H5(u.Quantity):
+	"""
+	A Data Handler, emulating a Quantity.
+	This "H5 mode" handler keeps the data in h5py objects, but provides access to data as if it were a quantity.
+	"""
+
 	def __new__(cls, data=None, unit=None, shape=None, h5target=None,
 				chunks=True, compression="gzip", compression_opts=4):
 		if not chunks:
@@ -30,7 +35,27 @@ class Data_Handler_H5(u.Quantity):
 			temp_file = None
 			temp_dir = None
 
-		if data is not None:
+		if isinstance(data, cls):
+			inst = object.__new__(cls)
+			inst.__used = False
+			inst.__handling = None
+			inst.chunks = chunks
+			inst.compression = compression
+			inst.compression_opts = compression_opts
+			if data.h5target is h5target:
+				# Data already there.
+				pass
+			else:
+				# We got h5 already, so copying on h5 level is faster because of compression.
+				h5tools.clear_name(h5target, "data")
+				data.h5target.copy("data", h5target)
+				h5tools.clear_name(h5target, "unit")
+				data.h5target.copy("unit", h5target)
+			inst.h5target = h5target
+			inst.temp_file = temp_file
+			inst.temp_dir = temp_dir
+			return inst
+		elif data is not None:
 			inst = object.__new__(cls)
 			inst.__used = False
 			inst.__handling = None
@@ -43,10 +68,8 @@ class Data_Handler_H5(u.Quantity):
 				chunks = False
 				compression = None
 				compression_opts = None
-			if h5target.get("data"):
-				del h5target["data"]
-			if h5target.get("unit"):
-				del h5target["unit"]
+			h5tools.clear_name(h5target, "data")
+			h5tools.clear_name(h5target, "unit")
 			inst.ds_data = h5target.create_dataset("data", data=compiled_data.magnitude, chunks=chunks,
 												   compression=compression,
 												   compression_opts=compression_opts)
@@ -66,6 +89,8 @@ class Data_Handler_H5(u.Quantity):
 				chunks = False
 				compression = None
 				compression_opts = None
+			h5tools.clear_name(h5target, "data")
+			h5tools.clear_name(h5target, "unit")
 			inst.ds_data = h5target.create_dataset("data", shape, chunks=chunks, compression=compression,
 												   compression_opts=compression_opts)
 			inst.ds_unit = h5target.create_dataset("unit", data=u.normalize_unitstr(unit))
@@ -129,6 +154,10 @@ class Data_Handler_H5(u.Quantity):
 	_units = property(_get__units, _set__units, None, "The _units property for Quantity emulation.")
 
 	@property
+	def dimensionality(self):
+		return u.to_ureg(1, self.units).dimensionality
+
+	@property
 	def q(self):
 		"""
 		The corresponding quantity.
@@ -139,11 +168,18 @@ class Data_Handler_H5(u.Quantity):
 
 	@property
 	def temp_file_path(self):
-		return os.path.join(self.temp_dir, self.temp_file.filename)
+		if self.temp_file:
+			return os.path.join(self.temp_dir, self.temp_file.filename)
+		else:
+			return None
 
 	@property
 	def shape(self):
 		return self.ds_data.shape
+
+	@property
+	def dtype(self):
+		return self.ds_data.dtype
 
 	def __getitem__(self, key):
 		return self.__class__(self.ds_data[key], self._units)
@@ -261,6 +297,37 @@ class Data_Handler_H5(u.Quantity):
 				print("WARNING: Data_Handler_H5 could not remove tempdir. Propably not empty.")
 				print(e)
 
+	@classmethod
+	def stack(cls, tostack, axis=0, unit=None, h5target=None):
+		"""
+		Stacks a sequence of given Data_Handlers (or castables) along a new axis.
+
+		:param tostack: Sequence of Data_Handlers (or castables), each must be of the same shape and unit.
+
+		:param axis: int, optional: The axis in the result array along which the input arrays are stacked.
+
+		:param unit: optional: A valid unit string to convert the stack to. Default is the unit of the first element
+		of the sequence.
+
+		:param h5target: optional: A h5target to work on. See __new__
+
+		:return: stacked Data_Handler
+		"""
+		if unit is None:
+			unit = str(tostack[0].units)
+		inshape = tostack[0].shape
+		for e in tostack:
+			assert e.shape == inshape, "Data_Handler_H5.stack got elements of varying shape."
+		shapelist = list(inshape)
+		shapelist.insert(axis, len(tostack))
+		outshape = tuple(shapelist)
+		inst = cls(shape=outshape, unit=unit, h5target=h5target)
+		for i in range(len(tostack)):
+			slicebase = [numpy.s_[:] for j in range(len(inshape))]
+			slicebase.insert(axis, i)
+			inst[tuple(slicebase)] = tostack[i]
+		return inst
+
 
 class Data_Handler_np(u.Quantity):
 	"""
@@ -373,6 +440,24 @@ class Data_Handler_np(u.Quantity):
 
 	def __del__(self):
 		pass
+
+	@classmethod
+	def stack(cls, tostack, axis=0, unit=None):
+		"""
+		Stacks a sequence of given Data_Handlers (or castables) along a new axis.
+
+		:param tostack: Sequence of Data_Handlers (or castables), each must be of the same shape and dimensionality.
+
+		:param axis: int, optional: The axis in the result array along which the input arrays are stacked.
+
+		:param unit: optional: A valid unit string to convert the stack to. Default is the unit of the first element
+		of the sequence.
+
+		:return: stacked Data_Handler
+		"""
+		if unit is None:
+			unit = str(tostack[0].units)
+		return cls(numpy.stack(u.magnitudes(u.as_ureg_quantities(tostack, unit)), axis), unit)
 
 
 class DataArray(object):
@@ -834,7 +919,7 @@ class DataArray(object):
 
 	def __repr__(self):
 		out = 'DataArray('
-		out += str(self.data)
+		out += repr(self.data)
 		out += ', '
 		if self.label:
 			out += 'label=' + self.label
@@ -2024,7 +2109,7 @@ class DataSet(object):
 		pass
 
 
-def stack_DataArrays(datastack, axis=0, unit=None, label=None, plotlabel=None):
+def stack_DataArrays(datastack, axis=0, unit=None, label=None, plotlabel=None, h5target=None):
 	"""
 	Stacks a sequence of DataArrays to a new DataArray.
 	See numpy.stack, as this method is used.
@@ -2053,8 +2138,11 @@ def stack_DataArrays(datastack, axis=0, unit=None, label=None, plotlabel=None):
 	if plotlabel is None:
 		plotlabel = datastack[0].get_plotlabel()
 	onlydata = [da.get_data() for da in datastack]
-	stacked_data = numpy.stack(onlydata, axis)
-	return DataArray(stacked_data, unit=unit, label=label, plotlabel=plotlabel)
+	if h5target:
+		stacked_data = Data_Handler_H5.stack(onlydata, axis, h5target=h5target)
+	else:
+		stacked_data = Data_Handler_np.stack(onlydata, axis)
+	return DataArray(stacked_data, unit=unit, label=label, plotlabel=plotlabel, h5target=h5target)
 
 
 def stack_DataSets(datastack, new_axis, axis=0, label=None, plotconf=None):
@@ -2077,6 +2165,7 @@ def stack_DataSets(datastack, new_axis, axis=0, label=None, plotconf=None):
 
 	:return: The stacked DataSet.
 	"""
+	# TODO: Compatibility with h5 mode: Handle h5target.
 	# Check if input data types are ok and cast defaults if necessary:
 	for ds in datastack:
 		assert (isinstance(ds, DataSet)), "ERROR: Non-DataSet object given to stack_DataSets"
@@ -2153,12 +2242,21 @@ if __name__ == "__main__":  # just for testing
 	moep.get_nearest_value(2.)
 	moep.set_unit('mm')
 
+	del moep
+
+	bigfuckindata = Data_Handler_H5(unit='km', shape=(1000, 1000, 1000, 1000, 1000))
+	moep = DataArray(bigfuckindata, label="test", h5target=testh5)
+
 	# testdataset.saveh5('test.hdf5')
 	moep.write_to_h5()
 	del moep
 	testh5.close()
 
 	testh5 = h5py.File('test.hdf5')
-	moep3 = DataArray(testh5)
+	moep3 = DataArray(testh5, h5target=testh5)
+
+	dhs = [Data_Handler_H5(numpy.arange(5), 'meter') for i in range(3)]
+	dhs.append(u.to_ureg(numpy.arange(5), 'millimeter'))
+	stacktest = Data_Handler_H5.stack(dhs, unit='millimeter', axis=1)
 
 	cprint("OK", 'green')
