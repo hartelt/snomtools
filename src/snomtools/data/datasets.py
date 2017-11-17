@@ -279,6 +279,11 @@ class Data_Handler_np(u.Quantity):
 		else:
 			raise ValueError("Initialized Data_Handler_np with wrong parameters.")
 
+	def __setitem__(self, key, value):
+		if not isinstance(value, self.__class__):
+			value = self.__class__(value)
+		super(Data_Handler_np, self).__setitem__(key, value)
+
 	def get_unit(self):
 		return str(self.units)
 
@@ -418,7 +423,7 @@ class DataArray(object):
 			else:
 				self.plotlabel = data.get_plotlabel()
 			# A DataArray contains everything we need, so we should be done here!
-		elif isinstance(data,h5py.Group): # If a HDF5 Group was given, load data directly.
+		elif isinstance(data, h5py.Group):  # If a HDF5 Group was given, load data directly.
 			self.load_from_h5(data)
 		else:  # We DON'T have everything contained in data, so we need to process it seperately.
 			if data is None:
@@ -618,7 +623,7 @@ class DataArray(object):
 			else:
 				h5tools.write_dataset(h5dest, "data", data=self.get_data_raw(), chunks=chunks, compression=compression,
 									  compression_opts=compression_opts)
-			h5tools.write_dataset(h5dest,"unit", self.get_unit())
+			h5tools.write_dataset(h5dest, "unit", self.get_unit())
 		h5tools.write_dataset(h5dest, "label", self.get_label())
 		h5tools.write_dataset(h5dest, "plotlabel", self.get_plotlabel())
 		return h5dest
@@ -1886,7 +1891,7 @@ class DataSet(object):
 		h5tools.write_dataset(h5dest, "label", self.label)
 		plotconfgrp = h5dest.require_group("plotconf")
 		h5tools.store_dictionary(self.plotconf, plotconfgrp)
-		if path: # We got a path and wrote in new h5 file, so we'll close that file.
+		if path:  # We got a path and wrote in new h5 file, so we'll close that file.
 			h5dest.close()
 
 	def loadh5(self, h5source):
@@ -1910,7 +1915,7 @@ class DataSet(object):
 			self.axes[index] = (Axis.from_h5(axesgrp[axis]))
 		self.plotconf = h5tools.load_dictionary(h5source['plotconf'])
 		self.check_data_consistency()
-		if path: # We got a path and read from opened h5 file, so we'll close that file.
+		if path:  # We got a path and read from opened h5 file, so we'll close that file.
 			h5source.close()
 
 	def load_textfile(self, path, axis=0, comments='#', delimiter=None, unitsplitter="[-\/ ]+", labelline=0,
@@ -2154,6 +2159,6 @@ if __name__ == "__main__":  # just for testing
 	testh5.close()
 
 	testh5 = h5py.File('test.hdf5')
-	moep3 = DataArray.in_h5(testh5)
+	moep3 = DataArray(testh5)
 
 	cprint("OK", 'green')
