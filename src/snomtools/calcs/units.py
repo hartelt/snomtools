@@ -134,12 +134,13 @@ def to_ureg(input_, unit=None, convert_quantities=True):
 	# Check if input is quantity:
 	if is_quantity(input_):
 		# If output unit is specified, make sure it has a compatible dimension. Else a DimensionalityError will be
-		# raised by trying to convert:
-		if unit:
-			input_.to(unit)
+		# raised:
+		if unit and not same_dimension(input_, to_ureg(1, unit)):
+			raise pint.DimensionalityError(input_.units, to_ureg(1, unit).units,
+										   extra_msg="Incompatible units given to to_ureg!")
 		# Check if input is already of our ureg. If so, nothing to do other then convert if unit is specified:
 		if input_._REGISTRY is ureg:
-			if unit and convert_quantities:
+			if unit and convert_quantities and input_.units != to_ureg(1, unit).units:
 				return input_.to(unit)
 			else:
 				return input_

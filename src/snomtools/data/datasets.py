@@ -36,6 +36,8 @@ class Data_Handler_H5(u.Quantity):
 			temp_dir = None
 
 		if isinstance(data, cls):
+			if not unit is None and not data.units == u.to_ureg(1, unit).units:
+				data = data.to(unit)
 			inst = object.__new__(cls)
 			inst.__used = False
 			inst.__handling = None
@@ -51,6 +53,8 @@ class Data_Handler_H5(u.Quantity):
 				data.h5target.copy("data", h5target)
 				h5tools.clear_name(h5target, "unit")
 				data.h5target.copy("unit", h5target)
+			inst.ds_data = h5target["data"]
+			inst.ds_unit = h5target["unit"]
 			inst.h5target = h5target
 			inst.temp_file = temp_file
 			inst.temp_dir = temp_dir
@@ -194,6 +198,8 @@ class Data_Handler_H5(u.Quantity):
 		:param value: Data to write in addressed elements. Input units will be converted
 		to Data_Handler units (error if not possible). Numeric data (non-Quantities) are assumed as dimensionless (
 		pint-style).
+		Warning: Value must fit into RAM. Setting bigger-than-RAM slices at a time is not supported (yet).
+
 		:return:
 		"""
 		value = u.to_ureg(value).to(self.units)
@@ -219,6 +225,40 @@ class Data_Handler_H5(u.Quantity):
 		:return: Nothing.
 		"""
 		self.ito(unitstr)
+
+	def to(self, unit, *contexts, **ctx_kwargs):
+		"""
+		A more performant version of pints Quantity's to, that avoids unneccesary calling of magnitude, and copies on
+		HDF5 level if possible.
+
+		:param unit: A valid unit string or
+
+		:param contexts: See pint._Quantity.to().
+
+		:param ctx_kwargs: See pint._Quantity.to().
+
+		:return:
+		"""
+		if self.units == u.to_ureg(1,unit).units:
+			return self.__class__(self)
+		return super(Data_Handler_H5, self).to(unit, *contexts, **ctx_kwargs)
+
+	def ito(self, unit, *contexts, **ctx_kwargs):
+		"""
+		A more performant version of pints Quantity's ito, that avoids unneccesary calling of magnitude.
+
+		:param unit: A valid unit string or
+
+		:param contexts: See pint._Quantity.to().
+
+		:param ctx_kwargs: See pint._Quantity.to().
+
+		:return:
+		"""
+		if u.same_unit(self,u.to_ureg(1,unit)): # Nothing to do.
+			pass
+		else:
+			super(Data_Handler_H5, self).ito(unit, *contexts, **ctx_kwargs)
 
 	def get_nearest_index(self, value):
 		"""
@@ -934,6 +974,42 @@ class DataArray(object):
 	def __del__(self):
 		if self.own_h5file:
 			self.h5target.close()
+
+	@classmethod
+	def stack(cls, datastack, axis=0, unit=None, label=None, plotlabel=None, h5target=None):
+		"""
+		Stacks a sequence of DataArrays to a new DataArray.
+		See numpy.stack, as this method is used.
+
+		:param datastack: sequence of DataArrays: The Data to be stacked.
+
+		:param axis: int, optional: The axis in the result array along which the input arrays are stacked.
+
+		:param unit: string, optional: The unit for the stacked DataArray. All data must be convertible to that unit. If
+		not given, the unit of the first DataArray in the input stack is used.
+
+		:param label: string, optional: The label for the new DataSet. If not given, the label of the first DataArray in
+		the input stack is used.
+
+		:param plotlabel: string, optional: The plotlabel for the new DataArray. If not given, the label of the first
+		DataArray in the input stack is used.
+
+		:return: The stacked DataArray.
+		"""
+		for da in datastack:
+			assert (isinstance(da, DataArray)), "ERROR: Non-DataArray object given to stack_DataArrays"
+		if unit is None:
+			unit = datastack[0].get_unit()
+		if label is None:
+			label = datastack[0].get_label()
+		if plotlabel is None:
+			plotlabel = datastack[0].get_plotlabel()
+		onlydata = [da.get_data() for da in datastack]
+		if h5target:
+			stacked_data = Data_Handler_H5.stack(onlydata, axis, h5target=h5target)
+		else:
+			stacked_data = Data_Handler_np.stack(onlydata, axis)
+		return cls(stacked_data, unit=unit, label=label, plotlabel=plotlabel, h5target=h5target)
 
 
 class Axis(DataArray):
@@ -2109,40 +2185,14 @@ class DataSet(object):
 		pass
 
 
+# TODO: Why are the following not classmethods???
+
 def stack_DataArrays(datastack, axis=0, unit=None, label=None, plotlabel=None, h5target=None):
 	"""
 	Stacks a sequence of DataArrays to a new DataArray.
-	See numpy.stack, as this method is used.
-
-	:param datastack: sequence of DataArrays: The Data to be stacked.
-
-	:param axis: int, optional: The axis in the result array along which the input arrays are stacked.
-
-	:param unit: string, optional: The unit for the stacked DataArray. All data must be convertible to that unit. If
-	not given, the unit of the first DataArray in the input stack is used.
-
-	:param label: string, optional: The label for the new DataSet. If not given, the label of the first DataArray in
-	the input stack is used.
-
-	:param plotlabel: string, optional: The plotlabel for the new DataArray. If not given, the label of the first
-	DataArray in the input stack is used.
-
-	:return: The stacked DataArray.
+	See DataArray.stack.
 	"""
-	for da in datastack:
-		assert (isinstance(da, DataArray)), "ERROR: Non-DataArray object given to stack_DataArrays"
-	if unit is None:
-		unit = datastack[0].get_unit()
-	if label is None:
-		label = datastack[0].get_label()
-	if plotlabel is None:
-		plotlabel = datastack[0].get_plotlabel()
-	onlydata = [da.get_data() for da in datastack]
-	if h5target:
-		stacked_data = Data_Handler_H5.stack(onlydata, axis, h5target=h5target)
-	else:
-		stacked_data = Data_Handler_np.stack(onlydata, axis)
-	return DataArray(stacked_data, unit=unit, label=label, plotlabel=plotlabel, h5target=h5target)
+	return DataArray.stack(datastack, axis=axis, unit=unit, label=label, plotlabel=plotlabel, h5target=h5target)
 
 
 def stack_DataSets(datastack, new_axis, axis=0, label=None, plotconf=None):
@@ -2244,7 +2294,7 @@ if __name__ == "__main__":  # just for testing
 
 	del moep
 
-	bigfuckindata = Data_Handler_H5(unit='km', shape=(1000, 1000, 1000, 1000, 1000))
+	bigfuckindata = Data_Handler_H5(unit='km', shape=(1000, 1000))
 	moep = DataArray(bigfuckindata, label="test", h5target=testh5)
 
 	# testdataset.saveh5('test.hdf5')
@@ -2258,5 +2308,8 @@ if __name__ == "__main__":  # just for testing
 	dhs = [Data_Handler_H5(numpy.arange(5), 'meter') for i in range(3)]
 	dhs.append(u.to_ureg(numpy.arange(5), 'millimeter'))
 	stacktest = Data_Handler_H5.stack(dhs, unit='millimeter', axis=1)
+
+	dhs = [bigfuckindata for i in range(100)]
+	stacktest = Data_Handler_H5.stack(dhs)
 
 	cprint("OK", 'green')
