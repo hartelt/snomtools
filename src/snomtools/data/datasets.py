@@ -1723,6 +1723,18 @@ class DataSet(object):
 		return dataset
 
 	@classmethod
+	def in_h5(cls, h5group):
+		"""
+		Opens a DataSet from a h5 source, which then works on the source (in-place). This is forwards to
+		 from_h5(h5group, h5group).
+
+		:param h5group: A h5py Group (or open file) to work with.
+
+		:return: The generated instance.
+		"""
+		return cls.from_h5(h5group, h5group)
+
+	@classmethod
 	def from_textfile(cls, path, h5target=None, **kwargs):
 		"""
 		Initializes a new DataSet from an existing text file. The file must contain the data in a column structure
@@ -2125,7 +2137,8 @@ class DataSet(object):
 			h5source = h5py.File(path)
 		else:
 			path = False
-		assert isinstance(h5source, h5py.Group), "DataSet.saveh5 needs h5 group or destination path as argument!"
+		assert isinstance(h5source, h5py.Group), \
+			"DataSet.saveh5 needs h5 group or destination path as argument if no instance h5target is set."
 
 		self.label = str(h5source["label"][()])
 		datafieldgrp = h5source["datafields"]
@@ -2298,7 +2311,7 @@ class DataSet(object):
 		# Check if data is compatible: All DataSets must have same dimensions and number of datafields:
 		for ds in datastack:
 			assert (
-			ds.shape == datastack[0].shape), "ERROR: DataSets of inconsistent dimensions given to stack_DataSets"
+				ds.shape == datastack[0].shape), "ERROR: DataSets of inconsistent dimensions given to stack_DataSets"
 			assert (len(ds.datafields) == len(datastack[0].datafields)), "ERROR: DataSets with different number of " \
 																		 "datafields given to stack_DataSets"
 
