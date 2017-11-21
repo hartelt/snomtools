@@ -202,7 +202,11 @@ class Data_Handler_H5(u.Quantity):
 
 		:return:
 		"""
-		value = u.to_ureg(value).to(self.units)
+		# The following line could be replaced with
+		# value = u.to_ureg(value).to(self.units)
+		# without changing any functionality. But calling to_ureg twice is more efficient because unneccesary calling
+		#  of value.to(self.units), which always generates a copy is avoided if possible.
+		value = u.to_ureg(u.to_ureg(value), self.units)
 		self.ds_data[key] = value.magnitude
 
 	def flush(self):
@@ -239,7 +243,7 @@ class Data_Handler_H5(u.Quantity):
 
 		:return:
 		"""
-		if self.units == u.to_ureg(1,unit).units:
+		if self.units == u.to_ureg(1, unit).units:
 			return self.__class__(self)
 		return super(Data_Handler_H5, self).to(unit, *contexts, **ctx_kwargs)
 
@@ -255,7 +259,7 @@ class Data_Handler_H5(u.Quantity):
 
 		:return:
 		"""
-		if u.same_unit(self,u.to_ureg(1,unit)): # Nothing to do.
+		if u.same_unit(self, u.to_ureg(1, unit)):  # Nothing to do.
 			pass
 		else:
 			super(Data_Handler_H5, self).ito(unit, *contexts, **ctx_kwargs)
@@ -382,7 +386,7 @@ class Data_Handler_np(u.Quantity):
 			compiled_data = u.to_ureg(data, unit)
 			return super(Data_Handler_np, cls).__new__(cls, compiled_data.magnitude, compiled_data.units)
 		elif shape is not None:
-			inst = cls.__new__(cls, numpy.zeros(shape=shape), unit)
+			return cls.__new__(cls, numpy.zeros(shape=shape), unit)
 		else:
 			raise ValueError("Initialized Data_Handler_np with wrong parameters.")
 
@@ -2307,7 +2311,7 @@ if __name__ == "__main__":  # just for testing
 
 	dhs = [Data_Handler_H5(numpy.arange(5), 'meter') for i in range(3)]
 	dhs.append(u.to_ureg(numpy.arange(5), 'millimeter'))
-	stacktest = Data_Handler_H5.stack(dhs, unit='millimeter', axis=1)
+	stacktest = Data_Handler_np.stack(dhs, unit='millimeter', axis=1)
 
 	dhs = [bigfuckindata for i in range(100)]
 	stacktest = Data_Handler_H5.stack(dhs)
