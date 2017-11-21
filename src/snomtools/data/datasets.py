@@ -318,6 +318,8 @@ class Data_Handler_H5(u.Quantity):
 		"""
 		return self.magnitude.sum(axis=axis, dtype=dtype, out=out, keepdims=keepdims)
 
+	# TODO: Write performant versions of sum() and sum_raw()
+
 	def absmax(self):
 		return abs(self).max()
 
@@ -577,7 +579,7 @@ class DataArray(object):
 			self.load_from_h5(data)
 		else:  # We DON'T have everything contained in data, so we need to process it seperately.
 			if data is None:
-				self.data = None  # No data. Initialize empty instance.
+				self._data = None  # No data. Initialize empty instance.
 			elif u.is_quantity(data):  # Kind of the same as above, just for the data itself.
 				self.data = data
 				if unit:  # If a unit is explicitly requested anyway, make sure we set it.
@@ -763,7 +765,7 @@ class DataArray(object):
 			compression = None
 			compression_opts = None
 
-		if h5dest is self.h5target:
+		if h5dest == self.h5target:
 			self._data.flush()
 		else:
 			if self.h5target:
@@ -789,7 +791,8 @@ class DataArray(object):
 		elif isinstance(self.h5target, h5py.Group):
 			# We work on a h5target, but not h5source. Copy h5source and initialize handler. This should be much more
 			# performant than reading data and storing them again, because of compression.
-			self.h5target.copy(h5source, self.h5target)
+			for h5set in h5source.iterkeys():
+				h5source.copy(h5set, self.h5target)
 			self._data = Data_Handler_H5(h5target=self.h5target)
 		else:
 			self.set_data(numpy.array(h5source["data"]), h5source["unit"][()])
@@ -999,7 +1002,7 @@ class DataArray(object):
 	def __del__(self):
 		if self.own_h5file:
 			self.h5target.close()
-		elif self.h5target is True: # Temp file mode
+		elif self.h5target is True:  # Temp file mode
 			del self._data
 
 	@classmethod
@@ -1060,8 +1063,9 @@ class Axis(DataArray):
 		:return:
 		"""
 		DataArray.__init__(self, data, unit=unit, label=label, plotlabel=plotlabel, h5target=h5target)
-		self.assure_1D()
-		assert (len(self.data.shape) == 1), "Axis not initialized with 1D array-like object."
+		if not data is None:  # check if data makes sense if instance is not empty.
+			self.assure_1D()
+			assert (len(self.data.shape) == 1), "Axis not initialized with 1D array-like object."
 
 	@classmethod
 	def from_dataarray(cls, da):
@@ -1630,39 +1634,52 @@ class DataSet(object):
 	y in micrometers) and a time delay (z = t in femtoseconds).
 	"""
 
-	def __init__(self, label="", datafields=(), axes=(), plotconf=()):
+	def __init__(self, label="", datafields=(), axes=(), plotconf=(), h5target=None):
+		if isinstance(h5target, h5py.Group):
+			self.h5target = h5target
+			self.own_h5file = False
+			self.datafieldgrp = self.h5target.require_group("datafields")
+			self.axesgrp = self.h5target.require_group("axes")
+		elif isinstance(h5target, string_types):
+			self.h5target = h5py.File(h5target)
+			self.own_h5file = True
+			self.datafieldgrp = self.h5target.require_group("datafields")
+			self.axesgrp = self.h5target.require_group("axes")
+		elif h5target:  # True but no designated target means temp file mode.
+			self.h5target = True
+			self.own_h5file = False
+			self.datafieldgrp = True
+			self.axesgrp = True
+		else:  # Numpy mode.
+			self.h5target = None
+			self.own_h5file = False
+			self.datafieldgrp = None
+			self.axesgrp = None
+
 		self.label = label
 		# check data format and convert it do correct DataArray and Axis objects before assigning it to members:
 		self.datafields = []
 		for field in datafields:  # Fill datafield list with correctly formatted datafield objects.
-			moep = DataArray(field)
+			if self.h5target is True:  # Temp h5 mode
+				moep = DataArray(field, h5target=True)
+			elif self.h5target:  # Proper h5 file mode
+				moep = DataArray(field, h5target=True)
+				grp = moep.store_to_h5(self.datafieldgrp)
+				moep = DataArray.in_h5(grp)
+			else:  # Numpy mode
+				moep = DataArray(field)
 			self.datafields.append(moep)
-		# The previous line is in place of the following part that was moved to the DataArray init.
-		# if isinstance(field, DataArray):
-		# self.datafields.append(field)
-		# elif u.is_quantity(field):
-		# 	self.datafields.append(DataArray(field))
-		# elif type(field) == str:
-		# 	self.datafields.append(DataArray(numpy.array(eval(field))))
-		# else:
-		# 	self.datafields.append(DataArray(numpy.array(field)))
-
 		self.axes = []
 		for ax in axes:  # Fill axes list with correctly formatted axes objects.
-			moep = Axis(ax)
+			if self.h5target is True:  # Temp h5 mode
+				moep = Axis(ax, h5target=True)
+			elif self.h5target:  # Proper h5 file mode
+				moep = Axis(ax, h5target=True)
+				grp = moep.store_to_h5(self.axesgrp)
+				moep = Axis.in_h5(grp)
+			else:  # Numpy mode
+				moep = Axis(ax)
 			self.axes.append(moep)
-		# The previous line is in place of the following part that was moved to the DataArray init.
-		# if isinstance(ax, Axis):
-		# self.axes.append(ax)
-		# elif isinstance(ax, DataArray):
-		# 	self.axes.append(Axis.from_dataarray(ax))
-		# elif u.is_quantity(ax):
-		# 	self.axes.append(Axis(ax))
-		# elif type(ax) == str:
-		# 	self.axes.append(Axis(numpy.array(eval(ax))))
-		# else:
-		# 	self.axes.append(Axis(numpy.array(ax)))
-
 		self.check_data_consistency()
 
 		if type(plotconf) == str:
@@ -1671,7 +1688,7 @@ class DataSet(object):
 			self.plotconf = dict(plotconf)
 
 	@classmethod
-	def from_h5file(cls, path):
+	def from_h5file(cls, path, h5target=None):
 		"""
 		Initializes a new DataSet from an existing HDF5 file. The file must be structured in accordance to the
 		saveh5() and loadh5() methods in this class. Uses loadh5 under the hood!
@@ -1684,13 +1701,13 @@ class DataSet(object):
 		path = os.path.abspath(path)
 		# Initalize empty DataSet with the filename as label:
 		filename = os.path.basename(path)
-		dataset = cls(filename)
+		dataset = cls(filename, h5target=h5target)
 		# Load data:
 		dataset.loadh5(path)
 		return dataset
 
 	@classmethod
-	def from_h5(cls, h5source):
+	def from_h5(cls, h5source, h5target=None):
 		"""
 		Initializes a new DataSet from an existing HDF5 source. The file must be structured in accordance to the
 		saveh5() and loadh5() methods in this class. Uses loadh5 under the hood!
@@ -1700,13 +1717,13 @@ class DataSet(object):
 
 		:return: The initialized DataSet
 		"""
-		dataset = cls(repr(h5source))
+		dataset = cls(repr(h5source), h5target=h5target)
 		# Load data:
 		dataset.loadh5(h5source)
 		return dataset
 
 	@classmethod
-	def from_textfile(cls, path, **kwargs):
+	def from_textfile(cls, path, h5target=None, **kwargs):
 		"""
 		Initializes a new DataSet from an existing text file. The file must contain the data in a column structure
 		and can contain additional metadata in comment lines.
@@ -1722,7 +1739,7 @@ class DataSet(object):
 		path = os.path.abspath(path)
 		# Initalize empty DataSet with the filename as label:
 		filename = os.path.basename(path)
-		dataset = cls(filename)
+		dataset = cls(filename, h5target=h5target)
 		# Load data:
 		dataset.load_textfile(path, **kwargs)
 		return dataset
@@ -1779,7 +1796,15 @@ class DataSet(object):
 
 		:return:
 		"""
-		self.datafields.append(DataArray(data, unit, label, plotlabel))
+		if self.h5target is True:  # Temp h5 mode
+			moep = DataArray(data, unit, label, plotlabel, h5target=True)
+		elif self.h5target:  # Proper h5 file mode
+			moep = DataArray(data, unit, label, plotlabel, h5target=True)
+			grp = moep.store_to_h5(self.datafieldgrp)
+			moep = DataArray.in_h5(grp)
+		else:  # Numpy mode
+			moep = DataArray(data, unit, label, plotlabel)
+		self.datafields.append(moep)
 
 	def get_datafield(self, label_or_index):
 		"""
@@ -1887,7 +1912,15 @@ class DataSet(object):
 
 		:return:
 		"""
-		self.axes.append(Axis(data, unit, label, plotlabel))
+		if self.h5target is True:  # Temp h5 mode
+			moep = Axis(data, unit, label, plotlabel, h5target=True)
+		elif self.h5target:  # Proper h5 file mode
+			moep = Axis(data, unit, label, plotlabel, h5target=True)
+			grp = moep.store_to_h5(self.axesgrp)
+			moep = Axis.in_h5(grp)
+		else:  # Numpy mode
+			moep = Axis(data, unit, label, plotlabel)
+		self.axes.append(moep)
 
 	def get_axis(self, label_or_index):
 		"""
@@ -1997,7 +2030,7 @@ class DataSet(object):
 		# Assure we did nothing wrong:
 		self.check_data_consistency()
 
-	def project_nd(self, *args):
+	def project_nd(self, h5target=None, *args):
 		"""
 		Projects the datafield onto the given axes. Uses the DataSet.project_nd() method for every datset and returns a
 		new DataSet with the projected DataFields and the chosen axes.
@@ -2008,7 +2041,8 @@ class DataSet(object):
 		"""
 		indexlist = [self.get_axis_index(arg) for arg in args]
 		return self.__class__(datafields=[self.datafields[i].project_nd(*indexlist) for i in indexlist],
-							  axes=[self.axes[i] for i in indexlist])
+							  axes=[self.axes[i] for i in indexlist],
+							  h5target=h5target)
 
 	def bin(self, bin_size=()):
 		"""
@@ -2052,14 +2086,16 @@ class DataSet(object):
 			assert (len(self.labels) == len(set(self.labels))), "DataSet data array and axes labels not unique."
 			return True
 
-	def saveh5(self, h5dest):
+	def saveh5(self, h5dest=None):
 		"""
 		Saves the Dataset to a HDF5 destination in a unified format.
 
 		:param h5dest: String or h5py Group/File: The destination to write to.
 		 
-		:return: Noting.
+		:return: Nothing.
 		"""
+		if h5dest is None:
+			h5dest = self.h5target
 		if isinstance(h5dest, string_types):
 			path = os.path.abspath(h5dest)
 			h5dest = h5py.File(path, 'w')
@@ -2079,13 +2115,14 @@ class DataSet(object):
 		h5tools.write_dataset(h5dest, "label", self.label)
 		plotconfgrp = h5dest.require_group("plotconf")
 		h5tools.store_dictionary(self.plotconf, plotconfgrp)
+		h5dest.file.flush()
 		if path:  # We got a path and wrote in new h5 file, so we'll close that file.
 			h5dest.close()
 
 	def loadh5(self, h5source):
 		if isinstance(h5source, string_types):
 			path = os.path.abspath(h5source)
-			h5source = h5py.File(path, 'w')
+			h5source = h5py.File(path)
 		else:
 			path = False
 		assert isinstance(h5source, h5py.Group), "DataSet.saveh5 needs h5 group or destination path as argument!"
@@ -2095,12 +2132,28 @@ class DataSet(object):
 		self.datafields = [None for i in range(len(datafieldgrp))]
 		for datafield in datafieldgrp:
 			index = datafieldgrp[datafield]['index'][()]
-			self.datafields[index] = (DataArray.from_h5(datafieldgrp[datafield]))
+			if h5source == self.h5target:
+				dest = datafield
+			elif self.h5target is True:
+				dest = True
+			elif self.h5target:
+				dest = self.datafieldgrp.require_group(datafield)
+			else:
+				dest = None
+			self.datafields[index] = (DataArray.from_h5(datafieldgrp[datafield], h5target=dest))
 		axesgrp = h5source["axes"]
 		self.axes = [None for i in range(len(axesgrp))]
 		for axis in axesgrp:
 			index = axesgrp[axis]['index'][()]
-			self.axes[index] = (Axis.from_h5(axesgrp[axis]))
+			if h5source == self.h5target:
+				dest = axis
+			elif self.h5target is True:
+				dest = True
+			elif self.h5target:
+				dest = self.axesgrp.require_group(axis)
+			else:
+				dest = None
+			self.axes[index] = (Axis.from_h5(axesgrp[axis], h5target=dest))
 		self.plotconf = h5tools.load_dictionary(h5source['plotconf'])
 		self.check_data_consistency()
 		if path:  # We got a path and read from opened h5 file, so we'll close that file.
@@ -2203,16 +2256,79 @@ class DataSet(object):
 		# Write the remaining data to datafields:
 		self.datafields = []  # Reset datafields
 		for i in datacolumns:  # Initialize new datafields
-			self.datafields.append(DataArray(datacontent[:, i], unit=units[i], label=labels[i]))
+			self.add_datafield(datacontent[:, i], unit=units[i], label=labels[i])
 
 		self.check_label_uniqueness()
 		return self.check_data_consistency()
 
 	def __del__(self):
-		pass
+		if self.own_h5file:
+			self.h5target.close()
 
+	@classmethod
+	def stack(cls, datastack, new_axis, axis=0, label=None, plotconf=None, h5target=None):
+		"""
+		Stacks a sequence of DataSets to a new DataSet.
+		Therefore it stacks the DataArrays with stack_DataArrays() and inserts a new Axis.
 
-# TODO: Why are the following not classmethods???
+		:param datastack: sequence of DataSets: The Data to be stacked.
+
+		:param new_axis: Axis or castable as Axis: The new axis to be inserted for the dimension along which the data is
+		stacked.
+
+		:param axis: int, optional: The axis in the result array along which the input arrays are stacked.
+
+		:param label: string, optional: The label for the new DataSet. If not given, the label of the first DataArray in
+		the input stack is used.
+
+		:param plotconf: The plot configuration to be used for the new DataSet. If not given, the configuration of the
+		first DataSet in the input stack is used.
+
+		:return: The stacked DataSet.
+		"""
+		# Check if input data types are ok and cast defaults if necessary:
+		for ds in datastack:
+			assert (isinstance(ds, DataSet)), "ERROR: Non-DataSet object given to stack_DataSets"
+		new_axis = Axis(new_axis)
+		if label is None:
+			label = datastack[0].get_label()
+		if plotconf is None:
+			plotconf = datastack[0].get_plotconf()
+
+		# Check if data is compatible: All DataSets must have same dimensions and number of datafields:
+		for ds in datastack:
+			assert (
+			ds.shape == datastack[0].shape), "ERROR: DataSets of inconsistent dimensions given to stack_DataSets"
+			assert (len(ds.datafields) == len(datastack[0].datafields)), "ERROR: DataSets with different number of " \
+																		 "datafields given to stack_DataSets"
+
+		# Initialize new DataSet:
+		stack = DataSet(label=label, plotconf=plotconf, h5target=h5target)
+
+		# Build axes list by taking the axes from the first element of the stack and inserting the new one.
+		# This makes sense because for stacking to be meaningful, the axes sets of the stack need to be identical in
+		# their physical meaning.
+		axes = datastack[0].axes
+		# Case-like due to different indexing of python's builtin insert method and numpy's stack:
+		if axis == -1:  # last element
+			axes.append(new_axis)
+		elif axis < -1:  # n'th to last element (count from back)
+			axes.insert(axis + 1, new_axis)
+		else:  # normal count from front
+			axes.insert(axis, new_axis)
+		stack.axes = axes
+
+		# Stack the datafields all the DataSets and add them to the stacked Set:
+		for i in range(len(datastack[0].datafields)):
+			dfstack = [ds.get_datafield(i) for ds in datastack]
+			if h5target:
+				stack.add_datafield(stack_DataArrays(dfstack, axis=axis, h5target=True))
+			else:
+				stack.add_datafield(stack_DataArrays(dfstack, axis=axis))
+
+		stack.check_data_consistency()
+		return stack
+
 
 def stack_DataArrays(datastack, axis=0, unit=None, label=None, plotlabel=None, h5target=None):
 	"""
@@ -2222,65 +2338,12 @@ def stack_DataArrays(datastack, axis=0, unit=None, label=None, plotlabel=None, h
 	return DataArray.stack(datastack, axis=axis, unit=unit, label=label, plotlabel=plotlabel, h5target=h5target)
 
 
-def stack_DataSets(datastack, new_axis, axis=0, label=None, plotconf=None):
+def stack_DataSets(datastack, new_axis, axis=0, label=None, plotconf=None, h5target=None):
 	"""
 	Stacks a sequence of DataSets to a new DataSet.
-	Therefore it stacks the DataArrays with stack_DataArrays() and inserts a new Axis.
-
-	:param datastack: sequence of DataSets: The Data to be stacked.
-
-	:param new_axis: Axis or castable as Axis: The new axis to be inserted for the dimension along which the data is
-	stacked.
-
-	:param axis: int, optional: The axis in the result array along which the input arrays are stacked.
-
-	:param label: string, optional: The label for the new DataSet. If not given, the label of the first DataArray in
-	the input stack is used.
-
-	:param plotconf: The plot configuration to be used for the new DataSet. If not given, the configuration of the
-	first DataSet in the input stack is used.
-
-	:return: The stacked DataSet.
+	See DataSet.stack.
 	"""
-	# TODO: Compatibility with h5 mode: Handle h5target.
-	# Check if input data types are ok and cast defaults if necessary:
-	for ds in datastack:
-		assert (isinstance(ds, DataSet)), "ERROR: Non-DataSet object given to stack_DataSets"
-	new_axis = Axis(new_axis)
-	if label is None:
-		label = datastack[0].get_label()
-	if plotconf is None:
-		plotconf = datastack[0].get_plotconf()
-
-	# Check if data is compatible: All DataSets must have same dimensions and number of datafields:
-	for ds in datastack:
-		assert (ds.shape == datastack[0].shape), "ERROR: DataSets of inconsistent dimensions given to stack_DataSets"
-		assert (len(ds.datafields) == len(datastack[0].datafields)), "ERROR: DataSets with different number of " \
-																	 "datafields given to stack_DataSets"
-
-	# Initialize new DataSet:
-	stack = DataSet(label=label, plotconf=plotconf)
-
-	# Build axes list by taking the axes from the first element of the stack and inserting the new one.
-	# This makes sense because for stacking to be meaningful, the axes sets of the stack need to be identical in
-	# their physical meaning.
-	axes = datastack[0].axes
-	# Case-like due to different indexing of python's builtin insert method and numpy's stack:
-	if axis == -1:  # last element
-		axes.append(new_axis)
-	elif axis < -1:  # n'th to last element (count from back)
-		axes.insert(axis + 1, new_axis)
-	else:  # normal count from front
-		axes.insert(axis, new_axis)
-	stack.axes = axes
-
-	# Stack the datafields all the DataSets and add them to the stacked Set:
-	for i in range(len(datastack[0].datafields)):
-		dfstack = [ds.get_datafield(i) for ds in datastack]
-		stack.add_datafield(stack_DataArrays(dfstack, axis=axis))
-
-	stack.check_data_consistency()
-	return stack
+	return DataSet.stack(datastack, new_axis, axis=0, label=None, plotconf=None, h5target=h5target)
 
 
 if __name__ == "__main__":  # just for testing
@@ -2296,51 +2359,62 @@ if __name__ == "__main__":  # just for testing
 
 	pc = {'a': 1.0, 'b': "moep", 'c': 3, 'de': "eins/zwo"}
 
-	testdataset = DataSet("test", [testdata], [testaxis, testaxis2], plotconf=pc)
+	testdataset = DataSet("test", [testdata], [testaxis, testaxis2], plotconf=pc, h5target='test.hdf5')
 
 	testroi = ROI(testdataset)
 	testroi.set_limits('xaxis', (2, 4))
 
-	testh5 = h5py.File('test.hdf5', 'w')
+	testdataset.saveh5()
 
-	moep = DataArray(testaxis.data, label="test", h5target=testh5)
-	moep2 = moep + moep
-	moep2 = moep - moep
-	moep2 = moep * moep
-	moep2 = moep / moep
-	moep2 = moep // moep
-	moep2 = moep ** 2.
-	moep.absmax()
-	moep.absmin()
-	moep.mean()
-	moep.sum()
-	moep.sum_raw()
-	# works till here
-	moep.get_nearest_value(2.)
-	moep.set_unit('mm')
+	del testdataset
 
-	del moep
+	testdataset2 = DataSet.from_h5file('test.hdf5')
+	testdataset2.saveh5("test2.hdf5")
 
-	bigfuckindata = Data_Handler_H5(unit='km', shape=(1000, 1000))
-	moep = DataArray(bigfuckindata, label="test", h5target=testh5)
-
-	# testdataset.saveh5('test.hdf5')
-	moep.write_to_h5()
-	del moep
-	testh5.close()
+	testdataset3 = DataSet.from_textfile('test2.txt', unitsline=1, h5target="test3.hdf5")
+	testdataset3.saveh5()
 
 	testh5 = h5py.File('test.hdf5')
-	moep3 = DataArray(testh5, h5target=testh5)
 
-	dhs = [Data_Handler_H5(numpy.arange(5), 'meter') for i in range(3)]
-	dhs.append(u.to_ureg(numpy.arange(5), 'millimeter'))
-	stacktest = DataArray(Data_Handler_np.stack(dhs, unit='millimeter', axis=1))
+	test_dataarray = True
+	if test_dataarray:
+		moep = DataArray(testaxis.data, label="test", h5target=testh5)
+		moep2 = moep + moep
+		moep2 = moep - moep
+		moep2 = moep * moep
+		moep2 = moep / moep
+		moep2 = moep // moep
+		moep2 = moep ** 2.
+		moep.absmax()
+		moep.absmin()
+		moep.mean()
+		moep.sum()
+		moep.sum_raw()
+		# works till here
+		moep.get_nearest_value(2.)
+		moep.set_unit('mm')
+		del moep
 
-	dhs = [stacktest for i in range(10)]
-	stacktest = DataArray.stack(dhs, h5target=True)
-	# stackh5 = h5py.File("stacktest.hdf5")
-	# stacktest.store_to_h5(stackh5)
-	# stackh5.close()
-	del stacktest
+		bigfuckindata = Data_Handler_H5(unit='km', shape=(1000, 1000))
+		moep = DataArray(bigfuckindata, label="test", h5target=testh5)
+
+		# testdataset.saveh5('test.hdf5')
+		moep.write_to_h5()
+		del moep
+		testh5.close()
+
+		testh5 = h5py.File('test.hdf5')
+		moep3 = DataArray(testh5, h5target=testh5)
+
+		dhs = [Data_Handler_H5(numpy.arange(5), 'meter') for i in range(3)]
+		dhs.append(u.to_ureg(numpy.arange(5), 'millimeter'))
+		stacktest = DataArray(Data_Handler_np.stack(dhs, unit='millimeter', axis=1))
+
+		dhs = [stacktest for i in range(10)]
+		stacktest = DataArray.stack(dhs, h5target=True)
+		# stackh5 = h5py.File("stacktest.hdf5")
+		# stacktest.store_to_h5(stackh5)
+		# stackh5.close()
+		del stacktest
 
 	cprint("OK", 'green')
