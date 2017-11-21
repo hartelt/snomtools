@@ -59,6 +59,10 @@ class Data_Handler_H5(u.Quantity):
 		if isinstance(data, cls):
 			if not unit is None and not data.units == u.to_ureg(1, unit).units:
 				data = data.to(unit)
+			if chunks is True:
+				# To improve performance. If the data has a specific chunk size, take that instead of
+				# letting h5py guess it.
+				chunks = data.chunks
 			inst = object.__new__(cls)
 			inst.__used = False
 			inst.__handling = None
@@ -2146,7 +2150,7 @@ class DataSet(object):
 		for datafield in datafieldgrp:
 			index = datafieldgrp[datafield]['index'][()]
 			if h5source == self.h5target:
-				dest = datafield
+				dest = datafieldgrp[datafield]
 			elif self.h5target is True:
 				dest = True
 			elif self.h5target:
@@ -2159,7 +2163,7 @@ class DataSet(object):
 		for axis in axesgrp:
 			index = axesgrp[axis]['index'][()]
 			if h5source == self.h5target:
-				dest = axis
+				dest = axesgrp[axis]
 			elif self.h5target is True:
 				dest = True
 			elif self.h5target:
