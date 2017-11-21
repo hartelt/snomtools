@@ -22,10 +22,31 @@ class Data_Handler_H5(u.Quantity):
 
 	def __new__(cls, data=None, unit=None, shape=None, h5target=None,
 				chunks=True, compression="gzip", compression_opts=4):
+		"""
+		Initializes and returns a new instance. __new__ is used instead of __init__ because pint Quantity does so,
+		and the method is overwritten.
+
+		:param data: The data to store.
+
+		:param unit: A valid units string for the unit to convert the data to if necessary.
+
+		:param shape: If no data is given, data of given shape are initialized with zeroes.
+
+		:param h5target: h5py Group/File. If None or True, temporary file mode is enabled, Data is kept on temp
+		files, which are cleaned up in __del__.
+
+		:param chunks: (See h5py docs. Chunks are good in most big data cases!)
+
+		:param compression: (See h5py docs. Compression is good in most cases!)
+
+		:param compression_opts: (See h5py docs. Compression is good in most cases!)
+
+		:return: The initialized instance.
+		"""
 		if not chunks:
 			compression = None
 			compression_opts = None
-		if h5target is None:
+		if h5target is None or h5target is True:
 			temp_dir = tempfile.mkdtemp(prefix="snomtools_H5_tempspace-")
 			# temp_dir = os.getcwd() # upper line can be replaced by this for debugging.
 			temp_file_path = os.path.join(temp_dir, "snomtools_H5_tempspace.hdf5")
@@ -172,7 +193,7 @@ class Data_Handler_H5(u.Quantity):
 
 	@property
 	def temp_file_path(self):
-		if self.temp_file:
+		if not self.temp_file is None:
 			return os.path.join(self.temp_dir, self.temp_file.filename)
 		else:
 			return None
@@ -328,7 +349,7 @@ class Data_Handler_H5(u.Quantity):
 		return super(Data_Handler_H5, self).__pow__(other)
 
 	def __repr__(self):
-		return "<Data_Handler_np on {0} with shape {1}>".format(repr(self.h5target), self.shape)
+		return "<Data_Handler_H5 on {0} with shape {1}>".format(repr(self.h5target), self.shape)
 
 	def __del__(self):
 		if not (self.temp_file is None):
@@ -748,7 +769,7 @@ class DataArray(object):
 			if self.h5target:
 				# We are in h5 mode, so copying on h5 level is faster because of compression.
 				h5tools.clear_name(h5dest, "data")
-				h5dest.copy(self.get_data().h5target["data"], h5dest)
+				self.data.h5target.copy(self.data.ds_data.name, h5dest)
 			else:
 				h5tools.write_dataset(h5dest, "data", data=self.get_data_raw(), chunks=chunks, compression=compression,
 									  compression_opts=compression_opts)
@@ -978,6 +999,8 @@ class DataArray(object):
 	def __del__(self):
 		if self.own_h5file:
 			self.h5target.close()
+		elif self.h5target is True: # Temp file mode
+			del self._data
 
 	@classmethod
 	def stack(cls, datastack, axis=0, unit=None, label=None, plotlabel=None, h5target=None):
@@ -2311,9 +2334,13 @@ if __name__ == "__main__":  # just for testing
 
 	dhs = [Data_Handler_H5(numpy.arange(5), 'meter') for i in range(3)]
 	dhs.append(u.to_ureg(numpy.arange(5), 'millimeter'))
-	stacktest = Data_Handler_np.stack(dhs, unit='millimeter', axis=1)
+	stacktest = DataArray(Data_Handler_np.stack(dhs, unit='millimeter', axis=1))
 
-	dhs = [bigfuckindata for i in range(100)]
-	stacktest = Data_Handler_H5.stack(dhs)
+	dhs = [stacktest for i in range(10)]
+	stacktest = DataArray.stack(dhs, h5target=True)
+	# stackh5 = h5py.File("stacktest.hdf5")
+	# stacktest.store_to_h5(stackh5)
+	# stackh5.close()
+	del stacktest
 
 	cprint("OK", 'green')
