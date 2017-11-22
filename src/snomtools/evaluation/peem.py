@@ -16,12 +16,18 @@ class Powerlaw:
 	"""
 	A powerlaw.
 	"""
+	# TODO: Implement exponential fit. Debug strange behaviour.
 
-	def __init__(self, data=None, keepdata=True):
+	def __init__(self, data=None, keepdata=True, normalize = True):
 		if data:
+			if normalize:
+				takedata = 0
+			else:
+				takedata = 1
 			if keepdata:
 				self.data = self.extract_data(data)
-				self.coeffs = self.fit_powerlaw(self.data.get_axis(0).get_data(), self.data.get_datafield(0).get_data())
+				self.coeffs = self.fit_powerlaw(self.data.get_axis(0).get_data(),
+												self.data.get_datafield(takedata).get_data())
 			else:
 				self.data = None
 				powers, intensities = self.extract_data_raw(data)
