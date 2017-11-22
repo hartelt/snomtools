@@ -43,6 +43,7 @@ class Data_Handler_H5(u.Quantity):
 
 		:return: The initialized instance.
 		"""
+		# TODO: Handle Datatypes.
 		if not chunks:
 			compression = None
 			compression_opts = None
@@ -323,6 +324,76 @@ class Data_Handler_H5(u.Quantity):
 		return self.magnitude.sum(axis=axis, dtype=dtype, out=out, keepdims=keepdims)
 
 	# TODO: Write performant versions of sum() and sum_raw()
+	def sum(self, axis=None, dtype=None, out=None, keepdims=False, h5target=None):
+		"""
+		Behaves as the sum() function of a numpy array.
+		See: http://docs.scipy.org/doc/numpy-1.10.1/reference/generated/numpy.sum.html
+
+		:param axis: None or int or tuple of ints, optional
+		Axis or axes along which a sum is performed. The default (axis = None) is perform a sum over all the dimensions
+		of the input array. axis may be negative, in which case it counts from the last to the first axis.
+		New in version 1.7.0.:
+		If this is a tuple of ints, a sum is performed on multiple axes, instead of a single axis or all the axes as
+		before.
+
+		:param dtype: dtype, optional
+		The type of the returned array and of the accumulator in which the elements are summed. By default, the dtype
+		of a is used. An exception is when a has an integer type with less precision than the default platform integer.
+		In that case, the default platform integer is used instead.
+
+		:param out: ndarray, optional
+		Array into which the output is placed. By default, a new array is created. If out is given, it must be of the
+		appropriate shape (the shape of a with axis removed, i.e., numpy.delete(a.shape, axis)). Its type is preserved.
+		See doc.ufuncs (Section Output arguments) for more details.
+
+		:param keepdims: bool, optional
+		If this is set to True, the axes which are reduced are left in the result as dimensions with size one. With this
+		option, the result will broadcast correctly against the original arr.
+
+		:return: ndarray Quantity
+		An array with the same shape as a, with the specified axis removed. If a is a 0-d array, or if axis is None, a
+		scalar is returned. If an output array is specified, a reference to out is returned.
+		"""
+		# TODO: Handle datatypes.
+		inshape = self.shape
+		if axis is None:
+			axis = tuple(range(len(inshape)))
+		try:
+			if len(axis) == 1: # If we have a sequence of len 1, we sum over only 1 axis.
+				axis = axis[0]
+		except TypeError:
+			# axis has no len, so it is propably an integer already. Just go on...
+			pass
+
+		if isinstance(axis,int):
+			if keepdims:
+				outshape = list(inshape)
+				outshape[axis] = 1
+				outshape = tuple(outshape)
+			else:
+				outshape = tuple(numpy.delete(inshape, axis))
+			if out:
+				assert out.shape == outshape, "Wrong shape of given destination."
+				outdata = out
+			else:
+				outdata = self.__class__(shape=outshape, unit=self.get_unit(), h5target=h5target)
+			for i in range(inshape[axis]):
+				slicebase = [numpy.s_[:] for j in range(len(inshape) - 1)]
+				slicebase.insert(axis, i)
+				if outdata.shape==(): # Scalar
+					outdata.ds_data[()] += self.ds_data[tuple(slicebase)]
+				else:
+					outdata.ds_data[:] += self.ds_data[tuple(slicebase)]
+			return outdata
+		else:
+			axis = numpy.array(sorted(axis))
+			axisnow = axis[0]
+			if keepdims: # Axes positions stay as they are. Prepare sum tuple for rest of summations.
+				axisrest = tuple(axis[1:])
+			else: # Sum erases axis number axis[0], rest of axis ids to sum over is shifted by -1
+				axisrest = tuple(axis[1:]-1)
+			# Perform summation over axisnow and recursively sum over rest:
+			return self.sum(axisnow, dtype, out, keepdims, h5target=None).sum(axisrest, dtype, out, keepdims, h5target)
 
 	def absmax(self):
 		return abs(self).max()
@@ -1702,13 +1773,7 @@ class DataSet(object):
 
 		:return: The initialized DataSet
 		"""
-		path = os.path.abspath(path)
-		# Initalize empty DataSet with the filename as label:
-		filename = os.path.basename(path)
-		dataset = cls(filename, h5target=h5target)
-		# Load data:
-		dataset.loadh5(path)
-		return dataset
+		return cls.from_h5(path, h5target=h5target)
 
 	@classmethod
 	def from_h5(cls, h5source, h5target=None):
@@ -1722,6 +1787,9 @@ class DataSet(object):
 		:return: The initialized DataSet
 		"""
 		dataset = cls(repr(h5source), h5target=h5target)
+		if isinstance(h5source, string_types):
+			path = os.path.abspath(h5source)
+			h5source = h5py.File(path)
 		# Load data:
 		dataset.loadh5(h5source)
 		return dataset
@@ -1732,7 +1800,8 @@ class DataSet(object):
 		Opens a DataSet from a h5 source, which then works on the source (in-place). This is forwards to
 		 from_h5(h5group, h5group).
 
-		:param h5group: A h5py Group (or open file) to work with.
+		:param h5group: The (absolute or relative) path of the HDF5 file to read, or an existing h5py Group/File of
+		the base of the Dataset.
 
 		:return: The generated instance.
 		"""
@@ -2138,7 +2207,7 @@ class DataSet(object):
 	def loadh5(self, h5source):
 		if isinstance(h5source, string_types):
 			path = os.path.abspath(h5source)
-			h5source = h5py.File(path)
+			h5source = h5py.File(path, 'r')
 		else:
 			path = False
 		assert isinstance(h5source, h5py.Group), \
@@ -2433,5 +2502,18 @@ if __name__ == "__main__":  # just for testing
 		# stacktest.store_to_h5(stackh5)
 		# stackh5.close()
 		del stacktest
+
+	test_sum = True
+	if test_sum:
+		h5 = h5py.File("test4.hdf5")
+		mediumfuckindata = Data_Handler_H5(numpy.ones((100, 100,20)), unit="m/s")
+		sum1 = mediumfuckindata.sum(0)
+		sum2 = mediumfuckindata.sum(0, keepdims=True)
+		sum3 = sum1.sum(0)
+		sum4 = sum2.sum(1, keepdims=True)
+		sum5 = mediumfuckindata.sum((0,1))
+		sum6 = mediumfuckindata.sum((0,1), keepdims=True)
+		sum7 = mediumfuckindata.sum((0,2), h5target=h5)
+		sum8 = mediumfuckindata.sum()
 
 	cprint("OK", 'green')
