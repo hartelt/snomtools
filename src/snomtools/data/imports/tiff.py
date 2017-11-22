@@ -322,9 +322,8 @@ def tr_folder_peem_camera_terra(folderpath, pattern="D", delayunit="um", delayfa
 	newshape = delayaxis.shape + sample_data.shape
 
 	# Optimize chunks for writing a tiff at a time:
-	# TODO: Test reading performance for reading along different axes.
-	chunks = (1, newshape[2] / 16, newshape[2] / 16)
-	# chunks = True
+	# chunks = (1, newshape[2] / 16, newshape[2] / 16)
+	chunks = True
 
 	# Initialize full dataset with zeroes:
 	dataspace = snomtools.data.datasets.Data_Handler_H5(unit=sample_data.get_datafield(0).get_unit(),
@@ -415,8 +414,8 @@ def tr_folder_peem_dld_terra(folderpath, pattern="D", delayunit="um", delayfacto
 
 	# Optimize chunks for writing a tiff at a time:
 	# TODO: Test reading performance for reading along different axes.
-	chunks = (1, newshape[1] / 11, newshape[2] / 16, newshape[2] / 16)
-	# chunks = True
+	# chunks = (5, newshape[1] / 11, newshape[2] / 16, newshape[2] / 16)
+	chunks = True
 
 	# Initialize full dataset with zeroes:
 	dataspace = snomtools.data.datasets.Data_Handler_H5(unit=sample_data.get_datafield(0).get_unit(),
