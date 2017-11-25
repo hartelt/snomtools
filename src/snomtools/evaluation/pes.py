@@ -38,7 +38,8 @@ def fermi_edge(E, E_f, dE, c, d):
 	:return: The value of the Fermi distribution at the energy E.
 	"""
 	return 0.5 * (1 +
-		scipy.special.erf((E_f - E) / (np.sqrt(((1.7 * kBT_in_eV.magnitude) ** 2) + dE ** 2) * np.sqrt(2)))) * c + d
+				  scipy.special.erf(
+					  (E_f - E) / (np.sqrt(((1.7 * kBT_in_eV.magnitude) ** 2) + dE ** 2) * np.sqrt(2)))) * c + d
 
 
 class FermiEdge:
@@ -75,15 +76,23 @@ class FermiEdge:
 
 		:return: The attribute corresponding to the given name.
 		"""
-		if item == "E_f":
-			return u.to_ureg(self.coeffs[0], self.E_f_unit)
-		if item == "dE":
-			return u.to_ureg(self.coeffs[1], self.dE_unit)
-		if item == "c":
-			return u.to_ureg(self.coeffs[2], self.c_unit)
-		if item == "d":
-			return u.to_ureg(self.coeffs[3], self.d_unit)
 		raise AttributeError("Attribute \'{0}\' of Fermi_Edge instance cannot be resolved.".format(item))
+
+	@property
+	def E_f(self):
+		return u.to_ureg(self.coeffs[0], self.E_f_unit)
+
+	@property
+	def dE(self):
+		return u.to_ureg(self.coeffs[1], self.dE_unit)
+
+	@property
+	def c(self):
+		return u.to_ureg(self.coeffs[2], self.c_unit)
+
+	@property
+	def d(self):
+		return u.to_ureg(self.coeffs[3], self.d_unit)
 
 	@classmethod
 	def from_coeffs(cls, coeffs):
@@ -210,4 +219,4 @@ def fermi_fit(data, energy_axis=None, range=None, guess=None):
 	:param guess:
 	:return:
 	"""
-	pass
+	raise NotImplementedError()
