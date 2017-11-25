@@ -416,14 +416,19 @@ def tr_folder_peem_dld_terra(folderpath, pattern="D", delayunit="um", delayfacto
 	# TODO: Test reading performance for reading along different axes.
 	# chunks = (5, newshape[1] / 11, newshape[2] / 16, newshape[2] / 16)
 	chunks = True
+	compression = 'gzip'
+	compression_opts = 4
 
 	# Initialize full dataset with zeroes:
 	dataspace = snomtools.data.datasets.Data_Handler_H5(unit=sample_data.get_datafield(0).get_unit(),
-														shape=newshape, chunks=chunks)
+														shape=newshape, chunks=chunks,
+														compression=compression, compression_opts=compression_opts)
 	dataarray = snomtools.data.datasets.DataArray(dataspace,
 												  label=sample_data.get_datafield(0).get_label(),
 												  plotlabel=sample_data.get_datafield(0).get_plotlabel(),
-												  h5target=dataspace.h5target)
+												  h5target=dataspace.h5target,
+												  chunks=chunks,
+												  compression=compression, compression_opts=compression_opts)
 	dataset = snomtools.data.datasets.DataSet("TR " + folderpath, [dataarray], axlist, h5target=h5target)
 	dataarray = dataset.get_datafield(0)
 
