@@ -43,7 +43,7 @@ class Data_Handler_H5(u.Quantity):
 
 		:return: The initialized instance.
 		"""
-		# TODO: Handle Datatypes.
+		# TODO: Handle Datatypes. Sort compression opts for initializing from existing h5 data.
 		if not chunks:
 			compression = None
 			compression_opts = None
@@ -58,12 +58,16 @@ class Data_Handler_H5(u.Quantity):
 			temp_dir = None
 
 		if isinstance(data, cls):
-			if not unit is None and not data.units == u.to_ureg(1, unit).units:
-				data = data.to(unit)
 			if chunks is True:
 				# To improve performance. If the data has a specific chunk size, take that instead of
 				# letting h5py guess it.
 				chunks = data.chunks
+				if compression=='gzip' and compression_opts==4:
+					# Also, if compression is default, rather use data options.
+					compression = data.compression
+					compression_opts = data.compression_opts
+			if not unit is None and not data.units == u.to_ureg(1, unit).units:
+				data = data.to(unit)
 			inst = object.__new__(cls)
 			inst.__used = False
 			inst.__handling = None
@@ -425,6 +429,9 @@ class Data_Handler_H5(u.Quantity):
 		other = u.to_ureg(other, 'dimensionless')
 		return super(Data_Handler_H5, self).__pow__(other)
 
+	def __array__(self):
+		return self.magnitude
+
 	def __repr__(self):
 		return "<Data_Handler_H5 on {0} with shape {1}>".format(repr(self.h5target), self.shape)
 
@@ -607,7 +614,8 @@ class DataArray(object):
 	A data array that holds additional metadata.
 	"""
 
-	def __init__(self, data, unit=None, label=None, plotlabel=None, h5target=None):
+	def __init__(self, data, unit=None, label=None, plotlabel=None, h5target=None,
+				 chunks=True, compression="gzip", compression_opts=4):
 		"""
 		Guess what, this is an initializer. It differences between input formats, which should be clear from the
 		parameter doc and the comments in the code.
@@ -637,7 +645,15 @@ class DataArray(object):
 		else:  # Numpy mode.
 			self.h5target = None
 			self.own_h5file = False
+		self.chunks = chunks
+		self.compression = compression
+		self.compression_opts = compression_opts
 		if isinstance(data, DataArray):  # If the data already comes in a DataArray, just take it.
+			if chunks == True: # Instead of defaults, take data options
+				self.chunks = data.chunks
+			if compression=='gzip' and compression_opts==4: # Instead of defaults, take data options
+				self.compression = data.compression
+				self.compression_opts =	data.compression_opts
 			self.data = data.get_data()
 			if unit:  # If a unit is explicitly requested anyway, make sure we set it.
 				self.set_unit(unit)
@@ -720,9 +736,11 @@ class DataArray(object):
 		# print "data property setter"
 		if self.h5target:
 			if isinstance(self.h5target, h5py.Group):  # initialize H5 data in h5target group
-				self._data = Data_Handler_H5(val, h5target=self.h5target)
+				self._data = Data_Handler_H5(val, h5target=self.h5target, chunks=self.chunks,
+											 compression=self.compression, compression_opts=self.compression_opts)
 			else:  # no group given but h5target==True, so work in h5 tempfile mode.
-				self._data = Data_Handler_H5(val)
+				self._data = Data_Handler_H5(val, chunks=self.chunks,
+											 compression=self.compression, compression_opts=self.compression_opts)
 		else:
 			self._data = Data_Handler_np(val)
 
@@ -1011,7 +1029,7 @@ class DataArray(object):
 		return self.__class__(self.data ** other, label=self.label, plotlabel=self.plotlabel)
 
 	def __array__(self):  # to numpy array
-		return numpy.array(self.data)
+		return self.data.magnitude
 
 	def __iter__(self):
 		return iter(self.data)
