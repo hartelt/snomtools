@@ -317,21 +317,26 @@ def tr_folder_peem_camera_terra(folderpath, pattern="D", delayunit="um", delayfa
 	delayaxis = snomtools.data.datasets.Axis(delays, label='delay', plotlabel=pl)
 
 	# Test data size:
-	sample_data = peem_camera_read_terra(os.path.join(folderpath, timefiles[0]))
+	sample_data = peem_camera_read_terra(os.path.join(folderpath, timefiles[timefiles.keys()[0]]))
 	axlist = [delayaxis] + sample_data.axes
 	newshape = delayaxis.shape + sample_data.shape
 
 	# Optimize chunks for writing a tiff at a time:
-	# chunks = (1, newshape[2] / 16, newshape[2] / 16)
+	# chunks = (10, newshape[2] / 16, newshape[2] / 16)
 	chunks = True
+	compression = 'gzip'
+	compression_opts = 4
 
 	# Initialize full dataset with zeroes:
 	dataspace = snomtools.data.datasets.Data_Handler_H5(unit=sample_data.get_datafield(0).get_unit(),
-														shape=newshape, chunks=chunks)
+														shape=newshape, chunks=chunks,
+														compression=compression, compression_opts=compression_opts)
 	dataarray = snomtools.data.datasets.DataArray(dataspace,
 												  label=sample_data.get_datafield(0).get_label(),
 												  plotlabel=sample_data.get_datafield(0).get_plotlabel(),
-												  h5target=dataspace.h5target)
+												  h5target=dataspace.h5target,
+												  chunks=chunks,
+												  compression=compression, compression_opts=compression_opts)
 	dataset = snomtools.data.datasets.DataSet("TR " + folderpath, [dataarray], axlist, h5target=h5target)
 	dataarray = dataset.get_datafield(0)
 
@@ -408,7 +413,7 @@ def tr_folder_peem_dld_terra(folderpath, pattern="D", delayunit="um", delayfacto
 	delayaxis = snomtools.data.datasets.Axis(delays, label='delay', plotlabel=pl)
 
 	# Test data size:
-	sample_data = peem_dld_read_terra(os.path.join(folderpath, timefiles[0]))
+	sample_data = peem_dld_read_terra(os.path.join(folderpath, timefiles[timefiles.keys()[0]]))
 	axlist = [delayaxis] + sample_data.axes
 	newshape = delayaxis.shape + sample_data.shape
 
