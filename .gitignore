@@ -7,6 +7,7 @@
 test*
 *.tif
 *.png
+Drifttest.7z
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
