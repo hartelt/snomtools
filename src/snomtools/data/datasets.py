@@ -180,7 +180,7 @@ class Data_Handler_H5(u.Quantity):
 	_magnitude = property(_get__magnitude, _set__magnitude, None, "The _magnitude property for Quantity emulation.")
 
 	def _get__units(self):
-		return u.unit_from_str(self.ds_unit[()]).units
+		return u.unit_from_str(self.ds_unit[()])._units
 
 	def _set__units(self, val):
 		self.ds_unit[()] = str(u.Quantity(1., val).units)
