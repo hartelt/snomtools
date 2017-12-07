@@ -40,3 +40,35 @@ def fit_xy_linear(xdata, ydata):
 	m = u.to_ureg(m, one_yunit / one_xunit)
 	c = u.to_ureg(c, one_yunit)
 	return m, c
+
+
+def gaussian(x, x_0, sigma, A, C):
+	"""
+	A Gauss function of the form gaussian(x) = A * exp(-(x-x_0)^2 / 2 sigma^2) + C
+	All parameters can be given as quantities, if so, unit checks are done automatically. If not, correct units are
+	assumed.
+
+	:param x: (Same unit as x.) The variable x.
+
+	:param x_0: The center of the gaussian.
+
+	:param sigma: (Same unit as x.) The width (standard deviation) of the gaussian. Relates to FWHM by:
+	FWHM = 2 sqrt(2 ln 2) sigma
+
+	:param A: (Same unit as C.) The amplitude of the gaussian bell relative to background.
+
+	:param C: (Same unit as A.) The constant offset (background) of the curve relative to zero.
+
+	:return: (Same unit as A and C.) The result of the gaussian function.
+	"""
+	return A * numpy.exp(-(x - x_0) ** 2 / (2 * sigma ** 2)) + C
+
+
+# TODO: Implement this:
+class gauss_fit(object):
+	"""
+	A Gauss Fit of given data with benefits.
+	"""
+
+	def __init__(self, data=None, guess=None, keepdata=True, normalize=False):
+		raise NotImplementedError()
