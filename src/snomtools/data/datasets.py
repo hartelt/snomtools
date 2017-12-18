@@ -2473,7 +2473,7 @@ if __name__ == "__main__":  # just for testing
 	del testdataset
 
 	testdataset2 = DataSet.from_h5file('test.hdf5')
-	testdataset2.saveh5("test2.hdf5")
+	testdataset2.saveh5("exampledata.hdf5")
 
 	testdataset3 = DataSet.from_textfile('test2.txt', unitsline=1, h5target="test3.hdf5")
 	testdataset3.saveh5()
