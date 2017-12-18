@@ -92,6 +92,17 @@ def unit_from_str(tocheck):
 		return None
 
 
+def normalize_unitstr(unitstr):
+	"""
+	Returns the normalized unit string, meaning the string conversion of the casted unit.
+
+	:param unitstr: string: to convert
+
+	:return: string: converted
+	"""
+	return str(ureg(unitstr).units)
+
+
 def is_quantity(tocheck):
 	"""
 	Tries if the given object is a pint quantity.
@@ -123,12 +134,13 @@ def to_ureg(input_, unit=None, convert_quantities=True):
 	# Check if input is quantity:
 	if is_quantity(input_):
 		# If output unit is specified, make sure it has a compatible dimension. Else a DimensionalityError will be
-		# raised by trying to convert:
-		if unit:
-			input_.to(unit)
+		# raised:
+		if unit and not same_dimension(input_, to_ureg(1, unit)):
+			raise pint.DimensionalityError(input_.units, to_ureg(1, unit).units,
+										   extra_msg="Incompatible units given to to_ureg!")
 		# Check if input is already of our ureg. If so, nothing to do other then convert if unit is specified:
 		if input_._REGISTRY is ureg:
-			if unit and convert_quantities:
+			if unit and convert_quantities and input_.units != to_ureg(1, unit).units:
 				return input_.to(unit)
 			else:
 				return input_
@@ -146,10 +158,17 @@ def to_ureg(input_, unit=None, convert_quantities=True):
 		return Quantity(input_, unit)
 
 
-def as_ureg_quantities(stream):
+def as_ureg_quantities(stream, unit=None):
 	for e in stream:
-		yield to_ureg(e)
+		yield to_ureg(e, unit)
 
+def magnitudes(stream):
+	for e in stream:
+		yield e.magnitude
+
+def units(stream):
+	for e in stream:
+		yield e.units
 
 def meshgrid(*args):
 	"""

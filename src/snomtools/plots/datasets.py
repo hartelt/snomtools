@@ -80,7 +80,7 @@ def project_1d(data, plot_dest, axis_id=0, data_id=0, normalization=None, offset
 	assert (plotdat.shape == ax.shape), "Plot data shapes don't match."
 
 	# Plot and return the line object:
-	line, = plot_dest.plot(ax.get_data(), plotdat, **kwargs)
+	line, = plot_dest.plot(ax.get_data_raw(), plotdat.magnitude, **kwargs)
 	return line
 
 
