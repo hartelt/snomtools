@@ -64,7 +64,7 @@ def gaussian(x, x_0, sigma, A, C):
 	return A * numpy.exp(-(x - x_0) ** 2 / (2 * sigma ** 2)) + C
 
 
-# TODO: Implement this:
+# TODO: Implement this similarly to Powerlaw class in evaluation.peem:
 class gauss_fit(object):
 	"""
 	A Gauss Fit of given data with benefits.
