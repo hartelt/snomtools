@@ -51,7 +51,7 @@ class Data_Handler_H5(u.Quantity):
 			temp_dir = tempfile.mkdtemp(prefix="snomtools_H5_tempspace-")
 			# temp_dir = os.getcwd() # upper line can be replaced by this for debugging.
 			temp_file_path = os.path.join(temp_dir, "snomtools_H5_tempspace.hdf5")
-			temp_file = h5py.File(temp_file_path, 'w')
+			temp_file = h5tools.File(temp_file_path, 'w')
 			h5target = temp_file
 		else:
 			temp_file = None
@@ -62,7 +62,7 @@ class Data_Handler_H5(u.Quantity):
 				# To improve performance. If the data has a specific chunk size, take that instead of
 				# letting h5py guess it.
 				chunks = data.chunks
-				if compression=='gzip' and compression_opts==4:
+				if compression == 'gzip' and compression_opts == 4:
 					# Also, if compression is default, rather use data options.
 					compression = data.compression
 					compression_opts = data.compression_opts
@@ -363,13 +363,13 @@ class Data_Handler_H5(u.Quantity):
 		if axis is None:
 			axis = tuple(range(len(inshape)))
 		try:
-			if len(axis) == 1: # If we have a sequence of len 1, we sum over only 1 axis.
+			if len(axis) == 1:  # If we have a sequence of len 1, we sum over only 1 axis.
 				axis = axis[0]
 		except TypeError:
 			# axis has no len, so it is propably an integer already. Just go on...
 			pass
 
-		if isinstance(axis,int):
+		if isinstance(axis, int):
 			if keepdims:
 				outshape = list(inshape)
 				outshape[axis] = 1
@@ -384,7 +384,7 @@ class Data_Handler_H5(u.Quantity):
 			for i in range(inshape[axis]):
 				slicebase = [numpy.s_[:] for j in range(len(inshape) - 1)]
 				slicebase.insert(axis, i)
-				if outdata.shape==(): # Scalar
+				if outdata.shape == ():  # Scalar
 					outdata.ds_data[()] += self.ds_data[tuple(slicebase)]
 				else:
 					outdata.ds_data[:] += self.ds_data[tuple(slicebase)]
@@ -392,10 +392,10 @@ class Data_Handler_H5(u.Quantity):
 		else:
 			axis = numpy.array(sorted(axis))
 			axisnow = axis[0]
-			if keepdims: # Axes positions stay as they are. Prepare sum tuple for rest of summations.
+			if keepdims:  # Axes positions stay as they are. Prepare sum tuple for rest of summations.
 				axisrest = tuple(axis[1:])
-			else: # Sum erases axis number axis[0], rest of axis ids to sum over is shifted by -1
-				axisrest = tuple(axis[1:]-1)
+			else:  # Sum erases axis number axis[0], rest of axis ids to sum over is shifted by -1
+				axisrest = tuple(axis[1:] - 1)
 			# Perform summation over axisnow and recursively sum over rest:
 			return self.sum(axisnow, dtype, out, keepdims, h5target=None).sum(axisrest, dtype, out, keepdims, h5target)
 
@@ -637,7 +637,7 @@ class DataArray(object):
 			self.h5target = h5target
 			self.own_h5file = False
 		elif isinstance(h5target, string_types):
-			self.h5target = h5py.File(h5target)
+			self.h5target = h5tools.File(h5target)
 			self.own_h5file = True
 		elif h5target:  # True but no designated target means temp file mode.
 			self.h5target = True
@@ -649,11 +649,11 @@ class DataArray(object):
 		self.compression = compression
 		self.compression_opts = compression_opts
 		if isinstance(data, DataArray):  # If the data already comes in a DataArray, just take it.
-			if chunks == True: # Instead of defaults, take data options
+			if chunks == True:  # Instead of defaults, take data options
 				self.chunks = data.chunks
-			if compression=='gzip' and compression_opts==4: # Instead of defaults, take data options
+			if compression == 'gzip' and compression_opts == 4:  # Instead of defaults, take data options
 				self.compression = data.compression
-				self.compression_opts =	data.compression_opts
+				self.compression_opts = data.compression_opts
 			self.data = data.get_data()
 			if unit:  # If a unit is explicitly requested anyway, make sure we set it.
 				self.set_unit(unit)
@@ -1734,7 +1734,7 @@ class DataSet(object):
 			self.datafieldgrp = self.h5target.require_group("datafields")
 			self.axesgrp = self.h5target.require_group("axes")
 		elif isinstance(h5target, string_types):
-			self.h5target = h5py.File(h5target)
+			self.h5target = h5tools.File(h5target)
 			self.own_h5file = True
 			self.datafieldgrp = self.h5target.require_group("datafields")
 			self.axesgrp = self.h5target.require_group("axes")
@@ -1807,7 +1807,7 @@ class DataSet(object):
 		dataset = cls(repr(h5source), h5target=h5target)
 		if isinstance(h5source, string_types):
 			path = os.path.abspath(h5source)
-			h5source = h5py.File(path)
+			h5source = h5tools.File(path)
 		# Load data:
 		dataset.loadh5(h5source)
 		return dataset
@@ -2201,7 +2201,7 @@ class DataSet(object):
 			h5dest = self.h5target
 		if isinstance(h5dest, string_types):
 			path = os.path.abspath(h5dest)
-			h5dest = h5py.File(path, 'w')
+			h5dest = h5tools.File(path, 'w')
 		else:
 			path = False
 		assert isinstance(h5dest, h5py.Group), "DataSet.saveh5 needs h5 group or destination path as argument!"
@@ -2225,7 +2225,7 @@ class DataSet(object):
 	def loadh5(self, h5source):
 		if isinstance(h5source, string_types):
 			path = os.path.abspath(h5source)
-			h5source = h5py.File(path, 'r')
+			h5source = h5tools.File(path, 'r')
 		else:
 			path = False
 		assert isinstance(h5source, h5py.Group), \
@@ -2478,7 +2478,7 @@ if __name__ == "__main__":  # just for testing
 	testdataset3 = DataSet.from_textfile('test2.txt', unitsline=1, h5target="test3.hdf5")
 	testdataset3.saveh5()
 
-	testh5 = h5py.File('test.hdf5')
+	testh5 = h5tools.File('test.hdf5')
 
 	test_dataarray = True
 	if test_dataarray:
@@ -2507,7 +2507,7 @@ if __name__ == "__main__":  # just for testing
 		del moep
 		testh5.close()
 
-		testh5 = h5py.File('test.hdf5')
+		testh5 = h5tools.File('test.hdf5')
 		moep3 = DataArray(testh5, h5target=testh5)
 
 		dhs = [Data_Handler_H5(numpy.arange(5), 'meter') for i in range(3)]
@@ -2516,22 +2516,39 @@ if __name__ == "__main__":  # just for testing
 
 		dhs = [stacktest for i in range(10)]
 		stacktest = DataArray.stack(dhs, h5target=True)
-		# stackh5 = h5py.File("stacktest.hdf5")
+		# stackh5 = h5tools.File("stacktest.hdf5")
 		# stacktest.store_to_h5(stackh5)
 		# stackh5.close()
 		del stacktest
 
 	test_sum = True
 	if test_sum:
-		h5 = h5py.File("test4.hdf5")
-		mediumfuckindata = Data_Handler_H5(numpy.ones((100, 100,20)), unit="m/s")
+		h5 = h5tools.File("test4.hdf5")
+		mediumfuckindata = Data_Handler_H5(numpy.ones((100, 100, 20)), unit="m/s")
 		sum1 = mediumfuckindata.sum(0)
 		sum2 = mediumfuckindata.sum(0, keepdims=True)
 		sum3 = sum1.sum(0)
 		sum4 = sum2.sum(1, keepdims=True)
-		sum5 = mediumfuckindata.sum((0,1))
-		sum6 = mediumfuckindata.sum((0,1), keepdims=True)
-		sum7 = mediumfuckindata.sum((0,2), h5target=h5)
+		sum5 = mediumfuckindata.sum((0, 1))
+		sum6 = mediumfuckindata.sum((0, 1), keepdims=True)
+		sum7 = mediumfuckindata.sum((0, 2), h5target=h5)
 		sum8 = mediumfuckindata.sum()
+
+	test_manyfiles = False
+	if test_manyfiles:
+		h5files = []
+		for i in range(1000):
+			h5files.append(h5tools.File("ZZZZ{0:04d}.hdf5".format(i)))
+
+		print "writing data..."
+		for f in h5files:
+			h5tools.write_dataset(f, "data", data=numpy.ones((100, 100, 20)),
+								  chunks=True,
+								  compression="gzip",
+								  compression_opts=4)
+
+		print "closing..."
+		for f in h5files:
+			f.close()
 
 	cprint("OK", 'green')

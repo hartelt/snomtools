@@ -417,8 +417,7 @@ def tr_folder_peem_dld_terra(folderpath, pattern="D", delayunit="um", delayfacto
 	axlist = [delayaxis] + sample_data.axes
 	newshape = delayaxis.shape + sample_data.shape
 
-	# Optimize chunks for writing a tiff at a time:
-	# TODO: Test reading performance for reading along different axes.
+	# TODO: Optimize buffer size by autodetecting chunk size and making sure buffer fits full chunks for an image.
 	# chunks = (5, newshape[1] / 11, newshape[2] / 16, newshape[2] / 16)
 	chunks = True
 	compression = 'gzip'

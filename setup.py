@@ -50,5 +50,5 @@ setup(name='snomtools',
 	  packages=packages,
 	  package_dir={'': source_path},
 	  install_requirements=install_requirements, requires=['numpy>=1.10.0', 'pint', 'h5py', 'termcolor', 'scipy',
-														   'tifffile']
+														   'tifffile', 'h5py_cache', 'six']
 	  )

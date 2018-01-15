@@ -3,6 +3,24 @@ __author__ = 'hartelt'
 This script provides some simple tools for the storage in h5 files.
 """
 import h5py
+import h5py_cache
+
+
+# Set default cache size for h5py-cache files. h5py-default is 1024**2 (1 MB)
+chunk_cache_mem_size_default = 1024 * 1024 ** 2  # 1 GB
+
+
+def File(*args, **kwargs):
+	"""
+	Initializes a h5py_cache File object as documented in h5py_cache.File and h5py.File. Uses the value
+	chunk_cache_mem_size_default as defined above as buffer size if not given otherwise explicitly.
+
+	:return: A h5py.File object with the chosen buffer settings.
+	"""
+	key = "chunk_cache_mem_size"
+	if not key in kwargs:
+		kwargs[key] = chunk_cache_mem_size_default
+	return h5py_cache.File(*args, **kwargs)
 
 
 def store_dictionary(dict_to_store, h5target):
