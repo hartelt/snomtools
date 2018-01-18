@@ -14,6 +14,14 @@ For a local installation or if you like to develop further
 
 The test_suite located within the test/ folder
 will be executed automatically.
+
+Regarding tifffile on Windows systems:
+In case of problems while installing the package, modify (or create, if not existing)
+the configuration file distutils.cfg (located for example at C:\Python27\Lib\distutils\distutils.cfg)
+to contain:
+	[build]
+	compiler=mingw32
+MinGW32 has to be installed.
 """
 from setuptools import setup, find_packages
 
