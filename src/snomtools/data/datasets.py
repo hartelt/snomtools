@@ -21,7 +21,7 @@ class Data_Handler_H5(u.Quantity):
 	"""
 
 	def __new__(cls, data=None, unit=None, shape=None, h5target=None,
-				chunks=True, compression="gzip", compression_opts=4):
+				chunks=True, compression="gzip", compression_opts=4, chunk_cache_mem_size=None):
 		"""
 		Initializes and returns a new instance. __new__ is used instead of __init__ because pint Quantity does so,
 		and the method is overwritten.
@@ -41,6 +41,8 @@ class Data_Handler_H5(u.Quantity):
 
 		:param compression_opts: (See h5py docs. Compression is good in most cases!)
 
+		:param chunk_cache_mem_size: Set custom chunk cache memory size for temp files. Default is set in h5tools.
+
 		:return: The initialized instance.
 		"""
 		# TODO: Handle Datatypes. Sort compression opts for initializing from existing h5 data.
@@ -51,7 +53,7 @@ class Data_Handler_H5(u.Quantity):
 			temp_dir = tempfile.mkdtemp(prefix="snomtools_H5_tempspace-")
 			# temp_dir = os.getcwd() # upper line can be replaced by this for debugging.
 			temp_file_path = os.path.join(temp_dir, "snomtools_H5_tempspace.hdf5")
-			temp_file = h5tools.File(temp_file_path, 'w')
+			temp_file = h5tools.File(temp_file_path, 'w', chunk_cache_mem_size=chunk_cache_mem_size)
 			h5target = temp_file
 		else:
 			temp_file = None
@@ -71,7 +73,6 @@ class Data_Handler_H5(u.Quantity):
 			inst = object.__new__(cls)
 			inst.__used = False
 			inst.__handling = None
-			inst.chunks = chunks
 			inst.compression = compression
 			inst.compression_opts = compression_opts
 			if data.h5target is h5target:
@@ -93,7 +94,6 @@ class Data_Handler_H5(u.Quantity):
 			inst = object.__new__(cls)
 			inst.__used = False
 			inst.__handling = None
-			inst.chunks = chunks
 			inst.compression = compression
 			inst.compression_opts = compression_opts
 			compiled_data = u.to_ureg(data, unit)
@@ -116,7 +116,6 @@ class Data_Handler_H5(u.Quantity):
 			inst = object.__new__(cls)
 			inst.__used = False
 			inst.__handling = None
-			inst.chunks = chunks
 			inst.compression = compression
 			inst.compression_opts = compression_opts
 			if shape == ():  # Scalar data. No chunking or compression supported.
@@ -141,7 +140,6 @@ class Data_Handler_H5(u.Quantity):
 			inst.h5target = h5target
 			inst.temp_file = temp_file
 			inst.temp_dir = temp_dir
-			inst.chunks = chunks
 			inst.compression = compression
 			inst.compression_opts = compression_opts
 			return inst
@@ -214,6 +212,10 @@ class Data_Handler_H5(u.Quantity):
 	@property
 	def dtype(self):
 		return self.ds_data.dtype
+
+	@property
+	def chunks(self):
+		return self.ds_data.chunks
 
 	def __getitem__(self, key):
 		return self.__class__(self.ds_data[key], self._units)
@@ -615,7 +617,7 @@ class DataArray(object):
 	"""
 
 	def __init__(self, data, unit=None, label=None, plotlabel=None, h5target=None,
-				 chunks=True, compression="gzip", compression_opts=4):
+				 chunks=True, compression="gzip", compression_opts=4, chunk_cache_mem_size=None):
 		"""
 		Guess what, this is an initializer. It differences between input formats, which should be clear from the
 		parameter doc and the comments in the code.
@@ -633,11 +635,15 @@ class DataArray(object):
 
 		:return:
 		"""
+		self.chunks = chunks
+		self.compression = compression
+		self.compression_opts = compression_opts
+		self.chunk_cache_mem_size = chunk_cache_mem_size
 		if isinstance(h5target, h5py.Group):
 			self.h5target = h5target
 			self.own_h5file = False
 		elif isinstance(h5target, string_types):
-			self.h5target = h5tools.File(h5target)
+			self.h5target = h5tools.File(h5target, chunk_cache_mem_size=self.chunk_cache_mem_size)
 			self.own_h5file = True
 		elif h5target:  # True but no designated target means temp file mode.
 			self.h5target = True
@@ -645,9 +651,7 @@ class DataArray(object):
 		else:  # Numpy mode.
 			self.h5target = None
 			self.own_h5file = False
-		self.chunks = chunks
-		self.compression = compression
-		self.compression_opts = compression_opts
+
 		if isinstance(data, DataArray):  # If the data already comes in a DataArray, just take it.
 			if chunks == True:  # Instead of defaults, take data options
 				self.chunks = data.chunks
@@ -740,7 +744,8 @@ class DataArray(object):
 											 compression=self.compression, compression_opts=self.compression_opts)
 			else:  # no group given but h5target==True, so work in h5 tempfile mode.
 				self._data = Data_Handler_H5(val, chunks=self.chunks,
-											 compression=self.compression, compression_opts=self.compression_opts)
+											 compression=self.compression, compression_opts=self.compression_opts,
+											 chunk_cache_mem_size=self.chunk_cache_mem_size)
 		else:
 			self._data = Data_Handler_np(val)
 
@@ -1727,14 +1732,14 @@ class DataSet(object):
 	y in micrometers) and a time delay (z = t in femtoseconds).
 	"""
 
-	def __init__(self, label="", datafields=(), axes=(), plotconf=(), h5target=None):
+	def __init__(self, label="", datafields=(), axes=(), plotconf=(), h5target=None, chunk_cache_mem_size=None):
 		if isinstance(h5target, h5py.Group):
 			self.h5target = h5target
 			self.own_h5file = False
 			self.datafieldgrp = self.h5target.require_group("datafields")
 			self.axesgrp = self.h5target.require_group("axes")
 		elif isinstance(h5target, string_types):
-			self.h5target = h5tools.File(h5target)
+			self.h5target = h5tools.File(h5target, chunk_cache_mem_size=chunk_cache_mem_size)
 			self.own_h5file = True
 			self.datafieldgrp = self.h5target.require_group("datafields")
 			self.axesgrp = self.h5target.require_group("axes")
@@ -1781,7 +1786,7 @@ class DataSet(object):
 			self.plotconf = dict(plotconf)
 
 	@classmethod
-	def from_h5file(cls, path, h5target=None):
+	def from_h5file(cls, path, h5target=None, chunk_cache_mem_size=None):
 		"""
 		Initializes a new DataSet from an existing HDF5 file. The file must be structured in accordance to the
 		saveh5() and loadh5() methods in this class. Uses loadh5 under the hood!
@@ -1794,7 +1799,7 @@ class DataSet(object):
 		return cls.from_h5(path, h5target=h5target)
 
 	@classmethod
-	def from_h5(cls, h5source, h5target=None):
+	def from_h5(cls, h5source, h5target=None, chunk_cache_mem_size=None):
 		"""
 		Initializes a new DataSet from an existing HDF5 source. The file must be structured in accordance to the
 		saveh5() and loadh5() methods in this class. Uses loadh5 under the hood!
@@ -1807,7 +1812,7 @@ class DataSet(object):
 		dataset = cls(repr(h5source), h5target=h5target)
 		if isinstance(h5source, string_types):
 			path = os.path.abspath(h5source)
-			h5source = h5tools.File(path)
+			h5source = h5tools.File(path, chunk_cache_mem_size=chunk_cache_mem_size)
 		# Load data:
 		dataset.loadh5(h5source)
 		return dataset

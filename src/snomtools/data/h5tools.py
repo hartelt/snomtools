@@ -4,10 +4,10 @@ This script provides some simple tools for the storage in h5 files.
 """
 import h5py
 import h5py_cache
-
+import psutil
 
 # Set default cache size for h5py-cache files. h5py-default is 1024**2 (1 MB)
-chunk_cache_mem_size_default = 1024 * 1024 ** 2  # 1 GB
+chunk_cache_mem_size_default = 16 * 1024 ** 2  # 16 MB
 
 
 def File(*args, **kwargs):
@@ -18,8 +18,18 @@ def File(*args, **kwargs):
 	:return: A h5py.File object with the chosen buffer settings.
 	"""
 	key = "chunk_cache_mem_size"
-	if not key in kwargs:
+	if not key in kwargs or kwargs[key] is None:
 		kwargs[key] = chunk_cache_mem_size_default
+
+	# Check if required buffer size is available, and reduce if necessary:
+	mem_free = psutil.virtual_memory().available
+	if kwargs[key] >= mem_free:
+		mem_use = mem_free - (32 * 1024 ** 2)
+		print("WARNING: Required buffer size of {0:d} MB exceeds free memory. \
+			  Reducing to {1:d} MB.".format(kwargs[key] / 1024 ** 2, mem_use / 1024 ** 2))
+		print("Performance might be worse than expected!")
+		kwargs[key] = mem_use
+
 	return h5py_cache.File(*args, **kwargs)
 
 
