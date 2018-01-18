@@ -327,16 +327,29 @@ def tr_folder_peem_camera_terra(folderpath, pattern="D", delayunit="um", delayfa
 	compression = 'gzip'
 	compression_opts = 4
 
+	# Probe HDF5 initialization to optimize buffer size:
+	if chunks is True:  # Default is auto chunk alignment, so we need to probe.
+		h5probe = snomtools.data.datasets.Data_Handler_H5(unit=sample_data.get_datafield(0).get_unit(),
+														  shape=newshape, chunks=chunks,
+														  compression=compression, compression_opts=compression_opts)
+		chunk_size = h5probe.chunks
+	else:
+		chunk_size = chunks
+	min_cache_size = chunk_size[0] * newshape[1] * newshape[2] * 4  # 32bit floats require 4 bytes.
+	use_cache_size = min_cache_size + 64 * 1024 ** 2  # Add 64 MB just to be sure.
+
 	# Initialize full dataset with zeroes:
 	dataspace = snomtools.data.datasets.Data_Handler_H5(unit=sample_data.get_datafield(0).get_unit(),
 														shape=newshape, chunks=chunks,
-														compression=compression, compression_opts=compression_opts)
+														compression=compression, compression_opts=compression_opts,
+														chunk_cache_mem_size=use_cache_size)
 	dataarray = snomtools.data.datasets.DataArray(dataspace,
 												  label=sample_data.get_datafield(0).get_label(),
 												  plotlabel=sample_data.get_datafield(0).get_plotlabel(),
 												  h5target=dataspace.h5target,
 												  chunks=chunks,
-												  compression=compression, compression_opts=compression_opts)
+												  compression=compression, compression_opts=compression_opts,
+												  chunk_cache_mem_size=use_cache_size)
 	dataset = snomtools.data.datasets.DataSet("TR " + folderpath, [dataarray], axlist, h5target=h5target)
 	dataarray = dataset.get_datafield(0)
 
@@ -346,7 +359,8 @@ def tr_folder_peem_camera_terra(folderpath, pattern="D", delayunit="um", delayfa
 	if verbose:
 		import time
 		print "Reading TR-Folder of shape: ", dataset.shape
-		print "... generating chunks of shape: ", dataset.get_datafield(0).data.ds_data.chunks
+		print "... generating chunks of shape: ", dataset.get_datafield(0).data.chunks
+		print "... using cache size {0:d} MB".format(use_cache_size)
 		start_time = time.time()
 
 	for i, timestep in zip(range(len(timefiles)), iter(sorted(timefiles.iterkeys()))):
@@ -423,17 +437,31 @@ def tr_folder_peem_dld_terra(folderpath, pattern="D", delayunit="um", delayfacto
 	compression = 'gzip'
 	compression_opts = 4
 
+	# Probe HDF5 initialization to optimize buffer size:
+	if chunks is True:  # Default is auto chunk alignment, so we need to probe.
+		h5probe = snomtools.data.datasets.Data_Handler_H5(unit=sample_data.get_datafield(0).get_unit(),
+														  shape=newshape, chunks=chunks,
+														  compression=compression, compression_opts=compression_opts)
+		chunk_size = h5probe.chunks
+	else:
+		chunk_size = chunks
+	min_cache_size = chunk_size[0] * newshape[1] * newshape[2] * newshape[3] * 4  # 32bit floats require 4 bytes.
+	use_cache_size = min_cache_size + 64 * 1024 ** 2  # Add 64 MB just to be sure.
+
 	# Initialize full dataset with zeroes:
 	dataspace = snomtools.data.datasets.Data_Handler_H5(unit=sample_data.get_datafield(0).get_unit(),
 														shape=newshape, chunks=chunks,
-														compression=compression, compression_opts=compression_opts)
+														compression=compression, compression_opts=compression_opts,
+														chunk_cache_mem_size=use_cache_size)
 	dataarray = snomtools.data.datasets.DataArray(dataspace,
 												  label=sample_data.get_datafield(0).get_label(),
 												  plotlabel=sample_data.get_datafield(0).get_plotlabel(),
 												  h5target=dataspace.h5target,
 												  chunks=chunks,
-												  compression=compression, compression_opts=compression_opts)
-	dataset = snomtools.data.datasets.DataSet("TR " + folderpath, [dataarray], axlist, h5target=h5target)
+												  compression=compression, compression_opts=compression_opts,
+												  chunk_cache_mem_size=use_cache_size)
+	dataset = snomtools.data.datasets.DataSet("TR " + folderpath, [dataarray], axlist, h5target=h5target,
+											  chunk_cache_mem_size=use_cache_size)
 	dataarray = dataset.get_datafield(0)
 
 	# Fill in data from imported tiffs:
@@ -443,6 +471,7 @@ def tr_folder_peem_dld_terra(folderpath, pattern="D", delayunit="um", delayfacto
 		import time
 		print "Reading TR-ER-Folder of shape: ", dataset.shape
 		print "... generating chunks of shape: ", dataset.get_datafield(0).data.ds_data.chunks
+		print "... using cache size {0:d} MB".format(use_cache_size / 1024 ** 2)
 		start_time = time.time()
 
 	for i, timestep in zip(range(len(timefiles)), iter(sorted(timefiles.iterkeys()))):
