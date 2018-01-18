@@ -431,8 +431,6 @@ def tr_folder_peem_dld_terra(folderpath, pattern="D", delayunit="um", delayfacto
 	axlist = [delayaxis] + sample_data.axes
 	newshape = delayaxis.shape + sample_data.shape
 
-	# TODO: Optimize buffer size by autodetecting chunk size and making sure buffer fits full chunks for an image.
-	# chunks = (5, newshape[1] / 11, newshape[2] / 16, newshape[2] / 16)
 	chunks = True
 	compression = 'gzip'
 	compression_opts = 4
@@ -443,6 +441,7 @@ def tr_folder_peem_dld_terra(folderpath, pattern="D", delayunit="um", delayfacto
 														  shape=newshape, chunks=chunks,
 														  compression=compression, compression_opts=compression_opts)
 		chunk_size = h5probe.chunks
+		del h5probe
 	else:
 		chunk_size = chunks
 	min_cache_size = chunk_size[0] * newshape[1] * newshape[2] * newshape[3] * 4  # 32bit floats require 4 bytes.
