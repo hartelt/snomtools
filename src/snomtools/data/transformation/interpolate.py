@@ -15,8 +15,8 @@ def griddata(dataset, xi, method='linear', fill_value=numpy.nan, rescale=False):
 	:param dataset: The dataset to transform.
 
 	:param xi: The coordinates at which to interpolate data. Given as a tuple of Axes (see datasets.py) with the same
-	length as the number of axes of the dataset OR as a numpy array of the same dimensionality as the dataset,
-	that is then assumed to have the same physical dimensions as the axes of the dataset.
+		length as the number of axes of the dataset OR as a numpy array of the same dimensionality as the dataset,
+		that is then assumed to have the same physical dimensions as the axes of the dataset.
 
 	:param method:
 
@@ -29,7 +29,7 @@ def griddata(dataset, xi, method='linear', fill_value=numpy.nan, rescale=False):
 	assert isinstance(dataset, datasets.DataSet), "ERROR: No DataSet instance given."
 
 
-if True:  # Just for testing:
+if __name__=='__main__':  # Just for testing:
 	print("Testing...")
 	import snomtools.data.imports.lumerical_mat
 

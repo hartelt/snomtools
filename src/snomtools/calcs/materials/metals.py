@@ -72,7 +72,7 @@ class Metal:
 		:param damping_freq: the damping frequency of the free electrons in (rad/s)
 
 		:param interband_transitions: a list of interband transitions, given either as instance of the
-		InterbandTransition class or as list or tuple of 3 elements containing the frequencies to initialize one.
+			InterbandTransition class or as list or tuple of 3 elements containing the frequencies to initialize one.
 
 		:return: nothing
 		"""

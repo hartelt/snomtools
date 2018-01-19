@@ -131,10 +131,10 @@ def energy_apply_calibration(data, kalfitfilename, mode='quadratic'):
 	:param data: The DataSet instance of the data to normalize or a string with the filepath of the Tiff file from PEEM.
 
 	:param kalfitfilename: The filename of the text file from Terra that contains Energy Calibration fit parameters.
-	Usually this file's name ends with "kalfit.txt".
+		Usually this file's name ends with "kalfit.txt".
 
 	:param mode: The mode for the energy calculation. Options:
-	'quadradic' (default) and 'linear'
+		'quadradic' (default) and 'linear'
 
 	:return: The modified dataset.
 	"""
@@ -168,13 +168,13 @@ def normalize_by_flatfield_sum(data, flatfield_data, data_id=0, flat_id=0, newla
 	:param data: The DataSet instance of the data to normalize or a string with the filepath of the Tiff file from PEEM.
 
 	:param flatfield_data: The DataSet instance of the flatfield correction to apply or a string with the filepath of
-	the Tiff file from PEEM.
+		the Tiff file from PEEM.
 
 	:param data_id: A valid identifier of the DataArray in the DataSet instance to apply normalization to. Per
-	default, the first DataArray is taken.
+		default, the first DataArray is taken.
 
 	:param flat_id: A valid identifier of the DataArray in the flatfield DataSet instance to take as reference. Per
-	default, the first DataArray is taken.
+		default, the first DataArray is taken.
 
 	:param newlabel: The label to set for the created DataArray.
 

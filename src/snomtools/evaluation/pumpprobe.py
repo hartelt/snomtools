@@ -21,10 +21,10 @@ def time_scale_axis(delay_axis, unit='fs', unitplotlabel=None):
 	:param unit: A valid time unit string. The unit to convert the axis to.
 
 	:param unitplotlabel: The plotlabel corresponding to the specified unit. Will be tried to cast in LaTeX siunitx
-	notation if not specified.
+		notation if not specified.
 
 	:return: A new Axis instance with time scaling in the specified unit, that can replace the delay axis in the
-	DataSet.
+		DataSet.
 	"""
 	assert isinstance(delay_axis, snomtools.data.datasets.Axis), "ERROR: no Axis instance given to time_scale_axis()"
 	delaydata = delay_axis.get_data()

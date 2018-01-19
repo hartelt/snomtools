@@ -70,7 +70,7 @@ class Powerlaw_loglinear:
 		:param data_id: Identifier of the DataField to use.
 
 		:param axis_id: optional, Identifier of the power axis to use. If not given, the first axis that corresponds
-		to a Power in its physical dimension is taken.
+			to a Power in its physical dimension is taken.
 
 		:return: powers, intensities: tuple of quantities with the projected data.
 		"""
@@ -96,7 +96,7 @@ class Powerlaw_loglinear:
 		:param data_id: Identifier of the DataField to use.
 
 		:param axis_id: optional, Identifier of the power axis to use. If not given, the first axis that corresponds
-		to a Power in its physical dimension is taken.
+			to a Power in its physical dimension is taken.
 
 		:param label: string: label for the produced DataSet
 
@@ -235,7 +235,7 @@ class Powerlaw:
 		:param data_id: Identifier of the DataField to use.
 
 		:param axis_id: optional, Identifier of the power axis to use. If not given, the first axis that corresponds
-		to a Power in its physical dimension is taken.
+			to a Power in its physical dimension is taken.
 
 		:return: powers, intensities: tuple of quantities with the projected data.
 		"""
@@ -261,7 +261,7 @@ class Powerlaw:
 		:param data_id: Identifier of the DataField to use.
 
 		:param axis_id: optional, Identifier of the power axis to use. If not given, the first axis that corresponds
-		to a Power in its physical dimension is taken.
+			to a Power in its physical dimension is taken.
 
 		:param label: string: label for the produced DataSet
 

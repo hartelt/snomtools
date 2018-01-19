@@ -15,19 +15,19 @@ def project_1d(data, axis_id=0, data_id=None, outlabel=None, normalization=None)
 	:param axis_id: An identifier of the axis to project onto.
 
 	:param data_id: Optional: An identifier of the dataarray to take data from. If not given, all DataArrays of the
-	Set are projected.
+		Set are projected.
 
 	:param outlabel: String, optional: A label to assign to the projected DataSet. Default: Label of the original
-	DataSet.
+		DataSet.
 
 	:param normalization: Method for a normalization to apply to the data. Valid options:
-	* None, "None" (default): No normalization.
-	* "maximum", "max": divide every value by the maximum value in the set
-	* "mean": divide every value by the average value in the set
-	* "minimum", "min": divide every value by the minimum value in the set
-	* "absolute maximum", "absmax": divide every value by the maximum absolute value in the set
-	* "absolute minimum", "absmin": divide every value by the minimum absolute value in the set
-	* "size": divide every value by the number of pixels that have been summed in the projection (ROI size)
+		* None, "None" (default): No normalization.
+		* "maximum", "max": divide every value by the maximum value in the set
+		* "mean": divide every value by the average value in the set
+		* "minimum", "min": divide every value by the minimum value in the set
+		* "absolute maximum", "absmax": divide every value by the maximum absolute value in the set
+		* "absolute minimum", "absmin": divide every value by the minimum absolute value in the set
+		* "size": divide every value by the number of pixels that have been summed in the projection (ROI size)
 
 	:return: A dataset instance with the projected data.
 	"""
@@ -98,19 +98,19 @@ def project_2d(data, axis1_id=0, axis2_id=0, data_id=None, outlabel=None, normal
 	:param axis2_id: An identifier of the second axis to project onto.
 
 	:param data_id: Optional: An identifier of the dataarray to take data from. If not given, all DataArrays of the
-	Set are projected.
+		Set are projected.
 
 	:param outlabel: String, optional: A label to assign to the projected DataSet. Default: Label of the original
-	DataSet.
+		DataSet.
 
 	:param normalization: Method for a normalization to apply to the data. Valid options:
-	* None, "None" (default): No normalization.
-	* "maximum", "max": divide every value by the maximum value in the set
-	* "mean": divide every value by the average value in the set
-	* "minimum", "min": divide every value by the minimum value in the set
-	* "absolute maximum", "absmax": divide every value by the maximum absolute value in the set
-	* "absolute minimum", "absmin": divide every value by the minimum absolute value in the set
-	* "size": divide every value by the number of pixels that have been summed in the projection (ROI size)
+		* None, "None" (default): No normalization.
+		* "maximum", "max": divide every value by the maximum value in the set
+		* "mean": divide every value by the average value in the set
+		* "minimum", "min": divide every value by the minimum value in the set
+		* "absolute maximum", "absmax": divide every value by the maximum absolute value in the set
+		* "absolute minimum", "absmin": divide every value by the minimum absolute value in the set
+		* "size": divide every value by the number of pixels that have been summed in the projection (ROI size)
 
 	:return: A dataset instance with the projected data.
 	"""

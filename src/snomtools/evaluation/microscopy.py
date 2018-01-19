@@ -20,7 +20,7 @@ def fov_scale_absolute(pixel_axis, fov, unit='m'):
 	:param pixel_axis: The Axis to transform.
 
 	:param fov: Quantity: The absolute size of the FoV. If a number instead of a quantity is given, m is assumed as
-	unit.
+		unit.
 
 	:param unit: String: Specifies the output unit for the Axis, Must evaluate to a length unit.
 
@@ -39,7 +39,7 @@ def fov_scale_relative(pixel_axis, length_per_pixel, unit='m'):
 	:param pixel_axis: The Axis to transform.
 
 	:param length_per_pixel: Quantity: The relative scale in length per pixel. If a number instead of a quantity is
-	given, m/pixel is assumed as unit.
+		given, m/pixel is assumed as unit.
 
 	:param unit: String: Specifies the output unit for the Axis, Must evaluate to a length unit.
 
@@ -59,16 +59,16 @@ def normalize_by_flatfield_sum(data, flatfield_data, data_id=0, flat_id=0, newla
 	The normalized data is written into a new DataArray in the given DataSet.
 
 	:param data: The DataSet instance of the data to normalize or a string with the filepath of the hdf5 file
-	containing the data.
+		containing the data.
 
 	:param flatfield_data: The DataSet instance of the flatfield correction to apply or a string with the filepath of
-	the hdf5 file containing the data.
+		the hdf5 file containing the data.
 
 	:param data_id: A valid identifier of the DataArray in the DataSet instance to apply normalization to. Per
-	default, the first DataArray is taken.
+		default, the first DataArray is taken.
 
 	:param flat_id: A valid identifier of the DataArray in the flatfield DataSet instance to take as reference. Per
-	default, the first DataArray is taken.
+		default, the first DataArray is taken.
 
 	:param newlabel: The label to set for the created DataArray.
 

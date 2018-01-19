@@ -53,7 +53,7 @@ def gaussian(x, x_0, sigma, A, C):
 	:param x_0: The center of the gaussian.
 
 	:param sigma: (Same unit as x.) The width (standard deviation) of the gaussian. Relates to FWHM by:
-	FWHM = 2 sqrt(2 ln 2) sigma
+		FWHM = 2 sqrt(2 ln 2) sigma
 
 	:param A: (Same unit as C.) The amplitude of the gaussian bell relative to background.
 

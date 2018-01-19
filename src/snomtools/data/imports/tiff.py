@@ -50,7 +50,7 @@ def peem_dld_read(filepath, mode="terra"):
 	:param filepath: String: The (absolute or relative) path of the input file or folder.
 
 	:param mode: String: The readin mode. Valid options are "terra" for a tiff generated with Terra (default),
-	"pne" for a folder of tiffs generated with the Focus ProNanoESCA Software.
+		"pne" for a folder of tiffs generated with the Focus ProNanoESCA Software.
 
 	:return: The generated DataSet.
 	"""
@@ -124,8 +124,8 @@ def peem_camera_read(filepath, mode="camware"):
 	:param filepath: String: The (absolute or relative) path of the input file.
 
 	:param mode: String: The readin mode. Valid options are "terra" for a tiff generated with Terra,
-	"camware" for a tiff generated with the PCO CamWare Software (default) or "pne" for a tiff generated with the
-	Focus ProNanoESCA Software.
+		"camware" for a tiff generated with the PCO CamWare Software (default) or "pne" for a tiff generated with the
+		Focus ProNanoESCA Software.
 
 	:return: The generated DataSet.
 	"""
@@ -189,14 +189,14 @@ def powerlaw_folder_peem_camera(folderpath, pattern="mW", powerunit=None, poweru
 	:param folderpath: The (relative or absolute) path of the folders containing the powerlaw measurement series.
 
 	:param pattern: string: A pattern the powers in the filenames are named with. For example in the default case
-	"mW", the filename containing '50,2mW' or '50.2mW' or '50.2 mW' would accord to a power of 50.2 milliwatts. The
-	power units for the axis quantities are also cast from this pattern if not explicitly given with powerunit.
+		"mW", the filename containing '50,2mW' or '50.2mW' or '50.2 mW' would accord to a power of 50.2 milliwatts. The
+		power units for the axis quantities are also cast from this pattern if not explicitly given with powerunit.
 
 	:param powerunit: A valid unit string that will be cast as the unit for the power axis values. If not given,
-	the pattern parameter will be cast as unit.
+		the pattern parameter will be cast as unit.
 
 	:param powerunitlabel: string: Will be used as the unit for the power axis plotlabel. Can be for example a LaTeX
-	siunitx command. If not given, the powerunit parameter will be used.
+		siunitx command. If not given, the powerunit parameter will be used.
 
 	:return: The dataset containing the images stacked along a power axis.
 	"""
@@ -236,14 +236,14 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 	:param folderpath: The (relative or absolute) path of the folders containing the powerlaw measurement series.
 
 	:param pattern: string: A pattern the powers in the filenames are named with. For example in the default case
-	"mW", the filename containing '50,2mW' or '50.2mW' or '50.2 mW' would accord to a power of 50.2 milliwatts. The
-	power units for the axis quantities are also cast from this pattern if not explicitly given with powerunit.
+		"mW", the filename containing '50,2mW' or '50.2mW' or '50.2 mW' would accord to a power of 50.2 milliwatts. The
+		power units for the axis quantities are also cast from this pattern if not explicitly given with powerunit.
 
 	:param powerunit: A valid unit string that will be cast as the unit for the power axis values. If not given,
-	the pattern parameter will be cast as unit.
+		the pattern parameter will be cast as unit.
 
 	:param powerunitlabel: string: Will be used as the unit for the power axis plotlabel. Can be for example a LaTeX
-	siunitx command. If not given, the powerunit parameter will be used.
+		siunitx command. If not given, the powerunit parameter will be used.
 
 	:return: The dataset containing the images stacked along a power axis.
 	"""
@@ -282,15 +282,18 @@ def tr_folder_peem_camera_terra(folderpath, pattern="D", delayunit="um", delayfa
 	"""
 
 	:param folderpath:
+
 	:param pattern:
+
 	:param delayunit:
 
 	:param delayfactor: A factor that the numbers in the filenames need to be multiplied with to get the real pulse
-	delay. This would be for example:
-	0.2 (because of stage position) with delayunit "um" for normal Interferometer because one decimal is in filenames.
-	0.2 (because of stage position and strange factor 10 in filenames) with delayunit "as" for PR interferometer
+		delay. This would be for example:
+		0.2 (because of stage position) with delayunit "um" for normal Interferometer because one decimal is in filenames.
+		0.2 (because of stage position and strange factor 10 in filenames) with delayunit "as" for PR interferometer
 
 	:param delayunitlabel:
+
 	:return:
 	"""
 	if delayunitlabel is None:
@@ -385,15 +388,21 @@ def tr_folder_peem_camera_terra(folderpath, pattern="D", delayunit="um", delayfa
 def tr_folder_peem_dld_terra(folderpath, pattern="D", delayunit="um", delayfactor=1, delayunitlabel=None,
 							 h5target=True, verbose=False):
 	"""
+		>>> data = tr_folder_peem_dld_terra(folder, delayunit="as", delayfactor=0.2, \
+											delayunitlabel="\\si{\\atto\\second}", h5target=h5)
+		>>> data.get_axis('delay').get_unit()
+		'attosecond'
 
 	:param folderpath:
+
 	:param pattern:
+
 	:param delayunit:
 
 	:param delayfactor: A factor that the numbers in the filenames need to be multiplied with to get the real pulse
-	delay. This would be for example:
-	0.2 (because of stage position) with delayunit "um" for normal Interferometer because one decimal is in filenames.
-	0.2 (because of stage position and strange factor 10 in filenames) with delayunit "as" for PR interferometer
+		delay. This would be for example:
+		0.2 (because of stage position) with delayunit "um" for normal Interferometer because one decimal is in filenames.
+		0.2 (because of stage position and strange factor 10 in filenames) with delayunit "as" for PR interferometer
 
 	:param delayunitlabel:
 

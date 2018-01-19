@@ -21,16 +21,16 @@ def project_1d(data, plot_dest, axis_id=0, data_id=0, normalization=None, offset
 	:param data_id: An identifier of the dataarray to take data from.
 
 	:param normalization: Method for a normalization to apply to the data before plotting. Valid options:
-	* None, "None" (default): No normalization.
-	* "maximum", "max": divide every value by the maximum value in the set
-	* "mean": divide every value by the average value in the set
-	* "minimum", "min": divide every value by the minimum value in the set
-	* "absolute maximum", "absmax": divide every value by the maximum absolute value in the set
-	* "absolute minimum", "absmin": divide every value by the minimum absolute value in the set
-	* "size": divide every value by the number of pixels that have been summed in the projection (ROI size)
+		* None, "None" (default): No normalization.
+		* "maximum", "max": divide every value by the maximum value in the set
+		* "mean": divide every value by the average value in the set
+		* "minimum", "min": divide every value by the minimum value in the set
+		* "absolute maximum", "absmax": divide every value by the maximum absolute value in the set
+		* "absolute minimum", "absmin": divide every value by the minimum absolute value in the set
+		* "size": divide every value by the number of pixels that have been summed in the projection (ROI size)
 
 	:param offset: Offset the data by this value. Will be applied AFTER normalization. Unit must be consistent,
-	accordingly, to normalized data.
+		accordingly, to normalized data.
 
 	:param kwargs: Keyword arguments for the plot() normalization of the plot object.
 
@@ -100,13 +100,13 @@ def project_2d(data, plot_dest, axis_vert=0, axis_hori=1, data_id=0, normalizati
 	:param data_id: An identifier of the dataarray to take data from.
 
 	:param normalization: Method for a normalization to apply to the data before plotting. Valid options:
-	* None, "None" (default): No normalization.
-	* "maximum", "max": divide every value by the maximum value in the set
-	* "mean": divide every value by the average value in the set
-	* "minimum", "min": divide every value by the minimum value in the set
-	* "absolute maximum", "absmax": divide every value by the maximum absolute value in the set
-	* "absolute minimum", "absmin": divide every value by the minimum absolute value in the set
-	* "size": divide every value by the number of pixels that have been summed in the projection (ROI size)
+		* None, "None" (default): No normalization.
+		* "maximum", "max": divide every value by the maximum value in the set
+		* "mean": divide every value by the average value in the set
+		* "minimum", "min": divide every value by the minimum value in the set
+		* "absolute maximum", "absmax": divide every value by the maximum absolute value in the set
+		* "absolute minimum", "absmin": divide every value by the minimum absolute value in the set
+		* "size": divide every value by the number of pixels that have been summed in the projection (ROI size)
 
 	:param kwargs: Keyword arguments for the plot() normalization of the plot object.
 
@@ -177,7 +177,7 @@ def mark_roi_1d(roi, plot_dest, axis_id=0, **kwargs):
 	:param axis_id: An identifier of the axis along which the plot is.
 
 	:param kwargs: Keyword arguments for redirection to matplotlib.axes.axvspan(). Specifies the style to be drawn.
-	Default will be a grey (black colored transparent alpha=0.2) area.
+		Default will be a grey (black colored transparent alpha=0.2) area.
 
 	:return:
 	"""

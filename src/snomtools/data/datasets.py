@@ -33,7 +33,7 @@ class Data_Handler_H5(u.Quantity):
 		:param shape: If no data is given, data of given shape are initialized with zeroes.
 
 		:param h5target: h5py Group/File. If None or True, temporary file mode is enabled, Data is kept on temp
-		files, which are cleaned up in __del__.
+			files, which are cleaned up in __del__.
 
 		:param chunks: (See h5py docs. Chunks are good in most big data cases!)
 
@@ -228,9 +228,9 @@ class Data_Handler_H5(u.Quantity):
 		:param key: Index or slice (numpy style as usual) of data to address.
 
 		:param value: Data to write in addressed elements. Input units will be converted
-		to Data_Handler units (error if not possible). Numeric data (non-Quantities) are assumed as dimensionless (
-		pint-style).
-		Warning: Value must fit into RAM. Setting bigger-than-RAM slices at a time is not supported (yet).
+			to Data_Handler units (error if not possible). Numeric data (non-Quantities) are assumed as dimensionless (
+			pint-style).
+			Warning: Value must fit into RAM. Setting bigger-than-RAM slices at a time is not supported (yet).
 
 		:return:
 		"""
@@ -336,29 +336,29 @@ class Data_Handler_H5(u.Quantity):
 		See: http://docs.scipy.org/doc/numpy-1.10.1/reference/generated/numpy.sum.html
 
 		:param axis: None or int or tuple of ints, optional
-		Axis or axes along which a sum is performed. The default (axis = None) is perform a sum over all the dimensions
-		of the input array. axis may be negative, in which case it counts from the last to the first axis.
-		New in version 1.7.0.:
-		If this is a tuple of ints, a sum is performed on multiple axes, instead of a single axis or all the axes as
-		before.
+			Axis or axes along which a sum is performed. The default (axis = None) is perform a sum over all the dimensions
+			of the input array. axis may be negative, in which case it counts from the last to the first axis.
+			New in version 1.7.0.:
+			If this is a tuple of ints, a sum is performed on multiple axes, instead of a single axis or all the axes as
+			before.
 
 		:param dtype: dtype, optional
-		The type of the returned array and of the accumulator in which the elements are summed. By default, the dtype
-		of a is used. An exception is when a has an integer type with less precision than the default platform integer.
-		In that case, the default platform integer is used instead.
+			The type of the returned array and of the accumulator in which the elements are summed. By default, the dtype
+			of a is used. An exception is when a has an integer type with less precision than the default platform integer.
+			In that case, the default platform integer is used instead.
 
 		:param out: ndarray, optional
-		Array into which the output is placed. By default, a new array is created. If out is given, it must be of the
-		appropriate shape (the shape of a with axis removed, i.e., numpy.delete(a.shape, axis)). Its type is preserved.
-		See doc.ufuncs (Section Output arguments) for more details.
+			Array into which the output is placed. By default, a new array is created. If out is given, it must be of the
+			appropriate shape (the shape of a with axis removed, i.e., numpy.delete(a.shape, axis)). Its type is preserved.
+			See doc.ufuncs (Section Output arguments) for more details.
 
 		:param keepdims: bool, optional
-		If this is set to True, the axes which are reduced are left in the result as dimensions with size one. With this
-		option, the result will broadcast correctly against the original arr.
+			If this is set to True, the axes which are reduced are left in the result as dimensions with size one. With this
+			option, the result will broadcast correctly against the original arr.
 
 		:return: ndarray Quantity
-		An array with the same shape as a, with the specified axis removed. If a is a 0-d array, or if axis is None, a
-		scalar is returned. If an output array is specified, a reference to out is returned.
+			An array with the same shape as a, with the specified axis removed. If a is a 0-d array, or if axis is None, a
+			scalar is returned. If an output array is specified, a reference to out is returned.
 		"""
 		# TODO: Handle datatypes.
 		inshape = self.shape
@@ -458,7 +458,7 @@ class Data_Handler_H5(u.Quantity):
 		:param axis: int, optional: The axis in the result array along which the input arrays are stacked.
 
 		:param unit: optional: A valid unit string to convert the stack to. Default is the unit of the first element
-		of the sequence.
+			of the sequence.
 
 		:param h5target: optional: A h5target to work on. See __new__
 
@@ -602,7 +602,7 @@ class Data_Handler_np(u.Quantity):
 		:param axis: int, optional: The axis in the result array along which the input arrays are stacked.
 
 		:param unit: optional: A valid unit string to convert the stack to. Default is the unit of the first element
-		of the sequence.
+			of the sequence.
 
 		:return: stacked Data_Handler
 		"""
@@ -623,11 +623,11 @@ class DataArray(object):
 		parameter doc and the comments in the code.
 
 		:param data: required. If this is already a DataArray instance, it is just copied by default, so if the
-		other parameters are set, the contents of the instance are overwritten.
+			other parameters are set, the contents of the instance are overwritten.
 
 		:param unit: Request a unit for the data to be in. If the data holds a unit (quantity), it must be the same
-		dimensionality. If it doesn't (array-like), it is assumed to be in the given unit! Default is None for
-		unchanged in the first case and dimensionless in the second.
+			dimensionality. If it doesn't (array-like), it is assumed to be in the given unit! Default is None for
+			unchanged in the first case and dimensionless in the second.
 
 		:param label: A short identifier label that should be meaningful to get the physical context of the data.
 
@@ -837,7 +837,7 @@ class DataArray(object):
 		:param h5dest: The destination. This is a HDF5 file or subgroup.
 
 		:param subgrp_name: Optional. The name for the subgroup that is created to store the data in, Default is the
-		label of the DataArray.
+			label of the DataArray.
 
 		:return The subgroup that was created and holds the data.
 		"""
@@ -853,7 +853,7 @@ class DataArray(object):
 		format. It will overwrite any dataset in the given group that is named with any of the unified names.
 
 		:param h5dest: The destination. This is a HDF5 file or subgroup. Can be None if the DataSet has a h5target (
-		works on a h5 group in file mode), in that case, self.h5target will be taken.
+			works on a h5 group in file mode), in that case, self.h5target will be taken.
 
 		:return The h5 group (or file) that holds the written data.
 		"""
@@ -934,29 +934,29 @@ class DataArray(object):
 		See: http://docs.scipy.org/doc/numpy-1.10.1/reference/generated/numpy.sum.html
 
 		:param axis: None or int or tuple of ints, optional
-		Axis or axes along which a sum is performed. The default (axis = None) is perform a sum over all the dimensions
-		of the input array. axis may be negative, in which case it counts from the last to the first axis.
-		New in version 1.7.0.:
-		If this is a tuple of ints, a sum is performed on multiple axes, instead of a single axis or all the axes as
-		before.
+			Axis or axes along which a sum is performed. The default (axis = None) is perform a sum over all the dimensions
+			of the input array. axis may be negative, in which case it counts from the last to the first axis.
+			New in version 1.7.0.:
+			If this is a tuple of ints, a sum is performed on multiple axes, instead of a single axis or all the axes as
+			before.
 
 		:param dtype: dtype, optional
-		The type of the returned array and of the accumulator in which the elements are summed. By default, the dtype
-		of a is used. An exception is when a has an integer type with less precision than the default platform integer.
-		In that case, the default platform integer is used instead.
+			The type of the returned array and of the accumulator in which the elements are summed. By default, the dtype
+			of a is used. An exception is when a has an integer type with less precision than the default platform integer.
+			In that case, the default platform integer is used instead.
 
 		:param out: ndarray, optional
-		Array into which the output is placed. By default, a new array is created. If out is given, it must be of the
-		appropriate shape (the shape of a with axis removed, i.e., numpy.delete(a.shape, axis)). Its type is preserved.
-		See doc.ufuncs (Section Output arguments) for more details.
+			Array into which the output is placed. By default, a new array is created. If out is given, it must be of the
+			appropriate shape (the shape of a with axis removed, i.e., numpy.delete(a.shape, axis)). Its type is preserved.
+			See doc.ufuncs (Section Output arguments) for more details.
 
 		:param keepdims: bool, optional
-		If this is set to True, the axes which are reduced are left in the result as dimensions with size one. With this
-		option, the result will broadcast correctly against the original arr.
+			If this is set to True, the axes which are reduced are left in the result as dimensions with size one. With this
+			option, the result will broadcast correctly against the original arr.
 
 		:return: ndarray Quantity
-		An array with the same shape as a, with the specified axis removed. If a is a 0-d array, or if axis is None, a
-		scalar is returned. If an output array is specified, a reference to out is returned.
+			An array with the same shape as a, with the specified axis removed. If a is a 0-d array, or if axis is None, a
+			scalar is returned. If an output array is specified, a reference to out is returned.
 		"""
 		return self.data.sum(axis=axis, dtype=dtype, out=out, keepdims=keepdims)
 
@@ -1114,13 +1114,13 @@ class DataArray(object):
 		:param axis: int, optional: The axis in the result array along which the input arrays are stacked.
 
 		:param unit: string, optional: The unit for the stacked DataArray. All data must be convertible to that unit. If
-		not given, the unit of the first DataArray in the input stack is used.
+			not given, the unit of the first DataArray in the input stack is used.
 
 		:param label: string, optional: The label for the new DataSet. If not given, the label of the first DataArray in
-		the input stack is used.
+			the input stack is used.
 
 		:param plotlabel: string, optional: The plotlabel for the new DataArray. If not given, the label of the first
-		DataArray in the input stack is used.
+			DataArray in the input stack is used.
 
 		:return: The stacked DataArray.
 		"""
@@ -1268,9 +1268,9 @@ class ROI(object):
 		:param dataset: The DataSet instance to work on. A ROI only makes sense on a specific dataset...
 
 		:param limitlist: A list or dict containing the limits for each axis. If a dict is given, the keys must be
-		valid identifiers of an axis of the DataSet (see DataSet.get_axis()). If a list is given, each entry must
-		contain the limit set for one axis in the same order as in the axes list of the DataSet, Limit sets must
-		2-tuples as described above.
+			valid identifiers of an axis of the DataSet (see DataSet.get_axis()). If a list is given, each entry must
+			contain the limit set for one axis in the same order as in the axes list of the DataSet, Limit sets must
+			2-tuples as described above.
 
 		:param by_index: Bool flag to interpret limits not as positions, but as array indices.
 
@@ -1331,9 +1331,9 @@ class ROI(object):
 		or None for an unchanged limit.
 
 		:param limitlist: A list or dict containing the limits for each axis. If a dict is given, the keys must be
-		valid identifiers of an axis of the DataSet (see DataSet.get_axis()). If a list is given, each entry must
-		contain the limit set for one axis in the same order as in the axes list of the DataSet, Limit sets must
-		2-tuples as described above.
+			valid identifiers of an axis of the DataSet (see DataSet.get_axis()). If a list is given, each entry must
+			contain the limit set for one axis in the same order as in the axes list of the DataSet, Limit sets must
+			2-tuples as described above.
 
 		:param by_index: Bool flag to interpret limits not as positions, but as array indices.
 
@@ -1533,8 +1533,8 @@ class ROI(object):
 		https://docs.python.org/2/c-api/slice.html
 
 		:param data_key: A valid identifier of an axis or datafield of the DataSet (see DataSet.get_axis()) If given,
-		return a slice applicable to an axis of the dataset instead of the whole data array. If the identifier
-		corresponds to a datafield, the whole slice as with None will be returned.
+			return a slice applicable to an axis of the dataset instead of the whole data array. If the identifier
+			corresponds to a datafield, the whole slice as with None will be returned.
 
 		:return: The create slice object.
 		"""
@@ -1567,11 +1567,11 @@ class ROI(object):
 		see by_index. The limits of the axes are given as lists of length 2 (2-lists).
 
 		:param data_key: A valid identifier of an axis or datafield of the DataSet (see DataSet.get_axis()) If given,
-		return the limits of an axis of the dataset instead of the whole data array. If the identifier
-		corresponds to a datafield, the whole limit list as with None will be returned.
+			return the limits of an axis of the dataset instead of the whole data array. If the identifier
+			corresponds to a datafield, the whole limit list as with None will be returned.
 
 		:param by_index: Boolean flag: If True, return the limit axis indices instead of physical positions on the
-		axis.
+			axis.
 
 		:param raw: Boolean flag: If True, return floats instead of quantities.
 
@@ -1622,11 +1622,11 @@ class ROI(object):
 		:param label_or_index: Identifier of the DataField
 
 		:param method: Method to normalize with: Valid options:
-		* "maximum", "max" (default): divide every value by the maximum value in the set
-		* "mean": divide every value by the average value in the set
-		* "minimum", "min": divide every value by the minimum value in the set
-		* "absolute maximum", "absmax": divide every value by the maximum absolute value in the set
-		* "absolute minimum", "absmin": divide every value by the minimum absolute value in the set
+			* "maximum", "max" (default): divide every value by the maximum value in the set
+			* "mean": divide every value by the average value in the set
+			* "minimum", "min": divide every value by the minimum value in the set
+			* "absolute maximum", "absmax": divide every value by the maximum absolute value in the set
+			* "absolute minimum", "absmin": divide every value by the minimum absolute value in the set
 
 		:return: The normalized DataArray instance.
 		"""
@@ -1805,7 +1805,7 @@ class DataSet(object):
 		saveh5() and loadh5() methods in this class. Uses loadh5 under the hood!
 
 		:param h5source: The (absolute or relative) path of the HDF5 file to read, or an existing h5py Group/File of
-		the base of the Dataset.
+			the base of	the Dataset.
 
 		:return: The initialized DataSet
 		"""
@@ -1824,7 +1824,7 @@ class DataSet(object):
 		 from_h5(h5group, h5group).
 
 		:param h5group: The (absolute or relative) path of the HDF5 file to read, or an existing h5py Group/File of
-		the base of the Dataset.
+			the base of the Dataset.
 
 		:return: The generated instance.
 		"""
@@ -1840,7 +1840,7 @@ class DataSet(object):
 		:param path: The (absolute or relative) path of the text file to read.
 
 		:param kwargs: Keyword arguments for load_textfile and the underlying numpy.loadtxt(). See there
-		documentation for specifics,
+			documentation for specifics,
 
 		:return: The initialized DataSet
 		"""
@@ -1948,11 +1948,11 @@ class DataSet(object):
 		:param label_or_index: Identifier of the DataField
 
 		:param method: Method to normalize with: Valid options:
-		* "maximum", "max" (default): divide every value by the maximum value in the set
-		* "mean": divide every value by the average value in the set
-		* "minimum", "min": divide every value by the minimum value in the set
-		* "absolute maximum", "absmax": divide every value by the maximum absolute value in the set
-		* "absolute minimum", "absmin": divide every value by the minimum absolute value in the set
+			* "maximum", "max" (default): divide every value by the maximum value in the set
+			* "mean": divide every value by the average value in the set
+			* "minimum", "min": divide every value by the minimum value in the set
+			* "absolute maximum", "absmax": divide every value by the maximum absolute value in the set
+			* "absolute minimum", "absmin": divide every value by the minimum absolute value in the set
 
 		:return: The normalized DataArray instance.
 		"""
@@ -1991,7 +1991,7 @@ class DataSet(object):
 		same coordinates in the dataset as the old one: Obviously, the shape must therefore be the same.
 
 		:param datafield_id: Identifier of the Axis to replace. Must be a valid identifier as in get_datafield_index
-		and get_datafield.
+			and get_datafield.
 
 		:param new_datafield: Axis: An Axis instance that shall be put in place of the old one.
 
@@ -2282,19 +2282,19 @@ class DataSet(object):
 		:param path: The (relative or absolute) path of the text file to read.
 
 		:param axis: Integer that specifies the column of the axis in the data file OR a whole axis instance of the
-		correct shape OR None for unchanged axes of the DataSet. Default is 0 for the first column of the text file.
+			correct shape OR None for unchanged axes of the DataSet. Default is 0 for the first column of the text file.
 
 		:param comments: the character used to indicate the start of a comment line
 
 		:param delimiter: character used to separate values. By default, this is any whitespace.
 
 		:param unitsplitter: Regular expression to split comment columns in labels and units. Default is "[-\/ ]+",
-		which matches combinations of the chars '-'. '/' and ' '.
+			which matches combinations of the chars '-'. '/' and ' '.
 
 		:param labelline: Index (starting with 0) of the comment line in which the labels are stored. (Default 0)
 
 		:param unitsline: Index (starting with 0) of the comment line in which the units are stored. (Default 0) If
-		this is different from labelline, it is assumed that ONLY the unit is in that line.
+			this is different from labelline, it is assumed that ONLY the unit is in that line.
 
 		:param kwargs: Keyword arguments as used for the numpy.loadtxt() method
 
@@ -2383,15 +2383,15 @@ class DataSet(object):
 		:param datastack: sequence of DataSets: The Data to be stacked.
 
 		:param new_axis: Axis or castable as Axis: The new axis to be inserted for the dimension along which the data is
-		stacked.
+			stacked.
 
 		:param axis: int, optional: The axis in the result array along which the input arrays are stacked.
 
 		:param label: string, optional: The label for the new DataSet. If not given, the label of the first DataArray in
-		the input stack is used.
+			the input stack is used.
 
 		:param plotconf: The plot configuration to be used for the new DataSet. If not given, the configuration of the
-		first DataSet in the input stack is used.
+			first DataSet in the input stack is used.
 
 		:return: The stacked DataSet.
 		"""

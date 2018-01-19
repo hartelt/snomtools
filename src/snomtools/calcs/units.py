@@ -1,4 +1,5 @@
 __author__ = 'hartelt'
+
 """
 This file provides the central unit registry that should be used in all scripts that use snomtools.
 This avoids errors between quantities of different unit registries that occur when using multiple imports.
@@ -117,16 +118,16 @@ def is_quantity(tocheck):
 def to_ureg(input_, unit=None, convert_quantities=True):
 	"""
 	This method is an import function to import alien quantities (of different unit registries) or numeric formats into
-	the ureg.
+		the ureg.
 
 	:param input_: The input quantity or numeric format (e.g. float, int, numpy array) or string (e.g. "5 nm")
 
 	:param unit: Given as a valid unit string. If a numeric format is used, this specifies the unit of it. If a quantity
-	is used, the output quantity will be converted to it.
+		is used, the output quantity will be converted to it.
 
 	:param convert_quantities: Boolean: Specifies what should be done if input_ is a quantity.
-	True: convert the quantity to the unit if specified by unit parameter. (The default)
-	False: only assure the dimension is correct and import to ureg, but leave unit of input as is is.
+		True: convert the quantity to the unit if specified by unit parameter. (The default)
+		False: only assure the dimension is correct and import to ureg, but leave unit of input_ as is is.
 
 	:return: The imported quantity.
 	"""
@@ -173,8 +174,6 @@ def units(stream):
 def meshgrid(*args):
 	"""
 	Does the same as numpy.meshgrid, but preserves units.
-
-	:param *xi:
 
 	:return:
 	"""

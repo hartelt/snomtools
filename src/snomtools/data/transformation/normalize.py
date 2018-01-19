@@ -21,18 +21,18 @@ def normalize_by_reference(data, refdata, data_id=0, refdata_id=0, exclude_axes=
 	:param refdata: The DataSet instance of the reference data.
 
 	:param data_id: A valid identifier of the DataArray in the DataSet instance to apply normalization to. Per
-	default, the first DataArray is taken.
+		default, the first DataArray is taken.
 
 	:param flat_id: A valid identifier of the DataArray in the reference DataSet instance to take as reference. Per
-	default, the first DataArray is taken.
+		default, the first DataArray is taken.
 
 	:param exclude_axes: A list of valid axes identifiers of the reference data to exclude during normalization. The
-	reference data is then projected onto the axes which are not included in this list, so the included axes
-	axes are kept at constant relative values.
+		reference data is then projected onto the axes which are not included in this list, so the included axes
+		axes are kept at constant relative values.
 
 	:param mode: The mode how the calculation between the data and reference should be done, Valid options:
-	"division", "divide", "div": Divide every pixel of the data by the corresponding pixel of the reference.
-	"subtraction", "subtract", "sub": Subtract every pixel of the data by the corresponding pixel of the reference.
+		"division", "divide", "div": Divide every pixel of the data by the corresponding pixel of the reference.
+		"subtraction", "subtract", "sub": Subtract every pixel of the data by the corresponding pixel of the reference.
 
 	:param newlabel: The label to set for the created DataArray.
 
