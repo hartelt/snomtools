@@ -27,6 +27,7 @@ def griddata(dataset, xi, method='linear', fill_value=numpy.nan, rescale=False):
 	:return:
 	"""
 	assert isinstance(dataset, datasets.DataSet), "ERROR: No DataSet instance given."
+	raise NotImplementedError("Griddata to be implemented soon...")
 
 
 if __name__=='__main__':  # Just for testing:
