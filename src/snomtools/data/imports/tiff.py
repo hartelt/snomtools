@@ -17,9 +17,9 @@ def is_tif(filename):
 	"""
 	Checks if a filename is a tifffile.
 
-	:param filename: string: The filename.
+	:param str filename: The filename.
 
-	:return: Boolean.
+	:rtype: bool
 	"""
 	return os.path.splitext(filename)[1] in [".tiff", ".tif"]
 
@@ -28,11 +28,12 @@ def search_tag(tif, tag_id):
 	"""
 	Searches for a tag in all pages of a tiff file and returns the first match as
 
-	:param tif: An open TiffFile. See tifffile.TiffFile.
+	:param TiffFile tif: An open TiffFile. See tifffile.TiffFile.
 
-	:param tag_id: String: The ID of the tag to search for.
+	:param str tag_id: The ID of the tag to search for.
 
-	:return: The tag, object, instance of tifffile.TiffTag.
+	:return: The tag object.
+	:rtype: tifffile.TiffTag
 	"""
 	for page in tif:
 		for tag in page.tags.values():
@@ -277,168 +278,153 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 	return snomtools.data.datasets.stack_DataSets(datastack, poweraxis, axis=-1, label="Powerlaw " + folderpath)
 
 
-def tr_folder_peem_camera_terra(folderpath, pattern="D", delayunit="um", delayfactor=1, delayunitlabel=None,
-								h5target=True, verbose=False):
+def tr_folder_peem_camera_terra(folderpath, delayunit="um", delayfactor=0.2, delayunitlabel=None,
+								h5target=True, verbose=False, **kwargs):
 	"""
+	Imports a Terra time scan folder that was measured by scanning the time steps in an interferometer while using
+	the Camera.
 
-	:param folderpath:
+	:param str folderpath: The path of the folder containing the scan data. Example: "/path/to/measurement/1. Durchlauf"
 
-	:param pattern:
+	:param str delayunit: A valid unit string, according to the physical dimension that was scanned over. Typically,
+		this is:
+		 	* :code:`"um" Micrometers for the normal Interferometer.
+		 	* :code:`"as"` Attoseconds for the phase resolved interferometer.
 
-	:param delayunit:
+	:param float delayfactor: A factor that the numbers in the filenames need to be multiplied with to get the
+		real value of the scan point in units of delayunit. Typically for a time resolved measurement, this is
+		:code:`0.2` due to a decimal in the Terra file names, plus pulse delays are twice the stage position difference.
 
-	:param delayfactor: A factor that the numbers in the filenames need to be multiplied with to get the real pulse
-		delay. This would be for example:
-		0.2 (because of stage position) with delayunit "um" for normal Interferometer because one decimal is in filenames.
-		0.2 (because of stage position and strange factor 10 in filenames) with delayunit "as" for PR interferometer
-
-	:param delayunitlabel:
-
-	:return:
-	"""
-	if delayunitlabel is None:
-		delayunitlabel = delayunit
-	pat = re.compile(pattern + "(-?\d*).tif")
-
-	# Translate input path to absolute path:
-	folderpath = os.path.abspath(folderpath)
-
-	# Inspect the given folder for time step files:
-	timefiles = {}
-	for filename in filter(is_tif, os.listdir(folderpath)):
-		found = re.search(pat, filename)
-		if found:
-			timestep = float(found.group(1))
-			timefiles[timestep] = filename
-
-	# Generate delay axis:
-	axlist = []
-	for timestep in iter(sorted(timefiles.iterkeys())):
-		axlist.append(timestep)
-	delays = u.to_ureg(numpy.array(axlist) * delayfactor, delayunit)
-	pl = 'Pulse Delay / ' + delayunitlabel  # Plot label for power axis.
-	delayaxis = snomtools.data.datasets.Axis(delays, label='delay', plotlabel=pl)
-
-	# Test data size:
-	sample_data = peem_camera_read_terra(os.path.join(folderpath, timefiles[timefiles.keys()[0]]))
-	axlist = [delayaxis] + sample_data.axes
-	newshape = delayaxis.shape + sample_data.shape
-
-	# Optimize chunks for writing a tiff at a time:
-	# chunks = (10, newshape[2] / 16, newshape[2] / 16)
-	chunks = True
-	compression = 'gzip'
-	compression_opts = 4
-
-	# Probe HDF5 initialization to optimize buffer size:
-	if chunks is True:  # Default is auto chunk alignment, so we need to probe.
-		h5probe = snomtools.data.datasets.Data_Handler_H5(unit=sample_data.get_datafield(0).get_unit(),
-														  shape=newshape, chunks=chunks,
-														  compression=compression, compression_opts=compression_opts)
-		chunk_size = h5probe.chunks
-	else:
-		chunk_size = chunks
-	min_cache_size = chunk_size[0] * newshape[1] * newshape[2] * 4  # 32bit floats require 4 bytes.
-	use_cache_size = min_cache_size + 64 * 1024 ** 2  # Add 64 MB just to be sure.
-
-	# Initialize full dataset with zeroes:
-	dataspace = snomtools.data.datasets.Data_Handler_H5(unit=sample_data.get_datafield(0).get_unit(),
-														shape=newshape, chunks=chunks,
-														compression=compression, compression_opts=compression_opts,
-														chunk_cache_mem_size=use_cache_size)
-	dataarray = snomtools.data.datasets.DataArray(dataspace,
-												  label=sample_data.get_datafield(0).get_label(),
-												  plotlabel=sample_data.get_datafield(0).get_plotlabel(),
-												  h5target=dataspace.h5target,
-												  chunks=chunks,
-												  compression=compression, compression_opts=compression_opts,
-												  chunk_cache_mem_size=use_cache_size)
-	dataset = snomtools.data.datasets.DataSet("TR " + folderpath, [dataarray], axlist, h5target=h5target)
-	dataarray = dataset.get_datafield(0)
-
-	# Fill in data from imported tiffs:
-	slicebase = tuple([numpy.s_[:] for j in range(len(sample_data.shape))])
-
-	if verbose:
-		import time
-		print "Reading TR-Folder of shape: ", dataset.shape
-		print "... generating chunks of shape: ", dataset.get_datafield(0).data.chunks
-		print "... using cache size {0:d} MB".format(use_cache_size)
-		start_time = time.time()
-
-	for i, timestep in zip(range(len(timefiles)), iter(sorted(timefiles.iterkeys()))):
-		islice = (i,) + slicebase
-		# Import tiff:
-		idata = peem_camera_read_terra(os.path.join(folderpath, timefiles[timestep]))
-		# Check data consistency:
-		assert idata.shape == sample_data.shape, "Trying to combine time data with different shape."
-		for ax1, ax2 in zip(idata.axes, sample_data.axes):
-			assert ax1.units == ax2.units
-		assert idata.get_datafield(0).units == sample_data.get_datafield(0).units
-		# Write data:
-		dataarray[islice] = idata.get_datafield(0).data
-		if verbose:
-			tpf = ((time.time() - start_time) / float(i + 1))
-			etr = tpf * (dataset.shape[0] - i + 1)
-			print "tiff {0:d} / {1:d}, Time/File {3:.2f}s ETR: {2:.1f}s".format(i, dataset.shape[0], etr, tpf)
-
-	return dataset
-
-
-def tr_folder_peem_dld_terra(folderpath, pattern="D", delayunit="um", delayfactor=1, delayunitlabel=None,
-							 h5target=True, verbose=False):
-	"""
-		>>> data = tr_folder_peem_dld_terra(folder, delayunit="as", delayfactor=0.2, \
-											delayunitlabel="\\si{\\atto\\second}", h5target=h5)
-		>>> data.get_axis('delay').get_unit()
-		'attosecond'
-
-	:param folderpath:
-
-	:param pattern:
-
-	:param delayunit:
-
-	:param delayfactor: A factor that the numbers in the filenames need to be multiplied with to get the real pulse
-		delay. This would be for example:
-		0.2 (because of stage position) with delayunit "um" for normal Interferometer because one decimal is in filenames.
-		0.2 (because of stage position and strange factor 10 in filenames) with delayunit "as" for PR interferometer
-
-	:param delayunitlabel:
+	:param str delayunitlabel: A label for the delay axis. For example :code:`"\si{\atto\second}"` if it's a PSI
+		measurement and plotting will be done with TeX typesetting.
 
 	:param h5target: The HDF5 target to write to.
+	:type h5target: str **or** h5py.Group **or** True, *optional*
 
-	:param verbose: Print progress.
+	:param bool verbose: Flag to print progress to stdout.
 
 	:return: Imported DataSet.
+	:rtype: DataSet
 	"""
+	if len(kwargs):
+		print("WARNING: Unrecognized (propably depreciated) keyword args used in tr_folder_peem_dld_terra!")
+
 	if delayunitlabel is None:
 		delayunitlabel = delayunit
+	pl = 'Pulse Delay / ' + delayunitlabel  # Plot label for time axis
+	return measurement_folder_peem_terra(folderpath, "camera", "D", delayunit, delayfactor, "delay", pl, h5target,
+										 verbose)
+
+
+def tr_folder_peem_dld_terra(folderpath, delayunit="um", delayfactor=0.2, delayunitlabel=None,
+							 h5target=True, verbose=False, **kwargs):
+	"""
+	Imports a Terra time scan folder that was measured by scanning the time steps in an interferometer while using
+	the Delaylinedetector (DLD).
+
+	:param str folderpath: The path of the folder containing the scan data. Example: "/path/to/measurement/1. Durchlauf"
+
+	:param str delayunit: A valid unit string, according to the physical dimension that was scanned over. Typically,
+		this is:
+		 	* :code:`"um" Micrometers for the normal Interferometer.
+		 	* :code:`"as"` Attoseconds for the phase resolved interferometer.
+
+	:param float delayfactor: A factor that the numbers in the filenames need to be multiplied with to get the
+		real value of the scan point in units of delayunit. Typically for a time resolved measurement, this is
+		:code:`0.2` due to a decimal in the Terra file names, plus pulse delays are twice the stage position difference.
+
+	:param str delayunitlabel: A label for the delay axis. For example :code:`"\si{\atto\second}"` if it's a PSI
+		measurement and plotting will be done with TeX typesetting.
+
+	:param h5target: The HDF5 target to write to.
+	:type h5target: str **or** h5py.Group **or** True, *optional*
+
+	:param bool verbose: Flag to print progress to stdout.
+
+	:return: Imported DataSet.
+	:rtype: DataSet
+	"""
+	if len(kwargs):
+		print("WARNING: Unrecognized (propably depreciated) keyword args used in tr_folder_peem_dld_terra!")
+
+	if delayunitlabel is None:
+		delayunitlabel = delayunit
+	pl = 'Pulse Delay / ' + delayunitlabel  # Plot label for time axis
+	return measurement_folder_peem_terra(folderpath, "dld", "D", delayunit, delayfactor, "delay", pl, h5target, verbose)
+
+
+def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanunit="um", scanfactor=1,
+								  scanaxislabel="scanaxis", scanaxispl=None, h5target=True, verbose=False):
+	"""
+	The base method for importing terra scan folders. Covers all scan possibilities, so far only in 1D scans.
+
+	:param str folderpath: The path of the folder containing the scan data. Example: "/path/to/measurement/1. Durchlauf"
+
+	:param str detector: Read mode corresponding to the used detector.
+		Valid inputs:
+			* :code:`"dld"`
+			* :code:`"camera"`
+
+	:param str pattern: The pattern in the filenames that indicates the scan enumeration and is followed by the number
+		indicating the position, according to the device used for the scan. Terra uses:
+			* :code:`"D"` for a delay stage
+			* :code:`"R"` for the rotation mount
+			* :code:`"N"` for a dummy device.
+
+	:param str scanunit: A valid unit string, according to the physical dimension that was scanned over.
+
+	:param float scanfactor: A factor that the numbers in the filenames need to be multiplied with to get the
+		real value of the scan point in units of scanunit.
+		This would be for example:
+			* :code:`0.2` (because of stage position) with delayunit :code:`"um"` for normal Interferometer because \
+			one decimal is in filenames.
+			* :code:`0.2` (because of stage position and strange factor 10 in filenames) with delayunit :code:`"as"` \
+			for PR interferometer
+
+	:param str scanaxislabel: A label for the axis of the scan.
+
+	:param str scanaxispl: A plot label for the axis of the scan.
+
+	:param h5target: The HDF5 target to write to.
+	:type h5target: str **or** h5py.Group **or** True, *optional*
+
+	:param bool verbose: Flag to print progress to stdout.
+
+	:return: Imported DataSet.
+	:rtype: DataSet
+	"""
+	assert detector in ["dld", "camera"], "Invalid detector mode."
+	if scanaxispl is None:
+		scanaxispl = 'Scan / ' + scanunit
+
+	# Compile regex for file detection:
 	pat = re.compile(pattern + "(-?\d*).tif")
 
 	# Translate input path to absolute path:
 	folderpath = os.path.abspath(folderpath)
 
 	# Inspect the given folder for time step files:
-	timefiles = {}
+	scanfiles = {}
 	for filename in filter(is_tif, os.listdir(folderpath)):
 		found = re.search(pat, filename)
 		if found:
-			timestep = float(found.group(1))
-			timefiles[timestep] = filename
+			scanstep = float(found.group(1))
+			scanfiles[scanstep] = filename
 
 	# Generate delay axis:
 	axlist = []
-	for timestep in iter(sorted(timefiles.iterkeys())):
-		axlist.append(timestep)
-	delays = u.to_ureg(numpy.array(axlist) * delayfactor, delayunit)
-	pl = 'Pulse Delay / ' + delayunitlabel  # Plot label for power axis.
-	delayaxis = snomtools.data.datasets.Axis(delays, label='delay', plotlabel=pl)
+	for scanstep in iter(sorted(scanfiles.iterkeys())):
+		axlist.append(scanstep)
+	scanvalues = u.to_ureg(numpy.array(axlist) * scanfactor, scanunit)
+	scanaxis = snomtools.data.datasets.Axis(scanvalues, label=scanaxislabel, plotlabel=scanaxispl)
 
 	# Test data size:
-	sample_data = peem_dld_read_terra(os.path.join(folderpath, timefiles[timefiles.keys()[0]]))
-	axlist = [delayaxis] + sample_data.axes
-	newshape = delayaxis.shape + sample_data.shape
+	if detector == "dld":
+		sample_data = peem_dld_read_terra(os.path.join(folderpath, scanfiles[scanfiles.keys()[0]]))
+	else:
+		sample_data = peem_camera_read_terra(os.path.join(folderpath, scanfiles[scanfiles.keys()[0]]))
+	axlist = [scanaxis] + sample_data.axes
+	newshape = scanaxis.shape + sample_data.shape
 
 	chunks = True
 	compression = 'gzip'
@@ -453,10 +439,10 @@ def tr_folder_peem_dld_terra(folderpath, pattern="D", delayunit="um", delayfacto
 		del h5probe
 	else:
 		chunk_size = chunks
-	min_cache_size = chunk_size[0] * newshape[1] * newshape[2] * newshape[3] * 4  # 32bit floats require 4 bytes.
+	min_cache_size = chunk_size[0] * numpy.prod(sample_data.shape) * 4  # 32bit floats require 4 bytes.
 	use_cache_size = min_cache_size + 64 * 1024 ** 2  # Add 64 MB just to be sure.
 
-	# Initialize full dataset with zeroes:
+	# Initialize full DataSet with zeroes:
 	dataspace = snomtools.data.datasets.Data_Handler_H5(unit=sample_data.get_datafield(0).get_unit(),
 														shape=newshape, chunks=chunks,
 														compression=compression, compression_opts=compression_opts,
@@ -468,7 +454,7 @@ def tr_folder_peem_dld_terra(folderpath, pattern="D", delayunit="um", delayfacto
 												  chunks=chunks,
 												  compression=compression, compression_opts=compression_opts,
 												  chunk_cache_mem_size=use_cache_size)
-	dataset = snomtools.data.datasets.DataSet("TR " + folderpath, [dataarray], axlist, h5target=h5target,
+	dataset = snomtools.data.datasets.DataSet("Terra Scan " + folderpath, [dataarray], axlist, h5target=h5target,
 											  chunk_cache_mem_size=use_cache_size)
 	dataarray = dataset.get_datafield(0)
 
@@ -477,20 +463,24 @@ def tr_folder_peem_dld_terra(folderpath, pattern="D", delayunit="um", delayfacto
 
 	if verbose:
 		import time
-		print "Reading TR-ER-Folder of shape: ", dataset.shape
+		print "Reading Terra Scan Folder of shape: ", dataset.shape
 		print "... generating chunks of shape: ", dataset.get_datafield(0).data.ds_data.chunks
 		print "... using cache size {0:d} MB".format(use_cache_size / 1024 ** 2)
 		start_time = time.time()
 
-	for i, timestep in zip(range(len(timefiles)), iter(sorted(timefiles.iterkeys()))):
+	for i, scanstep in zip(range(len(scanfiles)), iter(sorted(scanfiles.iterkeys()))):
 		islice = (i,) + slicebase
 		# Import tiff:
-		idata = peem_dld_read_terra(os.path.join(folderpath, timefiles[timestep]))
+		if detector == "dld":
+			idata = peem_dld_read_terra(os.path.join(folderpath, scanfiles[scanstep]))
+		else:
+			idata = peem_camera_read_terra(os.path.join(folderpath, scanfiles[scanstep]))
 		# Check data consistency:
-		assert idata.shape == sample_data.shape, "Trying to combine time data with different shape."
+		assert idata.shape == sample_data.shape, "Trying to combine scan data with different shape."
 		for ax1, ax2 in zip(idata.axes, sample_data.axes):
-			assert ax1.units == ax2.units
-		assert idata.get_datafield(0).units == sample_data.get_datafield(0).units
+			assert ax1.units == ax2.units, "Trying to combine scan data with different axis dimensionality."
+		assert idata.get_datafield(0).units == sample_data.get_datafield(0).units, \
+			"Trying to combine scan data with different data dimensionality."
 		# Write data:
 		dataarray[islice] = idata.get_datafield(0).data
 		if verbose:
