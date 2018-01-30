@@ -387,6 +387,46 @@ def tr_normal_folder_peem_dld_terra(folderpath, h5target=True, verbose=False):
 	return tr_folder_peem_dld_terra(folderpath, 'um', 0.2, "\\si{\\micro\\meter}", h5target, verbose)
 
 
+def rotationmount_folder_peem_camera_terra(folderpath, h5target=True, verbose=False):
+	"""
+	Convenience shortcut method for rotation mount scans with camera. Calls measurement_folder_peem_terra with
+	correct parameters.
+	See: :func:`measurement_folder_peem_terra`
+	"""
+	pl = 'Rotation Mount Angle / \\si{\\degree}'  # Plot label for time axis
+	return measurement_folder_peem_terra(folderpath, "camera", "R", "deg", 0.1, "angle", pl, h5target, verbose)
+
+
+def rotationmount_folder_peem_dld_terra(folderpath, h5target=True, verbose=False):
+	"""
+	Convenience shortcut method for rotation mount scans with DLD. Calls measurement_folder_peem_terra with
+	correct parameters.
+	See: :func:`measurement_folder_peem_terra`
+	"""
+	pl = 'Rotation Mount Angle / \\si{\\degree}'  # Plot label for time axis
+	return measurement_folder_peem_terra(folderpath, "dld", "R", "deg", 0.1, "angle", pl, h5target, verbose)
+
+
+def dummy_folder_peem_camera_terra(folderpath, h5target=True, verbose=False):
+	"""
+	Convenience shortcut method for dummy device scans with camera. Calls measurement_folder_peem_terra with
+	correct parameters.
+	See: :func:`measurement_folder_peem_terra`
+	"""
+	pl = 'Dummy Index'  # Plot label for time axis
+	return measurement_folder_peem_terra(folderpath, "camera", "N", "", 1, "dummyaxis", pl, h5target, verbose)
+
+
+def dummy_folder_peem_dld_terra(folderpath, h5target=True, verbose=False):
+	"""
+	Convenience shortcut method for dummy device scans with dld. Calls measurement_folder_peem_terra with
+	correct parameters.
+	See: :func:`measurement_folder_peem_terra`
+	"""
+	pl = 'Dummy Index'  # Plot label for time axis
+	return measurement_folder_peem_terra(folderpath, "dld", "N", "", 1, "dummyaxis", pl, h5target, verbose)
+
+
 def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanunit="um", scanfactor=1,
 								  scanaxislabel="scanaxis", scanaxispl=None, h5target=True, verbose=False):
 	"""
