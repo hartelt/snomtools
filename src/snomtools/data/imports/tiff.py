@@ -295,7 +295,7 @@ def tr_folder_peem_camera_terra(folderpath, delayunit="um", delayfactor=0.2, del
 		real value of the scan point in units of delayunit. Typically for a time resolved measurement, this is
 		:code:`0.2` due to a decimal in the Terra file names, plus pulse delays are twice the stage position difference.
 
-	:param str delayunitlabel: A label for the delay axis. For example :code:`"\si{\atto\second}"` if it's a PSI
+	:param str delayunitlabel: A label for the delay axis. For example :code:`"\\si{\\atto\\second}"` if it's a PSI
 		measurement and plotting will be done with TeX typesetting.
 
 	:param h5target: The HDF5 target to write to.
@@ -316,6 +316,23 @@ def tr_folder_peem_camera_terra(folderpath, delayunit="um", delayfactor=0.2, del
 										 verbose)
 
 
+def tr_psi_folder_peem_camera_terra(folderpath, h5target=True, verbose=False):
+	"""
+	Convenience shortcut method for PSI scans with Camera. Calls tr_folder_peem_camera_terra with correct parameters.
+	See: :func:`tr_folder_peem_camera_terra`
+	"""
+	return tr_folder_peem_camera_terra(folderpath, 'as', 0.2, "\\si{\\atto\\second}", h5target, verbose)
+
+
+def tr_normal_folder_peem_camera_terra(folderpath, h5target=True, verbose=False):
+	"""
+	Convenience shortcut method for normal interferometer scans with Camera. Calls tr_folder_peem_camera_terra with
+	correct parameters.
+	See: :func:`tr_folder_peem_camera_terra`
+	"""
+	return tr_folder_peem_camera_terra(folderpath, 'um', 0.2, "\\si{\\micro\\meter}", h5target, verbose)
+
+
 def tr_folder_peem_dld_terra(folderpath, delayunit="um", delayfactor=0.2, delayunitlabel=None,
 							 h5target=True, verbose=False, **kwargs):
 	"""
@@ -333,7 +350,7 @@ def tr_folder_peem_dld_terra(folderpath, delayunit="um", delayfactor=0.2, delayu
 		real value of the scan point in units of delayunit. Typically for a time resolved measurement, this is
 		:code:`0.2` due to a decimal in the Terra file names, plus pulse delays are twice the stage position difference.
 
-	:param str delayunitlabel: A label for the delay axis. For example :code:`"\si{\atto\second}"` if it's a PSI
+	:param str delayunitlabel: A label for the delay axis. For example :code:`"\\si{\\atto\\second}"` if it's a PSI
 		measurement and plotting will be done with TeX typesetting.
 
 	:param h5target: The HDF5 target to write to.
@@ -351,6 +368,23 @@ def tr_folder_peem_dld_terra(folderpath, delayunit="um", delayfactor=0.2, delayu
 		delayunitlabel = delayunit
 	pl = 'Pulse Delay / ' + delayunitlabel  # Plot label for time axis
 	return measurement_folder_peem_terra(folderpath, "dld", "D", delayunit, delayfactor, "delay", pl, h5target, verbose)
+
+
+def tr_psi_folder_peem_dld_terra(folderpath, h5target=True, verbose=False):
+	"""
+	Convenience shortcut method for PSI scans with the DLD. Calls tr_folder_peem_camera_terra with correct parameters.
+	See: :func:`tr_folder_peem_dld_terra`
+	"""
+	return tr_folder_peem_dld_terra(folderpath, 'as', 0.2, "\\si{\\atto\\second}", h5target, verbose)
+
+
+def tr_normal_folder_peem_dld_terra(folderpath, h5target=True, verbose=False):
+	"""
+	Convenience shortcut method for normal interferometer scans with DLD. Calls tr_folder_peem_camera_terra with
+	correct parameters.
+	See: :func:`tr_folder_peem_dld_terra`
+	"""
+	return tr_folder_peem_dld_terra(folderpath, 'um', 0.2, "\\si{\\micro\\meter}", h5target, verbose)
 
 
 def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanunit="um", scanfactor=1,
