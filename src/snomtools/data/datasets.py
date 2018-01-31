@@ -12,6 +12,7 @@ import re
 from termcolor import colored, cprint
 import tempfile
 from six import string_types
+import scipy.ndimage
 
 
 class Data_Handler_H5(u.Quantity):
@@ -32,8 +33,9 @@ class Data_Handler_H5(u.Quantity):
 
 		:param shape: If no data is given, data of given shape are initialized with zeroes.
 
-		:param h5target: h5py Group/File. If None or True, temporary file mode is enabled, Data is kept on temp
+		:param h5target: If None or True, temporary file mode is enabled, Data is kept on temp
 			files, which are cleaned up in __del__.
+		:type h5target: h5py Group/File
 
 		:param chunks: (See h5py docs. Chunks are good in most big data cases!)
 
@@ -230,9 +232,11 @@ class Data_Handler_H5(u.Quantity):
 		:param value: Data to write in addressed elements. Input units will be converted
 			to Data_Handler units (error if not possible). Numeric data (non-Quantities) are assumed as dimensionless (
 			pint-style).
-			Warning: Value must fit into RAM. Setting bigger-than-RAM slices at a time is not supported (yet).
 
-		:return:
+		.. warning::
+			Value must fit into RAM. Setting bigger-than-RAM slices at a time is not supported (yet).
+
+		:return: Nothing.
 		"""
 		# The following line could be replaced with
 		# value = u.to_ureg(value).to(self.units)
@@ -407,6 +411,81 @@ class Data_Handler_H5(u.Quantity):
 	def absmin(self):
 		return abs(self).min()
 
+	def shift(self, shift, output=None, order=0, mode='constant', cval=numpy.nan, prefilter=None, h5target=None):
+		"""
+		Shifts the complete data with scipy.ndimage.interpolation.shift.
+		In difference to that method, it does not need an input, but works on the instance data.
+		Also, the defaults are different.
+
+		.. warning::
+			For shifting, the whole data is loaded into RAM. Sequential shifting might be implemented later.
+
+		See: :func:`scipy.ndimage.interpolation.shift` for full documentation of parameters.
+
+		:param output: The array in which to place the output, or the dtype of the returned array.
+			If :code:`False` is given, the instance data is overwritten.
+		:type output: ndarray *or* dtype *or* :code:`False`, *optional*
+
+		:param h5target: The h5target to in case a new Data_Handler_H5 is generated.
+
+		:returns: The shifted data. If output is given as a parameter or :code:`False`, None is returned.
+		:rtype: Data_Handler_np *or* None
+		"""
+		if prefilter is None:  # if not explicitly set, determine neccesity of prefiltering
+			if order > 0:  # if interpolation is required, spline prefilter is neccesary.
+				prefilter = True
+			else:
+				prefilter = False
+
+		if output == False:
+			self._magnitude = scipy.ndimage.interpolation.shift(self.magnitude, shift, None, order, mode, cval,
+															   prefilter)
+			return None
+		elif isinstance(output, numpy.ndarray):
+			scipy.ndimage.interpolation.shift(self.magnitude, shift, output, order, mode, cval, prefilter)
+			return None
+		else:
+			assert (output is None) or isinstance(output, type), "Invalid output argument given."
+			return Data_Handler_H5(scipy.ndimage.interpolation.shift(self.magnitude, shift, output, order, mode, cval,
+																	 prefilter),
+								   self.units, h5target=h5target)
+
+	def shift_slice(self, slice_, shift, output=None, order=0, mode='constant', cval=numpy.nan, prefilter=None,
+					h5target=None):
+		"""
+		Shifts a certain slice of the data with scipy.ndimage.interpolation.shift.
+		See: :func:`scipy.ndimage.interpolation.shift` for full documentation of parameters.
+
+		:param output: The array in which to place the output, or the dtype of the returned array.
+			If :code:`False` is given, the slice of the instance data is overwritten.
+		:type output: ndarray *or* dtype *or* :code:`False`, *optional*
+
+		:param h5target: The h5target to in case a new Data_Handler_H5 is generated.
+
+		:returns: The shifted data. If output is given as a parameter or :code:`False`, None is returned.
+		:rtype: Data_Handler_np *or* None
+		"""
+		assert isinstance(slice_, slice), "No slice given."
+		if prefilter is None:  # if not explicitly set, determine neccesity of prefiltering
+			if order > 0:  # if interpolation is required, spline prefilter is neccesary.
+				prefilter = True
+			else:
+				prefilter = False
+
+		if output == False:
+			self.ds_data[slice_] = scipy.ndimage.interpolation.shift(self.ds_data[slice_], shift, None, order, mode,
+																	   cval, prefilter)
+			return None
+		elif isinstance(output, numpy.ndarray):
+			scipy.ndimage.interpolation.shift(self.ds_data[slice_], shift, output, order, mode, cval, prefilter)
+			return None
+		else:
+			assert (output is None) or isinstance(output, type), "Invalid output argument given."
+			return Data_Handler_H5(
+				scipy.ndimage.interpolation.shift(self.ds_data[slice_], shift, output, order, mode, cval,
+												  prefilter),
+				self.units, h5target=h5target)
+
 	def __add__(self, other):
 		other = u.to_ureg(other, self.get_unit())
 		return super(Data_Handler_H5, self).__add__(other)
@@ -561,6 +640,73 @@ class Data_Handler_np(u.Quantity):
 
 	def absmin(self):
 		return abs(self).min()
+
+	def shift(self, shift, output=None, order=0, mode='constant', cval=numpy.nan, prefilter=None):
+		"""
+		Shifts the complete data with scipy.ndimage.interpolation.shift.
+		In difference to that method, it does not need an input, but works on the instance data.
+		Also, the defaults are different.
+
+		See: :func:`scipy.ndimage.interpolation.shift` for full documentation of parameters.
+
+		:param output: The array in which to place the output, or the dtype of the returned array.
+			If :code:`False` is given, the instance data is overwritten.
+		:type output: ndarray *or* dtype *or* :code:`False`, *optional*
+
+		:returns: The shifted data. If output is given as a parameter or :code:`False`, None is returned.
+		:rtype: Data_Handler_np *or* None
+		"""
+		if prefilter is None:  # if not explicitly set, determine neccesity of prefiltering
+			if order > 0:  # if interpolation is required, spline prefilter is neccesary.
+				prefilter = True
+			else:
+				prefilter = False
+
+		if output == False:
+			self.magnitude = scipy.ndimage.interpolation.shift(self.magnitude, shift, None, order, mode, cval,
+															   prefilter)
+			return None
+		elif isinstance(output, numpy.ndarray):
+			scipy.ndimage.interpolation.shift(self.magnitude, shift, output, order, mode, cval, prefilter)
+			return None
+		else:
+			assert (output is None) or isinstance(output, type), "Invalid output argument given."
+			return Data_Handler_np(scipy.ndimage.interpolation.shift(self.magnitude, shift, output, order, mode, cval,
+																	 prefilter),
+								   self.units)
+
+	def shift_slice(self, slice_, shift, output=None, order=0, mode='constant', cval=numpy.nan, prefilter=None):
+		"""
+		Shifts a certain slice of the data with scipy.ndimage.interpolation.shift.
+		See: :func:`scipy.ndimage.interpolation.shift` for full documentation of parameters.
+
+		:param output: The array in which to place the output, or the dtype of the returned array.
+			If :code:`False` is given, the slice of the instance data is overwritten.
+		:type output: ndarray *or* dtype *or* :code:`False`, *optional*
+
+		:returns: The shifted data. If output is given as a parameter or :code:`False`, None is returned.
+		:rtype: Data_Handler_np *or* None
+		"""
+		assert isinstance(slice_, slice), "No slice given."
+		if prefilter is None:  # if not explicitly set, determine neccesity of prefiltering
+			if order > 0:  # if interpolation is required, spline prefilter is neccesary.
+				prefilter = True
+			else:
+				prefilter = False
+
+		if output == False:
+			self.magnitude[slice_] = scipy.ndimage.interpolation.shift(self.magnitude[slice_], shift, None, order, mode,
+																	   cval, prefilter)
+			return None
+		elif isinstance(output, numpy.ndarray):
+			scipy.ndimage.interpolation.shift(self.magnitude[slice_], shift, output, order, mode, cval, prefilter)
+			return None
+		else:
+			assert (output is None) or isinstance(output, type), "Invalid output argument given."
+			return Data_Handler_np(
+				scipy.ndimage.interpolation.shift(self.magnitude[slice_], shift, output, order, mode, cval,
+												  prefilter),
+				self.units)
 
 	def __add__(self, other):
 		other = u.to_ureg(other, self.get_unit())
