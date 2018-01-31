@@ -598,11 +598,24 @@ if __name__ == "__main__":
 
 	test_timeresolved = True
 	if test_timeresolved:
-		# trfolder = "02-800nm-FoV50um-exp10s-sq30um_xpol_sp_scan0to120fs/1. Durchlauf"
-		# trdata = tr_folder_peem_camera_terra(trfolder, delayunit="as")
-		# trdata.saveh5(trfolder+'.hdf5')
-		trfolder = "06-800nm-DLD-xpol_sp-scan-10fsto120fs-EK/SUM"
-		trdata = tr_folder_peem_dld_terra(trfolder, delayunit="as")
-		trdata.saveh5(trfolder + '.hdf5')
+		trfolder = "terra-dummy-dld"
+		trdata = dummy_folder_peem_dld_terra(trfolder, h5target=trfolder + '.hdf5', verbose=True)
+		trdata.saveh5()
+
+		trfolder = "terra-rotationmount-dld"
+		trdata = rotationmount_folder_peem_dld_terra(trfolder, h5target=trfolder + '.hdf5', verbose=True)
+		trdata.saveh5()
+
+		trfolder = "terra-tr-psi-camera"
+		trdata = tr_psi_folder_peem_camera_terra(trfolder, h5target=trfolder + '.hdf5', verbose=True)
+		trdata.saveh5()
+
+		trfolder = "terra-tr-psi-dld"
+		trdata = tr_psi_folder_peem_dld_terra(trfolder, h5target=trfolder + '.hdf5', verbose=True)
+		trdata.saveh5()
+
+		trfolder = "terra-tr-normal-dld"
+		trdata = tr_normal_folder_peem_dld_terra(trfolder, h5target=trfolder + '.hdf5', verbose=True)
+		trdata.saveh5()
 
 	print('done.')
