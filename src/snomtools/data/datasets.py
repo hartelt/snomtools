@@ -1880,7 +1880,7 @@ class ROI(object):
 			# Build grid:
 			return u.meshgrid(*list_of_axes)
 
-	def project_nd(self, *args):
+	def project_nd(self, *args, **kwargs):
 		"""
 		Projects the ROI onto the given axes. Uses the DataSet.project_nd() method for every datset and returns a
 		new ROI with the projected DataFields and the chosen axes.
@@ -1889,9 +1889,13 @@ class ROI(object):
 
 		:return: DataSet: Projected DataSet.
 		"""
-		indexlist = [self.get_axis_index(arg) for arg in args]
+		if 'h5target' in kwargs:
+			h5target = kwargs['h5target']
+		else:
+			h5target=None
+		indexlist = sorted([self.get_axis_index(arg) for arg in args])
 		newdataset = DataSet(datafields=[self.dataset.datafields[i].project_nd(*indexlist) for i in indexlist],
-							 axes=[self.dataset.axes[i] for i in indexlist])
+							 axes=[self.dataset.axes[i] for i in indexlist], h5target=h5target)
 		return self.__class__(newdataset,
 							  limitlist=[self.get_limits(by_index=True)[i] for i in indexlist],
 							  by_index=True)
@@ -2325,7 +2329,7 @@ class DataSet(object):
 			h5target = kwargs['h5target']
 		else:
 			h5target=None
-		indexlist = [self.get_axis_index(arg) for arg in args]
+		indexlist = sorted([self.get_axis_index(arg) for arg in args])
 		return self.__class__(
 			datafields=[self.datafields[i].project_nd(*indexlist) for i in range(len(self.datafields))],
 			axes=[self.axes[i] for i in indexlist],
