@@ -2025,6 +2025,7 @@ class DataSet(object):
 		dataset.load_textfile(path, **kwargs)
 		return dataset
 
+	# TODO: Property all the things in __getattr__!
 	def __getattr__(self, item):
 		"""
 		This method provides dynamical naming in instances. It is called any time an attribute of the intstance is
