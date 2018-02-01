@@ -13,6 +13,7 @@ class Drift:
 
 		# Methods: 'cv.TM_CCOEFF', 'cv.TM_CCOEFF_NORMED', 'cv.TM_CCORR', 'cv.TM_CCORR_NORMED', 'cv.TM_SQDIFF', 'cv.TM_SQDIFF_NORMED'
 
+		#read axis
 		if data:
 			if stackAxisID is None:
 				stackAxisID = data.get_axis_index('delay')
@@ -27,25 +28,33 @@ class Drift:
 			else:
 				yAxisID = data.get_axis_index(yAxisID)
 
+			#process data towards 3d array
 			self.data = self.extract_3Ddata(data, stackAxisID, xAxisID, yAxisID)
 
+			#read or guess template
 			if template:
 				self.template = self.extract_templatedata(template,xAxisID,yAxisID)
 			else:
 				self.template = self.guess_templatedata(data,xAxisID,yAxisID)
 
-			#for layers along stackAxisID:
-			self.drift = self.template_matching_stack(self.data,self.template)
+			#for layers along stackAxisID find drift:
+			self.drift = self.template_matching_stack(self.data,self.template,stackAxisID)
 
-		# from template get 2D axis
+		pass
 
 
-		pass  # dataset zu numpyarray für driftkorrektur von 2D arrays in der dim1_axisID dim2_axisID Ebene entlang stack_axisID Achse
+	@classmethod
+	def template_matching_stack(cls, data, template, stackAxisID, method = 'cv.TM_CCOEFF_NORMED' , subpixel = True):
+		driftlist=[]
+		for i in range(data.shape[stackAxisID]):
+			driftlist.append(cls.template_matching((data[i]),template, method,subpixel))
+		return driftlist
+
+
 
 	@staticmethod
 	def template_matching(array, template, method = 'cv.TM_CCOEFF_NORMED' , subpixel='True'):
 		#Methods: 'cv.TM_CCOEFF', 'cv.TM_CCOEFF_NORMED', 'cv.TM_CCORR', 'cv.TM_CCORR_NORMED', 'cv.TM_SQDIFF', 'cv.TM_SQDIFF_NORMED'
-
 
 		method = eval(method)
 
@@ -86,44 +95,31 @@ class Drift:
 
 
 	@staticmethod
-	def extract_data(data, data_id=0, axis_id=None, label="powerlaw"):
-		"""
-		Extracts the powers and intensities out of a dataset. Therefore, it takes the power axis of the input data,
-		and projects the datafield onto that axis by summing over all the other axes.
+	def extract_3Ddata(data,stackAxisID, xAxisID, yAxisID):
+		assert isinstance(data, snomtools.data.datasets.DataSet), \
+			"ERROR: No dataset or ROI instance given to extract_3Ddata."
+		return data.project_nd(stackAxisID, xAxisID, yAxisID)
 
-		:param data: Dataset containing the powerlaw data.
 
-		:param data_id: Identifier of the DataField to use.
-
-		:param axis_id: optional, Identifier of the power axis to use. If not given, the first axis that corresponds
-			to a Power in its physical dimension is taken.
-
-		:param label: string: label for the produced DataSet
-
-		:return: 1D-DataSet with projected Intensity Data and Power Axis.
-		"""
+	@staticmethod
+	def extract_templatedata(data, xAxisID, yAxisID):
 		assert isinstance(data, snomtools.data.datasets.DataSet) or isinstance(data, snomtools.data.datasets.ROI), \
-			"ERROR: No dataset or ROI instance given to Powerlaw data extraction."
-		if axis_id is None:
-			power_axis = data.get_axis_by_dimension("watts")
-		else:
-			power_axis = data.get_axis(axis_id)
-		count_data = data.get_datafield(data_id)
-		power_axis_index = data.get_axis_index(power_axis.get_label())
-		count_data_projected = count_data.project_nd(power_axis_index)
-		count_data_projected = snomtools.data.datasets.DataArray(count_data_projected, label='counts')
-		# Normalize by subtracting dark counts:
-		count_data_projected_norm = count_data_projected - count_data_projected.min()
-		count_data_projected_norm.set_label("counts_normalized")
-		# Initialize the DataSet containing only the projected powerlaw data;
-		return snomtools.data.datasets.DataSet(label, [count_data_projected_norm, count_data_projected], [power_axis])
+			"ERROR: No dataset or ROI instance given to extract_templatedata."
+
+		xAxisID = data.get_axis_index(xAxisID)
+		yAxisID = data.get_axis_index(yAxisID)
+		roi = snomtools.data.datasets.ROI(data,limitlist,by_index=True)
+		return roi.project_nd(xAxisID,yAxisID)
 
 	@staticmethod
-	def extract_3Ddata(data, imageplane, stackAxisID = None, label="powerlaw"):
-		pass #return 3D Dataset for template matching
+	def guess_templatedata(data,xAxisID,yAxisID):
+		assert isinstance(data, snomtools.data.datasets.DataSet) or isinstance(data, snomtools.data.datasets.ROI), \
+			"ERROR: No dataset or ROI instance given to guess_template."
 
-	@staticmethod
-	def extract_templatedata():
-
-	@staticmethod
-	def guess_templatedata():
+		xAxisID = data.get_axis_index(xAxisID)
+		yAxisID = data.get_axis_index(yAxisID)
+		fieldshape = (data.shape[xAxisID],data.shape[yAxisID])
+		xl, xr, yl, yr = fieldshape[0]*2/5, fieldshape[0]*3/5, fieldshape[0]2/5, fieldshape[0]*3/5 #seems to work
+		limitlist = {xAxisID:(xl,xr),yAxisID:(yl,yr)}
+		roi = snomtools.data.datasets.ROI(data,limitlist,by_index=True)
+		return roi.project_nd(xAxisID,yAxisID)
