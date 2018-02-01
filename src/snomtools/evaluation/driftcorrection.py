@@ -8,18 +8,34 @@ import numpy as np
 import snomtools.data.datasets
 
 class Drift:
-	def __init__(self,data=None, template=None, stackAxisID = None, subpixel=True, method = 'cv.TM_CCOEFF_NORMED'):
+	def __init__(self,data=None, template=None, stackAxisID = None, xAxisID=None, yAxisID=None,
+				 subpixel=True, method = 'cv.TM_CCOEFF_NORMED'):
+
 		# Methods: 'cv.TM_CCOEFF', 'cv.TM_CCOEFF_NORMED', 'cv.TM_CCORR', 'cv.TM_CCORR_NORMED', 'cv.TM_SQDIFF', 'cv.TM_SQDIFF_NORMED'
+
 		if data:
+			if stackAxisID is None:
+				stackAxisID = data.get_axis_index('delay')
+			else:
+				stackAxisID = data.get_axis_index(stackAxisID)
+			if xAxisID is None:
+				xAxisID = data.get_axis_index('x')
+			else:
+				xAxisID = data.get_axis_index(xAxisID)
+			if yAxisID is None:
+				yAxisID = data.get_axis_index('y')
+			else:
+				yAxisID = data.get_axis_index(yAxisID)
+
+			self.data = self.extract_3Ddata(data, stackAxisID, xAxisID, yAxisID)
+
 			if template:
+				self.template = self.extract_templatedata(template,xAxisID,yAxisID)
+			else:
+				self.template = self.guess_templatedata(data,xAxisID,yAxisID)
 
-				self.template = self.extract_data(template)
-				self.imageplane = self.data.get_axis()
-
-				self.data = self.extract_3Ddata(data,imageplane, stackAxisID)
-
-				#for layers along stackAxisID:
-				self.drift = self.template_matching(self.data,self.template)
+			#for layers along stackAxisID:
+			self.drift = self.template_matching_stack(self.data,self.template)
 
 		# from template get 2D axis
 
@@ -105,3 +121,9 @@ class Drift:
 	@staticmethod
 	def extract_3Ddata(data, imageplane, stackAxisID = None, label="powerlaw"):
 		pass #return 3D Dataset for template matching
+
+	@staticmethod
+	def extract_templatedata():
+
+	@staticmethod
+	def guess_templatedata():
