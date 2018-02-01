@@ -439,7 +439,7 @@ class Data_Handler_H5(u.Quantity):
 
 		if output == False:
 			self._magnitude = scipy.ndimage.interpolation.shift(self.magnitude, shift, None, order, mode, cval,
-															   prefilter)
+																prefilter)
 			return None
 		elif isinstance(output, numpy.ndarray):
 			scipy.ndimage.interpolation.shift(self.magnitude, shift, output, order, mode, cval, prefilter)
@@ -456,6 +456,10 @@ class Data_Handler_H5(u.Quantity):
 		Shifts a certain slice of the data with scipy.ndimage.interpolation.shift.
 		See: :func:`scipy.ndimage.interpolation.shift` for full documentation of parameters.
 
+		:param slice_: A selection of a subset of the data, typically a tuple of ints or slices. Can be generated
+			easily with	:func:`numpy.s_` or builtin method :func:`slice`.
+		:type slice_: slice **or** tuple(slice) **or** *(tuple of) castable*.
+
 		:param output: The array in which to place the output, or the dtype of the returned array.
 			If :code:`False` is given, the slice of the instance data is overwritten.
 		:type output: ndarray *or* dtype *or* :code:`False`, *optional*
@@ -465,7 +469,6 @@ class Data_Handler_H5(u.Quantity):
 		:returns: The shifted data. If output is given as a parameter or :code:`False`, None is returned.
 		:rtype: Data_Handler_np *or* None
 		"""
-		assert isinstance(slice_, slice), "No slice given."
 		if prefilter is None:  # if not explicitly set, determine neccesity of prefiltering
 			if order > 0:  # if interpolation is required, spline prefilter is neccesary.
 				prefilter = True
@@ -474,7 +477,7 @@ class Data_Handler_H5(u.Quantity):
 
 		if output == False:
 			self.ds_data[slice_] = scipy.ndimage.interpolation.shift(self.ds_data[slice_], shift, None, order, mode,
-																	   cval, prefilter)
+																	 cval, prefilter)
 			return None
 		elif isinstance(output, numpy.ndarray):
 			scipy.ndimage.interpolation.shift(self.ds_data[slice_], shift, output, order, mode, cval, prefilter)
@@ -680,6 +683,10 @@ class Data_Handler_np(u.Quantity):
 		Shifts a certain slice of the data with scipy.ndimage.interpolation.shift.
 		See: :func:`scipy.ndimage.interpolation.shift` for full documentation of parameters.
 
+		:param slice_: A selection of a subset of the data, typically a tuple of ints or slices. Can be generated
+			easily with	:func:`numpy.s_` or builtin method :func:`slice`.
+		:type slice_: slice **or** tuple(slice) **or** *(tuple of) castable*.
+
 		:param output: The array in which to place the output, or the dtype of the returned array.
 			If :code:`False` is given, the slice of the instance data is overwritten.
 		:type output: ndarray *or* dtype *or* :code:`False`, *optional*
@@ -687,7 +694,6 @@ class Data_Handler_np(u.Quantity):
 		:returns: The shifted data. If output is given as a parameter or :code:`False`, None is returned.
 		:rtype: Data_Handler_np *or* None
 		"""
-		assert isinstance(slice_, slice), "No slice given."
 		if prefilter is None:  # if not explicitly set, determine neccesity of prefiltering
 			if order > 0:  # if interpolation is required, spline prefilter is neccesary.
 				prefilter = True
@@ -1130,6 +1136,25 @@ class DataArray(object):
 			sumlist.remove(arg)
 		sumtup = tuple(sumlist)
 		return self.sum(sumtup)
+
+	def shift(self, shift, output=None, order=0, mode='constant', cval=numpy.nan, prefilter=None):
+		"""
+		Shifts the complete data. This is just calling the underlying methods implemented in
+			:func:`Data_Handler_H5.shift` and :func:`Data_Handler_np.shift`
+			See those methods for documentation or under-the-hood-used :func:`scipy.ndimage.interpolation.shift` for
+			full documentation of parameters.
+		"""
+		return self.data.shift(shift, output=output, order=order, mode=mode, cval=cval, prefilter=prefilter)
+
+	def shift_slice(self, slice_, shift, output=None, order=0, mode='constant', cval=numpy.nan, prefilter=None):
+		"""
+		Shifts a certain slice of the data. This is just calling the underlying methods implemented in
+			:func:`Data_Handler_H5.shift_slice` and :func:`Data_Handler_np.shift_slice`
+			See those methods for documentation or under-the-hood-used :func:`scipy.ndimage.interpolation.shift` for
+			full documentation of parameters.
+		"""
+		return self.data.shift_slice(slice_, shift, output=output, order=order, mode=mode, cval=cval,
+									 prefilter=prefilter)
 
 	def max(self):
 		return self.data.max()
