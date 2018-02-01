@@ -941,6 +941,7 @@ class DataArray(object):
 		:return: The data after the transformation.
 		"""
 		self.data = u.to_ureg(self.get_data_raw().swapaxes(axis1, axis2), self.get_unit())
+		# TODO: This is not feasible for big data in H5 handlers. Look for more efficient implementation.
 		return self.data
 
 	def get_unit(self):
