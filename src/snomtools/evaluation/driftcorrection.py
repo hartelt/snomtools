@@ -17,20 +17,20 @@ class Drift:
 		# read axis
 		if data:
 			if stackAxisID is None:
-				dstackAxisID = data.get_axis_index('delay')
+				self.dstackAxisID = data.get_axis_index('delay')
 			else:
-				dstackAxisID = data.get_axis_index(stackAxisID)
+				self.dstackAxisID = data.get_axis_index(stackAxisID)
 			if yAxisID is None:
-				dyAxisID = data.get_axis_index('y')
+				self.dyAxisID = data.get_axis_index('y')
 			else:
-				dyAxisID = data.get_axis_index(yAxisID)
+				self.dyAxisID = data.get_axis_index(yAxisID)
 			if xAxisID is None:
-				dxAxisID = data.get_axis_index('x')
+				self.dxAxisID = data.get_axis_index('x')
 			else:
-				dxAxisID = data.get_axis_index(xAxisID)
+				self.dxAxisID = data.get_axis_index(xAxisID)
 
 			# process data towards 3d array
-			self.data = self.extract_3Ddata(data, dstackAxisID, dyAxisID, dxAxisID)
+			self.data3D = self.extract_3Ddata(data, self.dstackAxisID, self.dyAxisID, self.dxAxisID)
 
 			# read or guess template
 			if template:
@@ -44,12 +44,13 @@ class Drift:
 					txAxisID = template.get_axis_index(xAxisID)
 				self.template = self.extract_templatedata(template, tyAxisID, txAxisID)
 			else:
-				self.template = self.guess_templatedata(data, dyAxisID, dxAxisID)
+				self.template = self.guess_templatedata(data, self.dyAxisID, self.dxAxisID)
 
 		stackAxisID = data.get_axis_index(stackAxisID)
 		# for layers along stackAxisID find drift:
-		self.drift = self.template_matching_stack(self.data.get_datafield(0), self.template, stackAxisID,
+		self.drift = self.template_matching_stack(self.data3D.get_datafield(0), self.template, stackAxisID,
 												  method=method, subpixel=subpixel)
+		self.data = data
 
 	@classmethod
 	def template_matching_stack(cls, data, template, stackAxisID, method='cv.TM_CCOEFF_NORMED', subpixel=True):
