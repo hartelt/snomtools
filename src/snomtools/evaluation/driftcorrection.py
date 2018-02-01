@@ -16,29 +16,37 @@ class Drift:
 		#read axis
 		if data:
 			if stackAxisID is None:
-				stackAxisID = data.get_axis_index('delay')
+				dstackAxisID = data.get_axis_index('delay')
 			else:
-				stackAxisID = data.get_axis_index(stackAxisID)
+				dstackAxisID = data.get_axis_index(stackAxisID)
 			if xAxisID is None:
-				xAxisID = data.get_axis_index('x')
+				dxAxisID = data.get_axis_index('x')
 			else:
-				xAxisID = data.get_axis_index(xAxisID)
+				dxAxisID = data.get_axis_index(xAxisID)
 			if yAxisID is None:
-				yAxisID = data.get_axis_index('y')
+				dyAxisID = data.get_axis_index('y')
 			else:
-				yAxisID = data.get_axis_index(yAxisID)
+				dyAxisID = data.get_axis_index(yAxisID)
 
 			#process data towards 3d array
-			self.data = self.extract_3Ddata(data, stackAxisID, xAxisID, yAxisID)
+			self.data = self.extract_3Ddata(data, dstackAxisID, dxAxisID, dyAxisID)
 
 			#read or guess template
 			if template:
-				self.template = self.extract_templatedata(template,xAxisID,yAxisID)
+			    if xAxisID is None:
+		    		txAxisID = template.get_axis_index('x')
+		    	else:
+		    		txAxisID = template.get_axis_index(xAxisID)
+		    	if yAxisID is None:
+		    		tyAxisID = template.get_axis_index('y')
+		    	else:
+		    		tyAxisID = template.get_axis_index(yAxisID)
+				self.template = self.extract_templatedata(template,txAxisID,tyAxisID)
 			else:
-				self.template = self.guess_templatedata(data,xAxisID,yAxisID)
+				self.template = self.guess_templatedata(data,dxAxisID,dyAxisID)
 
 			#for layers along stackAxisID find drift:
-			self.drift = self.template_matching_stack(self.data,self.template,stackAxisID)
+			self.drift = self.template_matching_stack(self.data.get_datafield(0),self.template,stackAxisID)
 
 		pass
 
@@ -47,7 +55,10 @@ class Drift:
 	def template_matching_stack(cls, data, template, stackAxisID, method = 'cv.TM_CCOEFF_NORMED' , subpixel = True):
 		driftlist=[]
 		for i in range(data.shape[stackAxisID]):
-			driftlist.append(cls.template_matching((data[i]),template, method,subpixel))
+		    slicebase = [numpy.s_[:],numpy.s_[:]]
+	        slicebase.insert(stackAxisID,i)
+	        slice_ = tuple(slicebase)
+			driftlist.append(cls.template_matching((data.data[slice_]),template, method,subpixel))
 		return driftlist
 
 
@@ -57,7 +68,8 @@ class Drift:
 		#Methods: 'cv.TM_CCOEFF', 'cv.TM_CCOEFF_NORMED', 'cv.TM_CCORR', 'cv.TM_CCORR_NORMED', 'cv.TM_SQDIFF', 'cv.TM_SQDIFF_NORMED'
 
 		method = eval(method)
-
+        
+        array = np.float32(array)
 		template = np.float32(template)
 		w, h = template.shape[::-1]
 
@@ -108,8 +120,7 @@ class Drift:
 
 		xAxisID = data.get_axis_index(xAxisID)
 		yAxisID = data.get_axis_index(yAxisID)
-		roi = snomtools.data.datasets.ROI(data,limitlist,by_index=True)
-		return roi.project_nd(xAxisID,yAxisID)
+		return data.project_nd(xAxisID,yAxisID).get_datafield(0)
 
 	@staticmethod
 	def guess_templatedata(data,xAxisID,yAxisID):
@@ -119,7 +130,7 @@ class Drift:
 		xAxisID = data.get_axis_index(xAxisID)
 		yAxisID = data.get_axis_index(yAxisID)
 		fieldshape = (data.shape[xAxisID],data.shape[yAxisID])
-		xl, xr, yl, yr = fieldshape[0]*2/5, fieldshape[0]*3/5, fieldshape[0]2/5, fieldshape[0]*3/5 #seems to work
+		xl, xr, yl, yr = fieldshape[0]*2/5, fieldshape[0]*3/5, fieldshape[1]2/5, fieldshape[1]*3/5 #seems to work
 		limitlist = {xAxisID:(xl,xr),yAxisID:(yl,yr)}
 		roi = snomtools.data.datasets.ROI(data,limitlist,by_index=True)
-		return roi.project_nd(xAxisID,yAxisID)
+		return roi.project_nd(xAxisID,yAxisID).get_datafield(0)
