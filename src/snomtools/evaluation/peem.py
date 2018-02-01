@@ -17,7 +17,6 @@ class Powerlaw_loglinear:
 	"""
 	A powerlaw.
 	"""
-
 	def __init__(self, data=None, keepdata=True, normalize=True):
 		if data:
 			if normalize:
@@ -157,9 +156,6 @@ class Powerlaw:
 	"""
 	A powerlaw.
 	"""
-
-	# TODO: Implement exponential fit. Debug strange behaviour.
-
 	def __init__(self, data=None, guess=None, keepdata=True, normalize=False):
 		if data:
 			if normalize:

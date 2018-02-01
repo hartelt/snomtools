@@ -333,7 +333,6 @@ class Data_Handler_H5(u.Quantity):
 		"""
 		return self.magnitude.sum(axis=axis, dtype=dtype, out=out, keepdims=keepdims)
 
-	# TODO: Write performant versions of sum() and sum_raw()
 	def sum(self, axis=None, dtype=None, out=None, keepdims=False, h5target=None):
 		"""
 		Behaves as the sum() function of a numpy array.
