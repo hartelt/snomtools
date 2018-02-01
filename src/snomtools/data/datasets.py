@@ -1134,7 +1134,10 @@ class DataArray(object):
 			assert (type(arg) == int), "ERROR: Invalid type. Axis index must be integer."
 			sumlist.remove(arg)
 		sumtup = tuple(sumlist)
-		return self.sum(sumtup)
+		if len(sumtup):
+			return self.sum(sumtup)
+		else:
+			return self
 
 	def shift(self, shift, output=None, order=0, mode='constant', cval=numpy.nan, prefilter=None):
 		"""
