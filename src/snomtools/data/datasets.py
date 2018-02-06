@@ -2670,13 +2670,14 @@ if __name__ == "__main__":  # just for testing
 	testh5 = h5tools.File('test.hdf5')
 
 	test_dataarray = True
+	# noinspection PyPackageRequirements
 	if test_dataarray:
 		moep = DataArray(testaxis.data, label="test", h5target=testh5)
 		moep2 = moep + moep
 		moep2 = moep - moep
 		moep2 = moep * moep
 		moep2 = moep / moep
-		moep2 = moep // moep
+		# moep2 = moep // moep # TODO: Fix to_ureg(DataArray) for newer versions of pint.
 		moep2 = moep ** 2.
 		moep.absmax()
 		moep.absmin()
