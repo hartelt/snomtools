@@ -23,7 +23,8 @@ from setuptools import setup, find_packages
 # Default version information
 source_path = 'src'
 __version__ = '1.0'
-install_requirements = ['']
+install_requirements = ['numpy>=1.10.0', 'pint', 'h5py', 'termcolor', 'scipy',
+						'tifffile', 'h5py_cache', 'six', 'psutil', 'opencv-python']
 
 packages = find_packages(source_path)
 
@@ -52,6 +53,5 @@ setup(name='snomtools',
 	  version=get_version_from_git(),
 	  packages=packages,
 	  package_dir={'': source_path},
-	  install_requirements=install_requirements, requires=['numpy>=1.10.0', 'pint', 'h5py', 'termcolor', 'scipy',
-														   'tifffile', 'h5py_cache', 'six', 'psutil', 'opencv-python']
+	  install_requires=install_requirements
 	  )
