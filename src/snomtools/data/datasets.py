@@ -1909,6 +1909,7 @@ class DataSet(object):
 	3D-array of count rates, in which the x- y- and z-dimensions represent the position on a sample (x,
 	y in micrometers) and a time delay (z = t in femtoseconds).
 	"""
+	# TODO: BUG: check for unique axis and datafield identifiers.
 
 	def __init__(self, label="", datafields=(), axes=(), plotconf=(), h5target=None, chunk_cache_mem_size=None):
 		if isinstance(h5target, h5py.Group):
