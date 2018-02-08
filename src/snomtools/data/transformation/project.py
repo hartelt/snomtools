@@ -1,7 +1,7 @@
-__author__ = 'hartelt'
 """
 This script holds transformation functions for datasets, that project data onto given axes.
 """
+__author__ = 'hartelt'
 
 import snomtools.data.datasets as datasets
 

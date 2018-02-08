@@ -4,6 +4,14 @@ snomtools.evaluation package
 Submodules
 ----------
 
+snomtools.evaluation.driftcorrection module
+-------------------------------------------
+
+.. automodule:: snomtools.evaluation.driftcorrection
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 snomtools.evaluation.microscopy module
 --------------------------------------
 

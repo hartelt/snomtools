@@ -1,0 +1,153 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>snomtools.evaluation.pumpprobe &mdash; snomtools 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../_static/sidebar.js"></script>
+    <link rel="top" title="snomtools 0.0.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">snomtools 0.0.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for snomtools.evaluation.pumpprobe</h1><div class="highlight"><pre>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s">&#39;hartelt&#39;</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">This file provides data evaluation scripts for time-resolved pump-probe data.</span>
+<span class="sd">For furter info about data structures, see:</span>
+<span class="sd">data.imports.tiff.py</span>
+<span class="sd">data.datasets.py</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">import</span> <span class="nn">snomtools.calcs.conversions</span>
+<span class="kn">import</span> <span class="nn">snomtools.data.datasets</span>
+<span class="kn">import</span> <span class="nn">snomtools.data.imports.tiff</span>
+<span class="kn">import</span> <span class="nn">snomtools.calcs.units</span> <span class="kn">as</span> <span class="nn">u</span>
+
+
+<div class="viewcode-block" id="time_scale_axis"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.pumpprobe.time_scale_axis">[docs]</a><span class="k">def</span> <span class="nf">time_scale_axis</span><span class="p">(</span><span class="n">delay_axis</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s">&#39;fs&#39;</span><span class="p">,</span> <span class="n">unitplotlabel</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Time scaling calculated for the delay axis of a DataSet, Assures time delays instead of spacial delays.</span>
+
+<span class="sd">	:param delay_axis: The Axis instance containing the pulse delays as data.</span>
+
+<span class="sd">	:param unit: A valid time unit string. The unit to convert the axis to.</span>
+
+<span class="sd">	:param unitplotlabel: The plotlabel corresponding to the specified unit. Will be tried to cast in LaTeX siunitx</span>
+<span class="sd">		notation if not specified.</span>
+
+<span class="sd">	:return: A new Axis instance with time scaling in the specified unit, that can replace the delay axis in the</span>
+<span class="sd">		DataSet.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">delay_axis</span><span class="p">,</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">Axis</span><span class="p">),</span> <span class="s">&quot;ERROR: no Axis instance given to time_scale_axis()&quot;</span>
+	<span class="n">delaydata</span> <span class="o">=</span> <span class="n">delay_axis</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+	<span class="n">scaled_data</span> <span class="o">=</span> <span class="n">delaydata</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">unit</span><span class="p">,</span> <span class="s">&#39;light&#39;</span><span class="p">)</span>
+	<span class="k">if</span> <span class="n">unitplotlabel</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+		<span class="k">if</span> <span class="n">u</span><span class="o">.</span><span class="n">same_unit</span><span class="p">(</span><span class="n">unit</span><span class="p">,</span> <span class="s">&#39;fs&#39;</span><span class="p">):</span>
+			<span class="n">unitplotlabel</span> <span class="o">=</span> <span class="s">&quot;</span><span class="se">\\</span><span class="s">si{</span><span class="se">\\</span><span class="s">femto</span><span class="se">\\</span><span class="s">second}&quot;</span>
+		<span class="k">elif</span> <span class="n">u</span><span class="o">.</span><span class="n">same_unit</span><span class="p">(</span><span class="n">unit</span><span class="p">,</span> <span class="s">&#39;as&#39;</span><span class="p">):</span>
+			<span class="n">unitplotlabel</span> <span class="o">=</span> <span class="s">&quot;</span><span class="se">\\</span><span class="s">si{</span><span class="se">\\</span><span class="s">atto</span><span class="se">\\</span><span class="s">second}&quot;</span>
+		<span class="k">elif</span> <span class="n">u</span><span class="o">.</span><span class="n">same_unit</span><span class="p">(</span><span class="n">unit</span><span class="p">,</span> <span class="s">&#39;ps&#39;</span><span class="p">):</span>
+			<span class="n">unitplotlabel</span> <span class="o">=</span> <span class="s">&quot;</span><span class="se">\\</span><span class="s">si{</span><span class="se">\\</span><span class="s">pico</span><span class="se">\\</span><span class="s">second}&quot;</span>
+		<span class="k">elif</span> <span class="n">u</span><span class="o">.</span><span class="n">same_unit</span><span class="p">(</span><span class="n">unit</span><span class="p">,</span> <span class="s">&#39;ns&#39;</span><span class="p">):</span>
+			<span class="n">unitplotlabel</span> <span class="o">=</span> <span class="s">&quot;</span><span class="se">\\</span><span class="s">si{</span><span class="se">\\</span><span class="s">nano</span><span class="se">\\</span><span class="s">second}&quot;</span>
+		<span class="k">elif</span> <span class="n">u</span><span class="o">.</span><span class="n">same_unit</span><span class="p">(</span><span class="n">unit</span><span class="p">,</span> <span class="s">&#39;s&#39;</span><span class="p">):</span>
+			<span class="n">unitplotlabel</span> <span class="o">=</span> <span class="s">&quot;</span><span class="se">\\</span><span class="s">si{</span><span class="se">\\</span><span class="s">second}&quot;</span>
+	<span class="k">return</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">Axis</span><span class="p">(</span><span class="n">scaled_data</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">&#39;delay&#39;</span><span class="p">,</span> <span class="n">plotlabel</span><span class="o">=</span><span class="s">&quot;Pulse Delay / &quot;</span> <span class="o">+</span> <span class="n">unitplotlabel</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="delay_apply_timescale"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.pumpprobe.delay_apply_timescale">[docs]</a><span class="k">def</span> <span class="nf">delay_apply_timescale</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s">&#39;fs&#39;</span><span class="p">,</span> <span class="n">unitplotlabel</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Applies an time scaling to a pump-probe DataSet. The delay axis will be replaced with a new delay axis in time</span>
+<span class="sd">	units.</span>
+
+<span class="sd">	:param data: The DataSet instance of the data to normalize.</span>
+
+<span class="sd">	:param unit: A valid time unit string: The unit to convert the axis to.</span>
+
+<span class="sd">	:return: The modified dataset.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">DataSet</span><span class="p">),</span> <span class="s">&quot;ERROR: No DataSet given or imported.&quot;</span>
+	<span class="n">time_axis</span> <span class="o">=</span> <span class="n">time_scale_axis</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get_axis</span><span class="p">(</span><span class="s">&#39;delay&#39;</span><span class="p">),</span> <span class="n">unit</span><span class="p">,</span> <span class="n">unitplotlabel</span><span class="p">)</span>
+	<span class="n">data</span><span class="o">.</span><span class="n">replace_axis</span><span class="p">(</span><span class="s">&#39;delay&#39;</span><span class="p">,</span> <span class="n">time_axis</span><span class="p">)</span>
+	<span class="k">return</span> <span class="n">data</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">snomtools 0.0.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, AG Aeschlimann, FB Physik, TU Kaiserslautern.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

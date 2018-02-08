@@ -1,9 +1,9 @@
-__author__ = 'hartelt'
-'''
+"""
 This script provides tools for conversion between types of representations.
 As long as it's not specified otherwise, it should be kept in SI!
 All functions must be programed to work with float variables, as well as numpy arrays and pint quantities.
-'''
+"""
+__author__ = 'hartelt'
 
 import numpy
 import constants

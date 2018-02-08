@@ -1,0 +1,257 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>snomtools.calcs.materials.metals &mdash; snomtools 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../../_static/sidebar.js"></script>
+    <link rel="top" title="snomtools 0.0.1 documentation" href="../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">snomtools 0.0.1 documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for snomtools.calcs.materials.metals</h1><div class="highlight"><pre>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s">&#39;hartelt&#39;</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">This script provides a class for calculating the properties of metals, as well as instances for metals we know.</span>
+<span class="sd">Functions take pint quantities of the right dimension or floats in SI and give pint quantities in SI! Use conversion tools in snomtools/calcs/conversions or pint quantity methods for different formats.</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">snomtools.calcs.prefixes</span> <span class="kn">as</span> <span class="nn">pref</span>
+<span class="kn">import</span> <span class="nn">snomtools.calcs.units</span> <span class="kn">as</span> <span class="nn">units</span>
+
+
+<div class="viewcode-block" id="InterbandTransition"><a class="viewcode-back" href="../../../../source/_modules/snomtools.calcs.materials.html#snomtools.calcs.materials.metals.InterbandTransition">[docs]</a><span class="k">class</span> <span class="nc">InterbandTransition</span><span class="p">:</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	This is the base class for an interband transition.</span>
+<span class="sd">	It consists of the parameters for the transition and a method for calculating the effect on the dielectric function.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="InterbandTransition.__init__"><a class="viewcode-back" href="../../../../source/_modules/snomtools.calcs.materials.html#snomtools.calcs.materials.metals.InterbandTransition.__init__">[docs]</a>	<span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plasma_freq</span><span class="p">,</span> <span class="n">damping_freq</span><span class="p">,</span> <span class="n">central_freq</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		The constructor. All frequencies should be given as angular frequencies (rad/s)</span>
+
+<span class="sd">		:param plasma_freq: the (quasi-)plasma frequency of the bound electrons</span>
+
+<span class="sd">		:param damping_freq: the damping frequency of the bound electrons</span>
+
+<span class="sd">		:param central_freq: the central frequency of the interband transition</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">omega_p</span> <span class="o">=</span> <span class="n">units</span><span class="o">.</span><span class="n">to_ureg</span><span class="p">(</span><span class="n">plasma_freq</span><span class="p">,</span> <span class="s">&#39;rad/s&#39;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">gamma</span> <span class="o">=</span> <span class="n">units</span><span class="o">.</span><span class="n">to_ureg</span><span class="p">(</span><span class="n">damping_freq</span><span class="p">,</span> <span class="s">&#39;rad/s&#39;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">omega_0</span> <span class="o">=</span> <span class="n">units</span><span class="o">.</span><span class="n">to_ureg</span><span class="p">(</span><span class="n">central_freq</span><span class="p">,</span> <span class="s">&#39;rad/s&#39;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="InterbandTransition.epsilon"><a class="viewcode-back" href="../../../../source/_modules/snomtools.calcs.materials.html#snomtools.calcs.materials.metals.InterbandTransition.epsilon">[docs]</a>	<span class="k">def</span> <span class="nf">epsilon</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">omega</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		This method calculates the contribution of the interband transition to the complex dielectric function.</span>
+<span class="sd">		Caution: The offset 1 from the vacuum is NOT included, to make it possible to just add all contributions to get</span>
+<span class="sd">		the final dielectric function.</span>
+<span class="sd">		The formula is:</span>
+<span class="sd">		omega_p^2 / (omega_0^2 - omega^2 - i omega gamma)</span>
+
+<span class="sd">		:param omega: the frequency at which the dielectric function shall be calculated in rad/s</span>
+
+<span class="sd">		:return: the contribution to the dielectric function (dimensionless)</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="c"># Make sure ureg is compatible:</span>
+		<span class="n">omega_tera</span> <span class="o">=</span> <span class="n">units</span><span class="o">.</span><span class="n">to_ureg</span><span class="p">(</span><span class="n">omega</span><span class="p">,</span> <span class="s">&#39;THz&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s">&#39;THz&#39;</span><span class="p">)</span>
+		<span class="c"># Convert all values to terahertz to avoid numerical errors due to huge exponents.</span>
+		<span class="n">omega_0_tera</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">omega_0</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s">&#39;THz&#39;</span><span class="p">)</span>
+		<span class="n">omega_p_tera</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">omega_p</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s">&#39;THz&#39;</span><span class="p">)</span>
+		<span class="n">gamma_tera</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gamma</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s">&#39;THz&#39;</span><span class="p">)</span>
+		<span class="n">omegasquare</span> <span class="o">=</span> <span class="n">omega_tera</span> <span class="o">**</span> <span class="mi">2</span>
+		<span class="n">denominator</span> <span class="o">=</span> <span class="p">(</span><span class="n">omega_0_tera</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">omegasquare</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1j</span> <span class="o">*</span> <span class="n">gamma_tera</span> <span class="o">*</span> <span class="n">omega_tera</span><span class="p">)</span>
+		<span class="n">eps</span> <span class="o">=</span> <span class="n">omega_p_tera</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="n">denominator</span>
+		<span class="k">return</span> <span class="n">eps</span>
+
+
+<span class="c"># TODO: We should implement tabulated literature data. Then we can always take the nearest value or so. No! Fit it!</span></div></div>
+<div class="viewcode-block" id="Metal"><a class="viewcode-back" href="../../../../source/_modules/snomtools.calcs.materials.html#snomtools.calcs.materials.metals.Metal">[docs]</a><span class="k">class</span> <span class="nc">Metal</span><span class="p">:</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	This is the base class for a metal.</span>
+<span class="sd">	A metal is characterized for now, as something with a plasma frequency and one or more interband transitions.</span>
+<span class="sd">	This might be extended later on.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Metal.__init__"><a class="viewcode-back" href="../../../../source/_modules/snomtools.calcs.materials.html#snomtools.calcs.materials.metals.Metal.__init__">[docs]</a>	<span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">plasma_freq</span><span class="p">,</span> <span class="n">damping_freq</span><span class="p">,</span> <span class="n">interband_transitions</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		The constructor.</span>
+
+<span class="sd">		:param name: A string for the name of the material. e.g. &quot;Au&quot;</span>
+
+<span class="sd">		:param plasma_freq: the plasma frequency of the free electrons in (rad/s)</span>
+
+<span class="sd">		:param damping_freq: the damping frequency of the free electrons in (rad/s)</span>
+
+<span class="sd">		:param interband_transitions: a list of interband transitions, given either as instance of the</span>
+<span class="sd">			InterbandTransition class or as list or tuple of 3 elements containing the frequencies to initialize one.</span>
+
+<span class="sd">		:return: nothing</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">omega_p</span> <span class="o">=</span> <span class="n">units</span><span class="o">.</span><span class="n">to_ureg</span><span class="p">(</span><span class="n">plasma_freq</span><span class="p">,</span> <span class="s">&#39;rad/s&#39;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">gamma</span> <span class="o">=</span> <span class="n">units</span><span class="o">.</span><span class="n">to_ureg</span><span class="p">(</span><span class="n">damping_freq</span><span class="p">,</span> <span class="s">&#39;rad/s&#39;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">interbands</span> <span class="o">=</span> <span class="p">[]</span>
+		<span class="k">if</span> <span class="n">interband_transitions</span><span class="p">:</span>
+			<span class="k">for</span> <span class="n">trans</span> <span class="ow">in</span> <span class="n">interband_transitions</span><span class="p">:</span>
+				<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">trans</span><span class="p">,</span> <span class="n">InterbandTransition</span><span class="p">):</span>
+					<span class="bp">self</span><span class="o">.</span><span class="n">interbands</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trans</span><span class="p">)</span>
+				<span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">trans</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">trans</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">trans</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+					<span class="bp">self</span><span class="o">.</span><span class="n">interbands</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">InterbandTransition</span><span class="p">(</span><span class="n">trans</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">trans</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">trans</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+				<span class="k">else</span><span class="p">:</span>
+					<span class="k">print</span><span class="p">(</span><span class="s">&quot;ERROR: Metal: Interband transition could not be cast. Ignoring the transition.&quot;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Metal.epsilon_plasma"><a class="viewcode-back" href="../../../../source/_modules/snomtools.calcs.materials.html#snomtools.calcs.materials.metals.Metal.epsilon_plasma">[docs]</a>	<span class="k">def</span> <span class="nf">epsilon_plasma</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">omega</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		This method calculates the contribution of the free electrons to the complex dielectric function.</span>
+<span class="sd">		Caution: The offset 1 from the vacuum is NOT included, to make it possible to just add all contributions to get</span>
+<span class="sd">		the final dielectric function.</span>
+<span class="sd">		The formula is:</span>
+<span class="sd">		- omega_p^2 / (omega^2 + i omega gamma)</span>
+
+<span class="sd">		:param omega: the frequency at which the dielectric function shall be calculated (float or numpy array) in rad/s</span>
+
+<span class="sd">		:return:the contribution to the dielectric function (dimensionless)</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="c"># Make sure ureg is compatible:</span>
+		<span class="n">omega_tera</span> <span class="o">=</span> <span class="n">units</span><span class="o">.</span><span class="n">to_ureg</span><span class="p">(</span><span class="n">omega</span><span class="p">,</span> <span class="s">&#39;THz&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s">&#39;THz&#39;</span><span class="p">)</span>
+		<span class="c"># Convert all values to terahertz to avoid numerical errors due to huge exponents.</span>
+		<span class="n">omega_p_tera</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">omega_p</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s">&#39;THz&#39;</span><span class="p">)</span>
+		<span class="n">gamma_tera</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gamma</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s">&#39;THz&#39;</span><span class="p">)</span>
+		<span class="c"># Calculate the dielectric function</span>
+		<span class="n">eps</span> <span class="o">=</span> <span class="o">-</span> <span class="n">omega_p_tera</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="n">omega_tera</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="mi">0</span> <span class="o">+</span> <span class="mi">1j</span><span class="p">)</span> <span class="o">*</span> <span class="n">omega_tera</span> <span class="o">*</span> <span class="n">gamma_tera</span><span class="p">)</span>
+		<span class="k">return</span> <span class="n">eps</span>
+</div>
+<div class="viewcode-block" id="Metal.epsilon_wo_inter"><a class="viewcode-back" href="../../../../source/_modules/snomtools.calcs.materials.html#snomtools.calcs.materials.metals.Metal.epsilon_wo_inter">[docs]</a>	<span class="k">def</span> <span class="nf">epsilon_wo_inter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">omega</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		This method calculates the dielectric function without taking interband transitions into account:</span>
+<span class="sd">		epsilon = 1 + epsilon_plasma</span>
+
+<span class="sd">		:param omega: the frequency at which the dielectric function shall be calculated (float or numpy array) in rad/s</span>
+
+<span class="sd">		:return: value of the dielectric function w/o interband transitions (dimensionless)</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="n">eps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">epsilon_plasma</span><span class="p">(</span><span class="n">omega</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+		<span class="k">return</span> <span class="n">eps</span>
+</div>
+<div class="viewcode-block" id="Metal.epsilon"><a class="viewcode-back" href="../../../../source/_modules/snomtools.calcs.materials.html#snomtools.calcs.materials.metals.Metal.epsilon">[docs]</a>	<span class="k">def</span> <span class="nf">epsilon</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">omega</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		This method calculates the complex dielectric function of the metal.</span>
+<span class="sd">		It therefore adds all contributions of the free electrons and the interband transitions.</span>
+
+<span class="sd">		:param omega: the frequency at which the dielectric function shall be calculated (float or numpy array) in rad/s</span>
+
+<span class="sd">		:return: the complex dielectric function (dimensionless)</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="n">eps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">epsilon_plasma</span><span class="p">(</span><span class="n">omega</span><span class="p">)</span> <span class="o">+</span> <span class="mf">1.</span>
+		<span class="k">for</span> <span class="n">trans</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">interbands</span><span class="p">:</span>
+			<span class="n">eps</span> <span class="o">=</span> <span class="n">eps</span> <span class="o">+</span> <span class="n">trans</span><span class="o">.</span><span class="n">epsilon</span><span class="p">(</span><span class="n">omega</span><span class="p">)</span>
+		<span class="k">return</span> <span class="n">eps</span>
+</div>
+<div class="viewcode-block" id="Metal.__str__"><a class="viewcode-back" href="../../../../source/_modules/snomtools.calcs.materials.html#snomtools.calcs.materials.metals.Metal.__str__">[docs]</a>	<span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+</div>
+<div class="viewcode-block" id="Metal.n"><a class="viewcode-back" href="../../../../source/_modules/snomtools.calcs.materials.html#snomtools.calcs.materials.metals.Metal.n">[docs]</a>	<span class="k">def</span> <span class="nf">n</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">omega</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Returns the complex refraction index of the metal. Uses the dielectric function to calculate.</span>
+
+<span class="sd">		:param omega: the frequency at which the refraction index shall be calculated (float or numpy array) in rad/s</span>
+
+<span class="sd">		:return: the complex refraction index (dimensionless)</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span><span class="p">(</span><span class="n">omega</span><span class="p">))</span>
+
+
+<span class="c"># Gold with the parameters determined in Christian Schneider&#39;s dissertation:</span></div></div>
+<span class="n">Au_Schneider</span> <span class="o">=</span> <span class="n">Metal</span><span class="p">(</span><span class="s">&quot;Au&quot;</span><span class="p">,</span> <span class="mf">13.202e15</span><span class="p">,</span> <span class="mf">102.033e12</span><span class="p">,</span> <span class="p">[</span><span class="n">InterbandTransition</span><span class="p">(</span><span class="mf">4.5e15</span><span class="p">,</span> <span class="mf">896e12</span><span class="p">,</span> <span class="mf">4.184e15</span><span class="p">)])</span>
+<span class="c"># This would also work:</span>
+<span class="c"># Au_Schneider = Metal(&quot;Au&quot;,13.202e15,102.033*units.ureg(&#39;THz&#39;),[InterbandTransition(4.5e15,896e12,4.184e15)])</span>
+
+<span class="c"># for testing:</span>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+	<span class="c"># import snomtools.calcs.prefixes as pref</span>
+	<span class="n">test</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">2000</span><span class="p">,</span> <span class="mi">4000</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+	<span class="n">hz</span> <span class="o">=</span> <span class="n">test</span> <span class="o">*</span> <span class="n">pref</span><span class="o">.</span><span class="n">tera</span>
+	<span class="k">print</span><span class="p">(</span><span class="n">Au_Schneider</span><span class="o">.</span><span class="n">epsilon</span><span class="p">(</span><span class="n">hz</span><span class="p">))</span>
+	<span class="k">print</span><span class="p">(</span><span class="n">Au_Schneider</span><span class="o">.</span><span class="n">epsilon_plasma</span><span class="p">(</span><span class="n">hz</span><span class="p">))</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">snomtools 0.0.1 documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, AG Aeschlimann, FB Physik, TU Kaiserslautern.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

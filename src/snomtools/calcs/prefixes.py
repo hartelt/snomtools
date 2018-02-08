@@ -1,8 +1,8 @@
-__author__ = 'hartelt'
-'''
+"""
 This file contains variables used to process unit prefixes of the SI. This of cause should only be needed if you
 don't work with pint quantities, which would be preferable.
-'''
+"""
+__author__ = 'hartelt'
 
 # The unit prefixes:
 yotta = Y = 1e24

@@ -1,7 +1,7 @@
-__author__ = 'hartelt'
 """
 This file contains the base class for datasets.
 """
+__author__ = 'hartelt'
 
 import snomtools.calcs.units as u
 import numpy

@@ -1,0 +1,280 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>snomtools.calcs.units &mdash; snomtools 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../_static/sidebar.js"></script>
+    <link rel="top" title="snomtools 0.0.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">snomtools 0.0.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for snomtools.calcs.units</h1><div class="highlight"><pre>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s">&#39;hartelt&#39;</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This file provides the central unit registry that should be used in all scripts that use snomtools.</span>
+<span class="sd">This avoids errors between quantities of different unit registries that occur when using multiple imports.</span>
+<span class="sd">Custom units and prefixes that we use frequently should be defined here to get consistency.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="c"># Import pint and initialize a standard unit registry:</span>
+<span class="kn">import</span> <span class="nn">pint</span>
+<span class="kn">import</span> <span class="nn">pint.quantity</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+
+<span class="n">ureg</span> <span class="o">=</span> <span class="n">pint</span><span class="o">.</span><span class="n">UnitRegistry</span><span class="p">()</span>
+<span class="n">Quantity</span> <span class="o">=</span> <span class="n">ureg</span><span class="o">.</span><span class="n">Quantity</span>
+
+<span class="c"># Custom units that we use frequently can be defined here:</span>
+<span class="c"># ureg.define(&#39;dog_year = 52 * day = dy&#39;)</span>
+<span class="n">ureg</span><span class="o">.</span><span class="n">define</span><span class="p">(</span><span class="s">&#39;pixel = []&#39;</span><span class="p">)</span>
+<span class="n">ureg</span><span class="o">.</span><span class="n">define</span><span class="p">(</span><span class="s">&#39;count = []&#39;</span><span class="p">)</span>
+
+<span class="c"># Custom prefixes we use frequently can be defined here:</span>
+<span class="c"># ureg.define(&#39;myprefix- = 30 = my-&#39;)</span>
+
+<span class="c"># Custom contexts we use frequently can be defined here:</span>
+<span class="n">c</span> <span class="o">=</span> <span class="n">pint</span><span class="o">.</span><span class="n">Context</span><span class="p">(</span><span class="s">&#39;light&#39;</span><span class="p">)</span>
+<span class="n">c</span><span class="o">.</span><span class="n">add_transformation</span><span class="p">(</span><span class="s">&#39;[length]&#39;</span><span class="p">,</span> <span class="s">&#39;[time]&#39;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">ureg</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">/</span> <span class="n">ureg</span><span class="o">.</span><span class="n">speed_of_light</span><span class="p">)</span>
+<span class="n">c</span><span class="o">.</span><span class="n">add_transformation</span><span class="p">(</span><span class="s">&#39;[time]&#39;</span><span class="p">,</span> <span class="s">&#39;[length]&#39;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">ureg</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">*</span> <span class="n">ureg</span><span class="o">.</span><span class="n">speed_of_light</span><span class="p">)</span>
+<span class="n">ureg</span><span class="o">.</span><span class="n">add_context</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="same_dimension"><a class="viewcode-back" href="../../../source/_modules/snomtools.calcs.html#snomtools.calcs.units.same_dimension">[docs]</a><span class="k">def</span> <span class="nf">same_dimension</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Checks if all of the given arguments are of the same (physical) dimension.</span>
+
+<span class="sd">	:param args:</span>
+
+<span class="sd">	:return: Boolean.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="n">uregargs</span> <span class="o">=</span> <span class="n">as_ureg_quantities</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+	<span class="c"># with as_ureg_quantities(args) as a:</span>
+	<span class="n">arg0</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">uregargs</span><span class="p">)</span>
+	<span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">uregargs</span><span class="p">:</span>
+		<span class="k">if</span> <span class="n">arg0</span><span class="o">.</span><span class="n">dimensionality</span> <span class="o">!=</span> <span class="n">arg</span><span class="o">.</span><span class="n">dimensionality</span><span class="p">:</span>
+			<span class="k">return</span> <span class="bp">False</span>
+	<span class="k">return</span> <span class="bp">True</span>
+
+</div>
+<div class="viewcode-block" id="same_unit"><a class="viewcode-back" href="../../../source/_modules/snomtools.calcs.html#snomtools.calcs.units.same_unit">[docs]</a><span class="k">def</span> <span class="nf">same_unit</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Checks if all of the given arguments are of the same unit.</span>
+
+<span class="sd">	:param args:</span>
+
+<span class="sd">	:return: Boolean.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="n">uregargs</span> <span class="o">=</span> <span class="n">as_ureg_quantities</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+	<span class="c"># with as_ureg_quantities(args) as a:</span>
+	<span class="n">arg0</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">uregargs</span><span class="p">)</span>
+	<span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">uregargs</span><span class="p">:</span>
+		<span class="k">if</span> <span class="n">arg0</span><span class="o">.</span><span class="n">units</span> <span class="o">!=</span> <span class="n">arg</span><span class="o">.</span><span class="n">units</span><span class="p">:</span>
+			<span class="k">return</span> <span class="bp">False</span>
+	<span class="k">return</span> <span class="bp">True</span>
+
+</div>
+<div class="viewcode-block" id="is_valid_unit"><a class="viewcode-back" href="../../../source/_modules/snomtools.calcs.html#snomtools.calcs.units.is_valid_unit">[docs]</a><span class="k">def</span> <span class="nf">is_valid_unit</span><span class="p">(</span><span class="n">tocheck</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Checks if a string can be interpreted as a unit.</span>
+
+<span class="sd">	:param tocheck: String, The input to check.</span>
+
+<span class="sd">	:return: Boolean if the input can be interpreted as a unit.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">try</span><span class="p">:</span>
+		<span class="n">ureg</span><span class="p">(</span><span class="n">tocheck</span><span class="p">)</span>
+		<span class="k">return</span> <span class="bp">True</span>
+	<span class="k">except</span> <span class="n">pint</span><span class="o">.</span><span class="n">UndefinedUnitError</span><span class="p">:</span>
+		<span class="k">return</span> <span class="bp">False</span>
+
+</div>
+<div class="viewcode-block" id="unit_from_str"><a class="viewcode-back" href="../../../source/_modules/snomtools.calcs.html#snomtools.calcs.units.unit_from_str">[docs]</a><span class="k">def</span> <span class="nf">unit_from_str</span><span class="p">(</span><span class="n">tocheck</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Checks if a string can be interpreted as a unit and returns the corresponding unit.</span>
+
+<span class="sd">	:param tocheck: String, The input to check.</span>
+
+<span class="sd">	:return: Quantity with magnitude 1 and the corresponding unit, or None if not castable.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">try</span><span class="p">:</span>
+		<span class="n">unit</span> <span class="o">=</span> <span class="n">ureg</span><span class="p">(</span><span class="n">tocheck</span><span class="p">)</span>
+		<span class="k">return</span> <span class="n">unit</span>
+	<span class="k">except</span> <span class="n">pint</span><span class="o">.</span><span class="n">UndefinedUnitError</span><span class="p">:</span>
+		<span class="k">return</span> <span class="bp">None</span>
+
+</div>
+<div class="viewcode-block" id="normalize_unitstr"><a class="viewcode-back" href="../../../source/_modules/snomtools.calcs.html#snomtools.calcs.units.normalize_unitstr">[docs]</a><span class="k">def</span> <span class="nf">normalize_unitstr</span><span class="p">(</span><span class="n">unitstr</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Returns the normalized unit string, meaning the string conversion of the casted unit.</span>
+
+<span class="sd">	:param unitstr: string: to convert</span>
+
+<span class="sd">	:return: string: converted</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">ureg</span><span class="p">(</span><span class="n">unitstr</span><span class="p">)</span><span class="o">.</span><span class="n">units</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="is_quantity"><a class="viewcode-back" href="../../../source/_modules/snomtools.calcs.html#snomtools.calcs.units.is_quantity">[docs]</a><span class="k">def</span> <span class="nf">is_quantity</span><span class="p">(</span><span class="n">tocheck</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Tries if the given object is a pint quantity.</span>
+
+<span class="sd">	:param tocheck: The object to check.</span>
+
+<span class="sd">	:return: Bool.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tocheck</span><span class="p">,</span> <span class="n">pint</span><span class="o">.</span><span class="n">quantity</span><span class="o">.</span><span class="n">_Quantity</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="to_ureg"><a class="viewcode-back" href="../../../source/_modules/snomtools.calcs.html#snomtools.calcs.units.to_ureg">[docs]</a><span class="k">def</span> <span class="nf">to_ureg</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">convert_quantities</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	This method is an import function to import alien quantities (of different unit registries) or numeric formats into</span>
+<span class="sd">		the ureg.</span>
+
+<span class="sd">	:param input_: The input quantity or numeric format (e.g. float, int, numpy array) or string (e.g. &quot;5 nm&quot;)</span>
+
+<span class="sd">	:param unit: Given as a valid unit string. If a numeric format is used, this specifies the unit of it. If a quantity</span>
+<span class="sd">		is used, the output quantity will be converted to it.</span>
+
+<span class="sd">	:param convert_quantities: Boolean: Specifies what should be done if input_ is a quantity.</span>
+<span class="sd">		True: convert the quantity to the unit if specified by unit parameter. (The default)</span>
+<span class="sd">		False: only assure the dimension is correct and import to ureg, but leave unit of input_ as is is.</span>
+
+<span class="sd">	:return: The imported quantity.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+
+	<span class="c"># Check if input is quantity:</span>
+	<span class="k">if</span> <span class="n">is_quantity</span><span class="p">(</span><span class="n">input_</span><span class="p">):</span>
+		<span class="c"># If output unit is specified, make sure it has a compatible dimension. Else a DimensionalityError will be</span>
+		<span class="c"># raised:</span>
+		<span class="k">if</span> <span class="n">unit</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">same_dimension</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="n">to_ureg</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">unit</span><span class="p">)):</span>
+			<span class="k">raise</span> <span class="n">pint</span><span class="o">.</span><span class="n">DimensionalityError</span><span class="p">(</span><span class="n">input_</span><span class="o">.</span><span class="n">units</span><span class="p">,</span> <span class="n">to_ureg</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">unit</span><span class="p">)</span><span class="o">.</span><span class="n">units</span><span class="p">,</span>
+										   <span class="n">extra_msg</span><span class="o">=</span><span class="s">&quot;Incompatible units given to to_ureg!&quot;</span><span class="p">)</span>
+		<span class="c"># Check if input is already of our ureg. If so, nothing to do other then convert if unit is specified:</span>
+		<span class="k">if</span> <span class="n">input_</span><span class="o">.</span><span class="n">_REGISTRY</span> <span class="ow">is</span> <span class="n">ureg</span><span class="p">:</span>
+			<span class="k">if</span> <span class="n">unit</span> <span class="ow">and</span> <span class="n">convert_quantities</span> <span class="ow">and</span> <span class="n">input_</span><span class="o">.</span><span class="n">units</span> <span class="o">!=</span> <span class="n">to_ureg</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">unit</span><span class="p">)</span><span class="o">.</span><span class="n">units</span><span class="p">:</span>
+				<span class="k">return</span> <span class="n">input_</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">unit</span><span class="p">)</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="k">return</span> <span class="n">input_</span>
+		<span class="k">else</span><span class="p">:</span>  <span class="c"># Use inputs magnitude, but our corresponding ureg unit.</span>
+			<span class="k">if</span> <span class="n">unit</span> <span class="ow">and</span> <span class="n">convert_quantities</span><span class="p">:</span>
+				<span class="k">return</span> <span class="n">Quantity</span><span class="p">(</span><span class="n">input_</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">input_</span><span class="o">.</span><span class="n">units</span><span class="p">))</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">unit</span><span class="p">)</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="k">return</span> <span class="n">Quantity</span><span class="p">(</span><span class="n">input_</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">input_</span><span class="o">.</span><span class="n">units</span><span class="p">))</span>
+	<span class="k">elif</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="nb">unicode</span><span class="p">)):</span>
+		<span class="k">if</span> <span class="n">unit</span><span class="p">:</span>
+			<span class="k">return</span> <span class="n">ureg</span><span class="p">(</span><span class="n">input_</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">unit</span><span class="p">)</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">return</span> <span class="n">ureg</span><span class="p">(</span><span class="n">input_</span><span class="p">)</span>
+	<span class="k">else</span><span class="p">:</span>  <span class="c"># we are dealing with numerial data</span>
+		<span class="k">return</span> <span class="n">Quantity</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="n">unit</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="as_ureg_quantities"><a class="viewcode-back" href="../../../source/_modules/snomtools.calcs.html#snomtools.calcs.units.as_ureg_quantities">[docs]</a><span class="k">def</span> <span class="nf">as_ureg_quantities</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+	<span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">:</span>
+		<span class="k">yield</span> <span class="n">to_ureg</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">unit</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="magnitudes"><a class="viewcode-back" href="../../../source/_modules/snomtools.calcs.html#snomtools.calcs.units.magnitudes">[docs]</a><span class="k">def</span> <span class="nf">magnitudes</span><span class="p">(</span><span class="n">stream</span><span class="p">):</span>
+	<span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">:</span>
+		<span class="k">yield</span> <span class="n">e</span><span class="o">.</span><span class="n">magnitude</span>
+</div>
+<div class="viewcode-block" id="units"><a class="viewcode-back" href="../../../source/_modules/snomtools.calcs.html#snomtools.calcs.units.units">[docs]</a><span class="k">def</span> <span class="nf">units</span><span class="p">(</span><span class="n">stream</span><span class="p">):</span>
+	<span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">:</span>
+		<span class="k">yield</span> <span class="n">e</span><span class="o">.</span><span class="n">units</span>
+</div>
+<div class="viewcode-block" id="meshgrid"><a class="viewcode-back" href="../../../source/_modules/snomtools.calcs.html#snomtools.calcs.units.meshgrid">[docs]</a><span class="k">def</span> <span class="nf">meshgrid</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Does the same as numpy.meshgrid, but preserves units.</span>
+
+<span class="sd">	:return:</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="n">unitbuffer</span> <span class="o">=</span> <span class="p">[]</span>
+	<span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+		<span class="n">unitbuffer</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">units</span><span class="p">))</span>
+	<span class="n">gridtup</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+	<span class="n">outlist</span> <span class="o">=</span> <span class="p">[]</span>
+	<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gridtup</span><span class="p">)):</span>
+		<span class="n">outlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">to_ureg</span><span class="p">(</span><span class="n">gridtup</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">unitbuffer</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+	<span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">outlist</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">snomtools 0.0.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, AG Aeschlimann, FB Physik, TU Kaiserslautern.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

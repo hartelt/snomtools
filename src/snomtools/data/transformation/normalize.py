@@ -1,7 +1,7 @@
-__author__ = 'hartelt'
 """
 This script holds transformation functions for datasets, normalize data relative to reference data.
 """
+__author__ = 'hartelt'
 
 import numpy
 import snomtools.data.datasets

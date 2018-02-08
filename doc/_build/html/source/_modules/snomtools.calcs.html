@@ -1,0 +1,615 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>snomtools.calcs package &mdash; snomtools 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/sidebar.js"></script>
+    <link rel="top" title="snomtools 0.0.1 documentation" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">snomtools 0.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="snomtools-calcs-package">
+<h1>snomtools.calcs package<a class="headerlink" href="#snomtools-calcs-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="snomtools.calcs.materials.html">snomtools.calcs.materials package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="snomtools.calcs.materials.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="snomtools.calcs.materials.html#module-snomtools.calcs.materials.dielectrics">snomtools.calcs.materials.dielectrics module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="snomtools.calcs.materials.html#module-snomtools.calcs.materials.literature">snomtools.calcs.materials.literature module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="snomtools.calcs.materials.html#module-snomtools.calcs.materials.metals">snomtools.calcs.materials.metals module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="snomtools.calcs.materials.html#module-snomtools.calcs.materials">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="snomtools.calcs.plasmons.html">snomtools.calcs.plasmons package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="snomtools.calcs.plasmons.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="snomtools.calcs.plasmons.html#module-snomtools.calcs.plasmons.spp">snomtools.calcs.plasmons.spp module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="snomtools.calcs.plasmons.html#module-snomtools.calcs.plasmons">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-snomtools.calcs.constants">
+<span id="snomtools-calcs-constants-module"></span><h2>snomtools.calcs.constants module<a class="headerlink" href="#module-snomtools.calcs.constants" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="snomtools.calcs.constants.test">
+<tt class="descclassname">snomtools.calcs.constants.</tt><tt class="descname">test</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/calcs/constants.html#test"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.calcs.constants.test" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-snomtools.calcs.conversions">
+<span id="snomtools-calcs-conversions-module"></span><h2>snomtools.calcs.conversions module<a class="headerlink" href="#module-snomtools.calcs.conversions" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="snomtools.calcs.conversions.deg2rad">
+<tt class="descclassname">snomtools.calcs.conversions.</tt><tt class="descname">deg2rad</tt><big>(</big><em>angle</em>, <em>return_numeric=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/calcs/conversions.html#deg2rad"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.calcs.conversions.deg2rad" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts the given angle in degrees to radians</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>angle</strong> &#8211; the angle in degrees</li>
+<li><strong>return_numeric</strong> &#8211; flag to return numeric formats instead of quantities. default is input format.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the angle in rad</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snomtools.calcs.conversions.epsilon2n">
+<tt class="descclassname">snomtools.calcs.conversions.</tt><tt class="descname">epsilon2n</tt><big>(</big><em>epsilon</em>, <em>return_numeric=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/calcs/conversions.html#epsilon2n"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.calcs.conversions.epsilon2n" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts a complex dielectric constant to the corresponding refraction index.
+(...which is simply the complex square root of it.)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>epsilon</strong> &#8211; the complex dielectric constant</li>
+<li><strong>return_numeric</strong> &#8211; flag to return numeric formats instead of quantities. default is input format.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the complex refractive index</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snomtools.calcs.conversions.ev2joule">
+<tt class="descclassname">snomtools.calcs.conversions.</tt><tt class="descname">ev2joule</tt><big>(</big><em>energy</em>, <em>return_numeric=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/calcs/conversions.html#ev2joule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.calcs.conversions.ev2joule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts an energy value from eV to J.
+E/J = E/eV * e
+for e is the elementary charge.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>energy</strong> &#8211; the energy in eV</li>
+<li><strong>return_numeric</strong> &#8211; flag to return numeric formats instead of quantities. default is input format.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the energy in J</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snomtools.calcs.conversions.joule2ev">
+<tt class="descclassname">snomtools.calcs.conversions.</tt><tt class="descname">joule2ev</tt><big>(</big><em>energy</em>, <em>return_numeric=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/calcs/conversions.html#joule2ev"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.calcs.conversions.joule2ev" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts an energy value from J to eV.
+E/eV = E/J / e
+for e is the elementary charge.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>energy</strong> &#8211; the energy in J</li>
+<li><strong>return_numeric</strong> &#8211; flag to return numeric formats instead of quantities. default is input format.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>:return:the energy in eV</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="snomtools.calcs.conversions.k2lambda">
+<tt class="descclassname">snomtools.calcs.conversions.</tt><tt class="descname">k2lambda</tt><big>(</big><em>k</em>, <em>return_numeric=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/calcs/conversions.html#k2lambda"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.calcs.conversions.k2lambda" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts the given angular wavenumber, k, to the corresponding wavelength.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>k</strong> &#8211; the angular wavenumber in rad/m</li>
+<li><strong>return_numeric</strong> &#8211; flag to return numeric formats instead of quantities. default is input format.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the wavelength in m</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snomtools.calcs.conversions.k_beat2k_spp">
+<tt class="descclassname">snomtools.calcs.conversions.</tt><tt class="descname">k_beat2k_spp</tt><big>(</big><em>k_b</em>, <em>k_l</em>, <em>angle</em>, <em>return_numeric=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/calcs/conversions.html#k_beat2k_spp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.calcs.conversions.k_beat2k_spp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extracts the SPP wavenumber out of the PEEM beat pattern wavenumber
+for a certain angle of incidence.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>k_b</strong> &#8211; the beat pattern wavenumber in 1/m (rad/m)</li>
+<li><strong>k_l</strong> &#8211; the laser wavenumber in 1/m (rad/m)</li>
+<li><strong>angle</strong> &#8211; the incidence angle of light in degrees</li>
+<li><strong>return_numeric</strong> &#8211; flag to return numeric formats instead of quantities. default is input format.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the plasmon beat pattern wavenumber in 1/m (rad/m)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snomtools.calcs.conversions.lambda2k">
+<tt class="descclassname">snomtools.calcs.conversions.</tt><tt class="descname">lambda2k</tt><big>(</big><em>lambda_</em>, <em>return_numeric=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/calcs/conversions.html#lambda2k"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.calcs.conversions.lambda2k" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts the given wavelength to the corresponding angular wavenumber, k.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>lambda</strong> &#8211; the wavelength in meters</li>
+<li><strong>return_numeric</strong> &#8211; flag to return numeric formats instead of quantities. default is input format.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the angular wavenumber in 1/m (rad/m)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snomtools.calcs.conversions.lambda2omega">
+<tt class="descclassname">snomtools.calcs.conversions.</tt><tt class="descname">lambda2omega</tt><big>(</big><em>lambda_</em>, <em>return_numeric=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/calcs/conversions.html#lambda2omega"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.calcs.conversions.lambda2omega" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts a light wavelength to the corresponding angular frequency.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>lambda</strong> &#8211; the wavelength value in m</li>
+<li><strong>return_numeric</strong> &#8211; flag to return numeric formats instead of quantities. default is input format.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the angular frequency in Hz (rad/s)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snomtools.calcs.conversions.length2time">
+<tt class="descclassname">snomtools.calcs.conversions.</tt><tt class="descname">length2time</tt><big>(</big><em>length</em>, <em>n=1.0</em>, <em>outunit='s'</em>, <em>return_numeric=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/calcs/conversions.html#length2time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.calcs.conversions.length2time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts a length to a time in the context of light travel time.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>length</strong> &#8211; A length, assumed in meters if given as numerical format.</li>
+<li><strong>n</strong> &#8211; Float or dimensionless quantity: The refraction index of the medium.</li>
+<li><strong>outunit</strong> &#8211; A valid time unit string.</li>
+<li><strong>return_numeric</strong> &#8211; flag to return numeric formats instead of quantities. default is input format.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">The time, given in the unit specified in outunit.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snomtools.calcs.conversions.n2epsilon">
+<tt class="descclassname">snomtools.calcs.conversions.</tt><tt class="descname">n2epsilon</tt><big>(</big><em>n</em>, <em>return_numeric=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/calcs/conversions.html#n2epsilon"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.calcs.conversions.n2epsilon" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts a complex refraction index to the corresponding dielectric constant.
+(...which is simply the complex second power of it.)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>n</strong> &#8211; the complex refractive index</li>
+<li><strong>return_numeric</strong> &#8211; flag to return numeric formats instead of quantities. default is input format.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the complex dielectric constant</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snomtools.calcs.conversions.omega2energy">
+<tt class="descclassname">snomtools.calcs.conversions.</tt><tt class="descname">omega2energy</tt><big>(</big><em>omega</em>, <em>return_numeric=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/calcs/conversions.html#omega2energy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.calcs.conversions.omega2energy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts an angular frequency to the corresponding energy.
+E = hbar * omega</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>omega</strong> &#8211; the angular frequency in rad/s</li>
+<li><strong>return_numeric</strong> &#8211; flag to return numeric formats instead of quantities. default is input format.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>:return:the energy in J</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="snomtools.calcs.conversions.omega2lambda">
+<tt class="descclassname">snomtools.calcs.conversions.</tt><tt class="descname">omega2lambda</tt><big>(</big><em>omega</em>, <em>return_numeric=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/calcs/conversions.html#omega2lambda"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.calcs.conversions.omega2lambda" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts the given angular frequency to the corresponding wavelength.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>omega</strong> &#8211; the angular frequency in Hz (rad/s)</li>
+<li><strong>return_numeric</strong> &#8211; flag to return numeric formats instead of quantities. default is input format.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the wavelength lambda in m</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snomtools.calcs.conversions.rad2deg">
+<tt class="descclassname">snomtools.calcs.conversions.</tt><tt class="descname">rad2deg</tt><big>(</big><em>rad</em>, <em>return_numeric=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/calcs/conversions.html#rad2deg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.calcs.conversions.rad2deg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts the given angle from radians to degrees</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>rad</strong> &#8211; the angle in rad</li>
+<li><strong>return_numeric</strong> &#8211; flag to return numeric formats instead of quantities. default is input format.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the angle in degees</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snomtools.calcs.conversions.time2length">
+<tt class="descclassname">snomtools.calcs.conversions.</tt><tt class="descname">time2length</tt><big>(</big><em>time</em>, <em>n=1.0</em>, <em>outunit='m'</em>, <em>return_numeric=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/calcs/conversions.html#time2length"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.calcs.conversions.time2length" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts a time to a length in the context of light travel time.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>time</strong> &#8211; A time, assumed in seconds if given as numerical format.</li>
+<li><strong>n</strong> &#8211; Float or dimensionless quantity: The refraction index of the medium.</li>
+<li><strong>outunit</strong> &#8211; A valid length unit string.</li>
+<li><strong>return_numeric</strong> &#8211; flag to return numeric formats instead of quantities. default is input format.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">The length, given in the unit specified in outunit.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-snomtools.calcs.prefixes">
+<span id="snomtools-calcs-prefixes-module"></span><h2>snomtools.calcs.prefixes module<a class="headerlink" href="#module-snomtools.calcs.prefixes" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-snomtools.calcs.units">
+<span id="snomtools-calcs-units-module"></span><h2>snomtools.calcs.units module<a class="headerlink" href="#module-snomtools.calcs.units" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="snomtools.calcs.units.as_ureg_quantities">
+<tt class="descclassname">snomtools.calcs.units.</tt><tt class="descname">as_ureg_quantities</tt><big>(</big><em>stream</em>, <em>unit=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/calcs/units.html#as_ureg_quantities"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.calcs.units.as_ureg_quantities" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="snomtools.calcs.units.is_quantity">
+<tt class="descclassname">snomtools.calcs.units.</tt><tt class="descname">is_quantity</tt><big>(</big><em>tocheck</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/calcs/units.html#is_quantity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.calcs.units.is_quantity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tries if the given object is a pint quantity.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>tocheck</strong> &#8211; The object to check.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Bool.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snomtools.calcs.units.is_valid_unit">
+<tt class="descclassname">snomtools.calcs.units.</tt><tt class="descname">is_valid_unit</tt><big>(</big><em>tocheck</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/calcs/units.html#is_valid_unit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.calcs.units.is_valid_unit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if a string can be interpreted as a unit.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>tocheck</strong> &#8211; String, The input to check.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Boolean if the input can be interpreted as a unit.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snomtools.calcs.units.magnitudes">
+<tt class="descclassname">snomtools.calcs.units.</tt><tt class="descname">magnitudes</tt><big>(</big><em>stream</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/calcs/units.html#magnitudes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.calcs.units.magnitudes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="snomtools.calcs.units.meshgrid">
+<tt class="descclassname">snomtools.calcs.units.</tt><tt class="descname">meshgrid</tt><big>(</big><em>*args</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/calcs/units.html#meshgrid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.calcs.units.meshgrid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Does the same as numpy.meshgrid, but preserves units.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snomtools.calcs.units.normalize_unitstr">
+<tt class="descclassname">snomtools.calcs.units.</tt><tt class="descname">normalize_unitstr</tt><big>(</big><em>unitstr</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/calcs/units.html#normalize_unitstr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.calcs.units.normalize_unitstr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the normalized unit string, meaning the string conversion of the casted unit.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>unitstr</strong> &#8211; string: to convert</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">string: converted</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snomtools.calcs.units.same_dimension">
+<tt class="descclassname">snomtools.calcs.units.</tt><tt class="descname">same_dimension</tt><big>(</big><em>*args</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/calcs/units.html#same_dimension"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.calcs.units.same_dimension" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if all of the given arguments are of the same (physical) dimension.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>args</strong> &#8211; </td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Boolean.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snomtools.calcs.units.same_unit">
+<tt class="descclassname">snomtools.calcs.units.</tt><tt class="descname">same_unit</tt><big>(</big><em>*args</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/calcs/units.html#same_unit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.calcs.units.same_unit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if all of the given arguments are of the same unit.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>args</strong> &#8211; </td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Boolean.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snomtools.calcs.units.to_ureg">
+<tt class="descclassname">snomtools.calcs.units.</tt><tt class="descname">to_ureg</tt><big>(</big><em>input_</em>, <em>unit=None</em>, <em>convert_quantities=True</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/calcs/units.html#to_ureg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.calcs.units.to_ureg" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>This method is an import function to import alien quantities (of different unit registries) or numeric formats into</dt>
+<dd>the ureg.</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>input</strong> &#8211; The input quantity or numeric format (e.g. float, int, numpy array) or string (e.g. &#8220;5 nm&#8221;)</li>
+<li><strong>unit</strong> &#8211; Given as a valid unit string. If a numeric format is used, this specifies the unit of it. If a quantity
+is used, the output quantity will be converted to it.</li>
+<li><strong>convert_quantities</strong> &#8211; Boolean: Specifies what should be done if <a href="#id1"><span class="problematic" id="id2">input_</span></a> is a quantity.
+True: convert the quantity to the unit if specified by unit parameter. (The default)
+False: only assure the dimension is correct and import to ureg, but leave unit of <a href="#id3"><span class="problematic" id="id4">input_</span></a> as is is.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">The imported quantity.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snomtools.calcs.units.unit_from_str">
+<tt class="descclassname">snomtools.calcs.units.</tt><tt class="descname">unit_from_str</tt><big>(</big><em>tocheck</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/calcs/units.html#unit_from_str"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.calcs.units.unit_from_str" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if a string can be interpreted as a unit and returns the corresponding unit.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>tocheck</strong> &#8211; String, The input to check.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Quantity with magnitude 1 and the corresponding unit, or None if not castable.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snomtools.calcs.units.units">
+<tt class="descclassname">snomtools.calcs.units.</tt><tt class="descname">units</tt><big>(</big><em>stream</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/calcs/units.html#units"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.calcs.units.units" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-snomtools.calcs">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-snomtools.calcs" title="Permalink to this headline">¶</a></h2>
+<p>This package provides tools for processing data.
+That includes conversion tools, as well as tools for the calculation of material properties.
+There will also be a collection of physical constants.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">snomtools.calcs package</a><ul>
+<li><a class="reference internal" href="#subpackages">Subpackages</a></li>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-snomtools.calcs.constants">snomtools.calcs.constants module</a></li>
+<li><a class="reference internal" href="#module-snomtools.calcs.conversions">snomtools.calcs.conversions module</a></li>
+<li><a class="reference internal" href="#module-snomtools.calcs.prefixes">snomtools.calcs.prefixes module</a></li>
+<li><a class="reference internal" href="#module-snomtools.calcs.units">snomtools.calcs.units module</a></li>
+<li><a class="reference internal" href="#module-snomtools.calcs">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../../_sources/source/_modules/snomtools.calcs.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">snomtools 0.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, AG Aeschlimann, FB Physik, TU Kaiserslautern.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,714 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>snomtools.data.imports.tiff &mdash; snomtools 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../../_static/sidebar.js"></script>
+    <link rel="top" title="snomtools 0.0.1 documentation" href="../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">snomtools 0.0.1 documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for snomtools.data.imports.tiff</h1><div class="highlight"><pre>
+<span class="c"># coding=utf-8</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This scripts imports tiff files, as generated for example by Terra and the PEEM Camera Software. The methods defined</span>
+<span class="sd">here will read those files and return the data as a DataSet instances. 3D tiff stacks shall be supported.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s">&#39;hartelt&#39;</span>
+
+<span class="kn">import</span> <span class="nn">snomtools.data.datasets</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">tifffile</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">snomtools.calcs.units</span> <span class="kn">as</span> <span class="nn">u</span>
+
+
+<div class="viewcode-block" id="is_tif"><a class="viewcode-back" href="../../../../source/_modules/snomtools.data.imports.html#snomtools.data.imports.tiff.is_tif">[docs]</a><span class="k">def</span> <span class="nf">is_tif</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Checks if a filename is a tifffile.</span>
+
+<span class="sd">	:param str filename: The filename.</span>
+
+<span class="sd">	:rtype: bool</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">filename</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&quot;.tiff&quot;</span><span class="p">,</span> <span class="s">&quot;.tif&quot;</span><span class="p">]</span>
+
+</div>
+<div class="viewcode-block" id="search_tag"><a class="viewcode-back" href="../../../../source/_modules/snomtools.data.imports.html#snomtools.data.imports.tiff.search_tag">[docs]</a><span class="k">def</span> <span class="nf">search_tag</span><span class="p">(</span><span class="n">tif</span><span class="p">,</span> <span class="n">tag_id</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Searches for a tag in all pages of a tiff file and returns the first match as</span>
+
+<span class="sd">	:param TiffFile tif: An open TiffFile. See tifffile.TiffFile.</span>
+
+<span class="sd">	:param str tag_id: The ID of the tag to search for.</span>
+
+<span class="sd">	:return: The tag object.</span>
+<span class="sd">	:rtype: tifffile.TiffTag</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">for</span> <span class="n">page</span> <span class="ow">in</span> <span class="n">tif</span><span class="p">:</span>
+		<span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">page</span><span class="o">.</span><span class="n">tags</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+			<span class="k">if</span> <span class="n">tag</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">tag_id</span><span class="p">:</span>
+				<span class="k">return</span> <span class="n">tag</span>
+	<span class="k">print</span><span class="p">(</span><span class="s">&quot;WARNING: Tiff tag not found.&quot;</span><span class="p">)</span>
+	<span class="k">return</span> <span class="bp">None</span>
+
+</div>
+<div class="viewcode-block" id="peem_dld_read"><a class="viewcode-back" href="../../../../source/_modules/snomtools.data.imports.html#snomtools.data.imports.tiff.peem_dld_read">[docs]</a><span class="k">def</span> <span class="nf">peem_dld_read</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&quot;terra&quot;</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Reads a time-resolved dld dataset. Shadows the different readin functions for the different measurement programs</span>
+<span class="sd">	and returns the generated DataSets.</span>
+
+<span class="sd">	:param filepath: String: The (absolute or relative) path of the input file or folder.</span>
+
+<span class="sd">	:param mode: String: The readin mode. Valid options are &quot;terra&quot; for a tiff generated with Terra (default),</span>
+<span class="sd">		&quot;pne&quot; for a folder of tiffs generated with the Focus ProNanoESCA Software.</span>
+
+<span class="sd">	:return: The generated DataSet.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&quot;terra&quot;</span><span class="p">:</span>
+		<span class="k">return</span> <span class="n">peem_dld_read_terra</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+	<span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&quot;pne&quot;</span><span class="p">:</span>
+		<span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s">&quot;ProNanoESCA DLD tiff readin not yet implemented.&quot;</span><span class="p">)</span>
+	<span class="c"># TODO: Implement Focus ProNanoESCA readin.</span>
+	<span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&quot;dldgui&quot;</span><span class="p">:</span>
+		<span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s">&quot;dldgui tiff readin not yet implemented.&quot;</span><span class="p">)</span>
+	<span class="c"># TODO: Implement dldgui readin.</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Unrecognized readin mode given to peem_dld_read&quot;</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="peem_dld_read_terra"><a class="viewcode-back" href="../../../../source/_modules/snomtools.data.imports.html#snomtools.data.imports.tiff.peem_dld_read_terra">[docs]</a><span class="k">def</span> <span class="nf">peem_dld_read_terra</span><span class="p">(</span><span class="n">filepath</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Reads a tif file as generated by Terra when using the DLD. Therefore, the 3D tif dimensions are interpreted as</span>
+<span class="sd">	time-channel, x and y, with the first two time channels being the sum and the error image, which will be ignored.</span>
+
+<span class="sd">	:param filepath: String: The (absolute or relative) path of input file.</span>
+
+<span class="sd">	:return: The dataset instance generated from the tif file.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="c"># Translate input path to absolute path:</span>
+	<span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+	<span class="n">filebase</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+
+	<span class="c"># Read tif file to numpy array. Axes will be (timechannel, x, y):</span>
+	<span class="n">infile</span> <span class="o">=</span> <span class="n">tifffile</span><span class="o">.</span><span class="n">TiffFile</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+	<span class="n">indata</span> <span class="o">=</span> <span class="n">infile</span><span class="o">.</span><span class="n">asarray</span><span class="p">()</span>
+
+	<span class="c"># Read time binning metadata from tags:</span>
+	<span class="n">roi_and_bin_id</span> <span class="o">=</span> <span class="s">&quot;41010&quot;</span>  <span class="c"># as defined by Christian Schneider #define TIFFTAG_ROI_AND_BIN 41010</span>
+	<span class="n">tag</span> <span class="o">=</span> <span class="n">search_tag</span><span class="p">(</span><span class="n">infile</span><span class="p">,</span> <span class="n">roi_and_bin_id</span><span class="p">)</span>
+	<span class="c"># roi_and_bin_list = tag.value</span>
+	<span class="n">T</span><span class="p">,</span> <span class="n">St</span><span class="p">,</span> <span class="n">Tbin</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">tag</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">tag</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="mi">5</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">tag</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="mi">8</span><span class="p">])</span>
+	<span class="n">infile</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+	<span class="c"># Remove sum and error image:</span>
+	<span class="n">realdata</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">indata</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+	<span class="c"># Initialize data for dataset:</span>
+	<span class="n">dataarray</span> <span class="o">=</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span><span class="n">realdata</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s">&#39;count&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">&#39;counts&#39;</span><span class="p">,</span> <span class="n">plotlabel</span><span class="o">=</span><span class="s">&#39;Counts&#39;</span><span class="p">)</span>
+	<span class="k">if</span> <span class="n">tag</span><span class="p">:</span>
+		<span class="c"># The following commented lines won&#39;t work because of Terras irreproducible channel assignment and saving...</span>
+		<span class="c"># assert (realdata.shape[0] == round(St / float(Tbin))), \</span>
+		<span class="c"># 	&quot;ERROR: Tifffile metadata time binning does not fit to data size.&quot;</span>
+		<span class="c"># uplim = T+(round(St/float(Tbin)))*Tbin # upper limit calculation</span>
+		<span class="c"># So just take the data dimensions... and pray the channels start at the set T value:</span>
+		<span class="n">taxis</span> <span class="o">=</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">Axis</span><span class="p">([</span><span class="n">T</span> <span class="o">+</span> <span class="n">i</span> <span class="o">*</span> <span class="n">Tbin</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">realdata</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])],</span> <span class="n">label</span><span class="o">=</span><span class="s">&#39;channel&#39;</span><span class="p">,</span>
+											 <span class="n">plotlabel</span><span class="o">=</span><span class="s">&#39;Time Channel&#39;</span><span class="p">)</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="n">taxis</span> <span class="o">=</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">Axis</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">realdata</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">label</span><span class="o">=</span><span class="s">&#39;channel&#39;</span><span class="p">,</span>
+											 <span class="n">plotlabel</span><span class="o">=</span><span class="s">&#39;Time Channel&#39;</span><span class="p">)</span>
+	<span class="c"># Careful about orientation! This is like a matrix:</span>
+	<span class="c"># rows go first and are numbered in vertical direction -&gt; Y</span>
+	<span class="c"># columns go last and are numbered in horizontal direction -&gt; X</span>
+	<span class="n">xaxis</span> <span class="o">=</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">Axis</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">realdata</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="n">unit</span><span class="o">=</span><span class="s">&#39;pixel&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">&#39;y&#39;</span><span class="p">,</span> <span class="n">plotlabel</span><span class="o">=</span><span class="s">&#39;y&#39;</span><span class="p">)</span>
+	<span class="n">yaxis</span> <span class="o">=</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">Axis</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">realdata</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span> <span class="n">unit</span><span class="o">=</span><span class="s">&#39;pixel&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">&#39;x&#39;</span><span class="p">,</span> <span class="n">plotlabel</span><span class="o">=</span><span class="s">&#39;x&#39;</span><span class="p">)</span>
+
+	<span class="c"># Return dataset:</span>
+	<span class="k">return</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">DataSet</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="n">filebase</span><span class="p">,</span> <span class="n">datafields</span><span class="o">=</span><span class="p">[</span><span class="n">dataarray</span><span class="p">],</span> <span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="n">taxis</span><span class="p">,</span> <span class="n">xaxis</span><span class="p">,</span> <span class="n">yaxis</span><span class="p">])</span>
+
+</div>
+<div class="viewcode-block" id="peem_camera_read"><a class="viewcode-back" href="../../../../source/_modules/snomtools.data.imports.html#snomtools.data.imports.tiff.peem_camera_read">[docs]</a><span class="k">def</span> <span class="nf">peem_camera_read</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&quot;camware&quot;</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Reads a PEEM image dataset aquired with the camera. Shadows the different readin functions for the different</span>
+<span class="sd">	measurement programs and returns the generated DataSets.</span>
+
+<span class="sd">	:param filepath: String: The (absolute or relative) path of the input file.</span>
+
+<span class="sd">	:param mode: String: The readin mode. Valid options are &quot;terra&quot; for a tiff generated with Terra,</span>
+<span class="sd">		&quot;camware&quot; for a tiff generated with the PCO CamWare Software (default) or &quot;pne&quot; for a tiff generated with the</span>
+<span class="sd">		Focus ProNanoESCA Software.</span>
+
+<span class="sd">	:return: The generated DataSet.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&quot;camware&quot;</span><span class="p">:</span>
+		<span class="k">return</span> <span class="n">peem_camera_read_camware</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+	<span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&quot;terra&quot;</span><span class="p">:</span>
+		<span class="k">return</span> <span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+	<span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&quot;pne&quot;</span><span class="p">:</span>
+		<span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s">&quot;ProNanoESCA DLD tiff readin not yet implemented.&quot;</span><span class="p">)</span>
+	<span class="c"># TODO: Implement Focus ProNanoESCA readin.</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Unrecognized readin mode given to peem_dld_read&quot;</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="peem_camera_read_camware"><a class="viewcode-back" href="../../../../source/_modules/snomtools.data.imports.html#snomtools.data.imports.tiff.peem_camera_read_camware">[docs]</a><span class="k">def</span> <span class="nf">peem_camera_read_camware</span><span class="p">(</span><span class="n">filepath</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Reads a tif file as generated by the Camera Software (PCO Camware) when using the Camera. Therefore, the 2D tif</span>
+<span class="sd">	dimensions are interpreted as x and y.</span>
+
+<span class="sd">	:param filepath: String: The (absolute or relative) path of input file.</span>
+
+<span class="sd">	:return: The dataset instance generated from the tif file.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="c"># Translate input path to absolute path:</span>
+	<span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+	<span class="n">filebase</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+
+	<span class="c"># Read tif file to numpy array. Axes will be (timechannel, x, y):</span>
+	<span class="n">infile</span> <span class="o">=</span> <span class="n">tifffile</span><span class="o">.</span><span class="n">TiffFile</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+	<span class="n">indata</span> <span class="o">=</span> <span class="n">infile</span><span class="o">.</span><span class="n">asarray</span><span class="p">()</span>
+
+	<span class="c"># Initialize data for dataset:</span>
+	<span class="n">dataarray</span> <span class="o">=</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span><span class="n">indata</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s">&#39;count&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">&#39;counts&#39;</span><span class="p">,</span> <span class="n">plotlabel</span><span class="o">=</span><span class="s">&#39;Counts&#39;</span><span class="p">)</span>
+
+	<span class="c"># Careful about orientation! This is like a matrix:</span>
+	<span class="c"># rows go first and are numbered in vertical direction -&gt; Y</span>
+	<span class="c"># columns go last and are numbered in horizontal direction -&gt; X</span>
+	<span class="n">xaxis</span> <span class="o">=</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">Axis</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">indata</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">unit</span><span class="o">=</span><span class="s">&#39;pixel&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">&#39;y&#39;</span><span class="p">,</span> <span class="n">plotlabel</span><span class="o">=</span><span class="s">&#39;y&#39;</span><span class="p">)</span>
+	<span class="n">yaxis</span> <span class="o">=</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">Axis</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">indata</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="n">unit</span><span class="o">=</span><span class="s">&#39;pixel&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">&#39;x&#39;</span><span class="p">,</span> <span class="n">plotlabel</span><span class="o">=</span><span class="s">&#39;x&#39;</span><span class="p">)</span>
+
+	<span class="c"># Return dataset:</span>
+	<span class="k">return</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">DataSet</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="n">filebase</span><span class="p">,</span> <span class="n">datafields</span><span class="o">=</span><span class="p">[</span><span class="n">dataarray</span><span class="p">],</span> <span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="n">xaxis</span><span class="p">,</span> <span class="n">yaxis</span><span class="p">])</span>
+
+</div>
+<div class="viewcode-block" id="peem_camera_read_terra"><a class="viewcode-back" href="../../../../source/_modules/snomtools.data.imports.html#snomtools.data.imports.tiff.peem_camera_read_terra">[docs]</a><span class="k">def</span> <span class="nf">peem_camera_read_terra</span><span class="p">(</span><span class="n">filepath</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Reads a PEEM image aquired with the Camera and saved with Terra. For now, this just shadows the</span>
+<span class="sd">	peem_camera_read_camware function, because they work the same way, this can be changed in the future,</span>
+<span class="sd">	maybe to read addidional metadata generated by Terra.</span>
+
+<span class="sd">	:param filepath: String: The (absolute or relative) path of the input file.</span>
+
+<span class="sd">	:return: The generated DataSet.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">return</span> <span class="n">peem_camera_read_camware</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="powerlaw_folder_peem_camera"><a class="viewcode-back" href="../../../../source/_modules/snomtools.data.imports.html#snomtools.data.imports.tiff.powerlaw_folder_peem_camera">[docs]</a><span class="k">def</span> <span class="nf">powerlaw_folder_peem_camera</span><span class="p">(</span><span class="n">folderpath</span><span class="p">,</span> <span class="n">pattern</span><span class="o">=</span><span class="s">&quot;mW&quot;</span><span class="p">,</span> <span class="n">powerunit</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">powerunitlabel</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">	:param folderpath: The (relative or absolute) path of the folders containing the powerlaw measurement series.</span>
+
+<span class="sd">	:param pattern: string: A pattern the powers in the filenames are named with. For example in the default case</span>
+<span class="sd">		&quot;mW&quot;, the filename containing &#39;50,2mW&#39; or &#39;50.2mW&#39; or &#39;50.2 mW&#39; would accord to a power of 50.2 milliwatts. The</span>
+<span class="sd">		power units for the axis quantities are also cast from this pattern if not explicitly given with powerunit.</span>
+
+<span class="sd">	:param powerunit: A valid unit string that will be cast as the unit for the power axis values. If not given,</span>
+<span class="sd">		the pattern parameter will be cast as unit.</span>
+
+<span class="sd">	:param powerunitlabel: string: Will be used as the unit for the power axis plotlabel. Can be for example a LaTeX</span>
+<span class="sd">		siunitx command. If not given, the powerunit parameter will be used.</span>
+
+<span class="sd">	:return: The dataset containing the images stacked along a power axis.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">if</span> <span class="n">powerunit</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+		<span class="n">powerunit</span> <span class="o">=</span> <span class="n">pattern</span>
+	<span class="k">if</span> <span class="n">powerunitlabel</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+		<span class="n">powerunitlabel</span> <span class="o">=</span> <span class="n">powerunit</span>
+	<span class="n">pat</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">&#39;(\d*[,|.]?\d+)\s?&#39;</span> <span class="o">+</span> <span class="n">pattern</span><span class="p">)</span>
+
+	<span class="c"># Translate input path to absolute path:</span>
+	<span class="n">folderpath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">folderpath</span><span class="p">)</span>
+
+	<span class="c"># Inspect the given folder for the tif files of the powerlaw:</span>
+	<span class="n">powerfiles</span> <span class="o">=</span> <span class="p">{}</span>
+	<span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="nb">filter</span><span class="p">(</span><span class="n">is_tif</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">folderpath</span><span class="p">)):</span>
+		<span class="n">found</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pat</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+		<span class="k">if</span> <span class="n">found</span><span class="p">:</span>
+			<span class="n">power</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">found</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span> <span class="s">&#39;.&#39;</span><span class="p">))</span>
+			<span class="n">powerfiles</span><span class="p">[</span><span class="n">power</span><span class="p">]</span> <span class="o">=</span> <span class="n">filename</span>
+
+	<span class="n">axlist</span> <span class="o">=</span> <span class="p">[]</span>
+	<span class="n">datastack</span> <span class="o">=</span> <span class="p">[]</span>
+	<span class="k">for</span> <span class="n">power</span> <span class="ow">in</span> <span class="nb">iter</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">powerfiles</span><span class="o">.</span><span class="n">iterkeys</span><span class="p">())):</span>
+		<span class="n">datastack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">peem_camera_read</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">folderpath</span><span class="p">,</span> <span class="n">powerfiles</span><span class="p">[</span><span class="n">power</span><span class="p">])))</span>
+		<span class="n">axlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">power</span><span class="p">)</span>
+	<span class="n">powers</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">to_ureg</span><span class="p">(</span><span class="n">axlist</span><span class="p">,</span> <span class="n">powerunit</span><span class="p">)</span>
+
+	<span class="n">pl</span> <span class="o">=</span> <span class="s">&#39;Power / &#39;</span> <span class="o">+</span> <span class="n">powerunitlabel</span>  <span class="c"># Plot label for power axis.</span>
+	<span class="n">poweraxis</span> <span class="o">=</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">Axis</span><span class="p">(</span><span class="n">powers</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">&#39;power&#39;</span><span class="p">,</span> <span class="n">plotlabel</span><span class="o">=</span><span class="n">pl</span><span class="p">)</span>
+
+	<span class="k">return</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">stack_DataSets</span><span class="p">(</span><span class="n">datastack</span><span class="p">,</span> <span class="n">poweraxis</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">&quot;Powerlaw &quot;</span> <span class="o">+</span> <span class="n">folderpath</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="powerlaw_folder_peem_dld"><a class="viewcode-back" href="../../../../source/_modules/snomtools.data.imports.html#snomtools.data.imports.tiff.powerlaw_folder_peem_dld">[docs]</a><span class="k">def</span> <span class="nf">powerlaw_folder_peem_dld</span><span class="p">(</span><span class="n">folderpath</span><span class="p">,</span> <span class="n">pattern</span><span class="o">=</span><span class="s">&quot;mW&quot;</span><span class="p">,</span> <span class="n">powerunit</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">powerunitlabel</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">	:param folderpath: The (relative or absolute) path of the folders containing the powerlaw measurement series.</span>
+
+<span class="sd">	:param pattern: string: A pattern the powers in the filenames are named with. For example in the default case</span>
+<span class="sd">		&quot;mW&quot;, the filename containing &#39;50,2mW&#39; or &#39;50.2mW&#39; or &#39;50.2 mW&#39; would accord to a power of 50.2 milliwatts. The</span>
+<span class="sd">		power units for the axis quantities are also cast from this pattern if not explicitly given with powerunit.</span>
+
+<span class="sd">	:param powerunit: A valid unit string that will be cast as the unit for the power axis values. If not given,</span>
+<span class="sd">		the pattern parameter will be cast as unit.</span>
+
+<span class="sd">	:param powerunitlabel: string: Will be used as the unit for the power axis plotlabel. Can be for example a LaTeX</span>
+<span class="sd">		siunitx command. If not given, the powerunit parameter will be used.</span>
+
+<span class="sd">	:return: The dataset containing the images stacked along a power axis.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">if</span> <span class="n">powerunit</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+		<span class="n">powerunit</span> <span class="o">=</span> <span class="n">pattern</span>
+	<span class="k">if</span> <span class="n">powerunitlabel</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+		<span class="n">powerunitlabel</span> <span class="o">=</span> <span class="n">powerunit</span>
+	<span class="n">pat</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">&#39;(\d*[,|.]?\d+)\s?&#39;</span> <span class="o">+</span> <span class="n">pattern</span><span class="p">)</span>
+
+	<span class="c"># Translate input path to absolute path:</span>
+	<span class="n">folderpath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">folderpath</span><span class="p">)</span>
+
+	<span class="c"># Inspect the given folder for the tif files of the powerlaw:</span>
+	<span class="n">powerfiles</span> <span class="o">=</span> <span class="p">{}</span>
+	<span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="nb">filter</span><span class="p">(</span><span class="n">is_tif</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">folderpath</span><span class="p">)):</span>
+		<span class="n">found</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pat</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+		<span class="k">if</span> <span class="n">found</span><span class="p">:</span>
+			<span class="n">power</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">found</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span> <span class="s">&#39;.&#39;</span><span class="p">))</span>
+			<span class="n">powerfiles</span><span class="p">[</span><span class="n">power</span><span class="p">]</span> <span class="o">=</span> <span class="n">filename</span>
+
+	<span class="n">axlist</span> <span class="o">=</span> <span class="p">[]</span>
+	<span class="n">datastack</span> <span class="o">=</span> <span class="p">[]</span>
+	<span class="k">for</span> <span class="n">power</span> <span class="ow">in</span> <span class="nb">iter</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">powerfiles</span><span class="o">.</span><span class="n">iterkeys</span><span class="p">())):</span>
+		<span class="n">datastack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">peem_dld_read_terra</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">folderpath</span><span class="p">,</span> <span class="n">powerfiles</span><span class="p">[</span><span class="n">power</span><span class="p">])))</span>
+		<span class="n">axlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">power</span><span class="p">)</span>
+	<span class="n">powers</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">to_ureg</span><span class="p">(</span><span class="n">axlist</span><span class="p">,</span> <span class="n">powerunit</span><span class="p">)</span>
+
+	<span class="n">pl</span> <span class="o">=</span> <span class="s">&#39;Power / &#39;</span> <span class="o">+</span> <span class="n">powerunitlabel</span>  <span class="c"># Plot label for power axis.</span>
+	<span class="n">poweraxis</span> <span class="o">=</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">Axis</span><span class="p">(</span><span class="n">powers</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">&#39;power&#39;</span><span class="p">,</span> <span class="n">plotlabel</span><span class="o">=</span><span class="n">pl</span><span class="p">)</span>
+
+	<span class="k">return</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">stack_DataSets</span><span class="p">(</span><span class="n">datastack</span><span class="p">,</span> <span class="n">poweraxis</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">&quot;Powerlaw &quot;</span> <span class="o">+</span> <span class="n">folderpath</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="tr_folder_peem_camera_terra"><a class="viewcode-back" href="../../../../source/_modules/snomtools.data.imports.html#snomtools.data.imports.tiff.tr_folder_peem_camera_terra">[docs]</a><span class="k">def</span> <span class="nf">tr_folder_peem_camera_terra</span><span class="p">(</span><span class="n">folderpath</span><span class="p">,</span> <span class="n">delayunit</span><span class="o">=</span><span class="s">&quot;um&quot;</span><span class="p">,</span> <span class="n">delayfactor</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">delayunitlabel</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+								<span class="n">h5target</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Imports a Terra time scan folder that was measured by scanning the time steps in an interferometer while using</span>
+<span class="sd">	the Camera.</span>
+
+<span class="sd">	:param str folderpath: The path of the folder containing the scan data. Example: &quot;/path/to/measurement/1. Durchlauf&quot;</span>
+
+<span class="sd">	:param str delayunit: A valid unit string, according to the physical dimension that was scanned over. Typically,</span>
+<span class="sd">		this is:</span>
+<span class="sd">		 	* :code:`&quot;um&quot; Micrometers for the normal Interferometer.</span>
+<span class="sd">		 	* :code:`&quot;as&quot;` Attoseconds for the phase resolved interferometer.</span>
+
+<span class="sd">	:param float delayfactor: A factor that the numbers in the filenames need to be multiplied with to get the</span>
+<span class="sd">		real value of the scan point in units of delayunit. Typically for a time resolved measurement, this is</span>
+<span class="sd">		:code:`0.2` due to a decimal in the Terra file names, plus pulse delays are twice the stage position difference.</span>
+
+<span class="sd">	:param str delayunitlabel: A label for the delay axis. For example :code:`&quot;\\si{\\atto\\second}&quot;` if it&#39;s a PSI</span>
+<span class="sd">		measurement and plotting will be done with TeX typesetting.</span>
+
+<span class="sd">	:param h5target: The HDF5 target to write to.</span>
+<span class="sd">	:type h5target: str **or** h5py.Group **or** True, *optional*</span>
+
+<span class="sd">	:param bool verbose: Flag to print progress to stdout.</span>
+
+<span class="sd">	:return: Imported DataSet.</span>
+<span class="sd">	:rtype: DataSet</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
+		<span class="k">print</span><span class="p">(</span><span class="s">&quot;WARNING: Unrecognized (propably depreciated) keyword args used in tr_folder_peem_dld_terra!&quot;</span><span class="p">)</span>
+
+	<span class="k">if</span> <span class="n">delayunitlabel</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+		<span class="n">delayunitlabel</span> <span class="o">=</span> <span class="n">delayunit</span>
+	<span class="n">pl</span> <span class="o">=</span> <span class="s">&#39;Pulse Delay / &#39;</span> <span class="o">+</span> <span class="n">delayunitlabel</span>  <span class="c"># Plot label for time axis</span>
+	<span class="k">return</span> <span class="n">measurement_folder_peem_terra</span><span class="p">(</span><span class="n">folderpath</span><span class="p">,</span> <span class="s">&quot;camera&quot;</span><span class="p">,</span> <span class="s">&quot;D&quot;</span><span class="p">,</span> <span class="n">delayunit</span><span class="p">,</span> <span class="n">delayfactor</span><span class="p">,</span> <span class="s">&quot;delay&quot;</span><span class="p">,</span> <span class="n">pl</span><span class="p">,</span> <span class="n">h5target</span><span class="p">,</span>
+										 <span class="n">verbose</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="tr_psi_folder_peem_camera_terra"><a class="viewcode-back" href="../../../../source/_modules/snomtools.data.imports.html#snomtools.data.imports.tiff.tr_psi_folder_peem_camera_terra">[docs]</a><span class="k">def</span> <span class="nf">tr_psi_folder_peem_camera_terra</span><span class="p">(</span><span class="n">folderpath</span><span class="p">,</span> <span class="n">h5target</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Convenience shortcut method for PSI scans with Camera. Calls tr_folder_peem_camera_terra with correct parameters.</span>
+<span class="sd">	See: :func:`tr_folder_peem_camera_terra`</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">return</span> <span class="n">tr_folder_peem_camera_terra</span><span class="p">(</span><span class="n">folderpath</span><span class="p">,</span> <span class="s">&#39;as&#39;</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s">&quot;</span><span class="se">\\</span><span class="s">si{</span><span class="se">\\</span><span class="s">atto</span><span class="se">\\</span><span class="s">second}&quot;</span><span class="p">,</span> <span class="n">h5target</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="tr_normal_folder_peem_camera_terra"><a class="viewcode-back" href="../../../../source/_modules/snomtools.data.imports.html#snomtools.data.imports.tiff.tr_normal_folder_peem_camera_terra">[docs]</a><span class="k">def</span> <span class="nf">tr_normal_folder_peem_camera_terra</span><span class="p">(</span><span class="n">folderpath</span><span class="p">,</span> <span class="n">h5target</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Convenience shortcut method for normal interferometer scans with Camera. Calls tr_folder_peem_camera_terra with</span>
+<span class="sd">	correct parameters.</span>
+<span class="sd">	See: :func:`tr_folder_peem_camera_terra`</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">return</span> <span class="n">tr_folder_peem_camera_terra</span><span class="p">(</span><span class="n">folderpath</span><span class="p">,</span> <span class="s">&#39;um&#39;</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s">&quot;</span><span class="se">\\</span><span class="s">si{</span><span class="se">\\</span><span class="s">micro</span><span class="se">\\</span><span class="s">meter}&quot;</span><span class="p">,</span> <span class="n">h5target</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="tr_folder_peem_dld_terra"><a class="viewcode-back" href="../../../../source/_modules/snomtools.data.imports.html#snomtools.data.imports.tiff.tr_folder_peem_dld_terra">[docs]</a><span class="k">def</span> <span class="nf">tr_folder_peem_dld_terra</span><span class="p">(</span><span class="n">folderpath</span><span class="p">,</span> <span class="n">delayunit</span><span class="o">=</span><span class="s">&quot;um&quot;</span><span class="p">,</span> <span class="n">delayfactor</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">delayunitlabel</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+							 <span class="n">h5target</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Imports a Terra time scan folder that was measured by scanning the time steps in an interferometer while using</span>
+<span class="sd">	the Delaylinedetector (DLD).</span>
+
+<span class="sd">	:param str folderpath: The path of the folder containing the scan data. Example: &quot;/path/to/measurement/1. Durchlauf&quot;</span>
+
+<span class="sd">	:param str delayunit: A valid unit string, according to the physical dimension that was scanned over. Typically,</span>
+<span class="sd">		this is:</span>
+<span class="sd">		 	* :code:`&quot;um&quot; Micrometers for the normal Interferometer.</span>
+<span class="sd">		 	* :code:`&quot;as&quot;` Attoseconds for the phase resolved interferometer.</span>
+
+<span class="sd">	:param float delayfactor: A factor that the numbers in the filenames need to be multiplied with to get the</span>
+<span class="sd">		real value of the scan point in units of delayunit. Typically for a time resolved measurement, this is</span>
+<span class="sd">		:code:`0.2` due to a decimal in the Terra file names, plus pulse delays are twice the stage position difference.</span>
+
+<span class="sd">	:param str delayunitlabel: A label for the delay axis. For example :code:`&quot;\\si{\\atto\\second}&quot;` if it&#39;s a PSI</span>
+<span class="sd">		measurement and plotting will be done with TeX typesetting.</span>
+
+<span class="sd">	:param h5target: The HDF5 target to write to.</span>
+<span class="sd">	:type h5target: str **or** h5py.Group **or** True, *optional*</span>
+
+<span class="sd">	:param bool verbose: Flag to print progress to stdout.</span>
+
+<span class="sd">	:return: Imported DataSet.</span>
+<span class="sd">	:rtype: DataSet</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
+		<span class="k">print</span><span class="p">(</span><span class="s">&quot;WARNING: Unrecognized (propably depreciated) keyword args used in tr_folder_peem_dld_terra!&quot;</span><span class="p">)</span>
+
+	<span class="k">if</span> <span class="n">delayunitlabel</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+		<span class="n">delayunitlabel</span> <span class="o">=</span> <span class="n">delayunit</span>
+	<span class="n">pl</span> <span class="o">=</span> <span class="s">&#39;Pulse Delay / &#39;</span> <span class="o">+</span> <span class="n">delayunitlabel</span>  <span class="c"># Plot label for time axis</span>
+	<span class="k">return</span> <span class="n">measurement_folder_peem_terra</span><span class="p">(</span><span class="n">folderpath</span><span class="p">,</span> <span class="s">&quot;dld&quot;</span><span class="p">,</span> <span class="s">&quot;D&quot;</span><span class="p">,</span> <span class="n">delayunit</span><span class="p">,</span> <span class="n">delayfactor</span><span class="p">,</span> <span class="s">&quot;delay&quot;</span><span class="p">,</span> <span class="n">pl</span><span class="p">,</span> <span class="n">h5target</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="tr_psi_folder_peem_dld_terra"><a class="viewcode-back" href="../../../../source/_modules/snomtools.data.imports.html#snomtools.data.imports.tiff.tr_psi_folder_peem_dld_terra">[docs]</a><span class="k">def</span> <span class="nf">tr_psi_folder_peem_dld_terra</span><span class="p">(</span><span class="n">folderpath</span><span class="p">,</span> <span class="n">h5target</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Convenience shortcut method for PSI scans with the DLD. Calls tr_folder_peem_camera_terra with correct parameters.</span>
+<span class="sd">	See: :func:`tr_folder_peem_dld_terra`</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">return</span> <span class="n">tr_folder_peem_dld_terra</span><span class="p">(</span><span class="n">folderpath</span><span class="p">,</span> <span class="s">&#39;as&#39;</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s">&quot;</span><span class="se">\\</span><span class="s">si{</span><span class="se">\\</span><span class="s">atto</span><span class="se">\\</span><span class="s">second}&quot;</span><span class="p">,</span> <span class="n">h5target</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="tr_normal_folder_peem_dld_terra"><a class="viewcode-back" href="../../../../source/_modules/snomtools.data.imports.html#snomtools.data.imports.tiff.tr_normal_folder_peem_dld_terra">[docs]</a><span class="k">def</span> <span class="nf">tr_normal_folder_peem_dld_terra</span><span class="p">(</span><span class="n">folderpath</span><span class="p">,</span> <span class="n">h5target</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Convenience shortcut method for normal interferometer scans with DLD. Calls tr_folder_peem_camera_terra with</span>
+<span class="sd">	correct parameters.</span>
+<span class="sd">	See: :func:`tr_folder_peem_dld_terra`</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">return</span> <span class="n">tr_folder_peem_dld_terra</span><span class="p">(</span><span class="n">folderpath</span><span class="p">,</span> <span class="s">&#39;um&#39;</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s">&quot;</span><span class="se">\\</span><span class="s">si{</span><span class="se">\\</span><span class="s">micro</span><span class="se">\\</span><span class="s">meter}&quot;</span><span class="p">,</span> <span class="n">h5target</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="rotationmount_folder_peem_camera_terra"><a class="viewcode-back" href="../../../../source/_modules/snomtools.data.imports.html#snomtools.data.imports.tiff.rotationmount_folder_peem_camera_terra">[docs]</a><span class="k">def</span> <span class="nf">rotationmount_folder_peem_camera_terra</span><span class="p">(</span><span class="n">folderpath</span><span class="p">,</span> <span class="n">h5target</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Convenience shortcut method for rotation mount scans with camera. Calls measurement_folder_peem_terra with</span>
+<span class="sd">	correct parameters.</span>
+<span class="sd">	See: :func:`measurement_folder_peem_terra`</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="n">pl</span> <span class="o">=</span> <span class="s">&#39;Rotation Mount Angle / </span><span class="se">\\</span><span class="s">si{</span><span class="se">\\</span><span class="s">degree}&#39;</span>  <span class="c"># Plot label for time axis</span>
+	<span class="k">return</span> <span class="n">measurement_folder_peem_terra</span><span class="p">(</span><span class="n">folderpath</span><span class="p">,</span> <span class="s">&quot;camera&quot;</span><span class="p">,</span> <span class="s">&quot;R&quot;</span><span class="p">,</span> <span class="s">&quot;deg&quot;</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="s">&quot;angle&quot;</span><span class="p">,</span> <span class="n">pl</span><span class="p">,</span> <span class="n">h5target</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="rotationmount_folder_peem_dld_terra"><a class="viewcode-back" href="../../../../source/_modules/snomtools.data.imports.html#snomtools.data.imports.tiff.rotationmount_folder_peem_dld_terra">[docs]</a><span class="k">def</span> <span class="nf">rotationmount_folder_peem_dld_terra</span><span class="p">(</span><span class="n">folderpath</span><span class="p">,</span> <span class="n">h5target</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Convenience shortcut method for rotation mount scans with DLD. Calls measurement_folder_peem_terra with</span>
+<span class="sd">	correct parameters.</span>
+<span class="sd">	See: :func:`measurement_folder_peem_terra`</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="n">pl</span> <span class="o">=</span> <span class="s">&#39;Rotation Mount Angle / </span><span class="se">\\</span><span class="s">si{</span><span class="se">\\</span><span class="s">degree}&#39;</span>  <span class="c"># Plot label for time axis</span>
+	<span class="k">return</span> <span class="n">measurement_folder_peem_terra</span><span class="p">(</span><span class="n">folderpath</span><span class="p">,</span> <span class="s">&quot;dld&quot;</span><span class="p">,</span> <span class="s">&quot;R&quot;</span><span class="p">,</span> <span class="s">&quot;deg&quot;</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="s">&quot;angle&quot;</span><span class="p">,</span> <span class="n">pl</span><span class="p">,</span> <span class="n">h5target</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="dummy_folder_peem_camera_terra"><a class="viewcode-back" href="../../../../source/_modules/snomtools.data.imports.html#snomtools.data.imports.tiff.dummy_folder_peem_camera_terra">[docs]</a><span class="k">def</span> <span class="nf">dummy_folder_peem_camera_terra</span><span class="p">(</span><span class="n">folderpath</span><span class="p">,</span> <span class="n">h5target</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Convenience shortcut method for dummy device scans with camera. Calls measurement_folder_peem_terra with</span>
+<span class="sd">	correct parameters.</span>
+<span class="sd">	See: :func:`measurement_folder_peem_terra`</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="n">pl</span> <span class="o">=</span> <span class="s">&#39;Dummy Index&#39;</span>  <span class="c"># Plot label for time axis</span>
+	<span class="k">return</span> <span class="n">measurement_folder_peem_terra</span><span class="p">(</span><span class="n">folderpath</span><span class="p">,</span> <span class="s">&quot;camera&quot;</span><span class="p">,</span> <span class="s">&quot;N&quot;</span><span class="p">,</span> <span class="s">&quot;&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&quot;dummyaxis&quot;</span><span class="p">,</span> <span class="n">pl</span><span class="p">,</span> <span class="n">h5target</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="dummy_folder_peem_dld_terra"><a class="viewcode-back" href="../../../../source/_modules/snomtools.data.imports.html#snomtools.data.imports.tiff.dummy_folder_peem_dld_terra">[docs]</a><span class="k">def</span> <span class="nf">dummy_folder_peem_dld_terra</span><span class="p">(</span><span class="n">folderpath</span><span class="p">,</span> <span class="n">h5target</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Convenience shortcut method for dummy device scans with dld. Calls measurement_folder_peem_terra with</span>
+<span class="sd">	correct parameters.</span>
+<span class="sd">	See: :func:`measurement_folder_peem_terra`</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="n">pl</span> <span class="o">=</span> <span class="s">&#39;Dummy Index&#39;</span>  <span class="c"># Plot label for time axis</span>
+	<span class="k">return</span> <span class="n">measurement_folder_peem_terra</span><span class="p">(</span><span class="n">folderpath</span><span class="p">,</span> <span class="s">&quot;dld&quot;</span><span class="p">,</span> <span class="s">&quot;N&quot;</span><span class="p">,</span> <span class="s">&quot;&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&quot;dummyaxis&quot;</span><span class="p">,</span> <span class="n">pl</span><span class="p">,</span> <span class="n">h5target</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="measurement_folder_peem_terra"><a class="viewcode-back" href="../../../../source/_modules/snomtools.data.imports.html#snomtools.data.imports.tiff.measurement_folder_peem_terra">[docs]</a><span class="k">def</span> <span class="nf">measurement_folder_peem_terra</span><span class="p">(</span><span class="n">folderpath</span><span class="p">,</span> <span class="n">detector</span><span class="o">=</span><span class="s">&quot;dld&quot;</span><span class="p">,</span> <span class="n">pattern</span><span class="o">=</span><span class="s">&quot;D&quot;</span><span class="p">,</span> <span class="n">scanunit</span><span class="o">=</span><span class="s">&quot;um&quot;</span><span class="p">,</span> <span class="n">scanfactor</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+								  <span class="n">scanaxislabel</span><span class="o">=</span><span class="s">&quot;scanaxis&quot;</span><span class="p">,</span> <span class="n">scanaxispl</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">h5target</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	The base method for importing terra scan folders. Covers all scan possibilities, so far only in 1D scans.</span>
+
+<span class="sd">	:param str folderpath: The path of the folder containing the scan data. Example: &quot;/path/to/measurement/1. Durchlauf&quot;</span>
+
+<span class="sd">	:param str detector: Read mode corresponding to the used detector.</span>
+<span class="sd">		Valid inputs:</span>
+<span class="sd">			* :code:`&quot;dld&quot;`</span>
+<span class="sd">			* :code:`&quot;camera&quot;`</span>
+
+<span class="sd">	:param str pattern: The pattern in the filenames that indicates the scan enumeration and is followed by the number</span>
+<span class="sd">		indicating the position, according to the device used for the scan. Terra uses:</span>
+<span class="sd">			* :code:`&quot;D&quot;` for a delay stage</span>
+<span class="sd">			* :code:`&quot;R&quot;` for the rotation mount</span>
+<span class="sd">			* :code:`&quot;N&quot;` for a dummy device.</span>
+
+<span class="sd">	:param str scanunit: A valid unit string, according to the physical dimension that was scanned over.</span>
+
+<span class="sd">	:param float scanfactor: A factor that the numbers in the filenames need to be multiplied with to get the</span>
+<span class="sd">		real value of the scan point in units of scanunit.</span>
+<span class="sd">		This would be for example:</span>
+<span class="sd">			* :code:`0.2` (because of stage position) with delayunit :code:`&quot;um&quot;` for normal Interferometer because \</span>
+<span class="sd">			one decimal is in filenames.</span>
+<span class="sd">			* :code:`0.2` (because of stage position and strange factor 10 in filenames) with delayunit :code:`&quot;as&quot;` \</span>
+<span class="sd">			for PR interferometer</span>
+
+<span class="sd">	:param str scanaxislabel: A label for the axis of the scan.</span>
+
+<span class="sd">	:param str scanaxispl: A plot label for the axis of the scan.</span>
+
+<span class="sd">	:param h5target: The HDF5 target to write to.</span>
+<span class="sd">	:type h5target: str **or** h5py.Group **or** True, *optional*</span>
+
+<span class="sd">	:param bool verbose: Flag to print progress to stdout.</span>
+
+<span class="sd">	:return: Imported DataSet.</span>
+<span class="sd">	:rtype: DataSet</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">assert</span> <span class="n">detector</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&quot;dld&quot;</span><span class="p">,</span> <span class="s">&quot;camera&quot;</span><span class="p">],</span> <span class="s">&quot;Invalid detector mode.&quot;</span>
+	<span class="k">if</span> <span class="n">scanaxispl</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+		<span class="n">scanaxispl</span> <span class="o">=</span> <span class="s">&#39;Scan / &#39;</span> <span class="o">+</span> <span class="n">scanunit</span>
+
+	<span class="c"># Compile regex for file detection:</span>
+	<span class="n">pat</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">pattern</span> <span class="o">+</span> <span class="s">&quot;(-?\d*).tif&quot;</span><span class="p">)</span>
+
+	<span class="c"># Translate input path to absolute path:</span>
+	<span class="n">folderpath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">folderpath</span><span class="p">)</span>
+
+	<span class="c"># Inspect the given folder for time step files:</span>
+	<span class="n">scanfiles</span> <span class="o">=</span> <span class="p">{}</span>
+	<span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="nb">filter</span><span class="p">(</span><span class="n">is_tif</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">folderpath</span><span class="p">)):</span>
+		<span class="n">found</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pat</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+		<span class="k">if</span> <span class="n">found</span><span class="p">:</span>
+			<span class="n">scanstep</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">found</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+			<span class="n">scanfiles</span><span class="p">[</span><span class="n">scanstep</span><span class="p">]</span> <span class="o">=</span> <span class="n">filename</span>
+
+	<span class="c"># Generate delay axis:</span>
+	<span class="n">axlist</span> <span class="o">=</span> <span class="p">[]</span>
+	<span class="k">for</span> <span class="n">scanstep</span> <span class="ow">in</span> <span class="nb">iter</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">scanfiles</span><span class="o">.</span><span class="n">iterkeys</span><span class="p">())):</span>
+		<span class="n">axlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">scanstep</span><span class="p">)</span>
+	<span class="n">scanvalues</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">to_ureg</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">axlist</span><span class="p">)</span> <span class="o">*</span> <span class="n">scanfactor</span><span class="p">,</span> <span class="n">scanunit</span><span class="p">)</span>
+	<span class="n">scanaxis</span> <span class="o">=</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">Axis</span><span class="p">(</span><span class="n">scanvalues</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">scanaxislabel</span><span class="p">,</span> <span class="n">plotlabel</span><span class="o">=</span><span class="n">scanaxispl</span><span class="p">)</span>
+
+	<span class="c"># Test data size:</span>
+	<span class="k">if</span> <span class="n">detector</span> <span class="o">==</span> <span class="s">&quot;dld&quot;</span><span class="p">:</span>
+		<span class="n">sample_data</span> <span class="o">=</span> <span class="n">peem_dld_read_terra</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">folderpath</span><span class="p">,</span> <span class="n">scanfiles</span><span class="p">[</span><span class="n">scanfiles</span><span class="o">.</span><span class="n">keys</span><span class="p">()[</span><span class="mi">0</span><span class="p">]]))</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="n">sample_data</span> <span class="o">=</span> <span class="n">peem_camera_read_terra</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">folderpath</span><span class="p">,</span> <span class="n">scanfiles</span><span class="p">[</span><span class="n">scanfiles</span><span class="o">.</span><span class="n">keys</span><span class="p">()[</span><span class="mi">0</span><span class="p">]]))</span>
+	<span class="n">axlist</span> <span class="o">=</span> <span class="p">[</span><span class="n">scanaxis</span><span class="p">]</span> <span class="o">+</span> <span class="n">sample_data</span><span class="o">.</span><span class="n">axes</span>
+	<span class="n">newshape</span> <span class="o">=</span> <span class="n">scanaxis</span><span class="o">.</span><span class="n">shape</span> <span class="o">+</span> <span class="n">sample_data</span><span class="o">.</span><span class="n">shape</span>
+
+	<span class="n">chunks</span> <span class="o">=</span> <span class="bp">True</span>
+	<span class="n">compression</span> <span class="o">=</span> <span class="s">&#39;gzip&#39;</span>
+	<span class="n">compression_opts</span> <span class="o">=</span> <span class="mi">4</span>
+
+	<span class="c"># Probe HDF5 initialization to optimize buffer size:</span>
+	<span class="k">if</span> <span class="n">chunks</span> <span class="ow">is</span> <span class="bp">True</span><span class="p">:</span>  <span class="c"># Default is auto chunk alignment, so we need to probe.</span>
+		<span class="n">h5probe</span> <span class="o">=</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">Data_Handler_H5</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="n">sample_data</span><span class="o">.</span><span class="n">get_datafield</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">get_unit</span><span class="p">(),</span>
+														  <span class="n">shape</span><span class="o">=</span><span class="n">newshape</span><span class="p">,</span> <span class="n">chunks</span><span class="o">=</span><span class="n">chunks</span><span class="p">,</span>
+														  <span class="n">compression</span><span class="o">=</span><span class="n">compression</span><span class="p">,</span> <span class="n">compression_opts</span><span class="o">=</span><span class="n">compression_opts</span><span class="p">)</span>
+		<span class="n">chunk_size</span> <span class="o">=</span> <span class="n">h5probe</span><span class="o">.</span><span class="n">chunks</span>
+		<span class="k">del</span> <span class="n">h5probe</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="n">chunk_size</span> <span class="o">=</span> <span class="n">chunks</span>
+	<span class="n">min_cache_size</span> <span class="o">=</span> <span class="n">chunk_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">numpy</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">sample_data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">*</span> <span class="mi">4</span>  <span class="c"># 32bit floats require 4 bytes.</span>
+	<span class="n">use_cache_size</span> <span class="o">=</span> <span class="n">min_cache_size</span> <span class="o">+</span> <span class="mi">64</span> <span class="o">*</span> <span class="mi">1024</span> <span class="o">**</span> <span class="mi">2</span>  <span class="c"># Add 64 MB just to be sure.</span>
+
+	<span class="c"># Initialize full DataSet with zeroes:</span>
+	<span class="n">dataspace</span> <span class="o">=</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">Data_Handler_H5</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="n">sample_data</span><span class="o">.</span><span class="n">get_datafield</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">get_unit</span><span class="p">(),</span>
+														<span class="n">shape</span><span class="o">=</span><span class="n">newshape</span><span class="p">,</span> <span class="n">chunks</span><span class="o">=</span><span class="n">chunks</span><span class="p">,</span>
+														<span class="n">compression</span><span class="o">=</span><span class="n">compression</span><span class="p">,</span> <span class="n">compression_opts</span><span class="o">=</span><span class="n">compression_opts</span><span class="p">,</span>
+														<span class="n">chunk_cache_mem_size</span><span class="o">=</span><span class="n">use_cache_size</span><span class="p">)</span>
+	<span class="n">dataarray</span> <span class="o">=</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span><span class="n">dataspace</span><span class="p">,</span>
+												  <span class="n">label</span><span class="o">=</span><span class="n">sample_data</span><span class="o">.</span><span class="n">get_datafield</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">get_label</span><span class="p">(),</span>
+												  <span class="n">plotlabel</span><span class="o">=</span><span class="n">sample_data</span><span class="o">.</span><span class="n">get_datafield</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">get_plotlabel</span><span class="p">(),</span>
+												  <span class="n">h5target</span><span class="o">=</span><span class="n">dataspace</span><span class="o">.</span><span class="n">h5target</span><span class="p">,</span>
+												  <span class="n">chunks</span><span class="o">=</span><span class="n">chunks</span><span class="p">,</span>
+												  <span class="n">compression</span><span class="o">=</span><span class="n">compression</span><span class="p">,</span> <span class="n">compression_opts</span><span class="o">=</span><span class="n">compression_opts</span><span class="p">,</span>
+												  <span class="n">chunk_cache_mem_size</span><span class="o">=</span><span class="n">use_cache_size</span><span class="p">)</span>
+	<span class="n">dataset</span> <span class="o">=</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">DataSet</span><span class="p">(</span><span class="s">&quot;Terra Scan &quot;</span> <span class="o">+</span> <span class="n">folderpath</span><span class="p">,</span> <span class="p">[</span><span class="n">dataarray</span><span class="p">],</span> <span class="n">axlist</span><span class="p">,</span> <span class="n">h5target</span><span class="o">=</span><span class="n">h5target</span><span class="p">,</span>
+											  <span class="n">chunk_cache_mem_size</span><span class="o">=</span><span class="n">use_cache_size</span><span class="p">)</span>
+	<span class="n">dataarray</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">get_datafield</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+	<span class="c"># Fill in data from imported tiffs:</span>
+	<span class="n">slicebase</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">numpy</span><span class="o">.</span><span class="n">s_</span><span class="p">[:]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sample_data</span><span class="o">.</span><span class="n">shape</span><span class="p">))])</span>
+
+	<span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+		<span class="kn">import</span> <span class="nn">time</span>
+		<span class="k">print</span> <span class="s">&quot;Reading Terra Scan Folder of shape: &quot;</span><span class="p">,</span> <span class="n">dataset</span><span class="o">.</span><span class="n">shape</span>
+		<span class="k">print</span> <span class="s">&quot;... generating chunks of shape: &quot;</span><span class="p">,</span> <span class="n">dataset</span><span class="o">.</span><span class="n">get_datafield</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">ds_data</span><span class="o">.</span><span class="n">chunks</span>
+		<span class="k">print</span> <span class="s">&quot;... using cache size {0:d} MB&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">use_cache_size</span> <span class="o">/</span> <span class="mi">1024</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+		<span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+	<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">scanstep</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">scanfiles</span><span class="p">)),</span> <span class="nb">iter</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">scanfiles</span><span class="o">.</span><span class="n">iterkeys</span><span class="p">()))):</span>
+		<span class="n">islice</span> <span class="o">=</span> <span class="p">(</span><span class="n">i</span><span class="p">,)</span> <span class="o">+</span> <span class="n">slicebase</span>
+		<span class="c"># Import tiff:</span>
+		<span class="k">if</span> <span class="n">detector</span> <span class="o">==</span> <span class="s">&quot;dld&quot;</span><span class="p">:</span>
+			<span class="n">idata</span> <span class="o">=</span> <span class="n">peem_dld_read_terra</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">folderpath</span><span class="p">,</span> <span class="n">scanfiles</span><span class="p">[</span><span class="n">scanstep</span><span class="p">]))</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="n">idata</span> <span class="o">=</span> <span class="n">peem_camera_read_terra</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">folderpath</span><span class="p">,</span> <span class="n">scanfiles</span><span class="p">[</span><span class="n">scanstep</span><span class="p">]))</span>
+		<span class="c"># Check data consistency:</span>
+		<span class="k">assert</span> <span class="n">idata</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">sample_data</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="s">&quot;Trying to combine scan data with different shape.&quot;</span>
+		<span class="k">for</span> <span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">idata</span><span class="o">.</span><span class="n">axes</span><span class="p">,</span> <span class="n">sample_data</span><span class="o">.</span><span class="n">axes</span><span class="p">):</span>
+			<span class="k">assert</span> <span class="n">ax1</span><span class="o">.</span><span class="n">units</span> <span class="o">==</span> <span class="n">ax2</span><span class="o">.</span><span class="n">units</span><span class="p">,</span> <span class="s">&quot;Trying to combine scan data with different axis dimensionality.&quot;</span>
+		<span class="k">assert</span> <span class="n">idata</span><span class="o">.</span><span class="n">get_datafield</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">units</span> <span class="o">==</span> <span class="n">sample_data</span><span class="o">.</span><span class="n">get_datafield</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">units</span><span class="p">,</span> \
+			<span class="s">&quot;Trying to combine scan data with different data dimensionality.&quot;</span>
+		<span class="c"># Write data:</span>
+		<span class="n">dataarray</span><span class="p">[</span><span class="n">islice</span><span class="p">]</span> <span class="o">=</span> <span class="n">idata</span><span class="o">.</span><span class="n">get_datafield</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+		<span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+			<span class="n">tpf</span> <span class="o">=</span> <span class="p">((</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">)</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+			<span class="n">etr</span> <span class="o">=</span> <span class="n">tpf</span> <span class="o">*</span> <span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+			<span class="k">print</span> <span class="s">&quot;tiff {0:d} / {1:d}, Time/File {3:.2f}s ETR: {2:.1f}s&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">dataset</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">etr</span><span class="p">,</span> <span class="n">tpf</span><span class="p">)</span>
+
+	<span class="k">return</span> <span class="n">dataset</span>
+
+
+<span class="c"># if True:  # Just for testing...</span></div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+	<span class="n">testdata</span> <span class="o">=</span> <span class="bp">None</span>
+
+	<span class="n">test_camera_read</span> <span class="o">=</span> <span class="bp">False</span>
+	<span class="k">if</span> <span class="n">test_camera_read</span><span class="p">:</span>
+		<span class="n">testfilename</span> <span class="o">=</span> <span class="s">&quot;14_800nm_Micha_crosspol_ppol320_t-80fs_50µm.tif&quot;</span>
+		<span class="n">testdata</span> <span class="o">=</span> <span class="n">peem_camera_read</span><span class="p">(</span><span class="n">testfilename</span><span class="p">)</span>
+		<span class="n">outname</span> <span class="o">=</span> <span class="n">testfilename</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;.tif&#39;</span><span class="p">,</span> <span class="s">&#39;.hdf5&#39;</span><span class="p">)</span>
+		<span class="n">testdata</span><span class="o">.</span><span class="n">saveh5</span><span class="p">(</span><span class="n">outname</span><span class="p">)</span>
+
+	<span class="n">test_plot</span> <span class="o">=</span> <span class="bp">False</span>
+	<span class="k">if</span> <span class="n">test_plot</span> <span class="ow">and</span> <span class="n">testdata</span><span class="p">:</span>
+		<span class="kn">import</span> <span class="nn">snomtools.plots.setupmatplotlib</span> <span class="kn">as</span> <span class="nn">plt</span>
+		<span class="kn">import</span> <span class="nn">snomtools.plots.datasets</span>
+
+		<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">((</span><span class="mi">12</span><span class="p">,</span> <span class="mi">12</span><span class="p">),</span> <span class="mi">1200</span><span class="p">)</span>
+		<span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+		<span class="n">ax</span><span class="o">.</span><span class="n">cla</span><span class="p">()</span>
+		<span class="n">vert</span> <span class="o">=</span> <span class="s">&#39;y&#39;</span>
+		<span class="n">hori</span> <span class="o">=</span> <span class="s">&#39;x&#39;</span>
+		<span class="n">ax</span><span class="o">.</span><span class="n">autoscale</span><span class="p">(</span><span class="n">tight</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+		<span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s">&#39;equal&#39;</span><span class="p">)</span>
+		<span class="n">snomtools</span><span class="o">.</span><span class="n">plots</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">project_2d</span><span class="p">(</span><span class="n">testdata</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">axis_vert</span><span class="o">=</span><span class="n">vert</span><span class="p">,</span> <span class="n">axis_hori</span><span class="o">=</span><span class="n">hori</span><span class="p">,</span> <span class="n">data_id</span><span class="o">=</span><span class="s">&#39;counts&#39;</span><span class="p">)</span>
+		<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s">&quot;test.png&quot;</span><span class="p">,</span> <span class="n">figures_path</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span> <span class="n">transparent</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+	<span class="n">test_powerlaw</span> <span class="o">=</span> <span class="bp">False</span>
+	<span class="k">if</span> <span class="n">test_powerlaw</span><span class="p">:</span>
+		<span class="n">plfolder</span> <span class="o">=</span> <span class="s">&quot;Powerlaw&quot;</span>
+		<span class="n">pldata</span> <span class="o">=</span> <span class="n">powerlaw_folder_peem_camera</span><span class="p">(</span><span class="n">plfolder</span><span class="p">,</span> <span class="n">powerunitlabel</span><span class="o">=</span><span class="s">&#39;</span><span class="se">\\</span><span class="s">SI{</span><span class="se">\\</span><span class="s">milli</span><span class="se">\\</span><span class="s">watt}&#39;</span><span class="p">)</span>
+
+	<span class="n">test_timeresolved</span> <span class="o">=</span> <span class="bp">True</span>
+	<span class="k">if</span> <span class="n">test_timeresolved</span><span class="p">:</span>
+		<span class="n">trfolder</span> <span class="o">=</span> <span class="s">&quot;terra-dummy-dld&quot;</span>
+		<span class="n">trdata</span> <span class="o">=</span> <span class="n">dummy_folder_peem_dld_terra</span><span class="p">(</span><span class="n">trfolder</span><span class="p">,</span> <span class="n">h5target</span><span class="o">=</span><span class="n">trfolder</span> <span class="o">+</span> <span class="s">&#39;.hdf5&#39;</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+		<span class="n">trdata</span><span class="o">.</span><span class="n">saveh5</span><span class="p">()</span>
+
+		<span class="n">trfolder</span> <span class="o">=</span> <span class="s">&quot;terra-rotationmount-dld&quot;</span>
+		<span class="n">trdata</span> <span class="o">=</span> <span class="n">rotationmount_folder_peem_dld_terra</span><span class="p">(</span><span class="n">trfolder</span><span class="p">,</span> <span class="n">h5target</span><span class="o">=</span><span class="n">trfolder</span> <span class="o">+</span> <span class="s">&#39;.hdf5&#39;</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+		<span class="n">trdata</span><span class="o">.</span><span class="n">saveh5</span><span class="p">()</span>
+
+		<span class="n">trfolder</span> <span class="o">=</span> <span class="s">&quot;terra-tr-psi-camera&quot;</span>
+		<span class="n">trdata</span> <span class="o">=</span> <span class="n">tr_psi_folder_peem_camera_terra</span><span class="p">(</span><span class="n">trfolder</span><span class="p">,</span> <span class="n">h5target</span><span class="o">=</span><span class="n">trfolder</span> <span class="o">+</span> <span class="s">&#39;.hdf5&#39;</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+		<span class="n">trdata</span><span class="o">.</span><span class="n">saveh5</span><span class="p">()</span>
+
+		<span class="n">trfolder</span> <span class="o">=</span> <span class="s">&quot;terra-tr-psi-dld&quot;</span>
+		<span class="n">trdata</span> <span class="o">=</span> <span class="n">tr_psi_folder_peem_dld_terra</span><span class="p">(</span><span class="n">trfolder</span><span class="p">,</span> <span class="n">h5target</span><span class="o">=</span><span class="n">trfolder</span> <span class="o">+</span> <span class="s">&#39;.hdf5&#39;</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+		<span class="n">trdata</span><span class="o">.</span><span class="n">saveh5</span><span class="p">()</span>
+
+		<span class="n">trfolder</span> <span class="o">=</span> <span class="s">&quot;terra-tr-normal-dld&quot;</span>
+		<span class="n">trdata</span> <span class="o">=</span> <span class="n">tr_normal_folder_peem_dld_terra</span><span class="p">(</span><span class="n">trfolder</span><span class="p">,</span> <span class="n">h5target</span><span class="o">=</span><span class="n">trfolder</span> <span class="o">+</span> <span class="s">&#39;.hdf5&#39;</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+		<span class="n">trdata</span><span class="o">.</span><span class="n">saveh5</span><span class="p">()</span>
+
+	<span class="k">print</span><span class="p">(</span><span class="s">&#39;done.&#39;</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">snomtools 0.0.1 documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, AG Aeschlimann, FB Physik, TU Kaiserslautern.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

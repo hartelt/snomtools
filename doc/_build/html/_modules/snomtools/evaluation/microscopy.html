@@ -1,0 +1,199 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>snomtools.evaluation.microscopy &mdash; snomtools 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../_static/sidebar.js"></script>
+    <link rel="top" title="snomtools 0.0.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">snomtools 0.0.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for snomtools.evaluation.microscopy</h1><div class="highlight"><pre>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s">&#39;hartelt&#39;</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">This file provides data evaluation scripts for microscopy data measured e.g. with PEEM, SNOM or any microscope.</span>
+<span class="sd">Explicitly, methods for image calibration are provided.</span>
+<span class="sd">The methods work on DataSets obtained by importing images with the snomtools.data.imports package.</span>
+<span class="sd">For furter info about data structures, see:</span>
+<span class="sd">data.imports</span>
+<span class="sd">data.datasets.py</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">import</span> <span class="nn">snomtools.data.datasets</span>
+<span class="kn">import</span> <span class="nn">snomtools.calcs.units</span> <span class="kn">as</span> <span class="nn">u</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+
+
+<div class="viewcode-block" id="fov_scale_absolute"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.microscopy.fov_scale_absolute">[docs]</a><span class="k">def</span> <span class="nf">fov_scale_absolute</span><span class="p">(</span><span class="n">pixel_axis</span><span class="p">,</span> <span class="n">fov</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s">&#39;m&#39;</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Transforms an Axis from pixels to a real space length from a known field of view.</span>
+
+<span class="sd">	:param pixel_axis: The Axis to transform.</span>
+
+<span class="sd">	:param fov: Quantity: The absolute size of the FoV. If a number instead of a quantity is given, m is assumed as</span>
+<span class="sd">		unit.</span>
+
+<span class="sd">	:param unit: String: Specifies the output unit for the Axis, Must evaluate to a length unit.</span>
+
+<span class="sd">	:return: The converted Axis.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pixel_axis</span><span class="p">,</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">Axis</span><span class="p">),</span> <span class="s">&quot;No Axis instance given to scale function.&quot;</span>
+	<span class="n">length_per_pixel</span> <span class="o">=</span> <span class="n">fov</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">pixel_axis</span><span class="p">)</span>
+	<span class="n">length_per_pixel</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">to_ureg</span><span class="p">(</span><span class="n">length_per_pixel</span><span class="p">,</span> <span class="s">&#39;meters/pixel&#39;</span><span class="p">)</span>
+	<span class="k">return</span> <span class="n">pixel_axis</span><span class="o">.</span><span class="n">scale_linear</span><span class="p">(</span><span class="n">length_per_pixel</span><span class="p">,</span><span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="fov_scale_relative"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.microscopy.fov_scale_relative">[docs]</a><span class="k">def</span> <span class="nf">fov_scale_relative</span><span class="p">(</span><span class="n">pixel_axis</span><span class="p">,</span> <span class="n">length_per_pixel</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s">&#39;m&#39;</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Transforms an Axis from pixels to a real space length from a known length per pixel scaling.</span>
+
+<span class="sd">	:param pixel_axis: The Axis to transform.</span>
+
+<span class="sd">	:param length_per_pixel: Quantity: The relative scale in length per pixel. If a number instead of a quantity is</span>
+<span class="sd">		given, m/pixel is assumed as unit.</span>
+
+<span class="sd">	:param unit: String: Specifies the output unit for the Axis, Must evaluate to a length unit.</span>
+
+<span class="sd">	:return: The converted Axis.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pixel_axis</span><span class="p">,</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">Axis</span><span class="p">),</span> <span class="s">&quot;No Axis instance given to scale function.&quot;</span>
+	<span class="n">length_per_pixel</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">to_ureg</span><span class="p">(</span><span class="n">length_per_pixel</span><span class="p">,</span> <span class="s">&#39;meters/pixel&#39;</span><span class="p">,</span><span class="n">convert_quantities</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+	<span class="k">return</span> <span class="n">pixel_axis</span><span class="o">.</span><span class="n">scale_linear</span><span class="p">(</span><span class="n">length_per_pixel</span><span class="p">,</span><span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="normalize_by_flatfield_sum"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.microscopy.normalize_by_flatfield_sum">[docs]</a><span class="k">def</span> <span class="nf">normalize_by_flatfield_sum</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">flatfield_data</span><span class="p">,</span> <span class="n">data_id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">flat_id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">newlabel</span><span class="o">=</span><span class="s">&#39;norm_int&#39;</span><span class="p">,</span>
+							   <span class="n">new_plotlabel</span><span class="o">=</span><span class="s">&quot;Normalized Intensity&quot;</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Normalizes a dataset by the data of another set, that was obtained on an unstructured surface and should</span>
+<span class="sd">	therefore be &quot;flat&quot; (flatfield). The data is normalized by the sum over all other channels in the dataset,</span>
+<span class="sd">	so only the spacial	image is normalized, while all other axes are kept at constant relative values.</span>
+<span class="sd">	The normalized data is written into a new DataArray in the given DataSet.</span>
+
+<span class="sd">	:param data: The DataSet instance of the data to normalize or a string with the filepath of the hdf5 file</span>
+<span class="sd">		containing the data.</span>
+
+<span class="sd">	:param flatfield_data: The DataSet instance of the flatfield correction to apply or a string with the filepath of</span>
+<span class="sd">		the hdf5 file containing the data.</span>
+
+<span class="sd">	:param data_id: A valid identifier of the DataArray in the DataSet instance to apply normalization to. Per</span>
+<span class="sd">		default, the first DataArray is taken.</span>
+
+<span class="sd">	:param flat_id: A valid identifier of the DataArray in the flatfield DataSet instance to take as reference. Per</span>
+<span class="sd">		default, the first DataArray is taken.</span>
+
+<span class="sd">	:param newlabel: The label to set for the created DataArray.</span>
+
+<span class="sd">	:param new_plotlabel: The plotlabel to set for the created DataArray.</span>
+
+<span class="sd">	:return: The modified dataset.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">==</span> <span class="nb">str</span><span class="p">:</span>
+		<span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+		<span class="n">filebase</span><span class="p">,</span> <span class="n">ext</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+		<span class="k">if</span> <span class="n">ext</span> <span class="o">==</span> <span class="s">&quot;.hdf5&quot;</span><span class="p">:</span>
+			<span class="n">data</span> <span class="o">=</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">DataSet</span><span class="o">.</span><span class="n">from_h5file</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">flatfield_data</span><span class="p">)</span> <span class="o">==</span> <span class="nb">str</span><span class="p">:</span>
+		<span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">flatfield_data</span><span class="p">)</span>
+		<span class="n">filebase</span><span class="p">,</span> <span class="n">ext</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+		<span class="k">if</span> <span class="n">ext</span> <span class="o">==</span> <span class="s">&quot;.hdf5&quot;</span><span class="p">:</span>
+			<span class="n">flatfield_data</span> <span class="o">=</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">DataSet</span><span class="o">.</span><span class="n">from_h5file</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+
+	<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">DataSet</span><span class="p">),</span> <span class="s">&quot;ERROR: No DataSet given or imported.&quot;</span>
+	<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">flatfield_data</span><span class="p">,</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">DataSet</span><span class="p">),</span> <span class="s">&quot;ERROR: No DataSet given or imported.&quot;</span>
+
+	<span class="c"># Assemble tuple of axis indices to project onto:</span>
+	<span class="n">axis1_id</span><span class="p">,</span> <span class="n">axis2_id</span> <span class="o">=</span> <span class="s">&quot;x&quot;</span><span class="p">,</span> <span class="s">&quot;y&quot;</span>
+	<span class="n">ax1_index</span> <span class="o">=</span> <span class="n">flatfield_data</span><span class="o">.</span><span class="n">get_axis_index</span><span class="p">(</span><span class="n">axis1_id</span><span class="p">)</span>
+	<span class="n">ax2_index</span> <span class="o">=</span> <span class="n">flatfield_data</span><span class="o">.</span><span class="n">get_axis_index</span><span class="p">(</span><span class="n">axis2_id</span><span class="p">)</span>
+	<span class="n">sumlist</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">flatfield_data</span><span class="o">.</span><span class="n">dimensions</span><span class="p">)</span>
+	<span class="n">sumlist</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">ax1_index</span><span class="p">)</span>
+	<span class="n">sumlist</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">ax2_index</span><span class="p">)</span>
+	<span class="n">sumtup</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">sumlist</span><span class="p">)</span>
+
+	<span class="n">flatfield_sumimage</span> <span class="o">=</span> <span class="n">flatfield_data</span><span class="o">.</span><span class="n">get_datafield</span><span class="p">(</span><span class="n">flat_id</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">sumtup</span><span class="p">)</span>
+	<span class="n">data_normalized</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_datafield</span><span class="p">(</span><span class="n">data_id</span><span class="p">)</span> <span class="o">/</span> <span class="n">flatfield_sumimage</span>
+	<span class="n">data_normalized</span><span class="p">[</span><span class="o">~</span> <span class="n">numpy</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">data_normalized</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c"># set inf, and NaN to 0</span>
+	<span class="n">data</span><span class="o">.</span><span class="n">add_datafield</span><span class="p">(</span><span class="n">data_normalized</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">newlabel</span><span class="p">,</span> <span class="n">plotlabel</span><span class="o">=</span><span class="n">new_plotlabel</span><span class="p">)</span>
+	<span class="k">return</span> <span class="n">data</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">snomtools 0.0.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, AG Aeschlimann, FB Physik, TU Kaiserslautern.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

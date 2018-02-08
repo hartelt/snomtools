@@ -1,10 +1,10 @@
-__author__ = 'hartelt'
-'''
+"""
 This file provides data evaluation scripts for PEEM data.
 For furter info about data structures, see:
 data.imports.tiff.py
 data.datasets.py
-'''
+"""
+__author__ = 'hartelt'
 
 import snomtools.calcs.units as u
 import snomtools.data.datasets

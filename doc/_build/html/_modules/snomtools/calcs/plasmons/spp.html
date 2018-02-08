@@ -1,0 +1,151 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>snomtools.calcs.plasmons.spp &mdash; snomtools 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../../_static/sidebar.js"></script>
+    <link rel="top" title="snomtools 0.0.1 documentation" href="../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">snomtools 0.0.1 documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for snomtools.calcs.plasmons.spp</h1><div class="highlight"><pre>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s">&#39;hartelt&#39;</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">This script provides a class for calculating the properties of Surface Plasmon Polaritons. All functions work on</span>
+<span class="sd">Quantities see snomtools.calcs.units.</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">import</span> <span class="nn">snomtools.calcs.units</span> <span class="kn">as</span> <span class="nn">u</span>
+<span class="kn">import</span> <span class="nn">snomtools.calcs.materials.metals</span>
+<span class="kn">import</span> <span class="nn">snomtools.calcs.materials.dielectrics</span>
+<span class="kn">import</span> <span class="nn">snomtools.calcs.constants</span> <span class="kn">as</span> <span class="nn">const</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+
+<span class="n">default_metal</span> <span class="o">=</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">calcs</span><span class="o">.</span><span class="n">materials</span><span class="o">.</span><span class="n">metals</span><span class="o">.</span><span class="n">Au_Schneider</span>
+<span class="n">default_diel</span> <span class="o">=</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">calcs</span><span class="o">.</span><span class="n">materials</span><span class="o">.</span><span class="n">dielectrics</span><span class="o">.</span><span class="n">Vacuum</span>
+
+
+<div class="viewcode-block" id="Kspp"><a class="viewcode-back" href="../../../../source/_modules/snomtools.calcs.plasmons.html#snomtools.calcs.plasmons.spp.Kspp">[docs]</a><span class="k">def</span> <span class="nf">Kspp</span><span class="p">(</span><span class="n">omega</span><span class="p">,</span> <span class="n">metal</span><span class="o">=</span><span class="n">default_metal</span><span class="p">,</span> <span class="n">diel</span><span class="o">=</span><span class="n">default_diel</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s">&#39;1/um&#39;</span><span class="p">):</span>
+	<span class="n">omega</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">to_ureg</span><span class="p">(</span><span class="n">omega</span><span class="p">,</span><span class="s">&#39;rad/s&#39;</span><span class="p">,</span><span class="n">convert_quantities</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+	<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">metal</span><span class="p">,</span><span class="n">snomtools</span><span class="o">.</span><span class="n">calcs</span><span class="o">.</span><span class="n">materials</span><span class="o">.</span><span class="n">metals</span><span class="o">.</span><span class="n">Metal</span><span class="p">),</span> <span class="s">&quot;ERROR: No metal given to Kspp&quot;</span>
+	<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">diel</span><span class="p">,</span><span class="n">snomtools</span><span class="o">.</span><span class="n">calcs</span><span class="o">.</span><span class="n">materials</span><span class="o">.</span><span class="n">dielectrics</span><span class="o">.</span><span class="n">Dielectric</span><span class="p">),</span> <span class="s">&quot;ERROR: No dielectric given to Kspp&quot;</span>
+
+	<span class="n">wurzel</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">metal</span><span class="o">.</span><span class="n">epsilon</span><span class="p">(</span><span class="n">omega</span><span class="p">)</span> <span class="o">*</span> <span class="n">diel</span><span class="o">.</span><span class="n">epsilon</span><span class="p">(</span><span class="n">omega</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="n">metal</span><span class="o">.</span><span class="n">epsilon</span><span class="p">(</span><span class="n">omega</span><span class="p">)</span> <span class="o">+</span> <span class="n">diel</span><span class="o">.</span><span class="n">epsilon</span><span class="p">(</span><span class="n">omega</span><span class="p">)))</span>
+	<span class="n">k</span> <span class="o">=</span> <span class="n">omega</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">c</span> <span class="o">*</span> <span class="n">numpy</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">wurzel</span><span class="p">)</span>
+	<span class="n">k</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">to_ureg</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">unit</span><span class="p">)</span>
+	<span class="k">return</span> <span class="n">k</span>
+
+</div>
+<div class="viewcode-block" id="Kspp_wo_interband"><a class="viewcode-back" href="../../../../source/_modules/snomtools.calcs.plasmons.html#snomtools.calcs.plasmons.spp.Kspp_wo_interband">[docs]</a><span class="k">def</span> <span class="nf">Kspp_wo_interband</span><span class="p">(</span><span class="n">omega</span><span class="p">,</span> <span class="n">metal</span><span class="o">=</span><span class="n">default_metal</span><span class="p">,</span> <span class="n">diel</span><span class="o">=</span><span class="n">default_diel</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s">&#39;1/um&#39;</span><span class="p">):</span>
+	<span class="n">omega</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">to_ureg</span><span class="p">(</span><span class="n">omega</span><span class="p">,</span><span class="s">&#39;rad/s&#39;</span><span class="p">,</span><span class="n">convert_quantities</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+	<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">metal</span><span class="p">,</span><span class="n">snomtools</span><span class="o">.</span><span class="n">calcs</span><span class="o">.</span><span class="n">materials</span><span class="o">.</span><span class="n">metals</span><span class="o">.</span><span class="n">Metal</span><span class="p">),</span> <span class="s">&quot;ERROR: No metal given to Kspp&quot;</span>
+	<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">diel</span><span class="p">,</span><span class="n">snomtools</span><span class="o">.</span><span class="n">calcs</span><span class="o">.</span><span class="n">materials</span><span class="o">.</span><span class="n">dielectrics</span><span class="o">.</span><span class="n">Dielectric</span><span class="p">),</span> <span class="s">&quot;ERROR: No dielectric given to Kspp&quot;</span>
+
+	<span class="n">wurzel</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span>
+		<span class="p">(</span><span class="n">metal</span><span class="o">.</span><span class="n">epsilon_wo_inter</span><span class="p">(</span><span class="n">omega</span><span class="p">)</span> <span class="o">*</span> <span class="n">diel</span><span class="o">.</span><span class="n">epsilon</span><span class="p">(</span><span class="n">omega</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="n">metal</span><span class="o">.</span><span class="n">epsilon_wo_inter</span><span class="p">(</span><span class="n">omega</span><span class="p">)</span> <span class="o">+</span> <span class="n">diel</span><span class="o">.</span><span class="n">epsilon</span><span class="p">(</span><span class="n">omega</span><span class="p">)))</span>
+	<span class="n">k</span> <span class="o">=</span> <span class="n">omega</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">c</span> <span class="o">*</span> <span class="n">numpy</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">wurzel</span><span class="p">)</span>
+	<span class="n">k</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">to_ureg</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">unit</span><span class="p">)</span>
+	<span class="k">return</span> <span class="n">k</span>
+
+</div>
+<div class="viewcode-block" id="Kspp_real"><a class="viewcode-back" href="../../../../source/_modules/snomtools.calcs.plasmons.html#snomtools.calcs.plasmons.spp.Kspp_real">[docs]</a><span class="k">def</span> <span class="nf">Kspp_real</span><span class="p">(</span><span class="n">omega</span><span class="p">,</span> <span class="n">metal</span><span class="o">=</span><span class="n">default_metal</span><span class="p">,</span> <span class="n">diel</span><span class="o">=</span><span class="n">default_diel</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s">&#39;1/um&#39;</span><span class="p">):</span>
+	<span class="n">omega</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">to_ureg</span><span class="p">(</span><span class="n">omega</span><span class="p">,</span><span class="s">&#39;rad/s&#39;</span><span class="p">,</span><span class="n">convert_quantities</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+	<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">metal</span><span class="p">,</span><span class="n">snomtools</span><span class="o">.</span><span class="n">calcs</span><span class="o">.</span><span class="n">materials</span><span class="o">.</span><span class="n">metals</span><span class="o">.</span><span class="n">Metal</span><span class="p">),</span> <span class="s">&quot;ERROR: No metal given to Kspp&quot;</span>
+	<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">diel</span><span class="p">,</span><span class="n">snomtools</span><span class="o">.</span><span class="n">calcs</span><span class="o">.</span><span class="n">materials</span><span class="o">.</span><span class="n">dielectrics</span><span class="o">.</span><span class="n">Dielectric</span><span class="p">),</span> <span class="s">&quot;ERROR: No dielectric given to Kspp&quot;</span>
+
+	<span class="n">eps</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">metal</span><span class="o">.</span><span class="n">epsilon_wo_inter</span><span class="p">(</span><span class="n">omega</span><span class="p">))</span>
+	<span class="n">wurzel</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">eps</span> <span class="o">*</span> <span class="n">diel</span><span class="o">.</span><span class="n">epsilon</span><span class="p">(</span><span class="n">omega</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="n">eps</span> <span class="o">+</span> <span class="n">diel</span><span class="o">.</span><span class="n">epsilon</span><span class="p">(</span><span class="n">omega</span><span class="p">)))</span>
+	<span class="n">k</span> <span class="o">=</span> <span class="n">omega</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">c</span> <span class="o">*</span> <span class="n">numpy</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">wurzel</span><span class="p">)</span>
+	<span class="n">k</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">to_ureg</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">unit</span><span class="p">)</span>
+	<span class="k">return</span> <span class="n">k</span>
+
+</div>
+<div class="viewcode-block" id="Vspp"><a class="viewcode-back" href="../../../../source/_modules/snomtools.calcs.plasmons.html#snomtools.calcs.plasmons.spp.Vspp">[docs]</a><span class="k">def</span> <span class="nf">Vspp</span><span class="p">(</span><span class="n">omega</span><span class="p">,</span> <span class="n">metal</span><span class="o">=</span><span class="n">default_metal</span><span class="p">,</span> <span class="n">diel</span><span class="o">=</span><span class="n">default_diel</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s">&#39;m/s&#39;</span><span class="p">):</span>
+	<span class="n">omega</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">to_ureg</span><span class="p">(</span><span class="n">omega</span><span class="p">,</span><span class="s">&#39;rad/s&#39;</span><span class="p">,</span><span class="n">convert_quantities</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+	<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">metal</span><span class="p">,</span><span class="n">snomtools</span><span class="o">.</span><span class="n">calcs</span><span class="o">.</span><span class="n">materials</span><span class="o">.</span><span class="n">metals</span><span class="o">.</span><span class="n">Metal</span><span class="p">),</span> <span class="s">&quot;ERROR: No metal given to Vspp&quot;</span>
+	<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">diel</span><span class="p">,</span><span class="n">snomtools</span><span class="o">.</span><span class="n">calcs</span><span class="o">.</span><span class="n">materials</span><span class="o">.</span><span class="n">dielectrics</span><span class="o">.</span><span class="n">Dielectric</span><span class="p">),</span> <span class="s">&quot;ERROR: No dielectric given to Vspp&quot;</span>
+
+	<span class="n">wurzel</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">metal</span><span class="o">.</span><span class="n">epsilon</span><span class="p">(</span><span class="n">omega</span><span class="p">)</span> <span class="o">*</span> <span class="n">diel</span><span class="o">.</span><span class="n">epsilon</span><span class="p">(</span><span class="n">omega</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="n">metal</span><span class="o">.</span><span class="n">epsilon</span><span class="p">(</span><span class="n">omega</span><span class="p">)</span> <span class="o">+</span> <span class="n">diel</span><span class="o">.</span><span class="n">epsilon</span><span class="p">(</span><span class="n">omega</span><span class="p">)))</span>
+	<span class="k">return</span> <span class="n">const</span><span class="o">.</span><span class="n">c</span> <span class="o">/</span> <span class="n">wurzel</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">snomtools 0.0.1 documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, AG Aeschlimann, FB Physik, TU Kaiserslautern.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

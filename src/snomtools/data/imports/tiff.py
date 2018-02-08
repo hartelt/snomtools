@@ -1,9 +1,9 @@
 # coding=utf-8
-__author__ = 'hartelt'
 """
 This scripts imports tiff files, as generated for example by Terra and the PEEM Camera Software. The methods defined
 here will read those files and return the data as a DataSet instances. 3D tiff stacks shall be supported.
 """
+__author__ = 'hartelt'
 
 import snomtools.data.datasets
 import os

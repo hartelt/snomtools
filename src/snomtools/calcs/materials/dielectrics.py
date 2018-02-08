@@ -1,9 +1,9 @@
-__author__ = 'hartelt'
-'''
+"""
 This script provides a class for the properties of dielectric materials, as well as instances for materials we know.
 Functions take and give SI values! Use conversion tools in snomtools/calcs/conversions for different formats.
 Functions should be coded compatible to the ones in metals.py, and should work with numpy arrays.
-'''
+"""
+__author__ = 'hartelt'
 
 import numpy
 import snomtools.calcs.units as u

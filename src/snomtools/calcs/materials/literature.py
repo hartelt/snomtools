@@ -1,10 +1,11 @@
-__author__ = 'hartelt'
 """
 This script provides tabulated literature values for material properties.
 It reads the data files in literature as extracted from the papers, and converts them to numpy arrays.
 The data array will be in the following form:
 wavelength, dielectric constant, refraction index
 """
+__author__ = 'hartelt'
+
 #TODO: Compatibility with pint
 
 import numpy

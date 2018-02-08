@@ -3,18 +3,14 @@
     You can adapt this file completely to your liking, but it should at least
     contain the root `toctree` directive.
 
-Welcome to snomtools's documentation!
-=====================================
+Welcome to snomtools' documentation!
+====================================
 
 Contents:
 
-.. toctree::
-    :maxdepth: 5
+.. currentmodule:: snomtools
 
 .. automodule:: snomtools
-    :members:
-    :undoc-members:
-    :show-inheritance:
 
 Indices and tables
 ==================

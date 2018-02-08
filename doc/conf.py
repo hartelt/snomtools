@@ -32,14 +32,17 @@ sys.path.insert(0, os.path.abspath('../../src/'))
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
-    'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
+    'matplotlib.sphinxext.only_directives',
+    'matplotlib.sphinxext.plot_directive',
+    'sphinx.ext.doctest',
     'sphinx.ext.todo',
     'sphinx.ext.pngmath',
     'sphinx.ext.viewcode',
 ]
 autodoc_default_flags = ["members", "private-members", "special-members","show-inheritance"]
-autodoc_member_order = 'bysource'
+# autosummary_generate = True
+# autodoc_member_order = 'bysource'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -116,7 +119,23 @@ html_theme = 'default'
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-html_theme_options = {"collapsiblesidebar": "true", "externalrefs": "true"}
+try:
+    import sphinx_rtd_theme
+    html_theme = "sphinx_rtd_theme"
+    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+    html_theme_options = {
+        'collapse_navigation': False,
+        'display_version': True,
+}
+except ImportError:
+    # The theme to use for HTML and HTML Help pages.  See the documentation for
+    # a list of builtin themes.
+    html_theme = 'default'
+
+    # Theme options are theme-specific and customize the look and feel of a theme
+    # further.  For a list of options available for each theme, see the
+    # documentation.
+    html_theme_options = {"collapsiblesidebar": "true", "externalrefs": "true"}
 
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []

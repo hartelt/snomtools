@@ -1,0 +1,306 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>snomtools.evaluation.driftcorrection &mdash; snomtools 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../_static/sidebar.js"></script>
+    <link rel="top" title="snomtools 0.0.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">snomtools 0.0.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for snomtools.evaluation.driftcorrection</h1><div class="highlight"><pre>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s">&#39;frisch&#39;</span>
+<span class="sd">&#39;&#39;&#39; </span>
+<span class="sd">This file provides driftkorrection for array stacks. It generates the drift vectors via </span>
+<span class="sd">Crosscorrelation-Methods provided by the OpenCV librariy </span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">import</span> <span class="nn">cv2</span> <span class="kn">as</span> <span class="nn">cv</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">snomtools.data.datasets</span>
+
+
+<div class="viewcode-block" id="Drift"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.driftcorrection.Drift">[docs]</a><span class="k">class</span> <span class="nc">Drift</span><span class="p">:</span>
+<div class="viewcode-block" id="Drift.__init__"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.driftcorrection.Drift.__init__">[docs]</a>	<span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">template</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">stackAxisID</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">yAxisID</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">xAxisID</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+				 <span class="n">subpixel</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s">&#39;cv.TM_CCOEFF_NORMED&#39;</span><span class="p">):</span>
+		<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">		Calculates the correlation of a given 2D template with all slices in a n-D dataset which gets projected onto the three axes stackAxis, yAxis, xAxis.</span>
+<span class="sd">		Differend methods and subpixel accuracy are available.</span>
+<span class="sd">		:param data: n-D dataset</span>
+<span class="sd">		:param template: 2D template array</span>
+<span class="sd">		:param stackAxisID: Axis, along which the template_matching is calculated</span>
+<span class="sd">		:param yAxisID: ID of the first axis of the image, i.e. y</span>
+<span class="sd">		:param xAxisID: ID of the second axis of the image, i.e. x</span>
+<span class="sd">		:param subpixel: Generate subpixel accurate drift vectors</span>
+<span class="sd">		:param method: Method to calculate the Correlation between template and data. Possible methods: &#39;cv.TM_CCOEFF&#39;, &#39;cv.TM_CCOEFF_NORMED&#39; (default), &#39;cv.TM_CCORR&#39;, &#39;cv.TM_CCORR_NORMED&#39;, &#39;cv.TM_SQDIFF&#39;, &#39;cv.TM_SQDIFF_NORMED&#39;</span>
+<span class="sd">		&#39;&#39;&#39;</span>
+
+
+		<span class="c"># read axis</span>
+		<span class="k">if</span> <span class="n">data</span><span class="p">:</span>
+			<span class="k">if</span> <span class="n">stackAxisID</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">dstackAxisID</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_axis_index</span><span class="p">(</span><span class="s">&#39;delay&#39;</span><span class="p">)</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">dstackAxisID</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_axis_index</span><span class="p">(</span><span class="n">stackAxisID</span><span class="p">)</span>
+			<span class="k">if</span> <span class="n">yAxisID</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">dyAxisID</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_axis_index</span><span class="p">(</span><span class="s">&#39;y&#39;</span><span class="p">)</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">dyAxisID</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_axis_index</span><span class="p">(</span><span class="n">yAxisID</span><span class="p">)</span>
+			<span class="k">if</span> <span class="n">xAxisID</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">dxAxisID</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_axis_index</span><span class="p">(</span><span class="s">&#39;x&#39;</span><span class="p">)</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">dxAxisID</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_axis_index</span><span class="p">(</span><span class="n">xAxisID</span><span class="p">)</span>
+
+			<span class="c"># process data towards 3d array</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">data3D</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extract_3Ddata</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dstackAxisID</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dyAxisID</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dxAxisID</span><span class="p">)</span>
+
+			<span class="c"># read or guess template</span>
+			<span class="k">if</span> <span class="n">template</span><span class="p">:</span>
+				<span class="k">if</span> <span class="n">yAxisID</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+					<span class="n">tyAxisID</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">get_axis_index</span><span class="p">(</span><span class="s">&#39;y&#39;</span><span class="p">)</span>
+				<span class="k">else</span><span class="p">:</span>
+					<span class="n">tyAxisID</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">get_axis_index</span><span class="p">(</span><span class="n">yAxisID</span><span class="p">)</span>
+				<span class="k">if</span> <span class="n">xAxisID</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+					<span class="n">txAxisID</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">get_axis_index</span><span class="p">(</span><span class="s">&#39;x&#39;</span><span class="p">)</span>
+				<span class="k">else</span><span class="p">:</span>
+					<span class="n">txAxisID</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">get_axis_index</span><span class="p">(</span><span class="n">xAxisID</span><span class="p">)</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extract_templatedata</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">tyAxisID</span><span class="p">,</span> <span class="n">txAxisID</span><span class="p">)</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">guess_templatedata</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dyAxisID</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dxAxisID</span><span class="p">)</span>
+
+		<span class="n">stackAxisID</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_axis_index</span><span class="p">(</span><span class="n">stackAxisID</span><span class="p">)</span>
+		<span class="c"># for layers along stackAxisID find drift:</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">drift</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">template_matching_stack</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data3D</span><span class="o">.</span><span class="n">get_datafield</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">template</span><span class="p">,</span> <span class="n">stackAxisID</span><span class="p">,</span>
+												  <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="n">subpixel</span><span class="o">=</span><span class="n">subpixel</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
+</div>
+	<span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Drift.template_matching_stack"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.driftcorrection.Drift.template_matching_stack">[docs]</a>	<span class="k">def</span> <span class="nf">template_matching_stack</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">template</span><span class="p">,</span> <span class="n">stackAxisID</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s">&#39;cv.TM_CCOEFF_NORMED&#39;</span><span class="p">,</span> <span class="n">subpixel</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+		<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">		Passes the data of a 3D array along the stackAxis in form of 2D data to the template_matching function</span>
+<span class="sd">		:param data: 3D dataset</span>
+<span class="sd">		:param template: 2D template which is used to calculate the correlation</span>
+<span class="sd">		:param stackAxisID: Axis along which the 2D data is extracted and passed for template_matching</span>
+<span class="sd">		:param method: Method to calculate the Correlation between template and data. Possible methods: &#39;cv.TM_CCOEFF&#39;, &#39;cv.TM_CCOEFF_NORMED&#39; (default), &#39;cv.TM_CCORR&#39;, &#39;cv.TM_CCORR_NORMED&#39;, &#39;cv.TM_SQDIFF&#39;, &#39;cv.TM_SQDIFF_NORMED&#39;</span>
+<span class="sd">		:param subpixel: Generate subpixel accurate drift vectors</span>
+<span class="sd">		:return: List of tuples containing the coordinates of best correlation</span>
+<span class="sd">		&#39;&#39;&#39;</span>
+		<span class="n">driftlist</span> <span class="o">=</span> <span class="p">[]</span>
+		<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">stackAxisID</span><span class="p">]):</span>
+			<span class="n">slicebase</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">s_</span><span class="p">[:],</span> <span class="n">np</span><span class="o">.</span><span class="n">s_</span><span class="p">[:]]</span>
+			<span class="n">slicebase</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">stackAxisID</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+			<span class="n">slice_</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">slicebase</span><span class="p">)</span>
+			<span class="n">driftlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cls</span><span class="o">.</span><span class="n">template_matching</span><span class="p">((</span><span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">slice_</span><span class="p">]),</span> <span class="n">template</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">subpixel</span><span class="p">))</span>
+		<span class="k">return</span> <span class="n">driftlist</span>
+</div>
+	<span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Drift.template_matching"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.driftcorrection.Drift.template_matching">[docs]</a>	<span class="k">def</span> <span class="nf">template_matching</span><span class="p">(</span><span class="n">data_to_match</span><span class="p">,</span> <span class="n">template</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s">&#39;cv.TM_CCOEFF_NORMED&#39;</span><span class="p">,</span> <span class="n">subpixel</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+		<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">		Uses the openCV matchTemplate function to calculate a correlation between a 2D template array and the 2D data array</span>
+<span class="sd">		The coordinates of the maximum (or minimum for SQDIFF methods) of the calculated correlation are returned.</span>
+<span class="sd">		:param data_to_match: 2D dataset</span>
+<span class="sd">		:param template: 2D template which is used to calculate the correlation</span>
+<span class="sd">		:param method: Method to calculate the Correlation between template and data. Possible methods: &#39;cv.TM_CCOEFF&#39;, &#39;cv.TM_CCOEFF_NORMED&#39; (default), &#39;cv.TM_CCORR&#39;, &#39;cv.TM_CCORR_NORMED&#39;, &#39;cv.TM_SQDIFF&#39;, &#39;cv.TM_SQDIFF_NORMED&#39;</span>
+<span class="sd">		:param subpixel: Generate subpixel accurate drift vectors</span>
+<span class="sd">		:return: Returns the coordinate (y,x) of the correlation maximum referenced to the top left corner of the template.</span>
+<span class="sd">		&#39;&#39;&#39;</span>
+		<span class="c">#</span>
+
+		<span class="n">method</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">method</span><span class="p">)</span>
+
+		<span class="n">data_to_match</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">data_to_match</span><span class="p">))</span>
+		<span class="n">template</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">template</span><span class="p">))</span>
+
+		<span class="n">res</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">matchTemplate</span><span class="p">(</span><span class="n">data_to_match</span><span class="p">,</span> <span class="n">template</span><span class="p">,</span> <span class="n">method</span><span class="p">)</span>
+
+		<span class="k">if</span> <span class="n">method</span> <span class="ow">in</span> <span class="p">[</span><span class="n">cv</span><span class="o">.</span><span class="n">TM_SQDIFF</span><span class="p">,</span> <span class="n">cv</span><span class="o">.</span><span class="n">TM_SQDIFF_NORMED</span><span class="p">]:</span>
+			<span class="n">min_loc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unravel_index</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">argmin</span><span class="p">(),</span> <span class="n">res</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+			<span class="k">if</span> <span class="n">subpixel</span><span class="p">:</span>
+				<span class="n">top_left</span> <span class="o">=</span> <span class="n">Drift</span><span class="o">.</span><span class="n">subpixel_peak</span><span class="p">(</span><span class="n">min_loc</span><span class="p">,</span> <span class="n">res</span><span class="p">)</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="n">top_left</span> <span class="o">=</span> <span class="n">min_loc</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="n">max_loc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unravel_index</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">argmax</span><span class="p">(),</span> <span class="n">res</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+			<span class="k">if</span> <span class="n">subpixel</span><span class="p">:</span>
+				<span class="n">top_left</span> <span class="o">=</span> <span class="n">Drift</span><span class="o">.</span><span class="n">subpixel_peak</span><span class="p">(</span><span class="n">max_loc</span><span class="p">,</span> <span class="n">res</span><span class="p">)</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="n">top_left</span> <span class="o">=</span> <span class="n">max_loc</span>
+
+		<span class="k">return</span> <span class="n">top_left</span>
+</div>
+	<span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Drift.subpixel_peak"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.driftcorrection.Drift.subpixel_peak">[docs]</a>	<span class="k">def</span> <span class="nf">subpixel_peak</span><span class="p">(</span><span class="n">max_var</span><span class="p">,</span> <span class="n">results</span><span class="p">):</span>
+		<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">		Extrapolates the position of a maximum in a 2D array by logarithmical evaluation of it&#39;s surrounding values.</span>
+<span class="sd">		I.e. for x: max_new=max + ( log(f(x-1)) - log(f(x+1)) ) / ( 2*log(f(x-1)) + 2*log(f(x+1)) - 4*log(f(x)) )</span>
+
+<span class="sd">		:param max_var: tuple with position of the maximum</span>
+<span class="sd">		:param results: array with the values in which the subpixel maximum is to be found. Has to contain at least the neighbouring elements of max_var.</span>
+<span class="sd">		:return: tuple of subpixel accurate maximum position</span>
+<span class="sd">		&#39;&#39;&#39;</span>
+		<span class="n">y</span> <span class="o">=</span> <span class="n">max_var</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+		<span class="n">x</span> <span class="o">=</span> <span class="n">max_var</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+		<span class="n">y_sub</span> <span class="o">=</span> <span class="n">y</span> \
+				<span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="n">y</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">x</span><span class="p">])</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="n">y</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">x</span><span class="p">]))</span> \
+				  <span class="o">/</span> \
+				  <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="n">y</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">x</span><span class="p">])</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="n">y</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">x</span><span class="p">])</span> <span class="o">-</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">]))</span>
+		<span class="n">x_sub</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> \
+				<span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span> <span class="o">-</span> <span class="mi">1</span><span class="p">])</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]))</span> \
+				<span class="o">/</span> \
+				<span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span> <span class="o">-</span> <span class="mi">1</span><span class="p">])</span> <span class="o">-</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">])</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]))</span>
+		<span class="k">return</span> <span class="p">(</span><span class="n">y_sub</span><span class="p">,</span> <span class="n">x_sub</span><span class="p">)</span>
+</div>
+	<span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Drift.extract_3Ddata"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.driftcorrection.Drift.extract_3Ddata">[docs]</a>	<span class="k">def</span> <span class="nf">extract_3Ddata</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">stackAxisID</span><span class="p">,</span> <span class="n">yAxisID</span><span class="p">,</span> <span class="n">xAxisID</span><span class="p">):</span>
+		<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">		Projects the data of a n-D dataset onto the 3D system of stackAxis, yAxis, xAxis.</span>
+<span class="sd">		:param data:</span>
+<span class="sd">		:param stackAxisID: Defines the stack axis that is not projected and can be use for template_matching</span>
+<span class="sd">		:param yAxisID: ID of the first axis of the image, i.e. y</span>
+<span class="sd">		:param xAxisID: ID of the second axis of the image, i.e. x</span>
+<span class="sd">		:return: Dataset projected on the defined axes while keeping the stackAxis</span>
+<span class="sd">		&#39;&#39;&#39;</span>
+		<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">DataSet</span><span class="p">),</span> \
+			<span class="s">&quot;ERROR: No dataset or ROI instance given to extract_3Ddata.&quot;</span>
+		<span class="k">return</span> <span class="n">data</span><span class="o">.</span><span class="n">project_nd</span><span class="p">(</span><span class="n">stackAxisID</span><span class="p">,</span> <span class="n">yAxisID</span><span class="p">,</span> <span class="n">xAxisID</span><span class="p">)</span>
+</div>
+	<span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Drift.extract_templatedata"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.driftcorrection.Drift.extract_templatedata">[docs]</a>	<span class="k">def</span> <span class="nf">extract_templatedata</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">yAxisID</span><span class="p">,</span> <span class="n">xAxisID</span><span class="p">):</span>
+		<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">		Transforms the data of a template for further processing in the template_matching method.</span>
+<span class="sd">		:param data: Raw dataset as quantity with axisID&#39;s</span>
+<span class="sd">		:param yAxisID: ID of the first axis, i.e. y</span>
+<span class="sd">		:param xAxisID: ID of the second axis, i.e. x</span>
+<span class="sd">		:return: Data of the whole template projected onto the two defined axes.</span>
+<span class="sd">		&#39;&#39;&#39;</span>
+		<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">DataSet</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">ROI</span><span class="p">),</span> \
+			<span class="s">&quot;ERROR: No dataset or ROI instance given to extract_templatedata.&quot;</span>
+
+		<span class="n">yAxisID</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_axis_index</span><span class="p">(</span><span class="n">yAxisID</span><span class="p">)</span>
+		<span class="n">xAxisID</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_axis_index</span><span class="p">(</span><span class="n">xAxisID</span><span class="p">)</span>
+
+		<span class="k">return</span> <span class="n">data</span><span class="o">.</span><span class="n">project_nd</span><span class="p">(</span><span class="n">yAxisID</span><span class="p">,</span> <span class="n">xAxisID</span><span class="p">)</span><span class="o">.</span><span class="n">get_datafield</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</div>
+	<span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Drift.guess_templatedata"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.driftcorrection.Drift.guess_templatedata">[docs]</a>	<span class="k">def</span> <span class="nf">guess_templatedata</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">yAxisID</span><span class="p">,</span> <span class="n">xAxisID</span><span class="p">):</span>
+		<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">		Generates a default template for the template_matching method. The template is generated in the center between 2/5 and 3/5 of the image.</span>
+<span class="sd">		:param data: Any dataset as quantity with axisID&#39;s</span>
+<span class="sd">		:param yAxisID: ID of the first axis, i.e. y</span>
+<span class="sd">		:param xAxisID: ID of the second axis, i.e. x</span>
+<span class="sd">		:return: Projected ROI of the 2/5 to 3/5 field.</span>
+<span class="sd">		&#39;&#39;&#39;</span>
+		<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">DataSet</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">ROI</span><span class="p">),</span> \
+			<span class="s">&quot;ERROR: No dataset or ROI instance given to guess_template.&quot;</span>
+
+		<span class="n">yAxisID</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_axis_index</span><span class="p">(</span><span class="n">yAxisID</span><span class="p">)</span>
+		<span class="n">xAxisID</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_axis_index</span><span class="p">(</span><span class="n">xAxisID</span><span class="p">)</span>
+		<span class="n">fieldshape</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">yAxisID</span><span class="p">],</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">xAxisID</span><span class="p">])</span>
+		<span class="n">yl</span><span class="p">,</span> <span class="n">yr</span><span class="p">,</span> <span class="n">xl</span><span class="p">,</span> <span class="n">xr</span> <span class="o">=</span> <span class="n">fieldshape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">/</span> <span class="mi">5</span><span class="p">,</span> <span class="n">fieldshape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">3</span> <span class="o">/</span> <span class="mi">5</span><span class="p">,</span> <span class="n">fieldshape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">/</span> <span class="mi">5</span><span class="p">,</span> <span class="n">fieldshape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mi">3</span> <span class="o">/</span> <span class="mi">5</span>
+		<span class="n">limitlist</span> <span class="o">=</span> <span class="p">{</span><span class="n">yAxisID</span><span class="p">:</span> <span class="p">(</span><span class="n">yl</span><span class="p">,</span> <span class="n">yr</span><span class="p">),</span> <span class="n">xAxisID</span><span class="p">:</span> <span class="p">(</span><span class="n">xl</span><span class="p">,</span> <span class="n">xr</span><span class="p">)}</span>
+		<span class="n">roi</span> <span class="o">=</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">ROI</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">limitlist</span><span class="p">,</span> <span class="n">by_index</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+		<span class="k">return</span> <span class="n">roi</span><span class="o">.</span><span class="n">project_nd</span><span class="p">(</span><span class="n">yAxisID</span><span class="p">,</span> <span class="n">xAxisID</span><span class="p">)</span><span class="o">.</span><span class="n">get_datafield</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+</div></div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>  <span class="c"># Testing...</span>
+	<span class="n">testfolder</span> <span class="o">=</span> <span class="s">&quot;test/Drifttest/new&quot;</span>
+
+	<span class="kn">import</span> <span class="nn">snomtools.data.imports.tiff</span> <span class="kn">as</span> <span class="nn">imp</span>
+	<span class="kn">import</span> <span class="nn">os.path</span>
+
+	<span class="n">files</span> <span class="o">=</span> <span class="p">[</span><span class="s">&quot;{0:1d}full.tif&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">)]</span>
+	<span class="n">templatefile</span> <span class="o">=</span> <span class="s">&quot;template.tif&quot;</span>
+
+	<span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">imp</span><span class="o">.</span><span class="n">peem_camera_read_camware</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">testfolder</span><span class="p">,</span> <span class="n">f</span><span class="p">))</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">files</span><span class="p">]</span>
+	<span class="n">template</span> <span class="o">=</span> <span class="n">imp</span><span class="o">.</span><span class="n">peem_camera_read_camware</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">testfolder</span><span class="p">,</span> <span class="n">templatefile</span><span class="p">))</span>
+
+	<span class="n">data</span> <span class="o">=</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">stack_DataSets</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">Axis</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="s">&#39;s&#39;</span><span class="p">,</span> <span class="s">&#39;faketime&#39;</span><span class="p">))</span>
+
+	<span class="n">data</span><span class="o">.</span><span class="n">saveh5</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">testfolder</span><span class="p">,</span> <span class="s">&#39;testdata.hdf5&#39;</span><span class="p">))</span>
+
+	<span class="n">drift</span> <span class="o">=</span> <span class="n">Drift</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">template</span><span class="p">,</span> <span class="n">stackAxisID</span><span class="o">=</span><span class="s">&quot;faketime&quot;</span><span class="p">,</span> <span class="n">subpixel</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+	<span class="k">print</span> <span class="s">&quot;done.&quot;</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">snomtools 0.0.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, AG Aeschlimann, FB Physik, TU Kaiserslautern.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

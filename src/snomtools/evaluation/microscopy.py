@@ -1,12 +1,12 @@
-__author__ = 'hartelt'
-'''
+"""
 This file provides data evaluation scripts for microscopy data measured e.g. with PEEM, SNOM or any microscope.
 Explicitly, methods for image calibration are provided.
 The methods work on DataSets obtained by importing images with the snomtools.data.imports package.
 For furter info about data structures, see:
 data.imports
 data.datasets.py
-'''
+"""
+__author__ = 'hartelt'
 
 import snomtools.data.datasets
 import snomtools.calcs.units as u

@@ -1,0 +1,2631 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>snomtools.data package &mdash; snomtools 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/sidebar.js"></script>
+    <link rel="top" title="snomtools 0.0.1 documentation" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">snomtools 0.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="snomtools-data-package">
+<h1>snomtools.data package<a class="headerlink" href="#snomtools-data-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="snomtools.data.imports.html">snomtools.data.imports package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="snomtools.data.imports.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="snomtools.data.imports.html#module-snomtools.data.imports.lumerical_mat">snomtools.data.imports.lumerical_mat module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="snomtools.data.imports.html#module-snomtools.data.imports.tiff">snomtools.data.imports.tiff module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="snomtools.data.imports.html#module-snomtools.data.imports">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="snomtools.data.transformation.html">snomtools.data.transformation package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="snomtools.data.transformation.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="snomtools.data.transformation.html#module-snomtools.data.transformation.interpolate">snomtools.data.transformation.interpolate module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="snomtools.data.transformation.html#module-snomtools.data.transformation.normalize">snomtools.data.transformation.normalize module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="snomtools.data.transformation.html#module-snomtools.data.transformation.project">snomtools.data.transformation.project module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="snomtools.data.transformation.html#module-snomtools.data.transformation">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-snomtools.data.datasets">
+<span id="snomtools-data-datasets-module"></span><h2>snomtools.data.datasets module<a class="headerlink" href="#module-snomtools.data.datasets" title="Permalink to this headline">¶</a></h2>
+<p>This file contains the base class for datasets.</p>
+<dl class="class">
+<dt id="snomtools.data.datasets.Axis">
+<em class="property">class </em><tt class="descclassname">snomtools.data.datasets.</tt><tt class="descname">Axis</tt><big>(</big><em>data</em>, <em>unit=None</em>, <em>label=None</em>, <em>plotlabel=None</em>, <em>h5target=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Axis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Axis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#snomtools.data.datasets.DataArray" title="snomtools.data.datasets.DataArray"><tt class="xref py py-class docutils literal"><span class="pre">snomtools.data.datasets.DataArray</span></tt></a></p>
+<p>An axis is a data array that holds the data for an axis of a dataset.</p>
+<dl class="method">
+<dt id="snomtools.data.datasets.Axis.__getattr__">
+<tt class="descname">__getattr__</tt><big>(</big><em>item</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Axis.__getattr__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Axis.__getattr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method provides dynamical naming in instances. It is called any time an attribute of the intstance is
+not found with the normal naming mechanism. Raises an AttributeError if the name cannot be resolved.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>item</strong> &#8211; The name to get the corresponding attribute.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The attribute corresponding to the given name.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Axis.__init__">
+<tt class="descname">__init__</tt><big>(</big><em>data</em>, <em>unit=None</em>, <em>label=None</em>, <em>plotlabel=None</em>, <em>h5target=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Axis.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Axis.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>So far, an Axis is the same as a DaraArray, with the exception that it is one-dimensional. Therefore this
+method uses the __init__ of the parent class and parameters are exactly as there.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>data</strong> &#8211; </li>
+<li><strong>unit</strong> &#8211; </li>
+<li><strong>label</strong> &#8211; </li>
+<li><strong>plotlabel</strong> &#8211; </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="snomtools.data.datasets.Axis.__module__">
+<tt class="descname">__module__</tt><em class="property"> = 'snomtools.data.datasets'</em><a class="headerlink" href="#snomtools.data.datasets.Axis.__module__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Axis.__repr__">
+<tt class="descname">__repr__</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Axis.__repr__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Axis.__repr__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Axis.__str__">
+<tt class="descname">__str__</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Axis.__str__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Axis.__str__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Axis.assure_1D">
+<tt class="descname">assure_1D</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Axis.assure_1D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Axis.assure_1D" title="Permalink to this definition">¶</a></dt>
+<dd><p>Makes sure the data is onedimensional. Try a consistent conversion, if that fails raise error.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="snomtools.data.datasets.Axis.from_dataarray">
+<em class="property">classmethod </em><tt class="descname">from_dataarray</tt><big>(</big><em>da</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Axis.from_dataarray"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Axis.from_dataarray" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes an Axis instance from a DataArray instance (which is mostly, but not completely the same).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>da</strong> &#8211; An instance of the DataArray class.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The new initialized instance of Axis.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Axis.get_index_searchsort">
+<tt class="descname">get_index_searchsort</tt><big>(</big><em>values</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Axis.get_index_searchsort"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Axis.get_index_searchsort" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assuming the axis elements are sorted (which should be the case, the way all is implemented atm), for every
+value given, there is a corresponding index in the array, where the value could be inserted while maintaining
+order of the array.
+This function searches these indexes by using the numpy.searchsorted function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>values</strong> &#8211; array_like: Values to insert into the axis.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">array of ints: The corresponding indexes with the same shape as values.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Axis.scale_linear">
+<tt class="descname">scale_linear</tt><big>(</big><em>scaling=1.0</em>, <em>offset=None</em>, <em>unit=None</em>, <em>label=None</em>, <em>plotlabel=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Axis.scale_linear"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Axis.scale_linear" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transforms the Axis by scaling it with a linear factor and optionally shifting it by an offset.
+:param scaling: The scaling factor.
+:param offset: The offset. Must have the same dimension as the scaled axis.
+:param unit: Specifies the output unit for the Axis, Must evaluate a unit with same dimension as the scaled axis.
+:return: The transformed Axis.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="snomtools.data.datasets.DataArray">
+<em class="property">class </em><tt class="descclassname">snomtools.data.datasets.</tt><tt class="descname">DataArray</tt><big>(</big><em>data</em>, <em>unit=None</em>, <em>label=None</em>, <em>plotlabel=None</em>, <em>h5target=None</em>, <em>chunks=True</em>, <em>compression='gzip'</em>, <em>compression_opts=4</em>, <em>chunk_cache_mem_size=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="http://docs.python.org/library/functions.html#object" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></a></p>
+<p>A data array that holds additional metadata.</p>
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.__abs__">
+<tt class="descname">__abs__</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.__abs__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.__abs__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.__add__">
+<tt class="descname">__add__</tt><big>(</big><em>other</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.__add__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.__add__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.__array__">
+<tt class="descname">__array__</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.__array__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.__array__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.__del__">
+<tt class="descname">__del__</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.__del__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.__del__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="snomtools.data.datasets.DataArray.__dict__">
+<tt class="descname">__dict__</tt><em class="property"> = dict_proxy({'__module__': 'snomtools.data.datasets', '__str__': &lt;function __str__ at 0x2b5f445e4aa0&gt;, 'set_data': &lt;function set_data at 0x2b5f4460e500&gt;, 'set_label': &lt;function set_label at 0x2b5f4460eaa0&gt;, '__pos__': &lt;function __pos__ at 0x2b5f445e4410&gt;, 'shape': &lt;property object at 0x2b5f445e11b0&gt;, 'flush': &lt;function flush at 0x2b5f4460ed70&gt;, '__dict__': &lt;attribute '__dict__' of 'DataArray' objects&gt;, 'get_unit': &lt;function get_unit at 0x2b5f4460e8c0&gt;, '__weakref__': &lt;attribute '__weakref__' of 'DataArray' objects&gt;, '__init__': &lt;function __init__ at 0x2b5f4460e2a8&gt;, 'store_to_h5': &lt;function store_to_h5 at 0x2b5f4460ec08&gt;, 'min': &lt;function min at 0x2b5f445e4230&gt;, 'in_h5': &lt;classmethod object at 0x2b5f445ef638&gt;, 'sum': &lt;function sum at 0x2b5f4460eed8&gt;, 'get_data': &lt;function get_data at 0x2b5f4460e488&gt;, 'absmin': &lt;function absmin at 0x2b5f445e4320&gt;, 'set_plotlabel': &lt;function set_plotlabel at 0x2b5f4460eb90&gt;, '__getattr__': &lt;function __getattr__ at 0x2b5f4460e410&gt;, '__abs__': &lt;function __abs__ at 0x2b5f445e4500&gt;, 'del_data': &lt;function del_data at 0x2b5f4460e5f0&gt;, 'to': &lt;function to at 0x2b5f4460e9b0&gt;, 'get_nearest_value': &lt;function get_nearest_value at 0x2b5f4460ee60&gt;, 'swapaxes': &lt;function swapaxes at 0x2b5f4460e848&gt;, 'units': &lt;property object at 0x2b5f445e1208&gt;, 'set_unit': &lt;function set_unit at 0x2b5f4460e938&gt;, '__len__': &lt;function __len__ at 0x2b5f445e4a28&gt;, '__neg__': &lt;function __neg__ at 0x2b5f445e4488&gt;, 'sum_raw': &lt;function sum_raw at 0x2b5f4460ef50&gt;, 'get_label': &lt;function get_label at 0x2b5f4460ea28&gt;, '__getitem__': &lt;function __getitem__ at 0x2b5f445e4938&gt;, 'get_data_raw': &lt;function get_data_raw at 0x2b5f4460e7d0&gt;, 'max': &lt;function max at 0x2b5f445e41b8&gt;, 'from_h5': &lt;classmethod object at 0x2b5f445ef600&gt;, 'load_from_h5': &lt;function load_from_h5 at 0x2b5f4460ecf8&gt;, 'write_to_h5': &lt;function write_to_h5 at 0x2b5f4460ec80&gt;, 'get_plotlabel': &lt;function get_plotlabel at 0x2b5f4460eb18&gt;, '__iter__': &lt;function __iter__ at 0x2b5f445e48c0&gt;, '__pow__': &lt;function __pow__ at 0x2b5f445e47d0&gt;, '__add__': &lt;function __add__ at 0x2b5f445e4578&gt;, 'get_nearest_index': &lt;function get_nearest_index at 0x2b5f4460ede8&gt;, 'shift_slice': &lt;function shift_slice at 0x2b5f445e4140&gt;, 'data': &lt;property object at 0x2b5f445e1100&gt;, 'stack': &lt;classmethod object at 0x2b5f445ef670&gt;, '_set_data': &lt;function _set_data at 0x2b5f4460e578&gt;, '__array__': &lt;function __array__ at 0x2b5f445e4848&gt;, 'rawdata': &lt;property object at 0x2b5f445e1158&gt;, 'shift': &lt;function shift at 0x2b5f445e40c8&gt;, '__setitem__': &lt;function __setitem__ at 0x2b5f445e49b0&gt;, 'project_nd': &lt;function project_nd at 0x2b5f445e4050&gt;, '__doc__': '\n\tA data array that holds additional metadata.\n\t', '__div__': &lt;function __div__ at 0x2b5f445e46e0&gt;, '__mul__': &lt;function __mul__ at 0x2b5f445e4668&gt;, '__repr__': &lt;function __repr__ at 0x2b5f445e4b18&gt;, '__del__': &lt;function __del__ at 0x2b5f445e4b90&gt;, '__floordiv__': &lt;function __floordiv__ at 0x2b5f445e4758&gt;, '__sub__': &lt;function __sub__ at 0x2b5f445e45f0&gt;, 'absmax': &lt;function absmax at 0x2b5f445e42a8&gt;, 'mean': &lt;function mean at 0x2b5f445e4398&gt;})</em><a class="headerlink" href="#snomtools.data.datasets.DataArray.__dict__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.__div__">
+<tt class="descname">__div__</tt><big>(</big><em>other</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.__div__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.__div__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.__floordiv__">
+<tt class="descname">__floordiv__</tt><big>(</big><em>other</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.__floordiv__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.__floordiv__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.__getattr__">
+<tt class="descname">__getattr__</tt><big>(</big><em>item</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.__getattr__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.__getattr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method provides dynamical naming in instances. It is called any time an attribute of the intstance is
+not found with the normal naming mechanism. Raises an AttributeError if the name cannot be resolved.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>item</strong> &#8211; The name to get the corresponding attribute.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The attribute corresponding to the given name.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.__getitem__">
+<tt class="descname">__getitem__</tt><big>(</big><em>key</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.__getitem__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.__getitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>To allow adressing parts or elements of the DataArray with [], including slicing as in numpy. This just
+forwards to the underlying __getitem__ method of the data object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>key</strong> &#8211; The key which is given as adressed in dataarray[key]. Can be an integer or a slice object.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The sliced data as returned by self.data[key].</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.__init__">
+<tt class="descname">__init__</tt><big>(</big><em>data</em>, <em>unit=None</em>, <em>label=None</em>, <em>plotlabel=None</em>, <em>h5target=None</em>, <em>chunks=True</em>, <em>compression='gzip'</em>, <em>compression_opts=4</em>, <em>chunk_cache_mem_size=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Guess what, this is an initializer. It differences between input formats, which should be clear from the
+parameter doc and the comments in the code.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>data</strong> &#8211; required. If this is already a DataArray instance, it is just copied by default, so if the
+other parameters are set, the contents of the instance are overwritten.</li>
+<li><strong>unit</strong> &#8211; Request a unit for the data to be in. If the data holds a unit (quantity), it must be the same
+dimensionality. If it doesn&#8217;t (array-like), it is assumed to be in the given unit! Default is None for
+unchanged in the first case and dimensionless in the second.</li>
+<li><strong>label</strong> &#8211; A short identifier label that should be meaningful to get the physical context of the data.</li>
+<li><strong>plotlabel</strong> &#8211; A label for the data that should be plotted in a diagram.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.__iter__">
+<tt class="descname">__iter__</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.__iter__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.__iter__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.__len__">
+<tt class="descname">__len__</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.__len__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.__len__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="snomtools.data.datasets.DataArray.__module__">
+<tt class="descname">__module__</tt><em class="property"> = 'snomtools.data.datasets'</em><a class="headerlink" href="#snomtools.data.datasets.DataArray.__module__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.__mul__">
+<tt class="descname">__mul__</tt><big>(</big><em>other</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.__mul__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.__mul__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.__neg__">
+<tt class="descname">__neg__</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.__neg__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.__neg__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.__pos__">
+<tt class="descname">__pos__</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.__pos__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.__pos__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.__pow__">
+<tt class="descname">__pow__</tt><big>(</big><em>other</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.__pow__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.__pow__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.__repr__">
+<tt class="descname">__repr__</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.__repr__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.__repr__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.__setitem__">
+<tt class="descname">__setitem__</tt><big>(</big><em>key</em>, <em>value</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.__setitem__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.__setitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>To allow adressing parts or elements of the DataArray with [], including slicing as in numpy. This just
+forwards to the underlying __setitem__ method of the data object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>key</strong> &#8211; the key in the []</li>
+<li><strong>value</strong> &#8211; the value to set it to</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.__str__">
+<tt class="descname">__str__</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.__str__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.__str__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.__sub__">
+<tt class="descname">__sub__</tt><big>(</big><em>other</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.__sub__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.__sub__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="snomtools.data.datasets.DataArray.__weakref__">
+<tt class="descname">__weakref__</tt><a class="headerlink" href="#snomtools.data.datasets.DataArray.__weakref__" title="Permalink to this definition">¶</a></dt>
+<dd><p>list of weak references to the object (if defined)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray._set_data">
+<tt class="descname">_set_data</tt><big>(</big><em>val</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray._set_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray._set_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.absmax">
+<tt class="descname">absmax</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.absmax"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.absmax" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.absmin">
+<tt class="descname">absmin</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.absmin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.absmin" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="snomtools.data.datasets.DataArray.data">
+<tt class="descname">data</tt><a class="headerlink" href="#snomtools.data.datasets.DataArray.data" title="Permalink to this definition">¶</a></dt>
+<dd><p>The data property for the DataArray.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.del_data">
+<tt class="descname">del_data</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.del_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.del_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.flush">
+<tt class="descname">flush</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.flush"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.flush" title="Permalink to this definition">¶</a></dt>
+<dd><p>Flushes HDF5 buffers to disk. This only makes sense in h5 disk mode and in non-tempfile mode.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Nothing.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="snomtools.data.datasets.DataArray.from_h5">
+<em class="property">classmethod </em><tt class="descname">from_h5</tt><big>(</big><em>h5source</em>, <em>h5target=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.from_h5"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.from_h5" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method initializes a DataArray from a HDF5 source.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>h5source</strong> &#8211; The HDF5 source to read from. This is generally the subgroup for the DataArray.</li>
+<li><strong>h5target</strong> &#8211; Optional. The HDF5 target to work on, if on-disk h5 mode is desired.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">The initialized DataArray.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.get_data">
+<tt class="descname">get_data</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.get_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.get_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.get_data_raw">
+<tt class="descname">get_data_raw</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.get_data_raw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.get_data_raw" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the data as a raw numpy array, not a quantity.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">ndarray: The data as a numpy array.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.get_label">
+<tt class="descname">get_label</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.get_label"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.get_label" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.get_nearest_index">
+<tt class="descname">get_nearest_index</tt><big>(</big><em>value</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.get_nearest_index"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.get_nearest_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the index of the value in the DataArray nearest to a given value.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>value</strong> &#8211; A value to look for in the array.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The index tuple of the array entry nearest to the given value.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.get_nearest_value">
+<tt class="descname">get_nearest_value</tt><big>(</big><em>value</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.get_nearest_value"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.get_nearest_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Like get_nearest_index, but return the value instead of the index.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>value</strong> &#8211; value: A value to look for in the array.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The value in the array nearest to the given one.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.get_plotlabel">
+<tt class="descname">get_plotlabel</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.get_plotlabel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.get_plotlabel" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.get_unit">
+<tt class="descname">get_unit</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.get_unit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.get_unit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="snomtools.data.datasets.DataArray.in_h5">
+<em class="property">classmethod </em><tt class="descname">in_h5</tt><big>(</big><em>h5source</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.in_h5"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.in_h5" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method initializes a DataArray from a HDF5 source, which then works on the same H5 File. This is
+identical to calling DataArray.from_h5(h5source, h5target=h5source), which is actually done here.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>h5source</strong> &#8211; The HDF5 source to read from. This is generally the subgroup for the DataArray.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The initialized DataArray.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.load_from_h5">
+<tt class="descname">load_from_h5</tt><big>(</big><em>h5source</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.load_from_h5"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.load_from_h5" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads the data from a HDF5 source.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>h5source</strong> &#8211; The source to read from. This is the subgroup of the DataArray.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.max">
+<tt class="descname">max</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.max"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.max" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.mean">
+<tt class="descname">mean</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.mean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.mean" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.min">
+<tt class="descname">min</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.min"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.min" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.project_nd">
+<tt class="descname">project_nd</tt><big>(</big><em>*args</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.project_nd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.project_nd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Projects the datafield onto the given axes. Uses sum() method, but adresses axes to keep instead of axes to
+sum over.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>args</strong> &#8211; Integer indices for the axes to project onto.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">ndarray quantity: The projected data.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="snomtools.data.datasets.DataArray.rawdata">
+<tt class="descname">rawdata</tt><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.rawdata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.rawdata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the data as a raw numpy array, not a quantity. Forwards to get_data_raw().</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">ndarray: The data as a numpy array.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.set_data">
+<tt class="descname">set_data</tt><big>(</big><em>newdata</em>, <em>unit=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.set_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.set_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.set_label">
+<tt class="descname">set_label</tt><big>(</big><em>newlabel</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.set_label"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.set_label" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.set_plotlabel">
+<tt class="descname">set_plotlabel</tt><big>(</big><em>newlabel</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.set_plotlabel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.set_plotlabel" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.set_unit">
+<tt class="descname">set_unit</tt><big>(</big><em>unitstr</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.set_unit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.set_unit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the unit of the dataarray as specified.
+Warning: The plotlabel typically includes a unit, so this might get invalid!</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>unitstr</strong> &#8211; A valid unit string.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Nothing.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="snomtools.data.datasets.DataArray.shape">
+<tt class="descname">shape</tt><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.shape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.shape" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.shift">
+<tt class="descname">shift</tt><big>(</big><em>shift</em>, <em>output=None</em>, <em>order=0</em>, <em>mode='constant'</em>, <em>cval=nan</em>, <em>prefilter=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.shift"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.shift" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Shifts the complete data. This is just calling the underlying methods implemented in</dt>
+<dd><a class="reference internal" href="#snomtools.data.datasets.Data_Handler_H5.shift" title="snomtools.data.datasets.Data_Handler_H5.shift"><tt class="xref py py-func docutils literal"><span class="pre">Data_Handler_H5.shift()</span></tt></a> and <a class="reference internal" href="#snomtools.data.datasets.Data_Handler_np.shift" title="snomtools.data.datasets.Data_Handler_np.shift"><tt class="xref py py-func docutils literal"><span class="pre">Data_Handler_np.shift()</span></tt></a>
+See those methods for documentation or under-the-hood-used <tt class="xref py py-func docutils literal"><span class="pre">scipy.ndimage.interpolation.shift()</span></tt> for
+full documentation of parameters.</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.shift_slice">
+<tt class="descname">shift_slice</tt><big>(</big><em>slice_</em>, <em>shift</em>, <em>output=None</em>, <em>order=0</em>, <em>mode='constant'</em>, <em>cval=nan</em>, <em>prefilter=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.shift_slice"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.shift_slice" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Shifts a certain slice of the data. This is just calling the underlying methods implemented in</dt>
+<dd><a class="reference internal" href="#snomtools.data.datasets.Data_Handler_H5.shift_slice" title="snomtools.data.datasets.Data_Handler_H5.shift_slice"><tt class="xref py py-func docutils literal"><span class="pre">Data_Handler_H5.shift_slice()</span></tt></a> and <a class="reference internal" href="#snomtools.data.datasets.Data_Handler_np.shift_slice" title="snomtools.data.datasets.Data_Handler_np.shift_slice"><tt class="xref py py-func docutils literal"><span class="pre">Data_Handler_np.shift_slice()</span></tt></a>
+See those methods for documentation or under-the-hood-used <tt class="xref py py-func docutils literal"><span class="pre">scipy.ndimage.interpolation.shift()</span></tt> for
+full documentation of parameters.</dd>
+</dl>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="snomtools.data.datasets.DataArray.stack">
+<em class="property">classmethod </em><tt class="descname">stack</tt><big>(</big><em>datastack</em>, <em>axis=0</em>, <em>unit=None</em>, <em>label=None</em>, <em>plotlabel=None</em>, <em>h5target=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.stack"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.stack" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stacks a sequence of DataArrays to a new DataArray.
+See numpy.stack, as this method is used.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>datastack</strong> &#8211; sequence of DataArrays: The Data to be stacked.</li>
+<li><strong>axis</strong> &#8211; int, optional: The axis in the result array along which the input arrays are stacked.</li>
+<li><strong>unit</strong> &#8211; string, optional: The unit for the stacked DataArray. All data must be convertible to that unit. If
+not given, the unit of the first DataArray in the input stack is used.</li>
+<li><strong>label</strong> &#8211; string, optional: The label for the new DataSet. If not given, the label of the first DataArray in
+the input stack is used.</li>
+<li><strong>plotlabel</strong> &#8211; string, optional: The plotlabel for the new DataArray. If not given, the label of the first
+DataArray in the input stack is used.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">The stacked DataArray.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.store_to_h5">
+<tt class="descname">store_to_h5</tt><big>(</big><em>h5dest</em>, <em>subgrp_name=None</em>, <em>chunks=True</em>, <em>compression='gzip'</em>, <em>compression_opts=4</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.store_to_h5"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.store_to_h5" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stores the DataArray into a HDF5 file. It will create a new subgroup and store the data there in a unified
+format.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>h5dest</strong> &#8211; The destination. This is a HDF5 file or subgroup.</li>
+<li><strong>subgrp_name</strong> &#8211; Optional. The name for the subgroup that is created to store the data in, Default is the
+label of the DataArray.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>:return The subgroup that was created and holds the data.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.sum">
+<tt class="descname">sum</tt><big>(</big><em>axis=None</em>, <em>dtype=None</em>, <em>out=None</em>, <em>keepdims=False</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.sum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.sum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Behaves as the sum() function of a numpy array.
+See: <a class="reference external" href="http://docs.scipy.org/doc/numpy-1.10.1/reference/generated/numpy.sum.html">http://docs.scipy.org/doc/numpy-1.10.1/reference/generated/numpy.sum.html</a></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>axis</strong> &#8211; None or int or tuple of ints, optional
+Axis or axes along which a sum is performed. The default (axis = None) is perform a sum over all the dimensions
+of the input array. axis may be negative, in which case it counts from the last to the first axis.
+New in version 1.7.0.:
+If this is a tuple of ints, a sum is performed on multiple axes, instead of a single axis or all the axes as
+before.</li>
+<li><strong>dtype</strong> &#8211; dtype, optional
+The type of the returned array and of the accumulator in which the elements are summed. By default, the dtype
+of a is used. An exception is when a has an integer type with less precision than the default platform integer.
+In that case, the default platform integer is used instead.</li>
+<li><strong>out</strong> &#8211; ndarray, optional
+Array into which the output is placed. By default, a new array is created. If out is given, it must be of the
+appropriate shape (the shape of a with axis removed, i.e., numpy.delete(a.shape, axis)). Its type is preserved.
+See doc.ufuncs (Section Output arguments) for more details.</li>
+<li><strong>keepdims</strong> &#8211; bool, optional
+If this is set to True, the axes which are reduced are left in the result as dimensions with size one. With this
+option, the result will broadcast correctly against the original arr.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">ndarray Quantity
+An array with the same shape as a, with the specified axis removed. If a is a 0-d array, or if axis is None, a
+scalar is returned. If an output array is specified, a reference to out is returned.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.sum_raw">
+<tt class="descname">sum_raw</tt><big>(</big><em>axis=None</em>, <em>dtype=None</em>, <em>out=None</em>, <em>keepdims=False</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.sum_raw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.sum_raw" title="Permalink to this definition">¶</a></dt>
+<dd><p>As sum(), only on bare numpy array instead of Quantity. See sum() for details.
+:return: ndarray
+An array with the same shape as a, with the specified axes removed. If a is a 0-d array, or if axis is None, a
+scalar is returned. If an output array is specified, a reference to out is returned.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.swapaxes">
+<tt class="descname">swapaxes</tt><big>(</big><em>axis1</em>, <em>axis2</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.swapaxes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.swapaxes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Swaps two axes of the data. Uses numpy.swapaxes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>axis1</strong> &#8211; int: First axis.</li>
+<li><strong>axis2</strong> &#8211; int: Second axis.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">The data after the transformation.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.to">
+<tt class="descname">to</tt><big>(</big><em>unitstr</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.to"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.to" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a copy of the dataarray with the unit set as specified. For compatibility with pint quantity.
+Warning: The plotlabel typically includes a unit, so this might get invalid!</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>unitstr</strong> &#8211; A valid unit string.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The dataset copy with the specified unit.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="snomtools.data.datasets.DataArray.units">
+<tt class="descname">units</tt><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.units"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.units" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataArray.write_to_h5">
+<tt class="descname">write_to_h5</tt><big>(</big><em>h5dest=None</em>, <em>chunks=True</em>, <em>compression='gzip'</em>, <em>compression_opts=4</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataArray.write_to_h5"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataArray.write_to_h5" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes the DataArray into a HDF5 group. It will store the data there in a unified
+format. It will overwrite any dataset in the given group that is named with any of the unified names.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>h5dest</strong> &#8211; The destination. This is a HDF5 file or subgroup. Can be None if the DataSet has a h5target (
+works on a h5 group in file mode), in that case, self.h5target will be taken.</td>
+</tr>
+</tbody>
+</table>
+<p>:return The h5 group (or file) that holds the written data.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="snomtools.data.datasets.DataSet">
+<em class="property">class </em><tt class="descclassname">snomtools.data.datasets.</tt><tt class="descname">DataSet</tt><big>(</big><em>label=''</em>, <em>datafields=()</em>, <em>axes=()</em>, <em>plotconf=()</em>, <em>h5target=None</em>, <em>chunk_cache_mem_size=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataSet"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataSet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="http://docs.python.org/library/functions.html#object" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></a></p>
+<p>A data set is a collection of data arrays combined to have a physical meaning. These are n-dimensional
+sets of physical values, in which every dimension itself has a physical meaning. This might for example be a
+3D-array of count rates, in which the x- y- and z-dimensions represent the position on a sample (x,
+y in micrometers) and a time delay (z = t in femtoseconds).</p>
+<dl class="method">
+<dt id="snomtools.data.datasets.DataSet.__del__">
+<tt class="descname">__del__</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataSet.__del__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataSet.__del__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="snomtools.data.datasets.DataSet.__dict__">
+<tt class="descname">__dict__</tt><em class="property"> = dict_proxy({'__module__': 'snomtools.data.datasets', 'get_datafield_by_dimension': &lt;function get_datafield_by_dimension at 0x2b5f445eaed8&gt;, 'set_label': &lt;function set_label at 0x2b5f445f5398&gt;, '__dict__': &lt;attribute '__dict__' of 'DataSet' objects&gt;, '__weakref__': &lt;attribute '__weakref__' of 'DataSet' objects&gt;, '__init__': &lt;function __init__ at 0x2b5f445eaa28&gt;, 'add_axis': &lt;function add_axis at 0x2b5f445f5050&gt;, 'in_h5': &lt;classmethod object at 0x2b5f445ef788&gt;, 'get_datafield': &lt;function get_datafield at 0x2b5f445ead70&gt;, '__getattr__': &lt;function __getattr__ at 0x2b5f445eac80&gt;, 'replace_axis': &lt;function replace_axis at 0x2b5f445f5230&gt;, 'get_datafield_index': &lt;function get_datafield_index at 0x2b5f445eade8&gt;, 'get_plotconf': &lt;function get_plotconf at 0x2b5f445f52a8&gt;, 'loadh5': &lt;function loadh5 at 0x2b5f445f5758&gt;, 'from_textfile': &lt;classmethod object at 0x2b5f445ef7c0&gt;, 'bin': &lt;function bin at 0x2b5f445f5578&gt;, 'get_label': &lt;function get_label at 0x2b5f445f5320&gt;, '__del__': &lt;function __del__ at 0x2b5f445f5848&gt;, 'load_textfile': &lt;function load_textfile at 0x2b5f445f57d0&gt;, 'saveh5': &lt;function saveh5 at 0x2b5f445f56e0&gt;, 'from_h5': &lt;classmethod object at 0x2b5f445ef750&gt;, 'get_axis': &lt;function get_axis at 0x2b5f445f50c8&gt;, 'get_axis_by_dimension': &lt;function get_axis_by_dimension at 0x2b5f445f51b8&gt;, 'swapaxis': &lt;function swapaxis at 0x2b5f445f5488&gt;, 'get_datafield_normalized': &lt;function get_datafield_normalized at 0x2b5f445eae60&gt;, 'stack': &lt;classmethod object at 0x2b5f445ef7f8&gt;, 'from_h5file': &lt;classmethod object at 0x2b5f445ef718&gt;, 'check_label_uniqueness': &lt;function check_label_uniqueness at 0x2b5f445f5668&gt;, 'replace_datafield': &lt;function replace_datafield at 0x2b5f445eaf50&gt;, 'add_datafield': &lt;function add_datafield at 0x2b5f445eacf8&gt;, 'project_nd': &lt;function project_nd at 0x2b5f445f5500&gt;, '__doc__': '\n\tA data set is a collection of data arrays combined to have a physical meaning. These are n-dimensional\n\tsets of physical values, in which every dimension itself has a physical meaning. This might for example be a\n\t3D-array of count rates, in which the x- y- and z-dimensions represent the position on a sample (x,\n\ty in micrometers) and a time delay (z = t in femtoseconds).\n\t', 'meshgrid': &lt;function meshgrid at 0x2b5f445f5410&gt;, 'get_axis_index': &lt;function get_axis_index at 0x2b5f445f5140&gt;, 'check_data_consistency': &lt;function check_data_consistency at 0x2b5f445f55f0&gt;})</em><a class="headerlink" href="#snomtools.data.datasets.DataSet.__dict__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataSet.__getattr__">
+<tt class="descname">__getattr__</tt><big>(</big><em>item</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataSet.__getattr__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataSet.__getattr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method provides dynamical naming in instances. It is called any time an attribute of the intstance is
+not found with the normal naming mechanism. Raises an AttributeError if the name cannot be resolved.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>item</strong> &#8211; The name to get the corresponding attribute.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The attribute corresponding to the given name.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataSet.__init__">
+<tt class="descname">__init__</tt><big>(</big><em>label=''</em>, <em>datafields=()</em>, <em>axes=()</em>, <em>plotconf=()</em>, <em>h5target=None</em>, <em>chunk_cache_mem_size=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataSet.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataSet.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="snomtools.data.datasets.DataSet.__module__">
+<tt class="descname">__module__</tt><em class="property"> = 'snomtools.data.datasets'</em><a class="headerlink" href="#snomtools.data.datasets.DataSet.__module__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="snomtools.data.datasets.DataSet.__weakref__">
+<tt class="descname">__weakref__</tt><a class="headerlink" href="#snomtools.data.datasets.DataSet.__weakref__" title="Permalink to this definition">¶</a></dt>
+<dd><p>list of weak references to the object (if defined)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataSet.add_axis">
+<tt class="descname">add_axis</tt><big>(</big><em>data</em>, <em>unit=None</em>, <em>label=None</em>, <em>plotlabel=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataSet.add_axis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataSet.add_axis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initalizes a datafield and adds it to the list. All parameters have to be given like the __init__ of Axis
+expects them.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>data</strong> &#8211; </li>
+<li><strong>unit</strong> &#8211; </li>
+<li><strong>label</strong> &#8211; </li>
+<li><strong>plotlabel</strong> &#8211; </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataSet.add_datafield">
+<tt class="descname">add_datafield</tt><big>(</big><em>data</em>, <em>unit=None</em>, <em>label=None</em>, <em>plotlabel=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataSet.add_datafield"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataSet.add_datafield" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initalizes a datafield and adds it to the list. All parameters have to be given like the __init__ of DataSets
+expects them.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>data</strong> &#8211; </li>
+<li><strong>unit</strong> &#8211; </li>
+<li><strong>label</strong> &#8211; </li>
+<li><strong>plotlabel</strong> &#8211; </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataSet.bin">
+<tt class="descname">bin</tt><big>(</big><em>bin_size=()</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataSet.bin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataSet.bin" title="Permalink to this definition">¶</a></dt>
+<dd><p>To be implemented (imported from Ben&#8217;s script)
+:param bin_size:
+:return:</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataSet.check_data_consistency">
+<tt class="descname">check_data_consistency</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataSet.check_data_consistency"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataSet.check_data_consistency" title="Permalink to this definition">¶</a></dt>
+<dd><p>Self test method which checks the dimensionality and shapes of the axes and datafields. Raises
+AssertionError if one of the tests fails.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">True if the test is successful.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataSet.check_label_uniqueness">
+<tt class="descname">check_label_uniqueness</tt><big>(</big><em>newlabel=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataSet.check_label_uniqueness"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataSet.check_label_uniqueness" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if the labels of the DataSets datafields and axes are unique. This is important to call them directly
+by their labels.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>newlabel</strong> &#8211; If given, this method checks the viability of a new label to add to the DataSet.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">True if test is successful.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="snomtools.data.datasets.DataSet.from_h5">
+<em class="property">classmethod </em><tt class="descname">from_h5</tt><big>(</big><em>h5source</em>, <em>h5target=None</em>, <em>chunk_cache_mem_size=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataSet.from_h5"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataSet.from_h5" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes a new DataSet from an existing HDF5 source. The file must be structured in accordance to the
+saveh5() and loadh5() methods in this class. Uses loadh5 under the hood!</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>h5source</strong> &#8211; The (absolute or relative) path of the HDF5 file to read, or an existing h5py Group/File of
+the base of     the Dataset.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The initialized DataSet</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="snomtools.data.datasets.DataSet.from_h5file">
+<em class="property">classmethod </em><tt class="descname">from_h5file</tt><big>(</big><em>path</em>, <em>h5target=None</em>, <em>chunk_cache_mem_size=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataSet.from_h5file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataSet.from_h5file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes a new DataSet from an existing HDF5 file. The file must be structured in accordance to the
+saveh5() and loadh5() methods in this class. Uses loadh5 under the hood!
+This method is kept for backwards compatibility, while newer from_h5 method expands its function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>path</strong> &#8211; The (absolute or relative) path of the HDF5 file to read.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The initialized DataSet</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="snomtools.data.datasets.DataSet.from_textfile">
+<em class="property">classmethod </em><tt class="descname">from_textfile</tt><big>(</big><em>path</em>, <em>h5target=None</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataSet.from_textfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataSet.from_textfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes a new DataSet from an existing text file. The file must contain the data in a column structure
+and can contain additional metadata in comment lines.
+Uses load_textfile() under the hood! See doc of this method for more details!</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> &#8211; The (absolute or relative) path of the text file to read.</li>
+<li><strong>kwargs</strong> &#8211; Keyword arguments for load_textfile and the underlying numpy.loadtxt(). See there
+documentation for specifics,</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">The initialized DataSet</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataSet.get_axis">
+<tt class="descname">get_axis</tt><big>(</big><em>label_or_index</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataSet.get_axis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataSet.get_axis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tries to assign an Axis to a given parameter, that can be an integer as an index in the
+axes list or a label string. Raises exceptions if there is no matching element.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>label_or_index</strong> &#8211; Identifier of the Axis.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The corresponding Axis.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataSet.get_axis_by_dimension">
+<tt class="descname">get_axis_by_dimension</tt><big>(</big><em>unit</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataSet.get_axis_by_dimension"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataSet.get_axis_by_dimension" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the first axis that corresponds to a given unit in its physical dimensionality.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>unit</strong> &#8211; Quantity or anything that can be cast as quantity by the UnitRegistry.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">the Axis</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataSet.get_axis_index">
+<tt class="descname">get_axis_index</tt><big>(</big><em>label_or_index</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataSet.get_axis_index"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataSet.get_axis_index" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataSet.get_datafield">
+<tt class="descname">get_datafield</tt><big>(</big><em>label_or_index</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataSet.get_datafield"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataSet.get_datafield" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tries to assign a DataField to a given parameter, that can be an integer as an index in the
+datafields list or a label string. Raises exceptions if there is no matching field.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>label_or_index</strong> &#8211; Identifier of the DataField</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The corresponding DataField.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataSet.get_datafield_by_dimension">
+<tt class="descname">get_datafield_by_dimension</tt><big>(</big><em>unit</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataSet.get_datafield_by_dimension"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataSet.get_datafield_by_dimension" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the first datafield that corresponds to a given unit in its physical dimensionality.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>unit</strong> &#8211; Quantity or anything that can be cast as quantity by the UnitRegistry.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">the datafield</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataSet.get_datafield_index">
+<tt class="descname">get_datafield_index</tt><big>(</big><em>label_or_index</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataSet.get_datafield_index"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataSet.get_datafield_index" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataSet.get_datafield_normalized">
+<tt class="descname">get_datafield_normalized</tt><big>(</big><em>label_or_index</em>, <em>method='maximum'</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataSet.get_datafield_normalized"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataSet.get_datafield_normalized" title="Permalink to this definition">¶</a></dt>
+<dd><p>Like get_datafield, but returns a normalized DataArray.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>label_or_index</strong> &#8211; Identifier of the DataField</li>
+<li><strong>method</strong> &#8211; Method to normalize with: Valid options:
+* &#8220;maximum&#8221;, &#8220;max&#8221; (default): divide every value by the maximum value in the set
+* &#8220;mean&#8221;: divide every value by the average value in the set
+* &#8220;minimum&#8221;, &#8220;min&#8221;: divide every value by the minimum value in the set
+* &#8220;absolute maximum&#8221;, &#8220;absmax&#8221;: divide every value by the maximum absolute value in the set
+* &#8220;absolute minimum&#8221;, &#8220;absmin&#8221;: divide every value by the minimum absolute value in the set</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">The normalized DataArray instance.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataSet.get_label">
+<tt class="descname">get_label</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataSet.get_label"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataSet.get_label" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataSet.get_plotconf">
+<tt class="descname">get_plotconf</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataSet.get_plotconf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataSet.get_plotconf" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="snomtools.data.datasets.DataSet.in_h5">
+<em class="property">classmethod </em><tt class="descname">in_h5</tt><big>(</big><em>h5group</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataSet.in_h5"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataSet.in_h5" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Opens a DataSet from a h5 source, which then works on the source (in-place). This is forwards to</dt>
+<dd>from_h5(h5group, h5group).</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>h5group</strong> &#8211; The (absolute or relative) path of the HDF5 file to read, or an existing h5py Group/File of
+the base of the Dataset.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The generated instance.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataSet.load_textfile">
+<tt class="descname">load_textfile</tt><big>(</big><em>path</em>, <em>axis=0</em>, <em>comments='#'</em>, <em>delimiter=None</em>, <em>unitsplitter='[-\/ ]+'</em>, <em>labelline=0</em>, <em>unitsline=0</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataSet.load_textfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataSet.load_textfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads the contents of a textfile to the dataset instance. The text files are two-dimensional arrays of lines
+and n columns, so it can hold up to one axis and (n-1) or n DataFields. See axis parameter for information on
+how to set axis. Data consistency is checked at the end, so shapes of data and axis arrays must fit (as
+always),
+Uses numpy.loadtxt() under the hood!
+Defaults fit for gnuplot friendly files. Tries to cast the heading comment line(s) as labels and units for
+the data fields.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> &#8211; The (relative or absolute) path of the text file to read.</li>
+<li><strong>axis</strong> &#8211; Integer that specifies the column of the axis in the data file OR a whole axis instance of the
+correct shape OR None for unchanged axes of the DataSet. Default is 0 for the first column of the text file.</li>
+<li><strong>comments</strong> &#8211; the character used to indicate the start of a comment line</li>
+<li><strong>delimiter</strong> &#8211; character used to separate values. By default, this is any whitespace.</li>
+<li><strong>unitsplitter</strong> &#8211; Regular expression to split comment columns in labels and units. Default is &#8220;[-/ ]+&#8221;,
+which matches combinations of the chars &#8216;-&#8216;. &#8216;/&#8217; and &#8216; &#8216;.</li>
+<li><strong>labelline</strong> &#8211; Index (starting with 0) of the comment line in which the labels are stored. (Default 0)</li>
+<li><strong>unitsline</strong> &#8211; Index (starting with 0) of the comment line in which the units are stored. (Default 0) If
+this is different from labelline, it is assumed that ONLY the unit is in that line.</li>
+<li><strong>kwargs</strong> &#8211; Keyword arguments as used for the numpy.loadtxt() method</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Nothing</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataSet.loadh5">
+<tt class="descname">loadh5</tt><big>(</big><em>h5source</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataSet.loadh5"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataSet.loadh5" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataSet.meshgrid">
+<tt class="descname">meshgrid</tt><big>(</big><em>axes=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataSet.meshgrid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataSet.meshgrid" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function returns coordinate arrays corresponding to the axes. See numpy.meshgrid. If axes are not
+constricted by axes argument, the output arrays will have the same shape as the data arrays of the dataset.
+Uses snomtools.calcs.units.meshgrid() under the hood to preserve units.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>axes</strong> &#8211; optional: a list of axes identifiers to be included. If none is given, all axes are included.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A tuple of coordinate arrays.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataSet.project_nd">
+<tt class="descname">project_nd</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataSet.project_nd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataSet.project_nd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Projects the datafield onto the given axes. Uses the DataSet.project_nd() method for every datset and returns a
+new DataSet with the projected DataFields and the chosen axes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>args</strong> &#8211; Valid identifiers for the axes to project onto.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">DataSet: Projected DataSet.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataSet.replace_axis">
+<tt class="descname">replace_axis</tt><big>(</big><em>axis_id</em>, <em>new_axis</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataSet.replace_axis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataSet.replace_axis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Replaces an axis of the dataset with another. For this to make sense, the new axis must describe the same
+coordinates in the dataset as the old one: Obviously, the shape must therefore be the same.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>axis_id</strong> &#8211; Identifier of the Axis to replace. Must be a valid identifier as in get_axis_index and get_axis.</li>
+<li><strong>new_axis</strong> &#8211; Axis: An Axis instance that shall be put in place of the old one.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataSet.replace_datafield">
+<tt class="descname">replace_datafield</tt><big>(</big><em>datafield_id</em>, <em>new_datafield</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataSet.replace_datafield"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataSet.replace_datafield" title="Permalink to this definition">¶</a></dt>
+<dd><p>Replaces a datafield of the dataset with another. For this to make sense, the new datafield must describe the
+same coordinates in the dataset as the old one: Obviously, the shape must therefore be the same.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>datafield_id</strong> &#8211; Identifier of the Axis to replace. Must be a valid identifier as in get_datafield_index
+and get_datafield.</li>
+<li><strong>new_datafield</strong> &#8211; Axis: An Axis instance that shall be put in place of the old one.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataSet.saveh5">
+<tt class="descname">saveh5</tt><big>(</big><em>h5dest=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataSet.saveh5"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataSet.saveh5" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saves the Dataset to a HDF5 destination in a unified format.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>h5dest</strong> &#8211; String or h5py Group/File: The destination to write to.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Nothing.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataSet.set_label">
+<tt class="descname">set_label</tt><big>(</big><em>newlabel</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataSet.set_label"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataSet.set_label" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="snomtools.data.datasets.DataSet.stack">
+<em class="property">classmethod </em><tt class="descname">stack</tt><big>(</big><em>datastack</em>, <em>new_axis</em>, <em>axis=0</em>, <em>label=None</em>, <em>plotconf=None</em>, <em>h5target=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataSet.stack"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataSet.stack" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stacks a sequence of DataSets to a new DataSet.
+Therefore it stacks the DataArrays with stack_DataArrays() and inserts a new Axis.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>datastack</strong> &#8211; sequence of DataSets: The Data to be stacked.</li>
+<li><strong>new_axis</strong> &#8211; Axis or castable as Axis: The new axis to be inserted for the dimension along which the data is
+stacked.</li>
+<li><strong>axis</strong> &#8211; int, optional: The axis in the result array along which the input arrays are stacked.</li>
+<li><strong>label</strong> &#8211; string, optional: The label for the new DataSet. If not given, the label of the first DataArray in
+the input stack is used.</li>
+<li><strong>plotconf</strong> &#8211; The plot configuration to be used for the new DataSet. If not given, the configuration of the
+first DataSet in the input stack is used.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">The stacked DataSet.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.DataSet.swapaxis">
+<tt class="descname">swapaxis</tt><big>(</big><em>axis1</em>, <em>axis2</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#DataSet.swapaxis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.DataSet.swapaxis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interchanges the place of two axes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>axis1</strong> &#8211; The first axis, addressed by its label or index.</li>
+<li><strong>axis2</strong> &#8211; The second axis, addressed by its label or index.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Nothing.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="snomtools.data.datasets.Data_Handler_H5">
+<em class="property">class </em><tt class="descclassname">snomtools.data.datasets.</tt><tt class="descname">Data_Handler_H5</tt><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">pint.unit.Quantity</span></tt></p>
+<p>A Data Handler, emulating a Quantity.
+This &#8220;H5 mode&#8221; handler keeps the data in h5py objects, but provides access to data as if it were a quantity.</p>
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_H5.__add__">
+<tt class="descname">__add__</tt><big>(</big><em>other</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5.__add__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.__add__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_H5.__array__">
+<tt class="descname">__array__</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5.__array__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.__array__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_H5.__del__">
+<tt class="descname">__del__</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5.__del__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.__del__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_H5.__div__">
+<tt class="descname">__div__</tt><big>(</big><em>other</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5.__div__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.__div__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_H5.__floordiv__">
+<tt class="descname">__floordiv__</tt><big>(</big><em>other</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5.__floordiv__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.__floordiv__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_H5.__getitem__">
+<tt class="descname">__getitem__</tt><big>(</big><em>key</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5.__getitem__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.__getitem__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="snomtools.data.datasets.Data_Handler_H5.__module__">
+<tt class="descname">__module__</tt><em class="property"> = 'snomtools.data.datasets'</em><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.__module__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_H5.__mul__">
+<tt class="descname">__mul__</tt><big>(</big><em>other</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5.__mul__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.__mul__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="snomtools.data.datasets.Data_Handler_H5.__new__">
+<em class="property">static </em><tt class="descname">__new__</tt><big>(</big><em>data=None</em>, <em>unit=None</em>, <em>shape=None</em>, <em>h5target=None</em>, <em>chunks=True</em>, <em>compression='gzip'</em>, <em>compression_opts=4</em>, <em>chunk_cache_mem_size=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5.__new__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.__new__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes and returns a new instance. __new__ is used instead of __init__ because pint Quantity does so,
+and the method is overwritten.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>data</strong> &#8211; The data to store.</li>
+<li><strong>unit</strong> &#8211; A valid units string for the unit to convert the data to if necessary.</li>
+<li><strong>shape</strong> &#8211; If no data is given, data of given shape are initialized with zeroes.</li>
+<li><strong>h5target</strong> (<em>h5py Group/File</em>) &#8211; If None or True, temporary file mode is enabled, Data is kept on temp
+files, which are cleaned up in __del__.</li>
+<li><strong>chunks</strong> &#8211; (See h5py docs. Chunks are good in most big data cases!)</li>
+<li><strong>compression</strong> &#8211; (See h5py docs. Compression is good in most cases!)</li>
+<li><strong>compression_opts</strong> &#8211; (See h5py docs. Compression is good in most cases!)</li>
+<li><strong>chunk_cache_mem_size</strong> &#8211; Set custom chunk cache memory size for temp files. Default is set in h5tools.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">The initialized instance.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_H5.__pow__">
+<tt class="descname">__pow__</tt><big>(</big><em>other</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5.__pow__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.__pow__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_H5.__repr__">
+<tt class="descname">__repr__</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5.__repr__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.__repr__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_H5.__setitem__">
+<tt class="descname">__setitem__</tt><big>(</big><em>key</em>, <em>value</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5.__setitem__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.__setitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method provides write access to indexed elements of the data. It directly writes to the h5 dataset
+without invoking _magnitude, thereby it avoids loading all data into ram.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>key</strong> &#8211; Index or slice (numpy style as usual) of data to address.</li>
+<li><strong>value</strong> &#8211; Data to write in addressed elements. Input units will be converted
+to Data_Handler units (error if not possible). Numeric data (non-Quantities) are assumed as dimensionless (
+pint-style).</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Value must fit into RAM. Setting bigger-than-RAM slices at a time is not supported (yet).</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Nothing.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_H5.__sub__">
+<tt class="descname">__sub__</tt><big>(</big><em>other</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5.__sub__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.__sub__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_H5._get__magnitude">
+<tt class="descname">_get__magnitude</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5._get__magnitude"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5._get__magnitude" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_H5._get__units">
+<tt class="descname">_get__units</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5._get__units"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5._get__units" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="snomtools.data.datasets.Data_Handler_H5._magnitude">
+<tt class="descname">_magnitude</tt><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5._magnitude" title="Permalink to this definition">¶</a></dt>
+<dd><p>The _magnitude property for Quantity emulation.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_H5._set__magnitude">
+<tt class="descname">_set__magnitude</tt><big>(</big><em>val</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5._set__magnitude"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5._set__magnitude" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_H5._set__units">
+<tt class="descname">_set__units</tt><big>(</big><em>val</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5._set__units"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5._set__units" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="snomtools.data.datasets.Data_Handler_H5._units">
+<tt class="descname">_units</tt><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5._units" title="Permalink to this definition">¶</a></dt>
+<dd><p>The _units property for Quantity emulation.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_H5.absmax">
+<tt class="descname">absmax</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5.absmax"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.absmax" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_H5.absmin">
+<tt class="descname">absmin</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5.absmin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.absmin" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="snomtools.data.datasets.Data_Handler_H5.chunks">
+<tt class="descname">chunks</tt><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5.chunks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.chunks" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="snomtools.data.datasets.Data_Handler_H5.dimensionality">
+<tt class="descname">dimensionality</tt><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5.dimensionality"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.dimensionality" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="snomtools.data.datasets.Data_Handler_H5.dtype">
+<tt class="descname">dtype</tt><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5.dtype"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.dtype" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_H5.flush">
+<tt class="descname">flush</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5.flush"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.flush" title="Permalink to this definition">¶</a></dt>
+<dd><p>Flushes the HDF5 buffer to disk. This always concerns the whole H5 file, so the Data_Handler resides on a
+subgroup, all other datasets on that file are also flushed.
+:return: nothing</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_H5.get_nearest_index">
+<tt class="descname">get_nearest_index</tt><big>(</big><em>value</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5.get_nearest_index"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.get_nearest_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the index of the value in the DataArray nearest to a given value.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>value</strong> &#8211; A value to look for in the array.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The index tuple of the array entry nearest to the given value.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_H5.get_nearest_value">
+<tt class="descname">get_nearest_value</tt><big>(</big><em>value</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5.get_nearest_value"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.get_nearest_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Like get_nearest_index, but return the value instead of the index.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>value</strong> &#8211; value: A value to look for in the array.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The value in the array nearest to the given one.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_H5.get_unit">
+<tt class="descname">get_unit</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5.get_unit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.get_unit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_H5.ito">
+<tt class="descname">ito</tt><big>(</big><em>unit</em>, <em>*contexts</em>, <em>**ctx_kwargs</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5.ito"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.ito" title="Permalink to this definition">¶</a></dt>
+<dd><p>A more performant version of pints Quantity&#8217;s ito, that avoids unneccesary calling of magnitude.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>unit</strong> &#8211; A valid unit string or</li>
+<li><strong>contexts</strong> &#8211; See pint._Quantity.to().</li>
+<li><strong>ctx_kwargs</strong> &#8211; See pint._Quantity.to().</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="snomtools.data.datasets.Data_Handler_H5.q">
+<tt class="descname">q</tt><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5.q"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.q" title="Permalink to this definition">¶</a></dt>
+<dd><p>The corresponding quantity.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The data, converted to a quantity.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_H5.set_unit">
+<tt class="descname">set_unit</tt><big>(</big><em>unitstr</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5.set_unit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.set_unit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the unit of the Quantity as specified.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>unitstr</strong> &#8211; A valid unit string.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Nothing.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="snomtools.data.datasets.Data_Handler_H5.shape">
+<tt class="descname">shape</tt><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5.shape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.shape" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_H5.shift">
+<tt class="descname">shift</tt><big>(</big><em>shift</em>, <em>output=None</em>, <em>order=0</em>, <em>mode='constant'</em>, <em>cval=nan</em>, <em>prefilter=None</em>, <em>h5target=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5.shift"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.shift" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shifts the complete data with scipy.ndimage.interpolation.shift.
+In difference to that method, it does not need an input, but works on the instance data.
+Also, the defaults are different.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">For shifting, the whole data is loaded into RAM. Sequential shifting might be implemented later.</p>
+</div>
+<p>See: <tt class="xref py py-func docutils literal"><span class="pre">scipy.ndimage.interpolation.shift()</span></tt> for full documentation of parameters.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>output</strong> (ndarray <em>or</em> dtype <em>or</em> <tt class="code docutils literal"><span class="pre">False</span></tt>, <em>optional</em>) &#8211; The array in which to place the output, or the dtype of the returned array.
+If <tt class="code docutils literal"><span class="pre">False</span></tt> is given, the instance data is overwritten.</li>
+<li><strong>h5target</strong> &#8211; The h5target to in case a new Data_Handler_H5 is generated.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The shifted data. If output is given as a parameter or <tt class="code docutils literal"><span class="pre">False</span></tt>, None is returned.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Data_Handler_np <em>or</em> None</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_H5.shift_slice">
+<tt class="descname">shift_slice</tt><big>(</big><em>slice_</em>, <em>shift</em>, <em>output=None</em>, <em>order=0</em>, <em>mode='constant'</em>, <em>cval=nan</em>, <em>prefilter=None</em>, <em>h5target=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5.shift_slice"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.shift_slice" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shifts a certain slice of the data with scipy.ndimage.interpolation.shift.
+See: <tt class="xref py py-func docutils literal"><span class="pre">scipy.ndimage.interpolation.shift()</span></tt> for full documentation of parameters.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>slice</strong> (slice <strong>or</strong> tuple(slice) <strong>or</strong> <em>(tuple of) castable</em>.) &#8211; A selection of a subset of the data, typically a tuple of ints or slices. Can be generated
+easily with     <tt class="xref py py-func docutils literal"><span class="pre">numpy.s_()</span></tt> or builtin method <tt class="xref py py-func docutils literal"><span class="pre">slice()</span></tt>.</li>
+<li><strong>output</strong> (ndarray <em>or</em> dtype <em>or</em> <tt class="code docutils literal"><span class="pre">False</span></tt>, <em>optional</em>) &#8211; The array in which to place the output, or the dtype of the returned array.
+If <tt class="code docutils literal"><span class="pre">False</span></tt> is given, the slice of the instance data is overwritten.</li>
+<li><strong>h5target</strong> &#8211; The h5target to in case a new Data_Handler_H5 is generated.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The shifted data. If output is given as a parameter or <tt class="code docutils literal"><span class="pre">False</span></tt>, None is returned.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Data_Handler_np <em>or</em> None</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="snomtools.data.datasets.Data_Handler_H5.stack">
+<em class="property">classmethod </em><tt class="descname">stack</tt><big>(</big><em>tostack</em>, <em>axis=0</em>, <em>unit=None</em>, <em>h5target=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5.stack"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.stack" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stacks a sequence of given Data_Handlers (or castables) along a new axis.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>tostack</strong> &#8211; Sequence of Data_Handlers (or castables), each must be of the same shape and unit.</li>
+<li><strong>axis</strong> &#8211; int, optional: The axis in the result array along which the input arrays are stacked.</li>
+<li><strong>unit</strong> &#8211; optional: A valid unit string to convert the stack to. Default is the unit of the first element
+of the sequence.</li>
+<li><strong>h5target</strong> &#8211; optional: A h5target to work on. See __new__</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">stacked Data_Handler</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_H5.sum">
+<tt class="descname">sum</tt><big>(</big><em>axis=None</em>, <em>dtype=None</em>, <em>out=None</em>, <em>keepdims=False</em>, <em>h5target=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5.sum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.sum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Behaves as the sum() function of a numpy array.
+See: <a class="reference external" href="http://docs.scipy.org/doc/numpy-1.10.1/reference/generated/numpy.sum.html">http://docs.scipy.org/doc/numpy-1.10.1/reference/generated/numpy.sum.html</a></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>axis</strong> &#8211; None or int or tuple of ints, optional
+Axis or axes along which a sum is performed. The default (axis = None) is perform a sum over all the dimensions
+of the input array. axis may be negative, in which case it counts from the last to the first axis.
+New in version 1.7.0.:
+If this is a tuple of ints, a sum is performed on multiple axes, instead of a single axis or all the axes as
+before.</li>
+<li><strong>dtype</strong> &#8211; dtype, optional
+The type of the returned array and of the accumulator in which the elements are summed. By default, the dtype
+of a is used. An exception is when a has an integer type with less precision than the default platform integer.
+In that case, the default platform integer is used instead.</li>
+<li><strong>out</strong> &#8211; ndarray, optional
+Array into which the output is placed. By default, a new array is created. If out is given, it must be of the
+appropriate shape (the shape of a with axis removed, i.e., numpy.delete(a.shape, axis)). Its type is preserved.
+See doc.ufuncs (Section Output arguments) for more details.</li>
+<li><strong>keepdims</strong> &#8211; bool, optional
+If this is set to True, the axes which are reduced are left in the result as dimensions with size one. With this
+option, the result will broadcast correctly against the original arr.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">ndarray Quantity
+An array with the same shape as a, with the specified axis removed. If a is a 0-d array, or if axis is None, a
+scalar is returned. If an output array is specified, a reference to out is returned.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_H5.sum_raw">
+<tt class="descname">sum_raw</tt><big>(</big><em>axis=None</em>, <em>dtype=None</em>, <em>out=None</em>, <em>keepdims=False</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5.sum_raw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.sum_raw" title="Permalink to this definition">¶</a></dt>
+<dd><p>As sum(), only on bare numpy array instead of Quantity. See sum() for details.
+:return: ndarray
+An array with the same shape as a, with the specified axes removed. If a is a 0-d array, or if axis is None, a
+scalar is returned. If an output array is specified, a reference to out is returned.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="snomtools.data.datasets.Data_Handler_H5.temp_file_path">
+<tt class="descname">temp_file_path</tt><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5.temp_file_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.temp_file_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_H5.to">
+<tt class="descname">to</tt><big>(</big><em>unit</em>, <em>*contexts</em>, <em>**ctx_kwargs</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_H5.to"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_H5.to" title="Permalink to this definition">¶</a></dt>
+<dd><p>A more performant version of pints Quantity&#8217;s to, that avoids unneccesary calling of magnitude, and copies on
+HDF5 level if possible.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>unit</strong> &#8211; A valid unit string or</li>
+<li><strong>contexts</strong> &#8211; See pint._Quantity.to().</li>
+<li><strong>ctx_kwargs</strong> &#8211; See pint._Quantity.to().</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="snomtools.data.datasets.Data_Handler_np">
+<em class="property">class </em><tt class="descclassname">snomtools.data.datasets.</tt><tt class="descname">Data_Handler_np</tt><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_np"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_np" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">pint.unit.Quantity</span></tt></p>
+<p>A Data Handler, emulating a Quantity.
+This &#8220;numpy mode&#8221; handler actually just mainly shadows the attributes of the Quantity that is held and should be
+use as such a Quantity. Of cause this Quantity itself shadows most of the attributes of the underlying numpy
+array and can therefore be used as one in many contexts.</p>
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_np.__add__">
+<tt class="descname">__add__</tt><big>(</big><em>other</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_np.__add__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_np.__add__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_np.__del__">
+<tt class="descname">__del__</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_np.__del__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_np.__del__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_np.__div__">
+<tt class="descname">__div__</tt><big>(</big><em>other</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_np.__div__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_np.__div__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_np.__floordiv__">
+<tt class="descname">__floordiv__</tt><big>(</big><em>other</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_np.__floordiv__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_np.__floordiv__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="snomtools.data.datasets.Data_Handler_np.__module__">
+<tt class="descname">__module__</tt><em class="property"> = 'snomtools.data.datasets'</em><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_np.__module__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_np.__mul__">
+<tt class="descname">__mul__</tt><big>(</big><em>other</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_np.__mul__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_np.__mul__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="snomtools.data.datasets.Data_Handler_np.__new__">
+<em class="property">static </em><tt class="descname">__new__</tt><big>(</big><em>data=None</em>, <em>unit=None</em>, <em>shape=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_np.__new__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_np.__new__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_np.__pow__">
+<tt class="descname">__pow__</tt><big>(</big><em>other</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_np.__pow__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_np.__pow__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_np.__repr__">
+<tt class="descname">__repr__</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_np.__repr__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_np.__repr__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_np.__setitem__">
+<tt class="descname">__setitem__</tt><big>(</big><em>key</em>, <em>value</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_np.__setitem__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_np.__setitem__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_np.__sub__">
+<tt class="descname">__sub__</tt><big>(</big><em>other</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_np.__sub__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_np.__sub__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_np.absmax">
+<tt class="descname">absmax</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_np.absmax"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_np.absmax" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_np.absmin">
+<tt class="descname">absmin</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_np.absmin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_np.absmin" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_np.get_nearest_index">
+<tt class="descname">get_nearest_index</tt><big>(</big><em>value</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_np.get_nearest_index"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_np.get_nearest_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the index of the value in the DataArray nearest to a given value.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>value</strong> &#8211; A value to look for in the array.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The index tuple of the array entry nearest to the given value.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_np.get_nearest_value">
+<tt class="descname">get_nearest_value</tt><big>(</big><em>value</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_np.get_nearest_value"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_np.get_nearest_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Like get_nearest_index, but return the value instead of the index.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>value</strong> &#8211; value: A value to look for in the array.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The value in the array nearest to the given one.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_np.get_unit">
+<tt class="descname">get_unit</tt><big>(</big><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_np.get_unit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_np.get_unit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="snomtools.data.datasets.Data_Handler_np.q">
+<tt class="descname">q</tt><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_np.q"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_np.q" title="Permalink to this definition">¶</a></dt>
+<dd><p>The corresponding quantity.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The data, converted to a quantity.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_np.set_unit">
+<tt class="descname">set_unit</tt><big>(</big><em>unitstr</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_np.set_unit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_np.set_unit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the unit of the Quantity as specified.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>unitstr</strong> &#8211; A valid unit string.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Nothing.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_np.shift">
+<tt class="descname">shift</tt><big>(</big><em>shift</em>, <em>output=None</em>, <em>order=0</em>, <em>mode='constant'</em>, <em>cval=nan</em>, <em>prefilter=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_np.shift"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_np.shift" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shifts the complete data with scipy.ndimage.interpolation.shift.
+In difference to that method, it does not need an input, but works on the instance data.
+Also, the defaults are different.</p>
+<p>See: <tt class="xref py py-func docutils literal"><span class="pre">scipy.ndimage.interpolation.shift()</span></tt> for full documentation of parameters.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>output</strong> (ndarray <em>or</em> dtype <em>or</em> <tt class="code docutils literal"><span class="pre">False</span></tt>, <em>optional</em>) &#8211; The array in which to place the output, or the dtype of the returned array.
+If <tt class="code docutils literal"><span class="pre">False</span></tt> is given, the instance data is overwritten.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The shifted data. If output is given as a parameter or <tt class="code docutils literal"><span class="pre">False</span></tt>, None is returned.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">Data_Handler_np <em>or</em> None</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_np.shift_slice">
+<tt class="descname">shift_slice</tt><big>(</big><em>slice_</em>, <em>shift</em>, <em>output=None</em>, <em>order=0</em>, <em>mode='constant'</em>, <em>cval=nan</em>, <em>prefilter=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_np.shift_slice"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_np.shift_slice" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shifts a certain slice of the data with scipy.ndimage.interpolation.shift.
+See: <tt class="xref py py-func docutils literal"><span class="pre">scipy.ndimage.interpolation.shift()</span></tt> for full documentation of parameters.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>slice</strong> (slice <strong>or</strong> tuple(slice) <strong>or</strong> <em>(tuple of) castable</em>.) &#8211; A selection of a subset of the data, typically a tuple of ints or slices. Can be generated
+easily with     <tt class="xref py py-func docutils literal"><span class="pre">numpy.s_()</span></tt> or builtin method <tt class="xref py py-func docutils literal"><span class="pre">slice()</span></tt>.</li>
+<li><strong>output</strong> (ndarray <em>or</em> dtype <em>or</em> <tt class="code docutils literal"><span class="pre">False</span></tt>, <em>optional</em>) &#8211; The array in which to place the output, or the dtype of the returned array.
+If <tt class="code docutils literal"><span class="pre">False</span></tt> is given, the slice of the instance data is overwritten.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The shifted data. If output is given as a parameter or <tt class="code docutils literal"><span class="pre">False</span></tt>, None is returned.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Data_Handler_np <em>or</em> None</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="snomtools.data.datasets.Data_Handler_np.stack">
+<em class="property">classmethod </em><tt class="descname">stack</tt><big>(</big><em>tostack</em>, <em>axis=0</em>, <em>unit=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_np.stack"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_np.stack" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stacks a sequence of given Data_Handlers (or castables) along a new axis.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>tostack</strong> &#8211; Sequence of Data_Handlers (or castables), each must be of the same shape and dimensionality.</li>
+<li><strong>axis</strong> &#8211; int, optional: The axis in the result array along which the input arrays are stacked.</li>
+<li><strong>unit</strong> &#8211; optional: A valid unit string to convert the stack to. Default is the unit of the first element
+of the sequence.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">stacked Data_Handler</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.Data_Handler_np.sum_raw">
+<tt class="descname">sum_raw</tt><big>(</big><em>axis=None</em>, <em>dtype=None</em>, <em>out=None</em>, <em>keepdims=False</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#Data_Handler_np.sum_raw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.Data_Handler_np.sum_raw" title="Permalink to this definition">¶</a></dt>
+<dd><p>As sum(), only on bare numpy array instead of Quantity. See sum() for details.
+:return: ndarray
+An array with the same shape as a, with the specified axes removed. If a is a 0-d array, or if axis is None, a
+scalar is returned. If an output array is specified, a reference to out is returned.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="snomtools.data.datasets.ROI">
+<em class="property">class </em><tt class="descclassname">snomtools.data.datasets.</tt><tt class="descname">ROI</tt><big>(</big><em>dataset</em>, <em>limitlist=None</em>, <em>by_index=False</em>, <em>label=''</em>, <em>plotlabel=''</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#ROI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.ROI" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="http://docs.python.org/library/functions.html#object" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></a></p>
+<p>A Region of Interest: This is a way to define a (rectangular) mask in the multidimensional DataSet,
+and then interfacing the generated ROI, as you would the overlying DataSet.
+Consequently, the ROI shall be implemented to behave as a DataSet.</p>
+<dl class="attribute">
+<dt id="snomtools.data.datasets.ROI.__dict__">
+<tt class="descname">__dict__</tt><em class="property"> = dict_proxy({'__module__': 'snomtools.data.datasets', 'set_limits': &lt;function set_limits at 0x2b5f445ea230&gt;, 'get_datafield_by_dimension': &lt;function get_datafield_by_dimension at 0x2b5f445ea758&gt;, 'get_axis': &lt;function get_axis at 0x2b5f445ea7d0&gt;, 'meshgrid': &lt;function meshgrid at 0x2b5f445ea938&gt;, 'project_nd': &lt;function project_nd at 0x2b5f445ea9b0&gt;, 'unset_limits': &lt;function unset_limits at 0x2b5f445ea2a8&gt;, '__dict__': &lt;attribute '__dict__' of 'ROI' objects&gt;, '__weakref__': &lt;attribute '__weakref__' of 'ROI' objects&gt;, '__init__': &lt;function __init__ at 0x2b5f445ea0c8&gt;, 'unset_limit_left': &lt;function unset_limit_left at 0x2b5f445ea398&gt;, 'unset_limit_right': &lt;function unset_limit_right at 0x2b5f445ea488&gt;, 'get_datafield_normalized': &lt;function get_datafield_normalized at 0x2b5f445ea6e0&gt;, 'get_datafield': &lt;function get_datafield at 0x2b5f445ea5f0&gt;, '__getattr__': &lt;function __getattr__ at 0x2b5f445ea140&gt;, 'get_limits': &lt;function get_limits at 0x2b5f445ea578&gt;, 'set_limit_left': &lt;function set_limit_left at 0x2b5f445ea320&gt;, 'get_datafield_index': &lt;function get_datafield_index at 0x2b5f445ea668&gt;, 'set_limit_right': &lt;function set_limit_right at 0x2b5f445ea410&gt;, 'get_slice': &lt;function get_slice at 0x2b5f445ea500&gt;, 'get_axis_index': &lt;function get_axis_index at 0x2b5f445ea848&gt;, 'get_axis_by_dimension': &lt;function get_axis_by_dimension at 0x2b5f445ea8c0&gt;, 'set_limits_all': &lt;function set_limits_all at 0x2b5f445ea1b8&gt;, '__doc__': '\n\tA Region of Interest: This is a way to define a (rectangular) mask in the multidimensional DataSet,\n\tand then interfacing the generated ROI, as you would the overlying DataSet.\n\tConsequently, the ROI shall be implemented to behave as a DataSet.\n\t'})</em><a class="headerlink" href="#snomtools.data.datasets.ROI.__dict__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.ROI.__getattr__">
+<tt class="descname">__getattr__</tt><big>(</big><em>item</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#ROI.__getattr__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.ROI.__getattr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method provides dynamical naming in instances. It is called any time an attribute of the intstance is
+not found with the normal naming mechanism. Raises an AttributeError if the name cannot be resolved.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>item</strong> &#8211; The name to get the corresponding attribute.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The attribute corresponding to the given name.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.ROI.__init__">
+<tt class="descname">__init__</tt><big>(</big><em>dataset</em>, <em>limitlist=None</em>, <em>by_index=False</em>, <em>label=''</em>, <em>plotlabel=''</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#ROI.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.ROI.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>The constructor. Translates the given limits to the corresponding array indices and stores them as instance
+variables. Each set of limits must be given as 2-tuples of the form (start,stop), where start and stop can be a
+quantity with a value on the axis which will be cast as the next nearest index, a valid axis array index
+(see by_index), or None for no limitation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>dataset</strong> &#8211; The DataSet instance to work on. A ROI only makes sense on a specific dataset...</li>
+<li><strong>limitlist</strong> &#8211; A list or dict containing the limits for each axis. If a dict is given, the keys must be
+valid identifiers of an axis of the DataSet (see DataSet.get_axis()). If a list is given, each entry must
+contain the limit set for one axis in the same order as in the axes list of the DataSet, Limit sets must
+2-tuples as described above.</li>
+<li><strong>by_index</strong> &#8211; Bool flag to interpret limits not as positions, but as array indices.</li>
+<li><strong>label</strong> &#8211; String: A label describing the ROI.</li>
+<li><strong>plotlabel</strong> &#8211; String: A label describing the ROI for plots.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="snomtools.data.datasets.ROI.__module__">
+<tt class="descname">__module__</tt><em class="property"> = 'snomtools.data.datasets'</em><a class="headerlink" href="#snomtools.data.datasets.ROI.__module__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="snomtools.data.datasets.ROI.__weakref__">
+<tt class="descname">__weakref__</tt><a class="headerlink" href="#snomtools.data.datasets.ROI.__weakref__" title="Permalink to this definition">¶</a></dt>
+<dd><p>list of weak references to the object (if defined)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.ROI.get_axis">
+<tt class="descname">get_axis</tt><big>(</big><em>label_or_index</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#ROI.get_axis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.ROI.get_axis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tries to assign an Axis to a given parameter, that can be an integer as an index in the
+axes list or a label string. Raises exceptions if there is no matching element.
+Uses the underlying method of the DataSet.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>label_or_index</strong> &#8211; Identifier of the Axis.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The corresponding Axis.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.ROI.get_axis_by_dimension">
+<tt class="descname">get_axis_by_dimension</tt><big>(</big><em>unit</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#ROI.get_axis_by_dimension"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.ROI.get_axis_by_dimension" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the first axis that corresponds to a given unit in its physical dimensionality.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>unit</strong> &#8211; Quantity or anything that can be cast as quantity by the UnitRegistry.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">the Axis</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.ROI.get_axis_index">
+<tt class="descname">get_axis_index</tt><big>(</big><em>label_or_index</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#ROI.get_axis_index"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.ROI.get_axis_index" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.ROI.get_datafield">
+<tt class="descname">get_datafield</tt><big>(</big><em>label_or_index</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#ROI.get_datafield"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.ROI.get_datafield" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tries to assign a DataField to a given parameter, that can be an integer as an index in the
+datafields list or a label string. Raises exceptions if there is no matching field.
+Uses the underlying method of the DataSet.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>label_or_index</strong> &#8211; Identifier of the DataField</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The corresponding DataField.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.ROI.get_datafield_by_dimension">
+<tt class="descname">get_datafield_by_dimension</tt><big>(</big><em>unit</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#ROI.get_datafield_by_dimension"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.ROI.get_datafield_by_dimension" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the first datafield that corresponds to a given unit in its physical dimensionality.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>unit</strong> &#8211; Quantity or anything that can be cast as quantity by the UnitRegistry.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">the datafield</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.ROI.get_datafield_index">
+<tt class="descname">get_datafield_index</tt><big>(</big><em>label_or_index</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#ROI.get_datafield_index"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.ROI.get_datafield_index" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.ROI.get_datafield_normalized">
+<tt class="descname">get_datafield_normalized</tt><big>(</big><em>label_or_index</em>, <em>method='maximum'</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#ROI.get_datafield_normalized"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.ROI.get_datafield_normalized" title="Permalink to this definition">¶</a></dt>
+<dd><p>Like get_datafield, but returns a normalized DataArray.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>label_or_index</strong> &#8211; Identifier of the DataField</li>
+<li><strong>method</strong> &#8211; Method to normalize with: Valid options:
+* &#8220;maximum&#8221;, &#8220;max&#8221; (default): divide every value by the maximum value in the set
+* &#8220;mean&#8221;: divide every value by the average value in the set
+* &#8220;minimum&#8221;, &#8220;min&#8221;: divide every value by the minimum value in the set
+* &#8220;absolute maximum&#8221;, &#8220;absmax&#8221;: divide every value by the maximum absolute value in the set
+* &#8220;absolute minimum&#8221;, &#8220;absmin&#8221;: divide every value by the minimum absolute value in the set</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">The normalized DataArray instance.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.ROI.get_limits">
+<tt class="descname">get_limits</tt><big>(</big><em>data_key=None</em>, <em>by_index=False</em>, <em>raw=False</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#ROI.get_limits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.ROI.get_limits" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the limits that define the ROI. Normally, the physical positions of the limits are given,
+see by_index. The limits of the axes are given as lists of length 2 (2-lists).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>data_key</strong> &#8211; A valid identifier of an axis or datafield of the DataSet (see DataSet.get_axis()) If given,
+return the limits of an axis of the dataset instead of the whole data array. If the identifier
+corresponds to a datafield, the whole limit list as with None will be returned.</li>
+<li><strong>by_index</strong> &#8211; Boolean flag: If True, return the limit axis indices instead of physical positions on the
+axis.</li>
+<li><strong>raw</strong> &#8211; Boolean flag: If True, return floats instead of quantities.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A 2-list or list of 2-lists as specified before.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.ROI.get_slice">
+<tt class="descname">get_slice</tt><big>(</big><em>data_key=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#ROI.get_slice"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.ROI.get_slice" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a slice object (or tuple of them) out of the limits of the ROI This can be used directly in the [] for
+adressing the part of the arrays corresponding to the ROI.
+See:
+<a class="reference external" href="http://docs.scipy.org/doc/numpy-1.10.0/reference/generated/">http://docs.scipy.org/doc/numpy-1.10.0/reference/generated/</a><a href="#id1"><span class="problematic" id="id2">numpy.s_</span></a>.html
+<a class="reference external" href="https://docs.python.org/2/c-api/slice.html">https://docs.python.org/2/c-api/slice.html</a></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>data_key</strong> &#8211; A valid identifier of an axis or datafield of the DataSet (see DataSet.get_axis()) If given,
+return a slice applicable to an axis of the dataset instead of the whole data array. If the identifier
+corresponds to a datafield, the whole slice as with None will be returned.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The create slice object.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.ROI.meshgrid">
+<tt class="descname">meshgrid</tt><big>(</big><em>axes=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#ROI.meshgrid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.ROI.meshgrid" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function returns coordinate arrays corresponding to the axes. See numpy.meshgrid. If axes are not
+constricted by axes argument, the output arrays will have the same shape as the data arrays of the dataset.
+Uses snomtools.calcs.units.meshgrid() under the hood to preserve units.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>axes</strong> &#8211; optional: a list of axes identifiers to be included. If none is given, all axes are included.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A tuple of coordinate arrays.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.ROI.project_nd">
+<tt class="descname">project_nd</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#ROI.project_nd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.ROI.project_nd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Projects the ROI onto the given axes. Uses the DataSet.project_nd() method for every datset and returns a
+new ROI with the projected DataFields and the chosen axes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>args</strong> &#8211; Valid identifiers for the axes to project onto.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">DataSet: Projected DataSet.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.ROI.set_limit_left">
+<tt class="descname">set_limit_left</tt><big>(</big><em>key</em>, <em>value</em>, <em>by_index=False</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#ROI.set_limit_left"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.ROI.set_limit_left" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the left limit for one axis.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>key</strong> &#8211; A valid identifier of an axis of the DataSet (see DataSet.get_axis())</li>
+<li><strong>value</strong> &#8211; The new value for the left limit.</li>
+<li><strong>by_index</strong> &#8211; Bool flag to interpret limits not as positions, but as array indices.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.ROI.set_limit_right">
+<tt class="descname">set_limit_right</tt><big>(</big><em>key</em>, <em>value</em>, <em>by_index=False</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#ROI.set_limit_right"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.ROI.set_limit_right" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the right limit for one axis:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>key</strong> &#8211; A valid identifier of an axis of the DataSet (see DataSet.get_axis())</li>
+<li><strong>value</strong> &#8211; Tuple or list of length 2 with the new values for the limits.</li>
+<li><strong>by_index</strong> &#8211; Bool flag to interpret limits not as positions, but as array indices.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.ROI.set_limits">
+<tt class="descname">set_limits</tt><big>(</big><em>key</em>, <em>values</em>, <em>by_index=False</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#ROI.set_limits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.ROI.set_limits" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets both limits for one axis:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>key</strong> &#8211; A valid identifier of an axis of the DataSet (see DataSet.get_axis())</li>
+<li><strong>values</strong> &#8211; Tuple or list of length 2 with the new values for the limits.</li>
+<li><strong>by_index</strong> &#8211; Bool flag to interpret limits not as positions, but as array indices.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.ROI.set_limits_all">
+<tt class="descname">set_limits_all</tt><big>(</big><em>limitlist</em>, <em>by_index=False</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#ROI.set_limits_all"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.ROI.set_limits_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Each set of limits must be given as 2-tuples of the form (start,stop), where start and stop can be a quantity
+with a value on the axis which will be cast as the next nearest index, a valid axis array index (see by_index),
+or None for an unchanged limit.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>limitlist</strong> &#8211; A list or dict containing the limits for each axis. If a dict is given, the keys must be
+valid identifiers of an axis of the DataSet (see DataSet.get_axis()). If a list is given, each entry must
+contain the limit set for one axis in the same order as in the axes list of the DataSet, Limit sets must
+2-tuples as described above.</li>
+<li><strong>by_index</strong> &#8211; Bool flag to interpret limits not as positions, but as array indices.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Nothing</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.ROI.unset_limit_left">
+<tt class="descname">unset_limit_left</tt><big>(</big><em>key</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#ROI.unset_limit_left"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.ROI.unset_limit_left" title="Permalink to this definition">¶</a></dt>
+<dd><p>Unset left limit for one axis.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>key</strong> &#8211; A valid identifier of an axis of the DataSet (see DataSet.get_axis())</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.ROI.unset_limit_right">
+<tt class="descname">unset_limit_right</tt><big>(</big><em>key</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#ROI.unset_limit_right"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.ROI.unset_limit_right" title="Permalink to this definition">¶</a></dt>
+<dd><p>Unset right limit for one axis.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>key</strong> &#8211; A valid identifier of an axis of the DataSet (see DataSet.get_axis())</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.datasets.ROI.unset_limits">
+<tt class="descname">unset_limits</tt><big>(</big><em>key</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#ROI.unset_limits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.ROI.unset_limits" title="Permalink to this definition">¶</a></dt>
+<dd><p>Unset both limits for one axis:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>key</strong> &#8211; A valid identifier of an axis of the DataSet (see DataSet.get_axis())</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="snomtools.data.datasets.stack_DataArrays">
+<tt class="descclassname">snomtools.data.datasets.</tt><tt class="descname">stack_DataArrays</tt><big>(</big><em>datastack</em>, <em>axis=0</em>, <em>unit=None</em>, <em>label=None</em>, <em>plotlabel=None</em>, <em>h5target=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#stack_DataArrays"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.stack_DataArrays" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stacks a sequence of DataArrays to a new DataArray.
+See DataArray.stack.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="snomtools.data.datasets.stack_DataSets">
+<tt class="descclassname">snomtools.data.datasets.</tt><tt class="descname">stack_DataSets</tt><big>(</big><em>datastack</em>, <em>new_axis</em>, <em>axis=0</em>, <em>label=None</em>, <em>plotconf=None</em>, <em>h5target=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/datasets.html#stack_DataSets"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.datasets.stack_DataSets" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stacks a sequence of DataSets to a new DataSet.
+See DataSet.stack.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-snomtools.data.fits">
+<span id="snomtools-data-fits-module"></span><h2>snomtools.data.fits module<a class="headerlink" href="#module-snomtools.data.fits" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="snomtools.data.fits.fit_xy_linear">
+<tt class="descclassname">snomtools.data.fits.</tt><tt class="descname">fit_xy_linear</tt><big>(</big><em>xdata</em>, <em>ydata</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/fits.html#fit_xy_linear"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.fits.fit_xy_linear" title="Permalink to this definition">¶</a></dt>
+<dd><p>A simple linear fit to data given as x and y values. Fits y = m*x + c and returns c tuple of (m, c), where m and
+c are quantities according to the physical dimensions of data. Numerical data is assumed as dimensionless.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>xdata</strong> &#8211; DataArray or Quantity or numpy array: The x values.</li>
+<li><strong>ydata</strong> &#8211; DataArray or Quantity or numpy array: The y values.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>:return:tuple: (m, c)</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="snomtools.data.fits.gauss_fit">
+<em class="property">class </em><tt class="descclassname">snomtools.data.fits.</tt><tt class="descname">gauss_fit</tt><big>(</big><em>data=None</em>, <em>guess=None</em>, <em>keepdata=True</em>, <em>normalize=False</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/fits.html#gauss_fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.fits.gauss_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="http://docs.python.org/library/functions.html#object" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></a></p>
+<p>A Gauss Fit of given data with benefits.</p>
+<dl class="attribute">
+<dt id="snomtools.data.fits.gauss_fit.__dict__">
+<tt class="descname">__dict__</tt><em class="property"> = dict_proxy({'__dict__': &lt;attribute '__dict__' of 'gauss_fit' objects&gt;, '__module__': 'snomtools.data.fits', '__weakref__': &lt;attribute '__weakref__' of 'gauss_fit' objects&gt;, '__doc__': '\n\tA Gauss Fit of given data with benefits.\n\t', '__init__': &lt;function __init__ at 0x2b5f492f19b0&gt;})</em><a class="headerlink" href="#snomtools.data.fits.gauss_fit.__dict__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="snomtools.data.fits.gauss_fit.__init__">
+<tt class="descname">__init__</tt><big>(</big><em>data=None</em>, <em>guess=None</em>, <em>keepdata=True</em>, <em>normalize=False</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/fits.html#gauss_fit.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.fits.gauss_fit.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="snomtools.data.fits.gauss_fit.__module__">
+<tt class="descname">__module__</tt><em class="property"> = 'snomtools.data.fits'</em><a class="headerlink" href="#snomtools.data.fits.gauss_fit.__module__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="snomtools.data.fits.gauss_fit.__weakref__">
+<tt class="descname">__weakref__</tt><a class="headerlink" href="#snomtools.data.fits.gauss_fit.__weakref__" title="Permalink to this definition">¶</a></dt>
+<dd><p>list of weak references to the object (if defined)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="snomtools.data.fits.gaussian">
+<tt class="descclassname">snomtools.data.fits.</tt><tt class="descname">gaussian</tt><big>(</big><em>x</em>, <em>x_0</em>, <em>sigma</em>, <em>A</em>, <em>C</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/fits.html#gaussian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.fits.gaussian" title="Permalink to this definition">¶</a></dt>
+<dd><p>A Gauss function of the form gaussian(x) = A * exp(-(x-x_0)^2 / 2 sigma^2) + C
+All parameters can be given as quantities, if so, unit checks are done automatically. If not, correct units are
+assumed.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>x</strong> &#8211; (Same unit as x.) The variable x.</li>
+<li><strong>x_0</strong> &#8211; The center of the gaussian.</li>
+<li><strong>sigma</strong> &#8211; (Same unit as x.) The width (standard deviation) of the gaussian. Relates to FWHM by:
+FWHM = 2 sqrt(2 ln 2) sigma</li>
+<li><strong>A</strong> &#8211; (Same unit as C.) The amplitude of the gaussian bell relative to background.</li>
+<li><strong>C</strong> &#8211; (Same unit as A.) The constant offset (background) of the curve relative to zero.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">(Same unit as A and C.) The result of the gaussian function.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-snomtools.data.h5tools">
+<span id="snomtools-data-h5tools-module"></span><h2>snomtools.data.h5tools module<a class="headerlink" href="#module-snomtools.data.h5tools" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="snomtools.data.h5tools.File">
+<tt class="descclassname">snomtools.data.h5tools.</tt><tt class="descname">File</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/h5tools.html#File"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.h5tools.File" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes a h5py_cache File object as documented in h5py_cache.File and h5py.File. Uses the value
+chunk_cache_mem_size_default as defined above as buffer size if not given otherwise explicitly.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A h5py.File object with the chosen buffer settings.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snomtools.data.h5tools.clear_name">
+<tt class="descclassname">snomtools.data.h5tools.</tt><tt class="descname">clear_name</tt><big>(</big><em>h5dest</em>, <em>name</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/h5tools.html#clear_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.h5tools.clear_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes an entry of a HDF5 group if it exists, thereby clearing the namespace for creating a new dataset.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>h5dest</strong> &#8211; The h5py group in which to clear the entry.</li>
+<li><strong>name</strong> &#8211; String: The name to clear.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">nothing</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snomtools.data.h5tools.load_dictionary">
+<tt class="descclassname">snomtools.data.h5tools.</tt><tt class="descname">load_dictionary</tt><big>(</big><em>h5source</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/h5tools.html#load_dictionary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.h5tools.load_dictionary" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="snomtools.data.h5tools.store_dictionary">
+<tt class="descclassname">snomtools.data.h5tools.</tt><tt class="descname">store_dictionary</tt><big>(</big><em>dict_to_store</em>, <em>h5target</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/h5tools.html#store_dictionary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.h5tools.store_dictionary" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="snomtools.data.h5tools.write_dataset">
+<tt class="descclassname">snomtools.data.h5tools.</tt><tt class="descname">write_dataset</tt><big>(</big><em>h5dest</em>, <em>name</em>, <em>data</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/h5tools.html#write_dataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.h5tools.write_dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes a HDF5 dataset to a destination, deleting any data of the same name that are already there first.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>dest</strong> &#8211; The HDF5 destination to write to.</li>
+<li><strong>name</strong> &#8211; The name of the dataset to be written</li>
+<li><strong>data</strong> &#8211; The data to write.</li>
+<li><strong>kwargs</strong> &#8211; kwargs to be forwarded to create_dataset.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">The written dataset.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-snomtools.data.tools">
+<span id="snomtools-data-tools-module"></span><h2>snomtools.data.tools module<a class="headerlink" href="#module-snomtools.data.tools" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="snomtools.data.tools.assure_1D">
+<tt class="descclassname">snomtools.data.tools.</tt><tt class="descname">assure_1D</tt><big>(</big><em>data</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/tools.html#assure_1D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.tools.assure_1D" title="Permalink to this definition">¶</a></dt>
+<dd><p>Makes sure the data is onedimensional. Try a consistent conversion, if that fails raise error.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>data</strong> &#8211; Quantity or numpy array.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The flattened data or the data itself if it was already 1D.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-snomtools.data">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-snomtools.data" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">snomtools.data package</a><ul>
+<li><a class="reference internal" href="#subpackages">Subpackages</a></li>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-snomtools.data.datasets">snomtools.data.datasets module</a></li>
+<li><a class="reference internal" href="#module-snomtools.data.fits">snomtools.data.fits module</a></li>
+<li><a class="reference internal" href="#module-snomtools.data.h5tools">snomtools.data.h5tools module</a></li>
+<li><a class="reference internal" href="#module-snomtools.data.tools">snomtools.data.tools module</a></li>
+<li><a class="reference internal" href="#module-snomtools.data">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../../_sources/source/_modules/snomtools.data.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">snomtools 0.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, AG Aeschlimann, FB Physik, TU Kaiserslautern.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

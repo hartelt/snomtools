@@ -1,8 +1,8 @@
+"""
+This file provides driftkorrection for array stacks. It generates the drift vectors via
+Crosscorrelation-Methods provided by the OpenCV librariy
+"""
 __author__ = 'frisch'
-''' 
-This file provides driftkorrection for array stacks. It generates the drift vectors via 
-Crosscorrelation-Methods provided by the OpenCV librariy 
-'''
 
 import cv2 as cv
 import numpy as np

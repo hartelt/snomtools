@@ -1,0 +1,155 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>snomtools.calcs.constants &mdash; snomtools 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../_static/sidebar.js"></script>
+    <link rel="top" title="snomtools 0.0.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">snomtools 0.0.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for snomtools.calcs.constants</h1><div class="highlight"><pre>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s">&#39;hartelt&#39;</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">This file is meant as a collection of physical constants, that can be used in the calculations.</span>
+<span class="sd">All constants will be given in SI units as pint quantities.</span>
+<span class="sd">Numerial float value can be cast straight forward or can be found in value_float.</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">ureg</span>
+
+<span class="c">#pi: the mathematical constant pi. from numpy. only for convenience</span>
+<span class="n">pi_float</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">pi</span>
+<span class="n">pi</span> <span class="o">=</span> <span class="n">pi_float</span> <span class="o">*</span> <span class="n">ureg</span><span class="p">(</span><span class="s">&#39;rad&#39;</span><span class="p">)</span>
+
+<span class="c">#c: the speed of light in vacuum</span>
+<span class="c">#Unit: m/s</span>
+<span class="n">c_float</span> <span class="o">=</span> <span class="mf">299792458.0</span>
+<span class="n">c</span> <span class="o">=</span> <span class="n">c_float</span> <span class="o">*</span> <span class="n">ureg</span><span class="p">(</span><span class="s">&#39;meters / second&#39;</span><span class="p">)</span>
+
+<span class="c">#mu_0: the magentic constant / permeability of vacuum</span>
+<span class="c"># Unit Vs/Am</span>
+<span class="n">mu_0_float</span> <span class="o">=</span> <span class="mf">4e-7</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">pi</span>
+<span class="n">mu_0</span> <span class="o">=</span> <span class="n">mu_0_float</span> <span class="o">*</span> <span class="n">ureg</span><span class="p">(</span><span class="s">&#39;V s / (A m)&#39;</span><span class="p">)</span>
+
+<span class="c">#epsilon_0: the dielectric constant / permittivity of vacuum</span>
+<span class="c"># Unit:  As/Vm</span>
+<span class="n">epsilon_0_float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="p">(</span><span class="n">mu_0</span><span class="o">*</span><span class="n">c</span><span class="o">*</span><span class="n">c</span><span class="p">)</span>
+<span class="n">epsilon_0</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="p">(</span><span class="n">mu_0</span><span class="o">*</span><span class="n">c</span><span class="o">*</span><span class="n">c</span><span class="p">)</span>
+
+<span class="c">#e: the elementary charge</span>
+<span class="c"># Unit: Coulomb</span>
+<span class="n">e_float</span> <span class="o">=</span> <span class="mf">1.60217733e-19</span>
+<span class="n">e</span> <span class="o">=</span> <span class="n">e_float</span> <span class="o">*</span> <span class="n">ureg</span><span class="p">(</span><span class="s">&#39;coulomb&#39;</span><span class="p">)</span>
+
+<span class="c">#m_e: the electron mass</span>
+<span class="c"># Unit: kg</span>
+<span class="n">m_e_float</span> <span class="o">=</span> <span class="mf">9.1093897e-31</span>
+<span class="n">m_e</span> <span class="o">=</span> <span class="n">m_e_float</span> <span class="o">*</span> <span class="n">ureg</span><span class="p">(</span><span class="s">&#39;kg&#39;</span><span class="p">)</span>
+
+<span class="c">#h: the planck constant in Js</span>
+<span class="n">h_float</span> <span class="o">=</span> <span class="mf">6.6260693e-34</span>
+<span class="n">h</span> <span class="o">=</span> <span class="n">h_float</span> <span class="o">*</span> <span class="n">ureg</span><span class="p">(</span><span class="s">&#39;J s&#39;</span><span class="p">)</span>
+
+<span class="c">#hbar: the planck constant divided by 2 Pi in Js (/rad)</span>
+<span class="n">hbar_float</span> <span class="o">=</span> <span class="mf">1.05457168e-34</span>
+<span class="n">hbar</span> <span class="o">=</span> <span class="n">hbar_float</span> <span class="o">*</span> <span class="n">ureg</span><span class="p">(</span><span class="s">&#39;J s / rad&#39;</span><span class="p">)</span>
+
+<span class="c">#k_B: the Boltzmann constant in J / K</span>
+<span class="n">k_B_float</span> <span class="o">=</span> <span class="mf">1.38064852e-23</span>
+<span class="n">k_B</span> <span class="o">=</span> <span class="n">k_B_float</span> <span class="o">*</span> <span class="n">ureg</span><span class="p">(</span><span class="s">&#39;J / K&#39;</span><span class="p">)</span>
+
+<span class="c"># Just for testing purposes:</span>
+<div class="viewcode-block" id="test"><a class="viewcode-back" href="../../../source/_modules/snomtools.calcs.html#snomtools.calcs.constants.test">[docs]</a><span class="k">def</span> <span class="nf">test</span><span class="p">():</span>
+	<span class="k">print</span> <span class="n">pi</span>
+	<span class="k">print</span> <span class="n">c</span>
+	<span class="k">print</span><span class="p">(</span><span class="n">mu_0</span><span class="p">)</span>
+	<span class="k">print</span><span class="p">(</span><span class="n">epsilon_0</span><span class="p">)</span>
+	<span class="k">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+	<span class="k">print</span><span class="p">(</span><span class="n">m_e</span><span class="p">)</span>
+	<span class="k">print</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+	<span class="k">print</span><span class="p">(</span><span class="n">hbar</span><span class="p">)</span>
+	<span class="k">print</span><span class="p">(</span><span class="n">k_B</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">snomtools 0.0.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, AG Aeschlimann, FB Physik, TU Kaiserslautern.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,318 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>snomtools.plots.datasets &mdash; snomtools 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../_static/sidebar.js"></script>
+    <link rel="top" title="snomtools 0.0.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">snomtools 0.0.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for snomtools.plots.datasets</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This file provides scripts for common plotting applications working on DataSets as in snomtools.data.datasets.</span>
+<span class="sd">They use matplotlib.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">snomtools.data.datasets</span>
+<span class="kn">import</span> <span class="nn">matplotlib.patches</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+
+
+<div class="viewcode-block" id="project_1d"><a class="viewcode-back" href="../../../source/_modules/snomtools.plots.html#snomtools.plots.datasets.project_1d">[docs]</a><span class="k">def</span> <span class="nf">project_1d</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">plot_dest</span><span class="p">,</span> <span class="n">axis_id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">data_id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">normalization</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Plots a projection of the data onto one axis. Therefore, it sums the values over all the other axes.</span>
+
+<span class="sd">	:param data: The DataSet or ROI to plot.</span>
+
+<span class="sd">	:param plot_dest: A matplotlib plot object (like a plot or subplot) to plot into.</span>
+
+<span class="sd">	:param axis_id: An identifier of the axis to project onto.</span>
+
+<span class="sd">	:param data_id: An identifier of the dataarray to take data from.</span>
+
+<span class="sd">	:param normalization: Method for a normalization to apply to the data before plotting. Valid options:</span>
+<span class="sd">		* None, &quot;None&quot; (default): No normalization.</span>
+<span class="sd">		* &quot;maximum&quot;, &quot;max&quot;: divide every value by the maximum value in the set</span>
+<span class="sd">		* &quot;mean&quot;: divide every value by the average value in the set</span>
+<span class="sd">		* &quot;minimum&quot;, &quot;min&quot;: divide every value by the minimum value in the set</span>
+<span class="sd">		* &quot;absolute maximum&quot;, &quot;absmax&quot;: divide every value by the maximum absolute value in the set</span>
+<span class="sd">		* &quot;absolute minimum&quot;, &quot;absmin&quot;: divide every value by the minimum absolute value in the set</span>
+<span class="sd">		* &quot;size&quot;: divide every value by the number of pixels that have been summed in the projection (ROI size)</span>
+
+<span class="sd">	:param offset: Offset the data by this value. Will be applied AFTER normalization. Unit must be consistent,</span>
+<span class="sd">		accordingly, to normalized data.</span>
+
+<span class="sd">	:param kwargs: Keyword arguments for the plot() normalization of the plot object.</span>
+
+<span class="sd">	:return:</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">DataSet</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">ROI</span><span class="p">),</span> \
+		<span class="s">&quot;No dataset or ROI instance given to plot function.&quot;</span>
+
+	<span class="n">ax_index</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_axis_index</span><span class="p">(</span><span class="n">axis_id</span><span class="p">)</span>
+	<span class="n">ax</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_axis</span><span class="p">(</span><span class="n">ax_index</span><span class="p">)</span>
+
+	<span class="n">sumlist</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">dimensions</span><span class="p">)</span>
+	<span class="n">sumlist</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">ax_index</span><span class="p">)</span>
+	<span class="n">sumtup</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">sumlist</span><span class="p">)</span>
+	<span class="n">sumdat</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_datafield</span><span class="p">(</span><span class="n">data_id</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">sumtup</span><span class="p">)</span>
+
+	<span class="k">if</span> <span class="n">normalization</span><span class="p">:</span>
+		<span class="k">if</span> <span class="n">normalization</span> <span class="o">==</span> <span class="s">&quot;None&quot;</span><span class="p">:</span>
+			<span class="n">plotdat</span> <span class="o">=</span> <span class="n">sumdat</span>
+		<span class="k">elif</span> <span class="n">normalization</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&quot;maximum&quot;</span><span class="p">,</span> <span class="s">&quot;max&quot;</span><span class="p">]:</span>
+			<span class="n">plotdat</span> <span class="o">=</span> <span class="n">sumdat</span> <span class="o">/</span> <span class="n">sumdat</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+		<span class="k">elif</span> <span class="n">normalization</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&quot;minimum&quot;</span><span class="p">,</span> <span class="s">&quot;min&quot;</span><span class="p">]:</span>
+			<span class="n">plotdat</span> <span class="o">=</span> <span class="n">sumdat</span> <span class="o">/</span> <span class="n">sumdat</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+		<span class="k">elif</span> <span class="n">normalization</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&quot;mean&quot;</span><span class="p">]:</span>
+			<span class="n">plotdat</span> <span class="o">=</span> <span class="n">sumdat</span> <span class="o">/</span> <span class="n">sumdat</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+		<span class="k">elif</span> <span class="n">normalization</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&quot;absolute maximum&quot;</span><span class="p">,</span> <span class="s">&quot;absmax&quot;</span><span class="p">]:</span>
+			<span class="n">plotdat</span> <span class="o">=</span> <span class="n">sumdat</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">sumdat</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+		<span class="k">elif</span> <span class="n">normalization</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&quot;absolute minimum&quot;</span><span class="p">,</span> <span class="s">&quot;absmin&quot;</span><span class="p">]:</span>
+			<span class="n">plotdat</span> <span class="o">=</span> <span class="n">sumdat</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">sumdat</span><span class="p">)</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+		<span class="k">elif</span> <span class="n">normalization</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&quot;size&quot;</span><span class="p">]:</span>
+			<span class="n">number_of_pixels</span> <span class="o">=</span> <span class="mi">1</span>
+			<span class="k">for</span> <span class="n">ax_id</span> <span class="ow">in</span> <span class="n">sumtup</span><span class="p">:</span>
+				<span class="n">number_of_pixels</span> <span class="o">*=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get_axis</span><span class="p">(</span><span class="n">ax_id</span><span class="p">))</span>
+			<span class="n">plotdat</span> <span class="o">=</span> <span class="n">sumdat</span> <span class="o">/</span> <span class="n">number_of_pixels</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">try</span><span class="p">:</span>
+				<span class="n">plotdat</span> <span class="o">=</span> <span class="n">sumdat</span> <span class="o">/</span> <span class="n">normalization</span>
+			<span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+				<span class="k">print</span> <span class="s">&quot;WARNING: Normalization normalization not valid. Returning unnormalized data.&quot;</span>
+				<span class="n">plotdat</span> <span class="o">=</span> <span class="n">sumdat</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="n">plotdat</span> <span class="o">=</span> <span class="n">sumdat</span>
+
+	<span class="k">if</span> <span class="n">offset</span><span class="p">:</span>
+		<span class="n">plotdat</span> <span class="o">=</span> <span class="n">plotdat</span> <span class="o">+</span> <span class="n">offset</span>
+
+	<span class="k">assert</span> <span class="p">(</span><span class="n">plotdat</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">ax</span><span class="o">.</span><span class="n">shape</span><span class="p">),</span> <span class="s">&quot;Plot data shapes don&#39;t match.&quot;</span>
+
+	<span class="c"># Plot and return the line object:</span>
+	<span class="n">line</span><span class="p">,</span> <span class="o">=</span> <span class="n">plot_dest</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">get_data_raw</span><span class="p">(),</span> <span class="n">plotdat</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+	<span class="k">return</span> <span class="n">line</span>
+
+</div>
+<div class="viewcode-block" id="project_2d"><a class="viewcode-back" href="../../../source/_modules/snomtools.plots.html#snomtools.plots.datasets.project_2d">[docs]</a><span class="k">def</span> <span class="nf">project_2d</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">plot_dest</span><span class="p">,</span> <span class="n">axis_vert</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">axis_hori</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">data_id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">normalization</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Plots a projection of the data onto two axes as a pseudocolor 2d map. Therefore, it sums the values over all the</span>
+<span class="sd">	other axes. Using the pcolor function for matplotlib ensures correct representation of data on nonlinear grids.</span>
+
+<span class="sd">	:param data: The DataSet (or ROI) to plot.</span>
+
+<span class="sd">	:param plot_dest: A matplotlib plot object (like a plot or subplot) to plot into.</span>
+
+<span class="sd">	:param axis_vert: An identifier of the first axis to project onto. This will be the vertical axis in the plot.</span>
+
+<span class="sd">	:param axis_hori: An identifier of the second axis to project onto. This will be the horizontal axis in the plot.</span>
+
+<span class="sd">	:param data_id: An identifier of the dataarray to take data from.</span>
+
+<span class="sd">	:param normalization: Method for a normalization to apply to the data before plotting. Valid options:</span>
+<span class="sd">		* None, &quot;None&quot; (default): No normalization.</span>
+<span class="sd">		* &quot;maximum&quot;, &quot;max&quot;: divide every value by the maximum value in the set</span>
+<span class="sd">		* &quot;mean&quot;: divide every value by the average value in the set</span>
+<span class="sd">		* &quot;minimum&quot;, &quot;min&quot;: divide every value by the minimum value in the set</span>
+<span class="sd">		* &quot;absolute maximum&quot;, &quot;absmax&quot;: divide every value by the maximum absolute value in the set</span>
+<span class="sd">		* &quot;absolute minimum&quot;, &quot;absmin&quot;: divide every value by the minimum absolute value in the set</span>
+<span class="sd">		* &quot;size&quot;: divide every value by the number of pixels that have been summed in the projection (ROI size)</span>
+
+<span class="sd">	:param kwargs: Keyword arguments for the plot() normalization of the plot object.</span>
+
+<span class="sd">	:return:</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">DataSet</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">ROI</span><span class="p">),</span> \
+		<span class="s">&quot;No dataset or ROI instance given to plot function.&quot;</span>
+
+	<span class="n">axv_index</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_axis_index</span><span class="p">(</span><span class="n">axis_vert</span><span class="p">)</span>
+	<span class="n">axv</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_axis</span><span class="p">(</span><span class="n">axv_index</span><span class="p">)</span>
+	<span class="n">axh_index</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_axis_index</span><span class="p">(</span><span class="n">axis_hori</span><span class="p">)</span>
+	<span class="n">axh</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_axis</span><span class="p">(</span><span class="n">axh_index</span><span class="p">)</span>
+
+	<span class="n">sumlist</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">dimensions</span><span class="p">)</span>
+	<span class="n">sumlist</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">axv_index</span><span class="p">)</span>
+	<span class="n">sumlist</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">axh_index</span><span class="p">)</span>
+	<span class="n">sumtup</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">sumlist</span><span class="p">)</span>
+	<span class="n">dat</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_datafield</span><span class="p">(</span><span class="n">data_id</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">sumtup</span><span class="p">)</span>
+	<span class="k">if</span> <span class="n">axv_index</span> <span class="o">&gt;</span> <span class="n">axh_index</span><span class="p">:</span>  <span class="c"># transpose if axes are not in array-like order</span>
+		<span class="n">sumdat</span> <span class="o">=</span> <span class="n">dat</span><span class="o">.</span><span class="n">T</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="n">sumdat</span> <span class="o">=</span> <span class="n">dat</span>
+
+	<span class="k">if</span> <span class="n">normalization</span><span class="p">:</span>
+		<span class="k">if</span> <span class="n">normalization</span> <span class="o">==</span> <span class="s">&quot;None&quot;</span><span class="p">:</span>
+			<span class="n">plotdat</span> <span class="o">=</span> <span class="n">sumdat</span>
+		<span class="k">elif</span> <span class="n">normalization</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&quot;maximum&quot;</span><span class="p">,</span> <span class="s">&quot;max&quot;</span><span class="p">]:</span>
+			<span class="n">plotdat</span> <span class="o">=</span> <span class="n">sumdat</span> <span class="o">/</span> <span class="n">sumdat</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+		<span class="k">elif</span> <span class="n">normalization</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&quot;minimum&quot;</span><span class="p">,</span> <span class="s">&quot;min&quot;</span><span class="p">]:</span>
+			<span class="n">plotdat</span> <span class="o">=</span> <span class="n">sumdat</span> <span class="o">/</span> <span class="n">sumdat</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+		<span class="k">elif</span> <span class="n">normalization</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&quot;mean&quot;</span><span class="p">]:</span>
+			<span class="n">plotdat</span> <span class="o">=</span> <span class="n">sumdat</span> <span class="o">/</span> <span class="n">sumdat</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+		<span class="k">elif</span> <span class="n">normalization</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&quot;absolute maximum&quot;</span><span class="p">,</span> <span class="s">&quot;absmax&quot;</span><span class="p">]:</span>
+			<span class="n">plotdat</span> <span class="o">=</span> <span class="n">sumdat</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">sumdat</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+		<span class="k">elif</span> <span class="n">normalization</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&quot;absolute minimum&quot;</span><span class="p">,</span> <span class="s">&quot;absmin&quot;</span><span class="p">]:</span>
+			<span class="n">plotdat</span> <span class="o">=</span> <span class="n">sumdat</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">sumdat</span><span class="p">)</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+		<span class="k">elif</span> <span class="n">normalization</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&quot;size&quot;</span><span class="p">]:</span>
+			<span class="n">number_of_pixels</span> <span class="o">=</span> <span class="mi">1</span>
+			<span class="k">for</span> <span class="n">ax_id</span> <span class="ow">in</span> <span class="n">sumtup</span><span class="p">:</span>
+				<span class="n">number_of_pixels</span> <span class="o">*=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get_axis</span><span class="p">(</span><span class="n">ax_id</span><span class="p">))</span>
+			<span class="n">plotdat</span> <span class="o">=</span> <span class="n">sumdat</span> <span class="o">/</span> <span class="n">number_of_pixels</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">try</span><span class="p">:</span>
+				<span class="n">plotdat</span> <span class="o">=</span> <span class="n">sumdat</span> <span class="o">/</span> <span class="n">normalization</span>
+			<span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+				<span class="k">print</span> <span class="s">&quot;WARNING: Normalization normalization not valid. Returning unnormalized data.&quot;</span>
+				<span class="n">plotdat</span> <span class="o">=</span> <span class="n">sumdat</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="n">plotdat</span> <span class="o">=</span> <span class="n">sumdat</span>
+
+	<span class="n">H</span><span class="p">,</span> <span class="n">V</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">([</span><span class="n">axh_index</span><span class="p">,</span> <span class="n">axv_index</span><span class="p">])</span>
+
+	<span class="k">assert</span> <span class="p">(</span><span class="n">V</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">plotdat</span><span class="o">.</span><span class="n">shape</span><span class="p">),</span> <span class="s">&quot;2D plot data doesn&#39;t fit to axis mesh...&quot;</span>
+
+	<span class="n">plot_dest</span><span class="o">.</span><span class="n">pcolormesh</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">H</span><span class="p">),</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">V</span><span class="p">),</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">plotdat</span><span class="p">),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+	<span class="c"># Flip axis to have correct origin (array-index-like): upper left instead of lower left:</span>
+	<span class="n">plot_dest</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>
+
+</div>
+<div class="viewcode-block" id="mark_roi_1d"><a class="viewcode-back" href="../../../source/_modules/snomtools.plots.html#snomtools.plots.datasets.mark_roi_1d">[docs]</a><span class="k">def</span> <span class="nf">mark_roi_1d</span><span class="p">(</span><span class="n">roi</span><span class="p">,</span> <span class="n">plot_dest</span><span class="p">,</span> <span class="n">axis_id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Marks a ROI in a 1D plot with a span representing the ROI limits.</span>
+
+<span class="sd">	:param roi: The ROI instance.</span>
+
+<span class="sd">	:param plot_dest: A matplotlib plot object (like a plot or subplot) to plot into.</span>
+
+<span class="sd">	:param axis_id: An identifier of the axis along which the plot is.</span>
+
+<span class="sd">	:param kwargs: Keyword arguments for redirection to matplotlib.axes.axvspan(). Specifies the style to be drawn.</span>
+<span class="sd">		Default will be a grey (black colored transparent alpha=0.2) area.</span>
+
+<span class="sd">	:return:</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">roi</span><span class="p">,</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">ROI</span><span class="p">),</span> \
+		<span class="s">&quot;No ROI instance given to mark function.&quot;</span>
+
+	<span class="c"># Set default style kwargs for rectangle if not explicitly given:</span>
+	<span class="k">if</span> <span class="ow">not</span> <span class="n">kwargs</span><span class="p">:</span>
+		<span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;fc&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;k&#39;</span>  <span class="c"># black as face color</span>
+		<span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;alpha&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.2</span>  <span class="c"># transparent</span>
+		<span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;fill&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>  <span class="c"># filled (default)</span>
+
+	<span class="n">lims</span> <span class="o">=</span> <span class="n">roi</span><span class="o">.</span><span class="n">get_limits</span><span class="p">(</span><span class="n">axis_id</span><span class="p">,</span> <span class="n">raw</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+	<span class="n">plot_dest</span><span class="o">.</span><span class="n">axvspan</span><span class="p">(</span><span class="n">lims</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">lims</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="mark_roi_2d"><a class="viewcode-back" href="../../../source/_modules/snomtools.plots.html#snomtools.plots.datasets.mark_roi_2d">[docs]</a><span class="k">def</span> <span class="nf">mark_roi_2d</span><span class="p">(</span><span class="n">roi</span><span class="p">,</span> <span class="n">plot_dest</span><span class="p">,</span> <span class="n">axis_vert</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">axis_hori</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Marks a ROI in a 2D plot with a box representing the ROI limits.</span>
+
+<span class="sd">	:param roi: The ROI instance.</span>
+
+<span class="sd">	:param plot_dest: A matplotlib plot object (like a plot or subplot) to plot into.</span>
+
+<span class="sd">	:param axis_vert: An identifier of the vertical axis in the plot.</span>
+
+<span class="sd">	:param axis_hori: An identifier of the horizontal axis in the plot.</span>
+
+<span class="sd">	:param kwargs: Keyword arguments for redirection to the Rectangle methor of matplotlib.patches.</span>
+
+<span class="sd">	:return:</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">roi</span><span class="p">,</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">ROI</span><span class="p">),</span> \
+		<span class="s">&quot;No ROI instance given to mark function.&quot;</span>
+
+	<span class="c"># Set fill kwarg for rectangle if not explicitly given:</span>
+	<span class="k">if</span> <span class="ow">not</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&#39;fill&#39;</span><span class="p">):</span>
+		<span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;fill&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">False</span>
+
+	<span class="n">xlims</span> <span class="o">=</span> <span class="n">roi</span><span class="o">.</span><span class="n">get_limits</span><span class="p">(</span><span class="n">axis_hori</span><span class="p">,</span> <span class="n">raw</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+	<span class="n">ylims</span> <span class="o">=</span> <span class="n">roi</span><span class="o">.</span><span class="n">get_limits</span><span class="p">(</span><span class="n">axis_vert</span><span class="p">,</span> <span class="n">raw</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+	<span class="n">rectangle</span> <span class="o">=</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">patches</span><span class="o">.</span><span class="n">Rectangle</span><span class="p">((</span><span class="n">xlims</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ylims</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">xlims</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">xlims</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ylims</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">ylims</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+	<span class="n">plot_dest</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">rectangle</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">snomtools 0.0.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, AG Aeschlimann, FB Physik, TU Kaiserslautern.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

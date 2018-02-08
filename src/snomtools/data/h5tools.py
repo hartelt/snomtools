@@ -1,7 +1,8 @@
-__author__ = 'hartelt'
 """
 This script provides some simple tools for the storage in h5 files.
 """
+__author__ = 'hartelt'
+
 import h5py
 import h5py_cache
 import psutil

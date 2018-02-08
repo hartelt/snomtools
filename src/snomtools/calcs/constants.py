@@ -1,9 +1,10 @@
-__author__ = 'hartelt'
-'''
+"""
 This file is meant as a collection of physical constants, that can be used in the calculations.
 All constants will be given in SI units as pint quantities.
 Numerial float value can be cast straight forward or can be found in value_float.
-'''
+"""
+
+__author__ = 'hartelt'
 
 import numpy
 from . import ureg

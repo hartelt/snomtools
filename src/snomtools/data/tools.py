@@ -1,9 +1,9 @@
-__author__ = 'hartelt'
-'''
+"""
 This file provides miscellaneous tools for data manipulation.
 For furter info about data structures, see:
 data.datasets.py
-'''
+"""
+__author__ = 'hartelt'
 
 def assure_1D(data):
 	"""

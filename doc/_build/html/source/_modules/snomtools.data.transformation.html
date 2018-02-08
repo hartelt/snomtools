@@ -1,0 +1,251 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>snomtools.data.transformation package &mdash; snomtools 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/sidebar.js"></script>
+    <link rel="top" title="snomtools 0.0.1 documentation" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">snomtools 0.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="snomtools-data-transformation-package">
+<h1>snomtools.data.transformation package<a class="headerlink" href="#snomtools-data-transformation-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-snomtools.data.transformation.interpolate">
+<span id="snomtools-data-transformation-interpolate-module"></span><h2>snomtools.data.transformation.interpolate module<a class="headerlink" href="#module-snomtools.data.transformation.interpolate" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="snomtools.data.transformation.interpolate.griddata">
+<tt class="descclassname">snomtools.data.transformation.interpolate.</tt><tt class="descname">griddata</tt><big>(</big><em>dataset</em>, <em>xi</em>, <em>method='linear'</em>, <em>fill_value=nan</em>, <em>rescale=False</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/transformation/interpolate.html#griddata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.transformation.interpolate.griddata" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>dataset</strong> &#8211; The dataset to transform.</li>
+<li><strong>xi</strong> &#8211; The coordinates at which to interpolate data. Given as a tuple of Axes (see datasets.py) with the same
+length as the number of axes of the dataset OR as a numpy array of the same dimensionality as the dataset,
+that is then assumed to have the same physical dimensions as the axes of the dataset.</li>
+<li><strong>method</strong> &#8211; </li>
+<li><strong>fill_value</strong> &#8211; </li>
+<li><strong>rescale</strong> &#8211; </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-snomtools.data.transformation.normalize">
+<span id="snomtools-data-transformation-normalize-module"></span><h2>snomtools.data.transformation.normalize module<a class="headerlink" href="#module-snomtools.data.transformation.normalize" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="snomtools.data.transformation.normalize.normalize_by_reference">
+<tt class="descclassname">snomtools.data.transformation.normalize.</tt><tt class="descname">normalize_by_reference</tt><big>(</big><em>data</em>, <em>refdata</em>, <em>data_id=0</em>, <em>refdata_id=0</em>, <em>exclude_axes=None</em>, <em>mode='division'</em>, <em>newlabel='normalizeddata'</em>, <em>new_plotlabel='Normalized Data'</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/transformation/normalize.html#normalize_by_reference"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.transformation.normalize.normalize_by_reference" title="Permalink to this definition">¶</a></dt>
+<dd><p>Normalizes a dataset by the reference data of another set.
+The normalized data is written into a new DataArray in the given DataSet.
+Data and Reference dimensions must be compatible.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>data</strong> &#8211; The DataSet instance of the data to normalize.</li>
+<li><strong>refdata</strong> &#8211; The DataSet instance of the reference data.</li>
+<li><strong>data_id</strong> &#8211; A valid identifier of the DataArray in the DataSet instance to apply normalization to. Per
+default, the first DataArray is taken.</li>
+<li><strong>flat_id</strong> &#8211; A valid identifier of the DataArray in the reference DataSet instance to take as reference. Per
+default, the first DataArray is taken.</li>
+<li><strong>exclude_axes</strong> &#8211; A list of valid axes identifiers of the reference data to exclude during normalization. The
+reference data is then projected onto the axes which are not included in this list, so the included axes
+axes are kept at constant relative values.</li>
+<li><strong>mode</strong> &#8211; The mode how the calculation between the data and reference should be done, Valid options:
+&#8220;division&#8221;, &#8220;divide&#8221;, &#8220;div&#8221;: Divide every pixel of the data by the corresponding pixel of the reference.
+&#8220;subtraction&#8221;, &#8220;subtract&#8221;, &#8220;sub&#8221;: Subtract every pixel of the data by the corresponding pixel of the reference.</li>
+<li><strong>newlabel</strong> &#8211; The label to set for the created DataArray.</li>
+<li><strong>new_plotlabel</strong> &#8211; The plotlabel to set for the created DataArray.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">The modified dataset.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-snomtools.data.transformation.project">
+<span id="snomtools-data-transformation-project-module"></span><h2>snomtools.data.transformation.project module<a class="headerlink" href="#module-snomtools.data.transformation.project" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="snomtools.data.transformation.project.project_1d">
+<tt class="descclassname">snomtools.data.transformation.project.</tt><tt class="descname">project_1d</tt><big>(</big><em>data</em>, <em>axis_id=0</em>, <em>data_id=None</em>, <em>outlabel=None</em>, <em>normalization=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/transformation/project.html#project_1d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.transformation.project.project_1d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots a projection of the data onto one axis. Therefore, it sums the values over all the other axes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>data</strong> &#8211; The DataSet or ROI to plot.</li>
+<li><strong>axis_id</strong> &#8211; An identifier of the axis to project onto.</li>
+<li><strong>data_id</strong> &#8211; Optional: An identifier of the dataarray to take data from. If not given, all DataArrays of the
+Set are projected.</li>
+<li><strong>outlabel</strong> &#8211; String, optional: A label to assign to the projected DataSet. Default: Label of the original
+DataSet.</li>
+<li><strong>normalization</strong> &#8211; Method for a normalization to apply to the data. Valid options:
+* None, &#8220;None&#8221; (default): No normalization.
+* &#8220;maximum&#8221;, &#8220;max&#8221;: divide every value by the maximum value in the set
+* &#8220;mean&#8221;: divide every value by the average value in the set
+* &#8220;minimum&#8221;, &#8220;min&#8221;: divide every value by the minimum value in the set
+* &#8220;absolute maximum&#8221;, &#8220;absmax&#8221;: divide every value by the maximum absolute value in the set
+* &#8220;absolute minimum&#8221;, &#8220;absmin&#8221;: divide every value by the minimum absolute value in the set
+* &#8220;size&#8221;: divide every value by the number of pixels that have been summed in the projection (ROI size)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A dataset instance with the projected data.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snomtools.data.transformation.project.project_2d">
+<tt class="descclassname">snomtools.data.transformation.project.</tt><tt class="descname">project_2d</tt><big>(</big><em>data</em>, <em>axis1_id=0</em>, <em>axis2_id=0</em>, <em>data_id=None</em>, <em>outlabel=None</em>, <em>normalization=None</em><big>)</big><a class="reference internal" href="../../_modules/snomtools/data/transformation/project.html#project_2d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snomtools.data.transformation.project.project_2d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots a projection of the data onto one axis. Therefore, it sums the values over all the other axes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>data</strong> &#8211; The DataSet or ROI to plot.</li>
+<li><strong>axis1_id</strong> &#8211; An identifier of the first axis to project onto.</li>
+<li><strong>axis2_id</strong> &#8211; An identifier of the second axis to project onto.</li>
+<li><strong>data_id</strong> &#8211; Optional: An identifier of the dataarray to take data from. If not given, all DataArrays of the
+Set are projected.</li>
+<li><strong>outlabel</strong> &#8211; String, optional: A label to assign to the projected DataSet. Default: Label of the original
+DataSet.</li>
+<li><strong>normalization</strong> &#8211; Method for a normalization to apply to the data. Valid options:
+* None, &#8220;None&#8221; (default): No normalization.
+* &#8220;maximum&#8221;, &#8220;max&#8221;: divide every value by the maximum value in the set
+* &#8220;mean&#8221;: divide every value by the average value in the set
+* &#8220;minimum&#8221;, &#8220;min&#8221;: divide every value by the minimum value in the set
+* &#8220;absolute maximum&#8221;, &#8220;absmax&#8221;: divide every value by the maximum absolute value in the set
+* &#8220;absolute minimum&#8221;, &#8220;absmin&#8221;: divide every value by the minimum absolute value in the set
+* &#8220;size&#8221;: divide every value by the number of pixels that have been summed in the projection (ROI size)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A dataset instance with the projected data.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-snomtools.data.transformation">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-snomtools.data.transformation" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">snomtools.data.transformation package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-snomtools.data.transformation.interpolate">snomtools.data.transformation.interpolate module</a></li>
+<li><a class="reference internal" href="#module-snomtools.data.transformation.normalize">snomtools.data.transformation.normalize module</a></li>
+<li><a class="reference internal" href="#module-snomtools.data.transformation.project">snomtools.data.transformation.project module</a></li>
+<li><a class="reference internal" href="#module-snomtools.data.transformation">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../../_sources/source/_modules/snomtools.data.transformation.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">snomtools 0.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, AG Aeschlimann, FB Physik, TU Kaiserslautern.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

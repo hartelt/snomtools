@@ -1,0 +1,496 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>snomtools.evaluation.peem &mdash; snomtools 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../_static/sidebar.js"></script>
+    <link rel="top" title="snomtools 0.0.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">snomtools 0.0.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for snomtools.evaluation.peem</h1><div class="highlight"><pre>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s">&#39;hartelt&#39;</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">This file provides data evaluation scripts for PEEM data.</span>
+<span class="sd">For furter info about data structures, see:</span>
+<span class="sd">data.imports.tiff.py</span>
+<span class="sd">data.datasets.py</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">import</span> <span class="nn">snomtools.calcs.units</span> <span class="kn">as</span> <span class="nn">u</span>
+<span class="kn">import</span> <span class="nn">snomtools.data.datasets</span>
+<span class="kn">import</span> <span class="nn">snomtools.data.imports.tiff</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">scipy.optimize</span>
+
+
+<div class="viewcode-block" id="Powerlaw_loglinear"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.peem.Powerlaw_loglinear">[docs]</a><span class="k">class</span> <span class="nc">Powerlaw_loglinear</span><span class="p">:</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	A powerlaw.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="Powerlaw_loglinear.__init__"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.peem.Powerlaw_loglinear.__init__">[docs]</a>	<span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">keepdata</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+		<span class="k">if</span> <span class="n">data</span><span class="p">:</span>
+			<span class="k">if</span> <span class="n">normalize</span><span class="p">:</span>
+				<span class="n">takedata</span> <span class="o">=</span> <span class="mi">0</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="n">takedata</span> <span class="o">=</span> <span class="mi">1</span>
+			<span class="k">if</span> <span class="n">keepdata</span><span class="p">:</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extract_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">coeffs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit_powerlaw</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">get_axis</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">get_data</span><span class="p">(),</span>
+												<span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">get_datafield</span><span class="p">(</span><span class="n">takedata</span><span class="p">)</span><span class="o">.</span><span class="n">get_data</span><span class="p">())</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">None</span>
+				<span class="n">powers</span><span class="p">,</span> <span class="n">intensities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extract_data_raw</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">coeffs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit_powerlaw</span><span class="p">(</span><span class="n">powers</span><span class="p">,</span> <span class="n">intensities</span><span class="p">)</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">poly</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">poly1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coeffs</span><span class="p">)</span>
+</div>
+	<span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Powerlaw_loglinear.from_coeffs"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.peem.Powerlaw_loglinear.from_coeffs">[docs]</a>	<span class="k">def</span> <span class="nf">from_coeffs</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">coeffs</span><span class="p">):</span>
+		<span class="n">pl</span> <span class="o">=</span> <span class="n">cls</span><span class="p">()</span>
+		<span class="n">pl</span><span class="o">.</span><span class="n">coeffs</span> <span class="o">=</span> <span class="n">coeffs</span>
+		<span class="n">pl</span><span class="o">.</span><span class="n">poly</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">poly1d</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">coeffs</span><span class="p">)</span>
+		<span class="k">return</span> <span class="n">pl</span>
+</div>
+	<span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Powerlaw_loglinear.from_xy"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.peem.Powerlaw_loglinear.from_xy">[docs]</a>	<span class="k">def</span> <span class="nf">from_xy</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">powers</span><span class="p">,</span> <span class="n">intensities</span><span class="p">):</span>
+		<span class="n">pl</span> <span class="o">=</span> <span class="n">cls</span><span class="p">()</span>
+		<span class="n">pl</span><span class="o">.</span><span class="n">coeffs</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">fit_powerlaw</span><span class="p">(</span><span class="n">powers</span><span class="p">,</span> <span class="n">intensities</span><span class="p">)</span>
+		<span class="n">pl</span><span class="o">.</span><span class="n">poly</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">poly1d</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">coeffs</span><span class="p">)</span>
+		<span class="k">return</span> <span class="n">pl</span>
+</div>
+	<span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Powerlaw_loglinear.from_folder_camera"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.peem.Powerlaw_loglinear.from_folder_camera">[docs]</a>	<span class="k">def</span> <span class="nf">from_folder_camera</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">folderpath</span><span class="p">,</span> <span class="n">pattern</span><span class="o">=</span><span class="s">&quot;mW&quot;</span><span class="p">,</span> <span class="n">powerunit</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">powerunitlabel</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Reads a powerlaw data from a folder with snomtools.data.imports.tiff.powerlaw_folder_peem_camera() (see that</span>
+<span class="sd">		method for details on parameters) and evaluates a powerlaw.</span>
+
+<span class="sd">		:return: The Powerlaw instance.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="n">data</span> <span class="o">=</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">imports</span><span class="o">.</span><span class="n">tiff</span><span class="o">.</span><span class="n">powerlaw_folder_peem_camera</span><span class="p">(</span><span class="n">folderpath</span><span class="p">,</span> <span class="n">pattern</span><span class="p">,</span> <span class="n">powerunit</span><span class="p">,</span> <span class="n">powerunitlabel</span><span class="p">)</span>
+		<span class="k">return</span> <span class="n">cls</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</div>
+	<span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Powerlaw_loglinear.extract_data_raw"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.peem.Powerlaw_loglinear.extract_data_raw">[docs]</a>	<span class="k">def</span> <span class="nf">extract_data_raw</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">data_id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">axis_id</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Extracts the powers and intensities out of a dataset. Therefore, it takes the power axis of the input data,</span>
+<span class="sd">		and projects the datafield onto that axis by summing over all the other axes.</span>
+
+<span class="sd">		:param data: Dataset containing the powerlaw data.</span>
+
+<span class="sd">		:param data_id: Identifier of the DataField to use.</span>
+
+<span class="sd">		:param axis_id: optional, Identifier of the power axis to use. If not given, the first axis that corresponds</span>
+<span class="sd">			to a Power in its physical dimension is taken.</span>
+
+<span class="sd">		:return: powers, intensities: tuple of quantities with the projected data.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">DataSet</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">ROI</span><span class="p">),</span> \
+			<span class="s">&quot;ERROR: No dataset or ROI instance given to Powerlaw data extraction.&quot;</span>
+		<span class="k">if</span> <span class="n">axis_id</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+			<span class="n">power_axis</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_axis_by_dimension</span><span class="p">(</span><span class="s">&quot;watts&quot;</span><span class="p">)</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="n">power_axis</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_axis</span><span class="p">(</span><span class="n">axis_id</span><span class="p">)</span>
+		<span class="n">count_data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_datafield</span><span class="p">(</span><span class="n">data_id</span><span class="p">)</span>
+		<span class="n">power_axis_index</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_axis_index</span><span class="p">(</span><span class="n">power_axis</span><span class="o">.</span><span class="n">get_label</span><span class="p">())</span>
+		<span class="c"># DONE: Project data onto power axis. To be implemented in datasets.py</span>
+		<span class="k">return</span> <span class="n">power_axis</span><span class="o">.</span><span class="n">get_data</span><span class="p">(),</span> <span class="n">count_data</span><span class="o">.</span><span class="n">project_nd</span><span class="p">(</span><span class="n">power_axis_index</span><span class="p">)</span>
+</div>
+	<span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Powerlaw_loglinear.extract_data"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.peem.Powerlaw_loglinear.extract_data">[docs]</a>	<span class="k">def</span> <span class="nf">extract_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">data_id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">axis_id</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">&quot;powerlaw&quot;</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Extracts the powers and intensities out of a dataset. Therefore, it takes the power axis of the input data,</span>
+<span class="sd">		and projects the datafield onto that axis by summing over all the other axes.</span>
+
+<span class="sd">		:param data: Dataset containing the powerlaw data.</span>
+
+<span class="sd">		:param data_id: Identifier of the DataField to use.</span>
+
+<span class="sd">		:param axis_id: optional, Identifier of the power axis to use. If not given, the first axis that corresponds</span>
+<span class="sd">			to a Power in its physical dimension is taken.</span>
+
+<span class="sd">		:param label: string: label for the produced DataSet</span>
+
+<span class="sd">		:return: 1D-DataSet with projected Intensity Data and Power Axis.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">DataSet</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">ROI</span><span class="p">),</span> \
+			<span class="s">&quot;ERROR: No dataset or ROI instance given to Powerlaw data extraction.&quot;</span>
+		<span class="k">if</span> <span class="n">axis_id</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+			<span class="n">power_axis</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_axis_by_dimension</span><span class="p">(</span><span class="s">&quot;watts&quot;</span><span class="p">)</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="n">power_axis</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_axis</span><span class="p">(</span><span class="n">axis_id</span><span class="p">)</span>
+		<span class="n">count_data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_datafield</span><span class="p">(</span><span class="n">data_id</span><span class="p">)</span>
+		<span class="n">power_axis_index</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_axis_index</span><span class="p">(</span><span class="n">power_axis</span><span class="o">.</span><span class="n">get_label</span><span class="p">())</span>
+		<span class="n">count_data_projected</span> <span class="o">=</span> <span class="n">count_data</span><span class="o">.</span><span class="n">project_nd</span><span class="p">(</span><span class="n">power_axis_index</span><span class="p">)</span>
+		<span class="n">count_data_projected</span> <span class="o">=</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span><span class="n">count_data_projected</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">&#39;counts&#39;</span><span class="p">)</span>
+		<span class="c"># Normalize by subtracting dark counts:</span>
+		<span class="n">count_data_projected_norm</span> <span class="o">=</span> <span class="n">count_data_projected</span> <span class="o">-</span> <span class="n">count_data_projected</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+		<span class="n">count_data_projected_norm</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="s">&quot;counts_normalized&quot;</span><span class="p">)</span>
+		<span class="c"># Initialize the DataSet containing only the projected powerlaw data;</span>
+		<span class="k">return</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">DataSet</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="p">[</span><span class="n">count_data_projected_norm</span><span class="p">,</span> <span class="n">count_data_projected</span><span class="p">],</span> <span class="p">[</span><span class="n">power_axis</span><span class="p">])</span>
+</div>
+	<span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Powerlaw_loglinear.fit_powerlaw"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.peem.Powerlaw_loglinear.fit_powerlaw">[docs]</a>	<span class="k">def</span> <span class="nf">fit_powerlaw</span><span class="p">(</span><span class="n">powers</span><span class="p">,</span> <span class="n">intensities</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		This function fits a powerlaw to data.</span>
+
+<span class="sd">		:param powers: A quantity or array of powers. If no quantity, milliwatts are assumed.</span>
+
+<span class="sd">		:param intensities: Quantity or array: The corresponding intensity values to powers.</span>
+
+<span class="sd">		:return: The powerlaw coefficients of the fitted polynom.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">if</span> <span class="n">u</span><span class="o">.</span><span class="n">is_quantity</span><span class="p">(</span><span class="n">powers</span><span class="p">):</span>
+			<span class="k">assert</span> <span class="n">u</span><span class="o">.</span><span class="n">same_dimension</span><span class="p">(</span><span class="n">powers</span><span class="p">,</span> <span class="s">&quot;watts&quot;</span><span class="p">)</span>
+			<span class="n">powers</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">to_ureg</span><span class="p">(</span><span class="n">powers</span><span class="p">)</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="n">powers</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">to_ureg</span><span class="p">(</span><span class="n">powers</span><span class="p">,</span> <span class="s">&#39;mW&#39;</span><span class="p">)</span>
+		<span class="n">intensities</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">to_ureg</span><span class="p">(</span><span class="n">intensities</span><span class="p">)</span>
+
+		<span class="c"># Do the fit with numpy.ma functions to ignore invalid numbers like log(0)</span>
+		<span class="c"># (these occur often when using dark count subtraction)</span>
+		<span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">powers</span><span class="o">.</span><span class="n">magnitude</span><span class="p">),</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">intensities</span><span class="o">.</span><span class="n">magnitude</span><span class="p">),</span> <span class="n">deg</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">full</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Powerlaw_loglinear.y"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.peem.Powerlaw_loglinear.y">[docs]</a>	<span class="k">def</span> <span class="nf">y</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">logx</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+		<span class="k">if</span> <span class="n">logx</span><span class="p">:</span>
+			<span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">poly</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">poly</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
+</div>
+<div class="viewcode-block" id="Powerlaw_loglinear.logy"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.peem.Powerlaw_loglinear.logy">[docs]</a>	<span class="k">def</span> <span class="nf">logy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">logx</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+		<span class="k">if</span> <span class="n">logx</span><span class="p">:</span>
+			<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">poly</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">poly</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+
+</div></div>
+<div class="viewcode-block" id="Powerlaw"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.peem.Powerlaw">[docs]</a><span class="k">class</span> <span class="nc">Powerlaw</span><span class="p">:</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	A powerlaw.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="Powerlaw.__init__"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.peem.Powerlaw.__init__">[docs]</a>	<span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">guess</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">keepdata</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+		<span class="k">if</span> <span class="n">data</span><span class="p">:</span>
+			<span class="k">if</span> <span class="n">normalize</span><span class="p">:</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">takedata</span> <span class="o">=</span> <span class="mi">0</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">takedata</span> <span class="o">=</span> <span class="mi">1</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extract_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">coeffs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit_powerlaw</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">get_axis</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">get_data</span><span class="p">(),</span>
+															 <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">get_datafield</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">takedata</span><span class="p">)</span><span class="o">.</span><span class="n">get_data</span><span class="p">(),</span>
+															 <span class="n">guess</span><span class="p">)</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">powerunit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">get_axis</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">get_unit</span><span class="p">()</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">countsunit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">get_datafield</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">takedata</span><span class="p">)</span><span class="o">.</span><span class="n">get_unit</span><span class="p">()</span>
+			<span class="k">if</span> <span class="ow">not</span> <span class="n">keepdata</span><span class="p">:</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">None</span>
+</div>
+	<span class="nd">@property</span>
+<div class="viewcode-block" id="Powerlaw.amplitude"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.peem.Powerlaw.amplitude">[docs]</a>	<span class="k">def</span> <span class="nf">amplitude</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="n">u</span><span class="o">.</span><span class="n">to_ureg</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coeffs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">countsunit</span><span class="p">)</span>
+</div>
+	<span class="nd">@property</span>
+<div class="viewcode-block" id="Powerlaw.exponent"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.peem.Powerlaw.exponent">[docs]</a>	<span class="k">def</span> <span class="nf">exponent</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="n">u</span><span class="o">.</span><span class="n">to_ureg</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coeffs</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+</div>
+	<span class="nd">@property</span>
+<div class="viewcode-block" id="Powerlaw.offset"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.peem.Powerlaw.offset">[docs]</a>	<span class="k">def</span> <span class="nf">offset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="n">u</span><span class="o">.</span><span class="n">to_ureg</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coeffs</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">countsunit</span><span class="p">)</span>
+</div>
+	<span class="nd">@property</span>
+<div class="viewcode-block" id="Powerlaw.powers"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.peem.Powerlaw.powers">[docs]</a>	<span class="k">def</span> <span class="nf">powers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+			<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">get_axis</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;No data present.&quot;</span><span class="p">)</span>
+</div>
+	<span class="nd">@property</span>
+<div class="viewcode-block" id="Powerlaw.counts"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.peem.Powerlaw.counts">[docs]</a>	<span class="k">def</span> <span class="nf">counts</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+			<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">get_datafield</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">takedata</span><span class="p">)</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;No data present.&quot;</span><span class="p">)</span>
+</div>
+	<span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Powerlaw.from_coeffs"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.peem.Powerlaw.from_coeffs">[docs]</a>	<span class="k">def</span> <span class="nf">from_coeffs</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">coeffs</span><span class="p">):</span>
+		<span class="n">pl</span> <span class="o">=</span> <span class="n">cls</span><span class="p">()</span>
+		<span class="n">pl</span><span class="o">.</span><span class="n">coeffs</span> <span class="o">=</span> <span class="n">coeffs</span>
+		<span class="k">return</span> <span class="n">pl</span>
+</div>
+	<span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Powerlaw.from_xy"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.peem.Powerlaw.from_xy">[docs]</a>	<span class="k">def</span> <span class="nf">from_xy</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">powers</span><span class="p">,</span> <span class="n">intensities</span><span class="p">):</span>
+		<span class="n">pl</span> <span class="o">=</span> <span class="n">cls</span><span class="p">()</span>
+		<span class="n">pl</span><span class="o">.</span><span class="n">coeffs</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">fit_powerlaw</span><span class="p">(</span><span class="n">powers</span><span class="p">,</span> <span class="n">intensities</span><span class="p">)</span>
+		<span class="k">return</span> <span class="n">pl</span>
+</div>
+	<span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Powerlaw.from_folder_camera"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.peem.Powerlaw.from_folder_camera">[docs]</a>	<span class="k">def</span> <span class="nf">from_folder_camera</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">folderpath</span><span class="p">,</span> <span class="n">pattern</span><span class="o">=</span><span class="s">&quot;mW&quot;</span><span class="p">,</span> <span class="n">powerunit</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">powerunitlabel</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Reads a powerlaw data from a folder with snomtools.data.imports.tiff.powerlaw_folder_peem_camera() (see that</span>
+<span class="sd">		method for details on parameters) and evaluates a powerlaw.</span>
+
+<span class="sd">		:return: The Powerlaw instance.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="n">data</span> <span class="o">=</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">imports</span><span class="o">.</span><span class="n">tiff</span><span class="o">.</span><span class="n">powerlaw_folder_peem_camera</span><span class="p">(</span><span class="n">folderpath</span><span class="p">,</span> <span class="n">pattern</span><span class="p">,</span> <span class="n">powerunit</span><span class="p">,</span> <span class="n">powerunitlabel</span><span class="p">)</span>
+		<span class="k">return</span> <span class="n">cls</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</div>
+	<span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Powerlaw.extract_data_raw"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.peem.Powerlaw.extract_data_raw">[docs]</a>	<span class="k">def</span> <span class="nf">extract_data_raw</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">data_id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">axis_id</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Extracts the powers and intensities out of a dataset. Therefore, it takes the power axis of the input data,</span>
+<span class="sd">		and projects the datafield onto that axis by summing over all the other axes.</span>
+
+<span class="sd">		:param data: Dataset containing the powerlaw data.</span>
+
+<span class="sd">		:param data_id: Identifier of the DataField to use.</span>
+
+<span class="sd">		:param axis_id: optional, Identifier of the power axis to use. If not given, the first axis that corresponds</span>
+<span class="sd">			to a Power in its physical dimension is taken.</span>
+
+<span class="sd">		:return: powers, intensities: tuple of quantities with the projected data.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">DataSet</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">ROI</span><span class="p">),</span> \
+			<span class="s">&quot;ERROR: No dataset or ROI instance given to Powerlaw data extraction.&quot;</span>
+		<span class="k">if</span> <span class="n">axis_id</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+			<span class="n">power_axis</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_axis_by_dimension</span><span class="p">(</span><span class="s">&quot;watts&quot;</span><span class="p">)</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="n">power_axis</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_axis</span><span class="p">(</span><span class="n">axis_id</span><span class="p">)</span>
+		<span class="n">count_data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_datafield</span><span class="p">(</span><span class="n">data_id</span><span class="p">)</span>
+		<span class="n">power_axis_index</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_axis_index</span><span class="p">(</span><span class="n">power_axis</span><span class="o">.</span><span class="n">get_label</span><span class="p">())</span>
+		<span class="c"># DONE: Project data onto power axis. To be implemented in datasets.py</span>
+		<span class="k">return</span> <span class="n">power_axis</span><span class="o">.</span><span class="n">get_data</span><span class="p">(),</span> <span class="n">count_data</span><span class="o">.</span><span class="n">project_nd</span><span class="p">(</span><span class="n">power_axis_index</span><span class="p">)</span>
+</div>
+	<span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Powerlaw.extract_data"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.peem.Powerlaw.extract_data">[docs]</a>	<span class="k">def</span> <span class="nf">extract_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">data_id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">axis_id</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">&quot;powerlaw&quot;</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Extracts the powers and intensities out of a dataset. Therefore, it takes the power axis of the input data,</span>
+<span class="sd">		and projects the datafield onto that axis by summing over all the other axes.</span>
+
+<span class="sd">		:param data: Dataset containing the powerlaw data.</span>
+
+<span class="sd">		:param data_id: Identifier of the DataField to use.</span>
+
+<span class="sd">		:param axis_id: optional, Identifier of the power axis to use. If not given, the first axis that corresponds</span>
+<span class="sd">			to a Power in its physical dimension is taken.</span>
+
+<span class="sd">		:param label: string: label for the produced DataSet</span>
+
+<span class="sd">		:return: 1D-DataSet with projected Intensity Data and Power Axis.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">DataSet</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">ROI</span><span class="p">),</span> \
+			<span class="s">&quot;ERROR: No dataset or ROI instance given to Powerlaw data extraction.&quot;</span>
+		<span class="k">if</span> <span class="n">axis_id</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+			<span class="n">power_axis</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_axis_by_dimension</span><span class="p">(</span><span class="s">&quot;watts&quot;</span><span class="p">)</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="n">power_axis</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_axis</span><span class="p">(</span><span class="n">axis_id</span><span class="p">)</span>
+		<span class="n">count_data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_datafield</span><span class="p">(</span><span class="n">data_id</span><span class="p">)</span>
+		<span class="n">power_axis_index</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_axis_index</span><span class="p">(</span><span class="n">power_axis</span><span class="o">.</span><span class="n">get_label</span><span class="p">())</span>
+		<span class="n">count_data_projected</span> <span class="o">=</span> <span class="n">count_data</span><span class="o">.</span><span class="n">project_nd</span><span class="p">(</span><span class="n">power_axis_index</span><span class="p">)</span>
+		<span class="n">count_data_projected</span> <span class="o">=</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span><span class="n">count_data_projected</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">&#39;counts&#39;</span><span class="p">)</span>
+		<span class="c"># Normalize by subtracting dark counts:</span>
+		<span class="n">count_data_projected_norm</span> <span class="o">=</span> <span class="n">count_data_projected</span> <span class="o">-</span> <span class="n">count_data_projected</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+		<span class="n">count_data_projected_norm</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="s">&quot;counts_normalized&quot;</span><span class="p">)</span>
+		<span class="c"># Initialize the DataSet containing only the projected powerlaw data;</span>
+		<span class="k">return</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">DataSet</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="p">[</span><span class="n">count_data_projected_norm</span><span class="p">,</span> <span class="n">count_data_projected</span><span class="p">],</span> <span class="p">[</span><span class="n">power_axis</span><span class="p">])</span>
+</div>
+	<span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Powerlaw.fitfunction"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.peem.Powerlaw.fitfunction">[docs]</a>	<span class="k">def</span> <span class="nf">fitfunction</span><span class="p">(</span><span class="n">P</span><span class="p">,</span> <span class="n">amplitude</span><span class="p">,</span> <span class="n">exponent</span><span class="p">,</span> <span class="n">offset</span><span class="p">):</span>
+		<span class="k">return</span> <span class="n">amplitude</span> <span class="o">*</span> <span class="n">P</span> <span class="o">**</span> <span class="n">exponent</span> <span class="o">+</span> <span class="n">offset</span>
+</div>
+	<span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Powerlaw.fit_powerlaw"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.peem.Powerlaw.fit_powerlaw">[docs]</a>	<span class="k">def</span> <span class="nf">fit_powerlaw</span><span class="p">(</span><span class="n">powers</span><span class="p">,</span> <span class="n">intensities</span><span class="p">,</span> <span class="n">guess</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		This function fits a powerlaw to data.</span>
+
+<span class="sd">		:param powers: A quantity or array of powers. If no quantity, milliwatts are assumed.</span>
+
+<span class="sd">		:param intensities: Quantity or array: The corresponding intensity values to powers.</span>
+
+<span class="sd">		:return: The powerlaw coefficients of the fitted polynom.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">if</span> <span class="n">u</span><span class="o">.</span><span class="n">is_quantity</span><span class="p">(</span><span class="n">powers</span><span class="p">):</span>
+			<span class="k">assert</span> <span class="n">u</span><span class="o">.</span><span class="n">same_dimension</span><span class="p">(</span><span class="n">powers</span><span class="p">,</span> <span class="s">&quot;watts&quot;</span><span class="p">)</span>
+			<span class="n">powers</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">to_ureg</span><span class="p">(</span><span class="n">powers</span><span class="p">)</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="n">powers</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">to_ureg</span><span class="p">(</span><span class="n">powers</span><span class="p">,</span> <span class="s">&#39;mW&#39;</span><span class="p">)</span>
+		<span class="n">intensities</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">to_ureg</span><span class="p">(</span><span class="n">intensities</span><span class="p">)</span>
+
+		<span class="k">if</span> <span class="n">guess</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+			<span class="n">guess_amplitude</span> <span class="o">=</span> <span class="mf">1.</span>
+			<span class="n">guess_exponent</span> <span class="o">=</span> <span class="mf">2.</span>
+			<span class="n">guess_offset</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">intensities</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">guess</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span>
+			<span class="n">guess_amplitude</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">to_ureg</span><span class="p">(</span><span class="n">guess</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">str</span><span class="p">(</span><span class="n">powers</span><span class="o">.</span><span class="n">units</span><span class="p">))</span><span class="o">.</span><span class="n">magnitude</span>
+			<span class="n">guess_exponent</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">to_ureg</span><span class="p">(</span><span class="n">guess</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s">&#39;dimensionless&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span>
+			<span class="n">guess_offset</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">to_ureg</span><span class="p">(</span><span class="n">guess</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="nb">str</span><span class="p">(</span><span class="n">powers</span><span class="o">.</span><span class="n">units</span><span class="p">))</span><span class="o">.</span><span class="n">magnitude</span>
+		<span class="n">guess</span> <span class="o">=</span> <span class="p">(</span><span class="n">guess_amplitude</span><span class="p">,</span> <span class="n">guess_exponent</span><span class="p">,</span> <span class="n">guess_offset</span><span class="p">)</span>
+
+		<span class="k">return</span> <span class="n">scipy</span><span class="o">.</span><span class="n">optimize</span><span class="o">.</span><span class="n">curve_fit</span><span class="p">(</span><span class="n">Powerlaw</span><span class="o">.</span><span class="n">fitfunction</span><span class="p">,</span> <span class="n">powers</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span> <span class="n">intensities</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span> <span class="n">guess</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Powerlaw.y"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.peem.Powerlaw.y">[docs]</a>	<span class="k">def</span> <span class="nf">y</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">logx</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+		<span class="n">x</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">to_ureg</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">powerunit</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span>
+		<span class="k">if</span> <span class="n">logx</span><span class="p">:</span>
+			<span class="n">x</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">amplitude</span> <span class="o">*</span> <span class="n">x</span> <span class="o">**</span> <span class="bp">self</span><span class="o">.</span><span class="n">exponent</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset</span>
+</div>
+<div class="viewcode-block" id="Powerlaw.logy"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.peem.Powerlaw.logy">[docs]</a>	<span class="k">def</span> <span class="nf">logy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">logx</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+		<span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">logx</span><span class="o">=</span><span class="n">logx</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="Powerlaw.__str__"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.peem.Powerlaw.__str__">[docs]</a>	<span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="s">&quot;{0} * Power/{1}^{2:.2f} + {3}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">amplitude</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">powerunit</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">exponent</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Powerlaw.texlabel"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.peem.Powerlaw.texlabel">[docs]</a>	<span class="k">def</span> <span class="nf">texlabel</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="c"># return r&quot;%\\prop P^{{{0:.2f}}}% Offset %{1}%&quot;.format(self.exponent.magnitude, self.offset.magnitude)</span>
+		<span class="k">return</span> <span class="s">&quot;Powerlaw {0:.2f}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exponent</span><span class="o">.</span><span class="n">magnitude</span><span class="p">)</span>
+
+</div></div>
+<div class="viewcode-block" id="fit_powerlaw"><a class="viewcode-back" href="../../../source/_modules/snomtools.evaluation.html#snomtools.evaluation.peem.fit_powerlaw">[docs]</a><span class="k">def</span> <span class="nf">fit_powerlaw</span><span class="p">(</span><span class="n">powers</span><span class="p">,</span> <span class="n">intensities</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Shadows Powerlaw.fit_powerlaw. This function fits a powerlaw to data and returns the result as a Powerlaw instance.</span>
+
+<span class="sd">	:param powers: A quantity or array of powers. If no quantity, milliwatts are assumed.</span>
+
+<span class="sd">	:param intensities: Quantity or array: The corresponding intensity values to powers.</span>
+
+<span class="sd">	:return: A Powerlaw instance.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="n">coeffs</span> <span class="o">=</span> <span class="n">Powerlaw</span><span class="o">.</span><span class="n">fit_powerlaw</span><span class="p">(</span><span class="n">powers</span><span class="p">,</span> <span class="n">intensities</span><span class="p">)</span>
+	<span class="k">return</span> <span class="n">Powerlaw</span><span class="o">.</span><span class="n">from_coeffs</span><span class="p">(</span><span class="n">coeffs</span><span class="p">)</span>
+
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>  <span class="c"># Just for testing.</span>
+	<span class="k">print</span><span class="p">(</span><span class="s">&quot;testing...&quot;</span><span class="p">)</span>
+
+	<span class="c"># powerfolder = &quot;Powerlaw_befCS&quot;</span>
+	<span class="n">powerfolder</span> <span class="o">=</span> <span class="s">&quot;Powerlaw&quot;</span>
+	<span class="c"># powerfolder = &quot;/home/hartelt/Promotion/Auswertung/2016/06_Juni/20160623_Circles&quot;</span>
+	<span class="n">powerdata</span> <span class="o">=</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">imports</span><span class="o">.</span><span class="n">tiff</span><span class="o">.</span><span class="n">powerlaw_folder_peem_camera</span><span class="p">(</span><span class="n">powerfolder</span><span class="p">)</span>
+	<span class="c"># powerdata = snomtools.data.imports.tiff.powerlaw_folder_peem_dld(powerfolder)</span>
+	<span class="c"># roilimits = {&#39;x&#39;: [400, 600], &#39;y&#39;: [400, 600], &#39;power&#39;: [u.ureg(&quot;13 mW&quot;), None]}</span>
+	<span class="n">roilimits</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;x&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">400</span><span class="p">,</span> <span class="mi">600</span><span class="p">],</span> <span class="s">&#39;y&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">400</span><span class="p">,</span> <span class="mi">600</span><span class="p">]}</span>
+	<span class="c"># roilimits = {&#39;y&#39;: [470, 550], &#39;x&#39;: [580, 660]}</span>
+	<span class="n">plroi</span> <span class="o">=</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">ROI</span><span class="p">(</span><span class="n">powerdata</span><span class="p">,</span> <span class="n">roilimits</span><span class="p">)</span>
+	<span class="n">testpl</span> <span class="o">=</span> <span class="n">Powerlaw</span><span class="p">(</span><span class="n">plroi</span><span class="p">)</span>
+
+	<span class="c"># picturefilename = &quot;Powerlaw_befCS/48,2mW.tif&quot;</span>
+	<span class="n">picturefilename</span> <span class="o">=</span> <span class="s">&quot;Powerlaw/117mW.tif&quot;</span>
+	<span class="c"># picturefilename = &quot;/home/hartelt/Promotion/Auswertung/2016/06_Juni/20160623_Circles/01-147mW.tif&quot;</span>
+	<span class="n">picturedata</span> <span class="o">=</span> <span class="n">snomtools</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">imports</span><span class="o">.</span><span class="n">tiff</span><span class="o">.</span><span class="n">peem_camera_read</span><span class="p">(</span><span class="n">picturefilename</span><span class="p">)</span>
+
+	<span class="n">test_plot</span> <span class="o">=</span> <span class="bp">True</span>
+	<span class="k">if</span> <span class="n">test_plot</span><span class="p">:</span>
+		<span class="kn">import</span> <span class="nn">snomtools.plots.setupmatplotlib</span> <span class="kn">as</span> <span class="nn">plt</span>
+		<span class="kn">import</span> <span class="nn">snomtools.plots.datasets</span>
+		<span class="kn">import</span> <span class="nn">os</span>
+
+		<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">((</span><span class="mi">12</span><span class="p">,</span> <span class="mi">12</span><span class="p">),</span> <span class="mi">1200</span><span class="p">)</span>
+		<span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+		<span class="n">ax</span><span class="o">.</span><span class="n">cla</span><span class="p">()</span>
+		<span class="n">vert</span> <span class="o">=</span> <span class="s">&#39;y&#39;</span>
+		<span class="n">hori</span> <span class="o">=</span> <span class="s">&#39;x&#39;</span>
+		<span class="n">ax</span><span class="o">.</span><span class="n">autoscale</span><span class="p">(</span><span class="n">tight</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+		<span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s">&#39;equal&#39;</span><span class="p">)</span>
+		<span class="n">snomtools</span><span class="o">.</span><span class="n">plots</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">project_2d</span><span class="p">(</span><span class="n">picturedata</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">axis_vert</span><span class="o">=</span><span class="n">vert</span><span class="p">,</span> <span class="n">axis_hori</span><span class="o">=</span><span class="n">hori</span><span class="p">,</span> <span class="n">data_id</span><span class="o">=</span><span class="s">&#39;counts&#39;</span><span class="p">)</span>
+		<span class="n">snomtools</span><span class="o">.</span><span class="n">plots</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">mark_roi_2d</span><span class="p">(</span><span class="n">plroi</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">axis_vert</span><span class="o">=</span><span class="n">vert</span><span class="p">,</span> <span class="n">axis_hori</span><span class="o">=</span><span class="n">hori</span><span class="p">,</span> <span class="n">ec</span><span class="o">=</span><span class="s">&quot;w&quot;</span><span class="p">)</span>
+		<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s">&quot;test.png&quot;</span><span class="p">,</span> <span class="n">figures_path</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span> <span class="n">transparent</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+		<span class="n">fig</span><span class="o">.</span><span class="n">clf</span><span class="p">()</span>
+		<span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+		<span class="n">ax</span><span class="o">.</span><span class="n">cla</span><span class="p">()</span>
+
+		<span class="c"># ax.invert_yaxis()</span>
+		<span class="c"># xforfunc = numpy.linspace(testpl.data.get_axis(0).min(), testpl.data.get_axis(0).max(), 1000)</span>
+		<span class="c"># ax.plot(testpl.data.get_axis(0).get_data(),</span>
+		<span class="c"># 		testpl.data.get_datafield(0).get_data(),</span>
+		<span class="c"># 		&#39;o&#39;, label=&quot;Counts in Slice&quot;)</span>
+		<span class="c"># ax.plot(xforfunc, testpl.y(xforfunc), &#39;-&#39;, label=&quot;Fit with &quot; + str(testpl.poly))</span>
+		<span class="c"># ax.set_xscale(&quot;log&quot;)</span>
+		<span class="c"># ax.set_yscale(&quot;log&quot;)</span>
+
+		<span class="kn">import</span> <span class="nn">snomtools.plots.evaluations</span>
+
+		<span class="n">snomtools</span><span class="o">.</span><span class="n">plots</span><span class="o">.</span><span class="n">evaluations</span><span class="o">.</span><span class="n">plot_powerlaw</span><span class="p">(</span><span class="n">testpl</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">legend_loc</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+		<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s">&quot;lower right&quot;</span><span class="p">)</span>
+		<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s">&quot;testpowerlaw.png&quot;</span><span class="p">,</span> <span class="n">figures_path</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span> <span class="n">transparent</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+	<span class="k">print</span><span class="p">(</span><span class="s">&quot;...done.&quot;</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">snomtools 0.0.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, AG Aeschlimann, FB Physik, TU Kaiserslautern.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>
