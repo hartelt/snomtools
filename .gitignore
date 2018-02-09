@@ -7,6 +7,7 @@
 test*
 *.tif
 *.png
+*.bak
 Drifttest.7z
 
 # Byte-compiled / optimized / DLL files
