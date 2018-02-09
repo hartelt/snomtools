@@ -53,8 +53,8 @@ k_B = k_B_float * ureg('J / K')
 
 # Just for testing purposes:
 def test():
-	print pi
-	print c
+	print(pi)
+	print(c)
 	print(mu_0)
 	print(epsilon_0)
 	print(e)

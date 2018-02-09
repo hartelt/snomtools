@@ -9,5 +9,5 @@ There will also be a collection of physical constants.
 
 __author__ = 'Michael Hartelt, Cristian Gonzalez'
 
-import units
+from . import units
 ureg = units.ureg

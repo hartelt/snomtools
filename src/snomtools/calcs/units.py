@@ -150,7 +150,7 @@ def to_ureg(input_, unit=None, convert_quantities=True):
 				return Quantity(input_.magnitude, str(input_.units)).to(unit)
 			else:
 				return Quantity(input_.magnitude, str(input_.units))
-	elif (isinstance(input_, str) or isinstance(input_, unicode)):
+	elif (isinstance(input_, str) or isinstance(input_, str)):
 		if unit:
 			return ureg(input_).to(unit)
 		else:

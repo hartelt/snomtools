@@ -3,6 +3,6 @@ This package provides tools for calculating the properties of several material t
 
 """
 __author__ = 'hartelt'
-import dielectrics
-import metals
-import literature
+from . import dielectrics
+from . import metals
+from . import literature

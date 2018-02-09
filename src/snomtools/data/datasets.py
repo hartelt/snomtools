@@ -8,7 +8,7 @@ import snomtools.calcs.units as u
 import numpy
 import os
 import h5py
-import h5tools
+from . import h5tools
 import re
 import tempfile
 from six import string_types
@@ -1041,7 +1041,7 @@ class DataArray(object):
 		elif isinstance(self.h5target, h5py.Group):
 			# We work on a h5target, but not h5source. Copy h5source and initialize handler. This should be much more
 			# performant than reading data and storing them again, because of compression.
-			for h5set in h5source.iterkeys():
+			for h5set in h5source.keys():
 				h5source.copy(h5set, self.h5target)
 			self._data = Data_Handler_H5(h5target=self.h5target)
 		else:
@@ -1130,7 +1130,7 @@ class DataArray(object):
 
 		:return: ndarray quantity: The projected data.
 		"""
-		sumlist = range(len(self.shape))  # initialize list of axes to sum over
+		sumlist = list(range(len(self.shape)))  # initialize list of axes to sum over
 		for arg in args:
 			assert (type(arg) == int), "ERROR: Invalid type. Axis index must be integer."
 			sumlist.remove(arg)
@@ -1816,7 +1816,7 @@ class ROI(object):
 		elif method in ["absolute minimum", "min"]:
 			return ds / ds.absmin()
 		else:
-			print "WARNING: Normalization method not valid. Returning unnormalized data."
+			print("WARNING: Normalization method not valid. Returning unnormalized data.")
 			return ds
 		# TODO: Testing of this method.
 
@@ -2149,7 +2149,7 @@ class DataSet(object):
 		elif method in ["absolute minimum", "min"]:
 			return ds / ds.absmin()
 		else:
-			print "WARNING: Normalization method not valid. Returning unnormalized data."
+			print("WARNING: Normalization method not valid. Returning unnormalized data.")
 			return ds
 		# TODO: Testing of this method.
 
@@ -2491,7 +2491,7 @@ class DataSet(object):
 		# Load data from text file:
 		datacontent = numpy.loadtxt(path, comments=comments, delimiter=delimiter, **kwargs)
 		# All columns contain data by default. This can change if there is an Axis:
-		datacolumns = range(datacontent.shape[1])
+		datacolumns = list(range(datacontent.shape[1]))
 
 		# Handle comment lines which hold metadata like labels and units of the data columns:
 		commentsentries = []  # The list which will hold the strings of the comment lines.
@@ -2512,8 +2512,8 @@ class DataSet(object):
 			if len(commentsentries[comments_line_i]) != len(datacolumns):
 				lines_not_ok.append(comments_line_i)
 		if lines_not_ok:  # The list is not empty.
-			print("WARNING: Comment line(s) {0} in textfile {1} has wrong number of columns. "
-				  "No metadata can be read.".format(lines_not_ok, path))
+			print(("WARNING: Comment line(s) {0} in textfile {1} has wrong number of columns. "
+				  "No metadata can be read.".format(lines_not_ok, path)))
 		else:  # There is a corresponding column in the comment line to each data line.
 			if labelline == unitsline:  # Labels and units in same line. We need to extract units, rest are labels:
 				for column in datacolumns:
@@ -2528,8 +2528,8 @@ class DataSet(object):
 					if u.is_valid_unit(unit):
 						units[column] = unit
 					else:
-						print("WARNING: Invalid unit string '{2}' in unit line {0} in textfile {1}".format(
-							unitsline, path, unit), 'yellow')
+						print(("WARNING: Invalid unit string '{2}' in unit line {0} in textfile {1}".format(
+							unitsline, path, unit), 'yellow'))
 					labels[column] = commentsentries[labelline][column]
 
 		# If we should handle axis:
@@ -2545,7 +2545,7 @@ class DataSet(object):
 				try:
 					self.axes = [Axis(axis)]
 				except Exception as e:
-					print("ERROR! Axis initialization in load_textfile failed.", "red")
+					print(("ERROR! Axis initialization in load_textfile failed.", "red"))
 					raise e
 
 		# Write the remaining data to datafields:
@@ -2732,14 +2732,14 @@ if __name__ == "__main__":  # just for testing
 		for i in range(1000):
 			h5files.append(h5tools.File("ZZZZ{0:04d}.hdf5".format(i)))
 
-		print "writing data..."
+		print("writing data...")
 		for f in h5files:
 			h5tools.write_dataset(f, "data", data=numpy.ones((100, 100, 20)),
 								  chunks=True,
 								  compression="gzip",
 								  compression_opts=4)
 
-		print "closing..."
+		print("closing...")
 		for f in h5files:
 			f.close()
 

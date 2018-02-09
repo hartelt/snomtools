@@ -211,4 +211,4 @@ if __name__ == '__main__':  # Testing...
 
 	drift = Drift(data, template, stackAxisID="faketime", subpixel=True)
 
-	print "done."
+	print("done.")

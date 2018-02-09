@@ -58,7 +58,7 @@ figures_path = os.path.abspath(os.getcwd())
 
 
 def unit(text, prefix=''):
-	return u"%s\\si{%s}" % (prefix, text)
+	return "%s\\si{%s}" % (prefix, text)
 
 
 def a2r(angle):
@@ -215,7 +215,7 @@ def invert(color):
 
 cmap_spectral_inv = LinearSegmentedColormap('ISpectral',
 											dict(((color, invert(values)) for color, values in
-												  cmap_spectral._segmentdata.iteritems())))
+												  cmap_spectral._segmentdata.items())))
 cm.cmap_d['ISpectral'] = cmap_spectral_inv
 
 # cmap_evolution = ListedColormap((np.array([(179, 179, 179, 256),  # unknown

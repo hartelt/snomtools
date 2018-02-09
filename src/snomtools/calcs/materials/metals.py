@@ -162,5 +162,5 @@ if __name__ == "__main__":
 	# import snomtools.calcs.prefixes as pref
 	test = numpy.linspace(2000, 4000, 20)
 	hz = test * pref.tera
-	print(Au_Schneider.epsilon(hz))
-	print(Au_Schneider.epsilon_plasma(hz))
+	print((Au_Schneider.epsilon(hz)))
+	print((Au_Schneider.epsilon_plasma(hz)))

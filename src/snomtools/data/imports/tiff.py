@@ -37,7 +37,7 @@ def search_tag(tif, tag_id):
 	:rtype: tifffile.TiffTag
 	"""
 	for page in tif:
-		for tag in page.tags.values():
+		for tag in list(page.tags.values()):
 			if tag.name == tag_id:
 				return tag
 	print("WARNING: Tiff tag not found.")
@@ -221,7 +221,7 @@ def powerlaw_folder_peem_camera(folderpath, pattern="mW", powerunit=None, poweru
 
 	axlist = []
 	datastack = []
-	for power in iter(sorted(powerfiles.iterkeys())):
+	for power in iter(sorted(powerfiles.keys())):
 		datastack.append(peem_camera_read(os.path.join(folderpath, powerfiles[power])))
 		axlist.append(power)
 	powers = u.to_ureg(axlist, powerunit)
@@ -268,7 +268,7 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 
 	axlist = []
 	datastack = []
-	for power in iter(sorted(powerfiles.iterkeys())):
+	for power in iter(sorted(powerfiles.keys())):
 		datastack.append(peem_dld_read_terra(os.path.join(folderpath, powerfiles[power])))
 		axlist.append(power)
 	powers = u.to_ureg(axlist, powerunit)
@@ -488,16 +488,16 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
 
 	# Generate delay axis:
 	axlist = []
-	for scanstep in iter(sorted(scanfiles.iterkeys())):
+	for scanstep in iter(sorted(scanfiles.keys())):
 		axlist.append(scanstep)
 	scanvalues = u.to_ureg(numpy.array(axlist) * scanfactor, scanunit)
 	scanaxis = snomtools.data.datasets.Axis(scanvalues, label=scanaxislabel, plotlabel=scanaxispl)
 
 	# Test data size:
 	if detector == "dld":
-		sample_data = peem_dld_read_terra(os.path.join(folderpath, scanfiles[scanfiles.keys()[0]]))
+		sample_data = peem_dld_read_terra(os.path.join(folderpath, scanfiles[list(scanfiles.keys())[0]]))
 	else:
-		sample_data = peem_camera_read_terra(os.path.join(folderpath, scanfiles[scanfiles.keys()[0]]))
+		sample_data = peem_camera_read_terra(os.path.join(folderpath, scanfiles[list(scanfiles.keys())[0]]))
 	axlist = [scanaxis] + sample_data.axes
 	newshape = scanaxis.shape + sample_data.shape
 
@@ -538,12 +538,12 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
 
 	if verbose:
 		import time
-		print "Reading Terra Scan Folder of shape: ", dataset.shape
-		print "... generating chunks of shape: ", dataset.get_datafield(0).data.ds_data.chunks
-		print "... using cache size {0:d} MB".format(use_cache_size / 1024 ** 2)
+		print("Reading Terra Scan Folder of shape: ", dataset.shape)
+		print("... generating chunks of shape: ", dataset.get_datafield(0).data.ds_data.chunks)
+		print("... using cache size {0:d} MB".format(use_cache_size / 1024 ** 2))
 		start_time = time.time()
 
-	for i, scanstep in zip(range(len(scanfiles)), iter(sorted(scanfiles.iterkeys()))):
+	for i, scanstep in zip(list(range(len(scanfiles))), iter(sorted(scanfiles.keys()))):
 		islice = (i,) + slicebase
 		# Import tiff:
 		if detector == "dld":
@@ -561,7 +561,7 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
 		if verbose:
 			tpf = ((time.time() - start_time) / float(i + 1))
 			etr = tpf * (dataset.shape[0] - i + 1)
-			print "tiff {0:d} / {1:d}, Time/File {3:.2f}s ETR: {2:.1f}s".format(i, dataset.shape[0], etr, tpf)
+			print("tiff {0:d} / {1:d}, Time/File {3:.2f}s ETR: {2:.1f}s".format(i, dataset.shape[0], etr, tpf))
 
 	return dataset
 

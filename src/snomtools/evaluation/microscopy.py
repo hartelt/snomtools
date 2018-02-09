@@ -95,7 +95,7 @@ def normalize_by_flatfield_sum(data, flatfield_data, data_id=0, flat_id=0, newla
 	axis1_id, axis2_id = "x", "y"
 	ax1_index = flatfield_data.get_axis_index(axis1_id)
 	ax2_index = flatfield_data.get_axis_index(axis2_id)
-	sumlist = range(flatfield_data.dimensions)
+	sumlist = list(range(flatfield_data.dimensions))
 	sumlist.remove(ax1_index)
 	sumlist.remove(ax2_index)
 	sumtup = tuple(sumlist)

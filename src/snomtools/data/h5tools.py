@@ -27,8 +27,8 @@ def File(*args, **kwargs):
 	mem_free = psutil.virtual_memory().available
 	if kwargs[key] >= mem_free:
 		mem_use = mem_free - (32 * 1024 ** 2)
-		print("WARNING: Required buffer size of {0:d} MB exceeds free memory. \
-			  Reducing to {1:d} MB.".format(kwargs[key] / 1024 ** 2, mem_use / 1024 ** 2))
+		print(("WARNING: Required buffer size of {0:d} MB exceeds free memory. \
+			  Reducing to {1:d} MB.".format(kwargs[key] / 1024 ** 2, mem_use / 1024 ** 2)))
 		print("Performance might be worse than expected!")
 		kwargs[key] = mem_use
 
@@ -36,7 +36,7 @@ def File(*args, **kwargs):
 
 
 def store_dictionary(dict_to_store, h5target):
-	for key in dict_to_store.keys():
+	for key in list(dict_to_store.keys()):
 		assert (not ('/' in key)), "Special group separation char '/' used as key."
 		write_dataset(h5target, key, dict_to_store[key])
 
@@ -44,7 +44,7 @@ def store_dictionary(dict_to_store, h5target):
 def load_dictionary(h5source):
 	outdict = {}
 	for key in iter(h5source):
-		key = unicode(key)
+		key = str(key)
 		outdict[key] = h5source[key][()]
 	return outdict
 
