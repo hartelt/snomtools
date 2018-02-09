@@ -8,7 +8,7 @@ import snomtools.calcs.units as u
 import numpy
 import os
 import h5py
-from . import h5tools
+from snomtools.data import h5tools
 import re
 import tempfile
 from six import string_types
