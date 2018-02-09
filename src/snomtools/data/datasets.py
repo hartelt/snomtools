@@ -10,7 +10,6 @@ import os
 import h5py
 import h5tools
 import re
-from termcolor import colored, cprint
 import tempfile
 from six import string_types
 import scipy.ndimage
@@ -1894,7 +1893,7 @@ class ROI(object):
 		if 'h5target' in kwargs:
 			h5target = kwargs['h5target']
 		else:
-			h5target=None
+			h5target = None
 		indexlist = sorted([self.get_axis_index(arg) for arg in args])
 		newdataset = DataSet(datafields=[self.dataset.datafields[i].project_nd(*indexlist) for i in indexlist],
 							 axes=[self.dataset.axes[i] for i in indexlist], h5target=h5target)
@@ -1910,6 +1909,7 @@ class DataSet(object):
 	3D-array of count rates, in which the x- y- and z-dimensions represent the position on a sample (x,
 	y in micrometers) and a time delay (z = t in femtoseconds).
 	"""
+
 	# FIXME: check for unique axis and datafield identifiers.
 
 	def __init__(self, label="", datafields=(), axes=(), plotconf=(), h5target=None, chunk_cache_mem_size=None):
@@ -2331,7 +2331,7 @@ class DataSet(object):
 		if 'h5target' in kwargs:
 			h5target = kwargs['h5target']
 		else:
-			h5target=None
+			h5target = None
 		indexlist = sorted([self.get_axis_index(arg) for arg in args])
 		return self.__class__(
 			datafields=[self.datafields[i].project_nd(*indexlist) for i in range(len(self.datafields))],
@@ -2512,8 +2512,8 @@ class DataSet(object):
 			if len(commentsentries[comments_line_i]) != len(datacolumns):
 				lines_not_ok.append(comments_line_i)
 		if lines_not_ok:  # The list is not empty.
-			print(colored("WARNING: Comment line(s) {0} in textfile {1} has wrong number of columns. "
-						  "No metadata can be read.".format(lines_not_ok, path), 'yellow'))
+			print("WARNING: Comment line(s) {0} in textfile {1} has wrong number of columns. "
+				  "No metadata can be read.".format(lines_not_ok, path))
 		else:  # There is a corresponding column in the comment line to each data line.
 			if labelline == unitsline:  # Labels and units in same line. We need to extract units, rest are labels:
 				for column in datacolumns:
@@ -2528,8 +2528,8 @@ class DataSet(object):
 					if u.is_valid_unit(unit):
 						units[column] = unit
 					else:
-						print(colored("WARNING: Invalid unit string '{2}' in unit line {0} in textfile {1}".format(
-							unitsline, path, unit), 'yellow'))
+						print("WARNING: Invalid unit string '{2}' in unit line {0} in textfile {1}".format(
+							unitsline, path, unit), 'yellow')
 					labels[column] = commentsentries[labelline][column]
 
 		# If we should handle axis:
@@ -2545,7 +2545,7 @@ class DataSet(object):
 				try:
 					self.axes = [Axis(axis)]
 				except Exception as e:
-					print colored("ERROR! Axis initialization in load_textfile failed.", "red")
+					print("ERROR! Axis initialization in load_textfile failed.", "red")
 					raise e
 
 		# Write the remaining data to datafields:
@@ -2642,7 +2642,7 @@ def stack_DataSets(datastack, new_axis, axis=0, label=None, plotconf=None, h5tar
 
 
 if __name__ == "__main__":  # just for testing
-	print colored('Testing...', 'yellow'),
+	print('Testing...')
 	testarray = numpy.arange(0, 10, 2.)
 	testaxis = DataArray(testarray, 'meter', label="xaxis")
 	testaxis2 = testaxis / 2.
@@ -2743,4 +2743,4 @@ if __name__ == "__main__":  # just for testing
 		for f in h5files:
 			f.close()
 
-	cprint("OK", 'green')
+	print("OK")
