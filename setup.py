@@ -23,7 +23,7 @@ from setuptools import setup, find_packages
 # Default version information
 source_path = 'src'
 __version__ = '1.0'
-install_requirements = ['numpy>=1.10.0', 'pint', 'h5py', 'termcolor', 'scipy',
+install_requirements = ['numpy>=1.10.0', 'pint', 'h5py', 'scipy',
 						'tifffile', 'h5py_cache', 'six', 'psutil', 'opencv-python']
 
 packages = find_packages(source_path)
