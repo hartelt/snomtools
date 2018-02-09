@@ -5,6 +5,7 @@ evaluation and calculation shall be done elsewhere, using the here defined data 
 For storage, the prefered format will be HDF5 using the python package h5py. See:
 https://www.hdfgroup.org/HDF5/doc/index.html
 http://docs.h5py.org/en/latest/index.html
+
 """
 __author__ = 'hartelt'
 

@@ -1,5 +1,6 @@
 """
 This file contains the base class for datasets.
+
 """
 __author__ = 'hartelt'
 

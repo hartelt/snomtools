@@ -4,6 +4,7 @@ not experiment-specific, but can be applied for all photoemission spectra.
 For furter info about data structures, see:
 data.imports.tiff.py
 data.datasets.py
+
 """
 __author__ = 'hartelt'
 

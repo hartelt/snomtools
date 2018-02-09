@@ -2,6 +2,7 @@
 This file provides miscellaneous fitting scripts for data.
 For furter info about data structures, see:
 data.datasets.py
+
 """
 __author__ = 'hartelt'
 

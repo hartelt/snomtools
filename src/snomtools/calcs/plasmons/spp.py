@@ -1,6 +1,7 @@
 """
 This script provides a class for calculating the properties of Surface Plasmon Polaritons. All functions work on
 Quantities see snomtools.calcs.units.
+
 """
 __author__ = 'hartelt'
 

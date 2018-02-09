@@ -1,6 +1,7 @@
 """
 This file provides driftkorrection for array stacks. It generates the drift vectors via
 Crosscorrelation-Methods provided by the OpenCV librariy
+
 """
 __author__ = 'frisch'
 

@@ -5,6 +5,7 @@ The methods work on DataSets obtained by importing images with the snomtools.dat
 For furter info about data structures, see:
 data.imports
 data.datasets.py
+
 """
 __author__ = 'hartelt'
 

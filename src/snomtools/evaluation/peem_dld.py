@@ -5,6 +5,7 @@ Energy calibration in the image shall be done first in Terra by applying maxima 
 For furter info about data structures, see:
 data.imports.tiff.py
 data.datasets.py
+
 """
 __author__ = 'hartelt'
 

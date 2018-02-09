@@ -1,6 +1,8 @@
 """
 This script provides a class for calculating the properties of metals, as well as instances for metals we know.
-Functions take pint quantities of the right dimension or floats in SI and give pint quantities in SI! Use conversion tools in snomtools/calcs/conversions or pint quantity methods for different formats.
+Functions take pint quantities of the right dimension or floats in SI and give pint quantities in SI! Use conversion
+tools in snomtools/calcs/conversions or pint quantity methods for different formats.
+
 """
 __author__ = 'hartelt'
 
