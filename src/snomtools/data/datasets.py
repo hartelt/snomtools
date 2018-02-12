@@ -1247,7 +1247,10 @@ class DataArray(object):
 		self.data[key] = value
 
 	def __len__(self):  # len of data array
-		return len(self.data)
+		if self.data:
+			return len(self.data)
+		else:
+			return None
 
 	def __str__(self):
 		out = "DataArray"
