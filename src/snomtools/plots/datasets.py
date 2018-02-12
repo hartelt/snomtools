@@ -3,10 +3,14 @@ This file provides scripts for common plotting applications working on DataSets 
 They use matplotlib.
 
 """
-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import snomtools.data.datasets
 import matplotlib.patches
 import numpy
+
+__author__ = "Michael Hartelt"
 
 
 def project_1d(data, plot_dest, axis_id=0, data_id=0, normalization=None, offset=None, **kwargs):

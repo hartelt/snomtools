@@ -3,9 +3,12 @@ This file provides scripts for common evaluated data as defined in the classes i
 They use matplotlib.
 
 """
-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import numpy
 
+__author__ = "Michael Hartelt"
 
 def plot_powerlaw(powerlaw, plot_dest, resolution=1000, legend_loc='upper left', log=False):
 	"""

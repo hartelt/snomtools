@@ -4,14 +4,17 @@ This scripts imports tiff files, as generated for example by Terra and the PEEM 
 here will read those files and return the data as a DataSet instances. 3D tiff stacks shall be supported.
 
 """
-__author__ = 'hartelt'
-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import snomtools.data.datasets
 import os
 import numpy
 import tifffile
 import re
 import snomtools.calcs.units as u
+
+__author__ = 'hartelt'
 
 
 def is_tif(filename):

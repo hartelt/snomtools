@@ -4,11 +4,14 @@ As long as it's not specified otherwise, it should be kept in SI!
 All functions must be programed to work with float variables, as well as numpy arrays and pint quantities.
 
 """
-__author__ = 'hartelt'
-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import numpy
 from . import constants
 from . import units as u
+
+__author__ = 'hartelt'
 
 
 def deg2rad(angle, return_numeric=None):

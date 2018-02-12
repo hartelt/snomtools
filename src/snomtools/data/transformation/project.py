@@ -2,9 +2,12 @@
 This script holds transformation functions for datasets, that project data onto given axes.
 
 """
-__author__ = 'hartelt'
-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import snomtools.data.datasets as datasets
+
+__author__ = 'hartelt'
 
 
 def project_1d(data, axis_id=0, data_id=None, outlabel=None, normalization=None):

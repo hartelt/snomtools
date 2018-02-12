@@ -2,12 +2,15 @@
 This script holds transformation functions for datasets, that are based on interpolation methods for the data points.
 
 """
-__author__ = 'hartelt'
-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import numpy
 import snomtools.data.datasets as datasets
 import scipy.interpolate
 import snomtools.calcs.units as units
+
+__author__ = 'hartelt'
 
 
 def griddata(dataset, xi, method='linear', fill_value=numpy.nan, rescale=False):
@@ -31,7 +34,7 @@ def griddata(dataset, xi, method='linear', fill_value=numpy.nan, rescale=False):
 	raise NotImplementedError("Griddata to be implemented soon...")
 
 
-if __name__=='__main__':  # Just for testing:
+if __name__ == '__main__':  # Just for testing:
 	print("Testing...")
 	import snomtools.data.imports.lumerical_mat
 
@@ -44,7 +47,7 @@ if __name__=='__main__':  # Just for testing:
 	dataset.saveh5(outfile)
 
 	print("Assembling data...")
-	x,y = dataset.meshgrid(['x','y'])
+	x, y = dataset.meshgrid(['x', 'y'])
 	data = dataset.get_datafield(0).get_data()[:, :, 15]
 
 	print("Generating grid...")
@@ -55,10 +58,11 @@ if __name__=='__main__':  # Just for testing:
 	# newgrid = numpy.meshgrid(newx,newy)
 
 	print("Interpolating...")
-	interp = scipy.interpolate.griddata((x.to('um').flatten(),y.to('um').flatten()), data.flatten(), tuple(newgrid),
+	interp = scipy.interpolate.griddata((x.to('um').flatten(), y.to('um').flatten()), data.flatten(), tuple(newgrid),
 										method='cubic')
 
 	print("Plotting...")
 	import matplotlib.pyplot as plt
+
 	plt.imsave('interpolated.png', interp, cmap='gray')
 	print("DONE")

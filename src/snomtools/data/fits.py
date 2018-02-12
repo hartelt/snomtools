@@ -4,12 +4,15 @@ For furter info about data structures, see:
 data.datasets.py
 
 """
-__author__ = 'hartelt'
-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import snomtools.data.datasets
 import snomtools.calcs.units as u
 import snomtools.data.tools
 import numpy
+
+__author__ = 'hartelt'
 
 
 def fit_xy_linear(xdata, ydata):

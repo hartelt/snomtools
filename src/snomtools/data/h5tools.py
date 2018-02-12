@@ -2,11 +2,15 @@
 This script provides some simple tools for the storage in h5 files.
 
 """
-__author__ = 'hartelt'
-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import h5py
 import h5py_cache
 import psutil
+
+__author__ = 'hartelt'
+
 
 # Set default cache size for h5py-cache files. h5py-default is 1024**2 (1 MB)
 chunk_cache_mem_size_default = 16 * 1024 ** 2  # 16 MB

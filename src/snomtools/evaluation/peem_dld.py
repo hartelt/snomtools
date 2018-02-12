@@ -7,13 +7,16 @@ data.imports.tiff.py
 data.datasets.py
 
 """
-__author__ = 'hartelt'
-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import snomtools.calcs.units as u
 import snomtools.data.datasets
 import snomtools.data.imports.tiff
 import snomtools.evaluation.microscopy
 import os.path
+
+__author__ = 'hartelt'
 
 
 def energy_scale_quadratic(channel_axis, C, t_0):

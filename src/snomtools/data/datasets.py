@@ -2,8 +2,9 @@
 This file contains the base class for datasets.
 
 """
-__author__ = 'hartelt'
-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import snomtools.calcs.units as u
 import numpy
 import os
@@ -13,6 +14,8 @@ import re
 import tempfile
 from six import string_types
 import scipy.ndimage
+
+__author__ = 'hartelt'
 
 
 class Data_Handler_H5(u.Quantity):
@@ -2516,7 +2519,7 @@ class DataSet(object):
 				lines_not_ok.append(comments_line_i)
 		if lines_not_ok:  # The list is not empty.
 			print(("WARNING: Comment line(s) {0} in textfile {1} has wrong number of columns. "
-				  "No metadata can be read.".format(lines_not_ok, path)))
+				   "No metadata can be read.".format(lines_not_ok, path)))
 		else:  # There is a corresponding column in the comment line to each data line.
 			if labelline == unitsline:  # Labels and units in same line. We need to extract units, rest are labels:
 				for column in datacolumns:

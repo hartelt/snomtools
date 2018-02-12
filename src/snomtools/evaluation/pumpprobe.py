@@ -5,12 +5,15 @@ data.imports.tiff.py
 data.datasets.py
 
 """
-__author__ = 'hartelt'
-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import snomtools.calcs.conversions
 import snomtools.data.datasets
 import snomtools.data.imports.tiff
 import snomtools.calcs.units as u
+
+__author__ = 'hartelt'
 
 
 def time_scale_axis(delay_axis, unit='fs', unitplotlabel=None):

@@ -3,11 +3,14 @@ This file provides driftkorrection for array stacks. It generates the drift vect
 Crosscorrelation-Methods provided by the OpenCV librariy
 
 """
-__author__ = 'frisch'
-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import cv2 as cv
 import numpy as np
 import snomtools.data.datasets
+
+__author__ = 'frisch'
 
 
 class Drift:
