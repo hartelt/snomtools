@@ -1,0 +1,9 @@
+numpy>=1.10.0
+pint
+h5py
+scipy
+tifffile
+h5py_cache
+six
+psutil
+opencv-python
