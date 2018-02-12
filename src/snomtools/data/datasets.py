@@ -2424,6 +2424,7 @@ class DataSet(object):
 
 		# TODO: Store snomtools version that data was saved with!
 		h5tools.write_dataset(h5dest,"snomtools-version",__version__)
+		h5tools.write_dataset(h5dest, "savedate", datetime.datetime.now().isoformat())
 		datafieldgrp = h5dest.require_group("datafields")
 		for i in range(len(self.datafields)):
 			grp = self.datafields[i].store_to_h5(datafieldgrp)
