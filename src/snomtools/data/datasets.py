@@ -12,7 +12,7 @@ import h5py
 from snomtools.data import h5tools
 import re
 import tempfile
-from six import string_types
+from six import string_types, integer_types
 import scipy.ndimage
 
 __author__ = 'hartelt'
@@ -373,11 +373,14 @@ class Data_Handler_H5(u.Quantity):
 		try:
 			if len(axis) == 1:  # If we have a sequence of len 1, we sum over only 1 axis.
 				axis = axis[0]
+				single_axis_flag = True
+			else:
+				single_axis_flag = False
 		except TypeError:
 			# axis has no len, so it is propably an integer already. Just go on...
-			pass
+			single_axis_flag = True
 
-		if isinstance(axis, int):
+		if single_axis_flag:  # Only one axis to sum over.
 			if keepdims:
 				outshape = list(inshape)
 				outshape[axis] = 1
@@ -397,7 +400,7 @@ class Data_Handler_H5(u.Quantity):
 				else:
 					outdata.ds_data[:] += self.ds_data[tuple(slicebase)]
 			return outdata
-		else:
+		else:  # We still have a list or tuple of several axes to sum over.
 			axis = numpy.array(sorted(axis))
 			axisnow = axis[0]
 			if keepdims:  # Axes positions stay as they are. Prepare sum tuple for rest of summations.
@@ -503,9 +506,13 @@ class Data_Handler_H5(u.Quantity):
 		other = u.to_ureg(other)
 		return super(Data_Handler_H5, self).__mul__(other)
 
-	def __div__(self, other):
+	def __truediv__(self, other):
+		"""
+		This replaces __div__ in Python 3. All divisions are true divisions per default with '/' operator.
+		In python 2, this new function is called anyway due to :code:`from __future__ import division`.
+		"""
 		other = u.to_ureg(other)
-		return super(Data_Handler_H5, self).__div__(other)
+		return super(Data_Handler_H5, self).__truediv__(other)
 
 	def __floordiv__(self, other):
 		other = u.to_ureg(other)
@@ -728,9 +735,13 @@ class Data_Handler_np(u.Quantity):
 		other = u.to_ureg(other)
 		return super(Data_Handler_np, self).__mul__(other)
 
-	def __div__(self, other):
+	def __truediv__(self, other):
+		"""
+		This replaces __div__ in Python 3. All divisions are true divisions per default with '/' operator.
+		In python 2, this new function is called anyway due to :code:`from __future__ import division`.
+		"""
 		other = u.to_ureg(other)
-		return super(Data_Handler_np, self).__div__(other)
+		return super(Data_Handler_np, self).__truediv__(other)
 
 	def __floordiv__(self, other):
 		other = u.to_ureg(other)
@@ -1198,7 +1209,11 @@ class DataArray(object):
 		other = u.to_ureg(other)
 		return self.__class__(self.data * other, label=self.label, plotlabel=self.plotlabel)
 
-	def __div__(self, other):
+	def __truediv__(self, other):
+		"""
+		This replaces __div__ in Python 3. All divisions are true divisions per default with '/' operator.
+		In python 2, this new function is called anyway due to :code:`from __future__ import division`.
+		"""
 		other = u.to_ureg(other)
 		return self.__class__(self.data / other, label=self.label, plotlabel=self.plotlabel)
 
@@ -1250,7 +1265,7 @@ class DataArray(object):
 		self.data[key] = value
 
 	def __len__(self):  # len of data array
-		if self.data:
+		if self.data is not None:
 			return len(self.data)
 		else:
 			return None
