@@ -12,10 +12,10 @@ import h5py
 from snomtools.data import h5tools
 import re
 import tempfile
-from six import string_types, integer_types
+from six import string_types
 import scipy.ndimage
 
-__author__ = 'hartelt'
+__author__ = 'Michael Hartelt'
 
 
 class Data_Handler_H5(u.Quantity):
@@ -1231,12 +1231,14 @@ class DataArray(object):
 	def __iter__(self):
 		return iter(self.data)
 
+	# noinspection PyTypeChecker,PyUnresolvedReferences
 	def __getitem__(self, key):
 		"""
 		To allow adressing parts or elements of the DataArray with [], including slicing as in numpy. This just
 		forwards to the underlying __getitem__ method of the data object.
 
-		:param key: The key which is given as adressed in dataarray[key]. Can be an integer or a slice object.
+		:param key: The key which is given as adressed in dataarray[key].
+		:type key: slice **or** int **or** tuples thereof
 
 		:return: The sliced data as returned by self.data[key].
 		"""
