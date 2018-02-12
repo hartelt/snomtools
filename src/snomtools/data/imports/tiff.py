@@ -14,7 +14,48 @@ import tifffile
 import re
 import snomtools.calcs.units as u
 
-__author__ = 'hartelt'
+__author__ = 'Michael Hartelt'
+
+terra_tag_ids = {
+	"peem_settings": "41000",
+	"roi_and_bin": "41010",
+	"exposure_time": "41020",
+	"usercomment": "41030",
+	"excitation": "41040",
+	"date": "41041",
+	"time": "41042",
+	"author": "41043",
+	"probe": "41044",
+	"delaystage": "41045",
+	"data_device": "41046",
+	"delay_ist": "41050",
+	"delay_soll": "41051",
+	"devices": "41052",
+	"device_values": "41053",
+	"version": "41055",
+	"peem_ini": "41060",
+	"artist": "Artist"
+}
+terra_tag_descriptions = {
+	"peem_settings": "The PEEM Settings, saved in an Array of numerical values.",
+	"roi_and_bin": "ROI and Binnings set for the data acquisition.",
+	"exposure_time": "The exposure time set for the integration of the single PEEM image in milliseconds.",
+	"usercomment": "A comment describing the measurement, set freely by the PEEM user.",
+	"excitation": "The light source used for the photoemission measured with PEEM.",
+	"date": "The date of the measurement, formatted DD.MM.YYYY",
+	"time": "The time of the start of the measurement, formatted HH:MM:SS (24h)",
+	"author": "The operator of the experiment that logged into TERRA.",
+	"probe": "The name of the sample that was measured.",
+	"delaystage": "The delay stage used for the scan in which the image was taken.",
+	"data_device": "The device used for detecting the image.",
+	"delay_ist": "The delay value for the image, as set in the delay list.",
+	"delay_soll": "The actual delay value for the image, which can vary due to the step resolution of the delay stage.",
+	"devices": "(?)",
+	"device_values": "(?)",
+	"version": "A version number. Propably of the TERRA software (?)",
+	"peem_ini": "The PEEM ini file read from the PEEM control software buffer, which contains all nominal and actual PEEM settings.",
+	"artist": "The image artist and copyright owner of the image."
+}
 
 
 def is_tif(filename):
@@ -39,10 +80,13 @@ def search_tag(tif, tag_id):
 	:return: The tag object.
 	:rtype: tifffile.TiffTag
 	"""
-	for page in tif:
-		for tag in list(page.tags.values()):
-			if tag.name == tag_id:
-				return tag
+	try:  # For older versions of tifffile, TiffFile objects are iterable and pages can be adressed directly.
+		for page in tif:
+			for tag in list(page.tags.values()):
+				if tag.name == tag_id:
+					return tag
+	except TypeError as e:  # In newer versions of tifffile, tags are stored in a dict.
+		return tif.pages._keyframe.tags[tag_id]
 	print("WARNING: Tiff tag not found.")
 	return None
 
@@ -543,7 +587,7 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
 		import time
 		print("Reading Terra Scan Folder of shape: ", dataset.shape)
 		print("... generating chunks of shape: ", dataset.get_datafield(0).data.ds_data.chunks)
-		print("... using cache size {0:d} MB".format(use_cache_size / 1024 ** 2))
+		print("... using cache size {0:d} MB".format(use_cache_size // 1024 ** 2))
 		start_time = time.time()
 
 	for i, scanstep in zip(list(range(len(scanfiles))), iter(sorted(scanfiles.keys()))):
