@@ -7,3 +7,4 @@ h5py_cache
 six
 psutil
 opencv-python
+future
