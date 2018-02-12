@@ -8,3 +8,4 @@ six
 psutil
 opencv-python
 future
+matplotlib
