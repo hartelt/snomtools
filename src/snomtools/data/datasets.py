@@ -6,14 +6,16 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 import snomtools.calcs.units as u
+from snomtools.data import h5tools
+from snomtools import __version__
 import numpy
 import os
 import h5py
-from snomtools.data import h5tools
 import re
 import tempfile
 from six import string_types
 import scipy.ndimage
+import datetime
 
 __author__ = 'Michael Hartelt'
 
@@ -2421,6 +2423,7 @@ class DataSet(object):
 		assert isinstance(h5dest, h5py.Group), "DataSet.saveh5 needs h5 group or destination path as argument!"
 
 		# TODO: Store snomtools version that data was saved with!
+		h5tools.write_dataset(h5dest,"snomtools-version",__version__)
 		datafieldgrp = h5dest.require_group("datafields")
 		for i in range(len(self.datafields)):
 			grp = self.datafields[i].store_to_h5(datafieldgrp)
@@ -2665,6 +2668,7 @@ def stack_DataSets(datastack, new_axis, axis=0, label=None, plotconf=None, h5tar
 
 
 if __name__ == "__main__":  # just for testing
+	print("snomtools version "+__version__)
 	print('Testing...')
 	testarray = numpy.arange(0, 10, 2.)
 	testaxis = DataArray(testarray, 'meter', label="xaxis")

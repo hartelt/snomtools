@@ -7,7 +7,7 @@ https://www.hdfgroup.org/HDF5/doc/index.html
 http://docs.h5py.org/en/latest/index.html
 
 """
-__author__ = 'hartelt'
+__author__ = 'Michael Hartelt'
 
 #just for testing:
 if False:
