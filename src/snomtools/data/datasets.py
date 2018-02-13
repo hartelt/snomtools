@@ -1063,6 +1063,7 @@ class DataArray(object):
 			# We work on a h5target, but not h5source. Copy h5source and initialize handler. This should be much more
 			# performant than reading data and storing them again, because of compression.
 			for h5set in h5source.keys():
+				h5tools.clear_name(self.h5target, h5set)
 				h5source.copy(h5set, self.h5target)
 			self._data = Data_Handler_H5(h5target=self.h5target)
 		else:

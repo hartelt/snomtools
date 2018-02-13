@@ -72,6 +72,24 @@ def write_dataset(h5dest, name, data, **kwargs):
 	h5dest.create_dataset(name, data=data, **kwargs)
 
 
+def read_as_str(h5source):
+	"""
+	Reads data from a h5 dataset and returns it as string. This is helpful for python2/3 support, to guarantee reading
+	a string and not a bytes type. Additionally, it can be used to cast any data stored in h5 into str.
+
+	:param h5source: The dataset to read.
+	:type h5source: h5py.Dataset
+
+	:return: The data, converted to str.
+	:rtype: str
+	"""
+	assert isinstance(h5source, h5py.Dataset), "No h5 dataset given."
+	data = h5source[()]
+	if isinstance(data, bytes):
+		data = data.decode()
+	return str(data)
+
+
 def clear_name(h5dest, name):
 	"""
 	Removes an entry of a HDF5 group if it exists, thereby clearing the namespace for creating a new dataset.
@@ -99,7 +117,7 @@ def check_version(h5root):
 	:rtype: bool
 	"""
 	try:
-		version_str = str(h5root['version'][()])
+		version_str = read_as_str(h5root['version'])
 		packagename, version = version_str.split()
 		if packagename != __package__:
 			warnings.warn("Accessed H5 entity {0} was not written with {1}".format(h5root, __package__))
