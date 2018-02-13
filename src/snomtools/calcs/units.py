@@ -134,6 +134,9 @@ def to_ureg(input_, unit=None, convert_quantities=True):
 
 	:return: The imported quantity.
 	"""
+	# Python2/3 compatibility: If unit is a byte string, decode it for usage in pint.Quantity.
+	if isinstance(unit, bytes):
+		unit = unit.decode()
 
 	# Check if input is quantity:
 	if is_quantity(input_):
