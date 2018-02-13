@@ -2546,7 +2546,7 @@ class DataSet(object):
 				lines_not_ok.append(comments_line_i)
 		if lines_not_ok:  # The list is not empty.
 			warnings.warn("Comment line(s) {0} in textfile {1} has wrong number of columns. "
-				   "No metadata can be read.".format(lines_not_ok, path)))
+						  "No metadata can be read.".format(lines_not_ok, path))
 		else:  # There is a corresponding column in the comment line to each data line.
 			if labelline == unitsline:  # Labels and units in same line. We need to extract units, rest are labels:
 				for column in datacolumns:
@@ -2561,8 +2561,8 @@ class DataSet(object):
 					if u.is_valid_unit(unit):
 						units[column] = unit
 					else:
-						print(("WARNING: Invalid unit string '{2}' in unit line {0} in textfile {1}".format(
-							unitsline, path, unit), 'yellow'))
+						warnings.warn("Invalid unit string '{2}' in unit line {0} in textfile {1}"
+									  "".format(unitsline, path, unit))
 					labels[column] = commentsentries[labelline][column]
 
 		# If we should handle axis:
