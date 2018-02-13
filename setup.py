@@ -33,6 +33,7 @@ reqs = [str(ir.req) for ir in install_reqs]
 
 packages = find_packages(source_path)
 
+
 # Define your setup
 # version should be considered using git's short or better the full hash
 def get_version_from_git():
@@ -43,7 +44,8 @@ def get_version_from_git():
 	import subprocess
 	try:
 		v = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'])
-		return __version__ + v
+		v = v.decode().strip()
+		return __version__ + '.' + v
 	except Exception as ex:
 
 		print("Could not retrieve git version information")
