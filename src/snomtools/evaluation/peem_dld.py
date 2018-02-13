@@ -70,8 +70,12 @@ def energy_get_fitparams_quadratic(filename):
 	:return: The fitparameters as a tuple C,t0
 	"""
 	filepath = os.path.abspath(filename)
-	with open(filepath, 'r', encoding='ISO-8859-1') as fitfile:
-		lines = fitfile.readlines()
+	try: # python 2
+		with open(filepath, 'r') as fitfile:
+			lines = fitfile.readlines()
+	except UnicodeDecodeError as e: # python 3
+		with open(filepath, 'r', encoding='ISO-8859-1') as fitfile:
+			lines = fitfile.readlines()
 	# The lines we are looking for look like this:
 	# C=118259,8710948820
 	# t0=-24977,8555008616
