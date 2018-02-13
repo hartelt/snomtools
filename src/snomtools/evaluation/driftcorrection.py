@@ -13,9 +13,9 @@ import snomtools.data.datasets
 __author__ = 'Benjamin Frisch'
 
 
-class Drift:
+class Drift(object):
 	def __init__(self, data=None, template=None, stackAxisID=None, yAxisID=None, xAxisID=None,
-				 subpixel=True, method='cv.TM_CCOEFF_NORMED'):
+				 subpixel=True, method='cv.TM_CCOEFF_NORMED', template_origin=None):
 		"""
 		Calculates the correlation of a given 2D template with all slices in a n-D dataset which gets projected onto the
 		three axes stackAxis, yAxis, xAxis.
@@ -36,6 +36,10 @@ class Drift:
 		:param method: Method to calculate the Correlation between template and data. Possible methods:
 			'cv.TM_CCOEFF', 'cv.TM_CCOEFF_NORMED' (default), 'cv.TM_CCORR', 'cv.TM_CCORR_NORMED', 'cv.TM_SQDIFF',
 			'cv.TM_SQDIFF_NORMED'
+
+		:param template_origin: An origin for the relative drift vectors in the form (y_pixel, x_pixel). If :code:`None`
+			is given (the default), the first detected drift vector is used.
+		:type template_origin: tuple(int **or** float) of len==2 **or** None
 		"""
 
 		# read axis
