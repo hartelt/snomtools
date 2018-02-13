@@ -5,13 +5,16 @@ data.imports.tiff.py
 data.datasets.py
 
 """
-__author__ = 'hartelt'
-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import snomtools.calcs.units as u
 import snomtools.data.datasets
 import snomtools.data.imports.tiff
 import numpy
 import scipy.optimize
+
+__author__ = 'hartelt'
 
 
 class Powerlaw_loglinear:

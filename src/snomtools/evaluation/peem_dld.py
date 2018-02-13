@@ -7,13 +7,16 @@ data.imports.tiff.py
 data.datasets.py
 
 """
-__author__ = 'hartelt'
-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import snomtools.calcs.units as u
 import snomtools.data.datasets
 import snomtools.data.imports.tiff
 import snomtools.evaluation.microscopy
 import os.path
+
+__author__ = 'hartelt'
 
 
 def energy_scale_quadratic(channel_axis, C, t_0):
@@ -67,8 +70,12 @@ def energy_get_fitparams_quadratic(filename):
 	:return: The fitparameters as a tuple C,t0
 	"""
 	filepath = os.path.abspath(filename)
-	fitfile = open(filepath, 'r')
-	lines = fitfile.readlines()
+	try: # python 2
+		with open(filepath, 'r') as fitfile:
+			lines = fitfile.readlines()
+	except UnicodeDecodeError as e: # python 3
+		with open(filepath, 'r', encoding='ISO-8859-1') as fitfile:
+			lines = fitfile.readlines()
 	# The lines we are looking for look like this:
 	# C=118259,8710948820
 	# t0=-24977,8555008616

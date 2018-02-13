@@ -5,14 +5,17 @@ The data array will be in the following form:
 wavelength, dielectric constant, refraction index
 
 """
-__author__ = 'hartelt'
-
-# TODO: Compatibility with pint
-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import numpy
 import os
 import snomtools.calcs.prefixes as pref
 import snomtools.calcs.conversions as conv
+
+__author__ = 'hartelt'
+
+# TODO: Compatibility with pint
 
 ownpath = os.path.dirname(os.path.realpath(__file__))
 

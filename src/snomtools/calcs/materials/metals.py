@@ -4,11 +4,14 @@ Functions take pint quantities of the right dimension or floats in SI and give p
 tools in snomtools/calcs/conversions or pint quantity methods for different formats.
 
 """
-__author__ = 'hartelt'
-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import numpy
 import snomtools.calcs.prefixes as pref
 import snomtools.calcs.units as units
+
+__author__ = 'hartelt'
 
 
 class InterbandTransition:
@@ -162,5 +165,5 @@ if __name__ == "__main__":
 	# import snomtools.calcs.prefixes as pref
 	test = numpy.linspace(2000, 4000, 20)
 	hz = test * pref.tera
-	print(Au_Schneider.epsilon(hz))
-	print(Au_Schneider.epsilon_plasma(hz))
+	print((Au_Schneider.epsilon(hz)))
+	print((Au_Schneider.epsilon_plasma(hz)))

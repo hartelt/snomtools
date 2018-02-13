@@ -6,14 +6,17 @@ data.imports.tiff.py
 data.datasets.py
 
 """
-__author__ = 'hartelt'
-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import snomtools.calcs.units as u
 import numpy as np
 import snomtools.data.datasets
 from scipy.optimize import curve_fit
 import scipy.special
 import snomtools.calcs.constants as const
+
+__author__ = 'hartelt'
 
 k_B = const.k_B  # The Boltzmann constant
 Temp = u.to_ureg(300, "K")  # The Temperature, for now hardcoded as room temperature.

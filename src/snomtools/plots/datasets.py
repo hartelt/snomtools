@@ -3,10 +3,14 @@ This file provides scripts for common plotting applications working on DataSets 
 They use matplotlib.
 
 """
-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import snomtools.data.datasets
 import matplotlib.patches
 import numpy
+
+__author__ = "Michael Hartelt"
 
 
 def project_1d(data, plot_dest, axis_id=0, data_id=0, normalization=None, offset=None, **kwargs):
@@ -43,7 +47,7 @@ def project_1d(data, plot_dest, axis_id=0, data_id=0, normalization=None, offset
 	ax_index = data.get_axis_index(axis_id)
 	ax = data.get_axis(ax_index)
 
-	sumlist = range(data.dimensions)
+	sumlist = list(range(data.dimensions))
 	sumlist.remove(ax_index)
 	sumtup = tuple(sumlist)
 	sumdat = data.get_datafield(data_id).sum(sumtup)
@@ -70,7 +74,7 @@ def project_1d(data, plot_dest, axis_id=0, data_id=0, normalization=None, offset
 			try:
 				plotdat = sumdat / normalization
 			except TypeError:
-				print "WARNING: Normalization normalization not valid. Returning unnormalized data."
+				print("WARNING: Normalization normalization not valid. Returning unnormalized data.")
 				plotdat = sumdat
 	else:
 		plotdat = sumdat
@@ -121,7 +125,7 @@ def project_2d(data, plot_dest, axis_vert=0, axis_hori=1, data_id=0, normalizati
 	axh_index = data.get_axis_index(axis_hori)
 	axh = data.get_axis(axh_index)
 
-	sumlist = range(data.dimensions)
+	sumlist = list(range(data.dimensions))
 	sumlist.remove(axv_index)
 	sumlist.remove(axh_index)
 	sumtup = tuple(sumlist)
@@ -153,7 +157,7 @@ def project_2d(data, plot_dest, axis_vert=0, axis_hori=1, data_id=0, normalizati
 			try:
 				plotdat = sumdat / normalization
 			except TypeError:
-				print "WARNING: Normalization normalization not valid. Returning unnormalized data."
+				print("WARNING: Normalization normalization not valid. Returning unnormalized data.")
 				plotdat = sumdat
 	else:
 		plotdat = sumdat
@@ -216,7 +220,7 @@ def mark_roi_2d(roi, plot_dest, axis_vert=0, axis_hori=1, **kwargs):
 		"No ROI instance given to mark function."
 
 	# Set fill kwarg for rectangle if not explicitly given:
-	if not kwargs.has_key('fill'):
+	if 'fill' not in kwargs:
 		kwargs['fill'] = False
 
 	xlims = roi.get_limits(axis_hori, raw=True)

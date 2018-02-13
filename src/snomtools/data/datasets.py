@@ -2,17 +2,23 @@
 This file contains the base class for datasets.
 
 """
-__author__ = 'hartelt'
-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import snomtools.calcs.units as u
+from snomtools.data import h5tools
+from snomtools import __package__, __version__
 import numpy
 import os
 import h5py
-import h5tools
 import re
 import tempfile
 from six import string_types
 import scipy.ndimage
+import datetime
+import warnings
+
+__author__ = 'Michael Hartelt'
 
 
 class Data_Handler_H5(u.Quantity):
@@ -180,7 +186,7 @@ class Data_Handler_H5(u.Quantity):
 	_magnitude = property(_get__magnitude, _set__magnitude, None, "The _magnitude property for Quantity emulation.")
 
 	def _get__units(self):
-		return u.unit_from_str(self.ds_unit[()])._units
+		return u.unit_from_str(h5tools.read_as_str(self.ds_unit))._units
 
 	def _set__units(self, val):
 		self.ds_unit[()] = str(u.Quantity(1., val).units)
@@ -370,11 +376,14 @@ class Data_Handler_H5(u.Quantity):
 		try:
 			if len(axis) == 1:  # If we have a sequence of len 1, we sum over only 1 axis.
 				axis = axis[0]
+				single_axis_flag = True
+			else:
+				single_axis_flag = False
 		except TypeError:
 			# axis has no len, so it is propably an integer already. Just go on...
-			pass
+			single_axis_flag = True
 
-		if isinstance(axis, int):
+		if single_axis_flag:  # Only one axis to sum over.
 			if keepdims:
 				outshape = list(inshape)
 				outshape[axis] = 1
@@ -394,7 +403,7 @@ class Data_Handler_H5(u.Quantity):
 				else:
 					outdata.ds_data[:] += self.ds_data[tuple(slicebase)]
 			return outdata
-		else:
+		else:  # We still have a list or tuple of several axes to sum over.
 			axis = numpy.array(sorted(axis))
 			axisnow = axis[0]
 			if keepdims:  # Axes positions stay as they are. Prepare sum tuple for rest of summations.
@@ -500,9 +509,13 @@ class Data_Handler_H5(u.Quantity):
 		other = u.to_ureg(other)
 		return super(Data_Handler_H5, self).__mul__(other)
 
-	def __div__(self, other):
+	def __truediv__(self, other):
+		"""
+		This replaces __div__ in Python 3. All divisions are true divisions per default with '/' operator.
+		In python 2, this new function is called anyway due to :code:`from __future__ import division`.
+		"""
 		other = u.to_ureg(other)
-		return super(Data_Handler_H5, self).__div__(other)
+		return super(Data_Handler_H5, self).__truediv__(other)
 
 	def __floordiv__(self, other):
 		other = u.to_ureg(other)
@@ -526,7 +539,7 @@ class Data_Handler_H5(u.Quantity):
 			try:
 				os.rmdir(self.temp_dir)
 			except OSError as e:
-				print("WARNING: Data_Handler_H5 could not remove tempdir. Propably not empty.")
+				warnings.warn("Data_Handler_H5 could not remove tempdir. Propably not empty.")
 				print(e)
 
 	@classmethod
@@ -725,9 +738,13 @@ class Data_Handler_np(u.Quantity):
 		other = u.to_ureg(other)
 		return super(Data_Handler_np, self).__mul__(other)
 
-	def __div__(self, other):
+	def __truediv__(self, other):
+		"""
+		This replaces __div__ in Python 3. All divisions are true divisions per default with '/' operator.
+		In python 2, this new function is called anyway due to :code:`from __future__ import division`.
+		"""
 		other = u.to_ureg(other)
-		return super(Data_Handler_np, self).__div__(other)
+		return super(Data_Handler_np, self).__truediv__(other)
 
 	def __floordiv__(self, other):
 		other = u.to_ureg(other)
@@ -820,7 +837,7 @@ class DataArray(object):
 				self.plotlabel = plotlabel
 			else:
 				self.plotlabel = data.get_plotlabel()
-			# A DataArray contains everything we need, so we should be done here!
+		# A DataArray contains everything we need, so we should be done here!
 		elif isinstance(data, h5py.Group):  # If a HDF5 Group was given, load data directly.
 			self.load_from_h5(data)
 		else:  # We DON'T have everything contained in data, so we need to process it seperately.
@@ -901,7 +918,7 @@ class DataArray(object):
 			self._data = Data_Handler_np(val)
 
 	def del_data(self):
-		print('WARNING: Trying to delete data from DataArray.')
+		warnings.warn("Trying to delete data from DataArray.")
 
 	data = property(get_data, _set_data, del_data, "The data property for the DataArray.")
 
@@ -950,7 +967,9 @@ class DataArray(object):
 	def set_unit(self, unitstr):
 		"""
 		Set the unit of the dataarray as specified.
-		Warning: The plotlabel typically includes a unit, so this might get invalid!
+
+		.. warning::
+			The plotlabel typically includes a unit, so this might get invalid!
 
 		:param unitstr: A valid unit string.
 
@@ -961,7 +980,9 @@ class DataArray(object):
 	def to(self, unitstr):
 		"""
 		Returns a copy of the dataarray with the unit set as specified. For compatibility with pint quantity.
-		Warning: The plotlabel typically includes a unit, so this might get invalid!
+
+		.. warning::
+			The plotlabel typically includes a unit, so this might get invalid!
 
 		:param unitstr: A valid unit string.
 
@@ -1041,13 +1062,14 @@ class DataArray(object):
 		elif isinstance(self.h5target, h5py.Group):
 			# We work on a h5target, but not h5source. Copy h5source and initialize handler. This should be much more
 			# performant than reading data and storing them again, because of compression.
-			for h5set in h5source.iterkeys():
+			for h5set in h5source.keys():
+				h5tools.clear_name(self.h5target, h5set)
 				h5source.copy(h5set, self.h5target)
 			self._data = Data_Handler_H5(h5target=self.h5target)
 		else:
-			self.set_data(numpy.array(h5source["data"]), h5source["unit"][()])
-		self.set_label(h5source["label"][()])
-		self.set_plotlabel(h5source["plotlabel"][()])
+			self.set_data(numpy.array(h5source["data"]), h5tools.read_as_str(h5source["unit"]))
+		self.set_label(h5tools.read_as_str(h5source["label"]))
+		self.set_plotlabel(h5tools.read_as_str(h5source["plotlabel"]))
 
 	def flush(self):
 		"""
@@ -1058,7 +1080,7 @@ class DataArray(object):
 		if isinstance(self.h5target, h5py.Group):
 			self.write_to_h5()
 		else:
-			print("WARNING: DataSet cannot flush without working on valid HDF5 file.")
+			warnings.warn("DataSet cannot flush without working on valid HDF5 file.")
 
 	def get_nearest_index(self, value):
 		"""
@@ -1130,7 +1152,7 @@ class DataArray(object):
 
 		:return: ndarray quantity: The projected data.
 		"""
-		sumlist = range(len(self.shape))  # initialize list of axes to sum over
+		sumlist = list(range(len(self.shape)))  # initialize list of axes to sum over
 		for arg in args:
 			assert (type(arg) == int), "ERROR: Invalid type. Axis index must be integer."
 			sumlist.remove(arg)
@@ -1195,7 +1217,11 @@ class DataArray(object):
 		other = u.to_ureg(other)
 		return self.__class__(self.data * other, label=self.label, plotlabel=self.plotlabel)
 
-	def __div__(self, other):
+	def __truediv__(self, other):
+		"""
+		This replaces __div__ in Python 3. All divisions are true divisions per default with '/' operator.
+		In python 2, this new function is called anyway due to :code:`from __future__ import division`.
+		"""
 		other = u.to_ureg(other)
 		return self.__class__(self.data / other, label=self.label, plotlabel=self.plotlabel)
 
@@ -1213,12 +1239,14 @@ class DataArray(object):
 	def __iter__(self):
 		return iter(self.data)
 
+	# noinspection PyTypeChecker,PyUnresolvedReferences
 	def __getitem__(self, key):
 		"""
 		To allow adressing parts or elements of the DataArray with [], including slicing as in numpy. This just
 		forwards to the underlying __getitem__ method of the data object.
 
-		:param key: The key which is given as adressed in dataarray[key]. Can be an integer or a slice object.
+		:param key: The key which is given as adressed in dataarray[key].
+		:type key: slice **or** int **or** tuples thereof
 
 		:return: The sliced data as returned by self.data[key].
 		"""
@@ -1247,7 +1275,10 @@ class DataArray(object):
 		self.data[key] = value
 
 	def __len__(self):  # len of data array
-		return len(self.data)
+		if self.data is not None:
+			return len(self.data)
+		else:
+			return None
 
 	def __str__(self):
 		out = "DataArray"
@@ -1816,9 +1847,10 @@ class ROI(object):
 		elif method in ["absolute minimum", "min"]:
 			return ds / ds.absmin()
 		else:
-			print "WARNING: Normalization method not valid. Returning unnormalized data."
+			warnings.warn("Normalization method not valid. Returning unnormalized data.")
 			return ds
-		# TODO: Testing of this method.
+
+	# TODO: Testing of this method.
 
 	def get_datafield_by_dimension(self, unit):
 		"""
@@ -1911,6 +1943,7 @@ class DataSet(object):
 	"""
 
 	# FIXME: check for unique axis and datafield identifiers.
+	# TODO: Handle 'synonyms' of axes (Several axis per data dimension.)
 
 	def __init__(self, label="", datafields=(), axes=(), plotconf=(), h5target=None, chunk_cache_mem_size=None):
 		if isinstance(h5target, h5py.Group):
@@ -2149,9 +2182,10 @@ class DataSet(object):
 		elif method in ["absolute minimum", "min"]:
 			return ds / ds.absmin()
 		else:
-			print "WARNING: Normalization method not valid. Returning unnormalized data."
+			warnings.warn("Normalization method not valid. Returning unnormalized data.")
 			return ds
-		# TODO: Testing of this method.
+
+	# TODO: Testing of this method.
 
 	def get_datafield_by_dimension(self, unit):
 		"""
@@ -2380,6 +2414,7 @@ class DataSet(object):
 			assert (len(self.labels) == len(set(self.labels))), "DataSet data array and axes labels not unique."
 			return True
 
+	# FIXME: When files are modified and saved again, old entries are not deleted.
 	def saveh5(self, h5dest=None):
 		"""
 		Saves the Dataset to a HDF5 destination in a unified format.
@@ -2397,7 +2432,8 @@ class DataSet(object):
 			path = False
 		assert isinstance(h5dest, h5py.Group), "DataSet.saveh5 needs h5 group or destination path as argument!"
 
-		# TODO: Store snomtools version that data was saved with!
+		h5tools.write_dataset(h5dest, "version", __package__ + " " + __version__)
+		h5tools.write_dataset(h5dest, "savedate", datetime.datetime.now().isoformat())
 		datafieldgrp = h5dest.require_group("datafields")
 		for i in range(len(self.datafields)):
 			grp = self.datafields[i].store_to_h5(datafieldgrp)
@@ -2421,8 +2457,8 @@ class DataSet(object):
 			path = False
 		assert isinstance(h5source, h5py.Group), \
 			"DataSet.saveh5 needs h5 group or destination path as argument if no instance h5target is set."
-
-		self.label = str(h5source["label"][()])
+		h5tools.check_version(h5source)
+		self.label = h5tools.read_as_str(h5source["label"])
 		datafieldgrp = h5source["datafields"]
 		self.datafields = [None for i in range(len(datafieldgrp))]
 		for datafield in datafieldgrp:
@@ -2491,7 +2527,7 @@ class DataSet(object):
 		# Load data from text file:
 		datacontent = numpy.loadtxt(path, comments=comments, delimiter=delimiter, **kwargs)
 		# All columns contain data by default. This can change if there is an Axis:
-		datacolumns = range(datacontent.shape[1])
+		datacolumns = list(range(datacontent.shape[1]))
 
 		# Handle comment lines which hold metadata like labels and units of the data columns:
 		commentsentries = []  # The list which will hold the strings of the comment lines.
@@ -2512,8 +2548,8 @@ class DataSet(object):
 			if len(commentsentries[comments_line_i]) != len(datacolumns):
 				lines_not_ok.append(comments_line_i)
 		if lines_not_ok:  # The list is not empty.
-			print("WARNING: Comment line(s) {0} in textfile {1} has wrong number of columns. "
-				  "No metadata can be read.".format(lines_not_ok, path))
+			warnings.warn("Comment line(s) {0} in textfile {1} has wrong number of columns. "
+						  "No metadata can be read.".format(lines_not_ok, path))
 		else:  # There is a corresponding column in the comment line to each data line.
 			if labelline == unitsline:  # Labels and units in same line. We need to extract units, rest are labels:
 				for column in datacolumns:
@@ -2528,8 +2564,8 @@ class DataSet(object):
 					if u.is_valid_unit(unit):
 						units[column] = unit
 					else:
-						print("WARNING: Invalid unit string '{2}' in unit line {0} in textfile {1}".format(
-							unitsline, path, unit), 'yellow')
+						warnings.warn("Invalid unit string '{2}' in unit line {0} in textfile {1}"
+									  "".format(unitsline, path, unit))
 					labels[column] = commentsentries[labelline][column]
 
 		# If we should handle axis:
@@ -2545,7 +2581,7 @@ class DataSet(object):
 				try:
 					self.axes = [Axis(axis)]
 				except Exception as e:
-					print("ERROR! Axis initialization in load_textfile failed.", "red")
+					print(("ERROR! Axis initialization in load_textfile failed.", "red"))
 					raise e
 
 		# Write the remaining data to datafields:
@@ -2593,7 +2629,8 @@ class DataSet(object):
 		# Check if data is compatible: All DataSets must have same dimensions and number of datafields:
 		for ds in datastack:
 			assert (
-				ds.shape == datastack[0].shape), "ERROR: DataSets of inconsistent dimensions given to stack_DataSets"
+					ds.shape == datastack[
+				0].shape), "ERROR: DataSets of inconsistent dimensions given to stack_DataSets"
 			assert (len(ds.datafields) == len(datastack[0].datafields)), "ERROR: DataSets with different number of " \
 																		 "datafields given to stack_DataSets"
 
@@ -2642,6 +2679,7 @@ def stack_DataSets(datastack, new_axis, axis=0, label=None, plotconf=None, h5tar
 
 
 if __name__ == "__main__":  # just for testing
+	print("snomtools version " + __version__)
 	print('Testing...')
 	testarray = numpy.arange(0, 10, 2.)
 	testaxis = DataArray(testarray, 'meter', label="xaxis")
@@ -2732,14 +2770,14 @@ if __name__ == "__main__":  # just for testing
 		for i in range(1000):
 			h5files.append(h5tools.File("ZZZZ{0:04d}.hdf5".format(i)))
 
-		print "writing data..."
+		print("writing data...")
 		for f in h5files:
 			h5tools.write_dataset(f, "data", data=numpy.ones((100, 100, 20)),
 								  chunks=True,
 								  compression="gzip",
 								  compression_opts=4)
 
-		print "closing..."
+		print("closing...")
 		for f in h5files:
 			f.close()
 

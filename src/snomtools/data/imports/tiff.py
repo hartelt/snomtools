@@ -4,14 +4,59 @@ This scripts imports tiff files, as generated for example by Terra and the PEEM 
 here will read those files and return the data as a DataSet instances. 3D tiff stacks shall be supported.
 
 """
-__author__ = 'hartelt'
-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import snomtools.data.datasets
 import os
 import numpy
 import tifffile
 import re
+import warnings
 import snomtools.calcs.units as u
+
+__author__ = 'Michael Hartelt'
+
+terra_tag_ids = {
+	"peem_settings": "41000",
+	"roi_and_bin": "41010",
+	"exposure_time": "41020",
+	"usercomment": "41030",
+	"excitation": "41040",
+	"date": "41041",
+	"time": "41042",
+	"author": "41043",
+	"probe": "41044",
+	"delaystage": "41045",
+	"data_device": "41046",
+	"delay_ist": "41050",
+	"delay_soll": "41051",
+	"devices": "41052",
+	"device_values": "41053",
+	"version": "41055",
+	"peem_ini": "41060",
+	"artist": "Artist"
+}
+terra_tag_descriptions = {
+	"peem_settings": "The PEEM Settings, saved in an Array of numerical values.",
+	"roi_and_bin": "ROI and Binnings set for the data acquisition.",
+	"exposure_time": "The exposure time set for the integration of the single PEEM image in milliseconds.",
+	"usercomment": "A comment describing the measurement, set freely by the PEEM user.",
+	"excitation": "The light source used for the photoemission measured with PEEM.",
+	"date": "The date of the measurement, formatted DD.MM.YYYY",
+	"time": "The time of the start of the measurement, formatted HH:MM:SS (24h)",
+	"author": "The operator of the experiment that logged into TERRA.",
+	"probe": "The name of the sample that was measured.",
+	"delaystage": "The delay stage used for the scan in which the image was taken.",
+	"data_device": "The device used for detecting the image.",
+	"delay_ist": "The delay value for the image, as set in the delay list.",
+	"delay_soll": "The actual delay value for the image, which can vary due to the step resolution of the delay stage.",
+	"devices": "(?)",
+	"device_values": "(?)",
+	"version": "A version number. Propably of the TERRA software (?)",
+	"peem_ini": "The PEEM ini file read from the PEEM control software buffer, which contains all nominal and actual PEEM settings.",
+	"artist": "The image artist and copyright owner of the image."
+}
 
 
 def is_tif(filename):
@@ -36,11 +81,14 @@ def search_tag(tif, tag_id):
 	:return: The tag object.
 	:rtype: tifffile.TiffTag
 	"""
-	for page in tif:
-		for tag in page.tags.values():
-			if tag.name == tag_id:
-				return tag
-	print("WARNING: Tiff tag not found.")
+	try:  # For older versions of tifffile, TiffFile objects are iterable and pages can be adressed directly.
+		for page in tif:
+			for tag in list(page.tags.values()):
+				if tag.name == tag_id:
+					return tag
+	except TypeError as e:  # In newer versions of tifffile, tags are stored in a dict.
+		return tif.pages._keyframe.tags[tag_id]
+	warnings.warn("Tiff tag not found.")
 	return None
 
 
@@ -221,7 +269,7 @@ def powerlaw_folder_peem_camera(folderpath, pattern="mW", powerunit=None, poweru
 
 	axlist = []
 	datastack = []
-	for power in iter(sorted(powerfiles.iterkeys())):
+	for power in iter(sorted(powerfiles.keys())):
 		datastack.append(peem_camera_read(os.path.join(folderpath, powerfiles[power])))
 		axlist.append(power)
 	powers = u.to_ureg(axlist, powerunit)
@@ -268,7 +316,7 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 
 	axlist = []
 	datastack = []
-	for power in iter(sorted(powerfiles.iterkeys())):
+	for power in iter(sorted(powerfiles.keys())):
 		datastack.append(peem_dld_read_terra(os.path.join(folderpath, powerfiles[power])))
 		axlist.append(power)
 	powers = u.to_ureg(axlist, powerunit)
@@ -308,7 +356,8 @@ def tr_folder_peem_camera_terra(folderpath, delayunit="um", delayfactor=0.2, del
 	:rtype: DataSet
 	"""
 	if len(kwargs):
-		print("WARNING: Unrecognized (propably depreciated) keyword args used in tr_folder_peem_dld_terra!")
+		warnings.warn("Unrecognized (propably depreciated) keyword args used in tr_folder_peem_dld_terra!",
+					  DeprecationWarning)
 
 	if delayunitlabel is None:
 		delayunitlabel = delayunit
@@ -363,7 +412,8 @@ def tr_folder_peem_dld_terra(folderpath, delayunit="um", delayfactor=0.2, delayu
 	:rtype: DataSet
 	"""
 	if len(kwargs):
-		print("WARNING: Unrecognized (propably depreciated) keyword args used in tr_folder_peem_dld_terra!")
+		warnings.warn("Unrecognized (propably depreciated) keyword args used in tr_folder_peem_dld_terra!",
+					  DeprecationWarning)
 
 	if delayunitlabel is None:
 		delayunitlabel = delayunit
@@ -488,16 +538,16 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
 
 	# Generate delay axis:
 	axlist = []
-	for scanstep in iter(sorted(scanfiles.iterkeys())):
+	for scanstep in iter(sorted(scanfiles.keys())):
 		axlist.append(scanstep)
 	scanvalues = u.to_ureg(numpy.array(axlist) * scanfactor, scanunit)
 	scanaxis = snomtools.data.datasets.Axis(scanvalues, label=scanaxislabel, plotlabel=scanaxispl)
 
 	# Test data size:
 	if detector == "dld":
-		sample_data = peem_dld_read_terra(os.path.join(folderpath, scanfiles[scanfiles.keys()[0]]))
+		sample_data = peem_dld_read_terra(os.path.join(folderpath, scanfiles[list(scanfiles.keys())[0]]))
 	else:
-		sample_data = peem_camera_read_terra(os.path.join(folderpath, scanfiles[scanfiles.keys()[0]]))
+		sample_data = peem_camera_read_terra(os.path.join(folderpath, scanfiles[list(scanfiles.keys())[0]]))
 	axlist = [scanaxis] + sample_data.axes
 	newshape = scanaxis.shape + sample_data.shape
 
@@ -538,12 +588,12 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
 
 	if verbose:
 		import time
-		print "Reading Terra Scan Folder of shape: ", dataset.shape
-		print "... generating chunks of shape: ", dataset.get_datafield(0).data.ds_data.chunks
-		print "... using cache size {0:d} MB".format(use_cache_size / 1024 ** 2)
+		print("Reading Terra Scan Folder of shape: ", dataset.shape)
+		print("... generating chunks of shape: ", dataset.get_datafield(0).data.ds_data.chunks)
+		print("... using cache size {0:d} MB".format(use_cache_size // 1024 ** 2))
 		start_time = time.time()
 
-	for i, scanstep in zip(range(len(scanfiles)), iter(sorted(scanfiles.iterkeys()))):
+	for i, scanstep in zip(list(range(len(scanfiles))), iter(sorted(scanfiles.keys()))):
 		islice = (i,) + slicebase
 		# Import tiff:
 		if detector == "dld":
@@ -561,7 +611,7 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
 		if verbose:
 			tpf = ((time.time() - start_time) / float(i + 1))
 			etr = tpf * (dataset.shape[0] - i + 1)
-			print "tiff {0:d} / {1:d}, Time/File {3:.2f}s ETR: {2:.1f}s".format(i, dataset.shape[0], etr, tpf)
+			print("tiff {0:d} / {1:d}, Time/File {3:.2f}s ETR: {2:.1f}s".format(i, dataset.shape[0], etr, tpf))
 
 	return dataset
 

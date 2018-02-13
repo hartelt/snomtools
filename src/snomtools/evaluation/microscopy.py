@@ -7,11 +7,14 @@ data.imports
 data.datasets.py
 
 """
-__author__ = 'hartelt'
-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import snomtools.data.datasets
 import snomtools.calcs.units as u
 import numpy
+
+__author__ = 'hartelt'
 
 
 def fov_scale_absolute(pixel_axis, fov, unit='m'):
@@ -30,7 +33,7 @@ def fov_scale_absolute(pixel_axis, fov, unit='m'):
 	assert isinstance(pixel_axis, snomtools.data.datasets.Axis), "No Axis instance given to scale function."
 	length_per_pixel = fov / len(pixel_axis)
 	length_per_pixel = u.to_ureg(length_per_pixel, 'meters/pixel')
-	return pixel_axis.scale_linear(length_per_pixel,unit=unit)
+	return pixel_axis.scale_linear(length_per_pixel, unit=unit)
 
 
 def fov_scale_relative(pixel_axis, length_per_pixel, unit='m'):
@@ -47,8 +50,8 @@ def fov_scale_relative(pixel_axis, length_per_pixel, unit='m'):
 	:return: The converted Axis.
 	"""
 	assert isinstance(pixel_axis, snomtools.data.datasets.Axis), "No Axis instance given to scale function."
-	length_per_pixel = u.to_ureg(length_per_pixel, 'meters/pixel',convert_quantities=False)
-	return pixel_axis.scale_linear(length_per_pixel,unit=unit)
+	length_per_pixel = u.to_ureg(length_per_pixel, 'meters/pixel', convert_quantities=False)
+	return pixel_axis.scale_linear(length_per_pixel, unit=unit)
 
 
 def normalize_by_flatfield_sum(data, flatfield_data, data_id=0, flat_id=0, newlabel='norm_int',
@@ -95,7 +98,7 @@ def normalize_by_flatfield_sum(data, flatfield_data, data_id=0, flat_id=0, newla
 	axis1_id, axis2_id = "x", "y"
 	ax1_index = flatfield_data.get_axis_index(axis1_id)
 	ax2_index = flatfield_data.get_axis_index(axis2_id)
-	sumlist = range(flatfield_data.dimensions)
+	sumlist = list(range(flatfield_data.dimensions))
 	sumlist.remove(ax1_index)
 	sumlist.remove(ax2_index)
 	sumtup = tuple(sumlist)

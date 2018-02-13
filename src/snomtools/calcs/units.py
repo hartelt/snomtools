@@ -4,13 +4,16 @@ This avoids errors between quantities of different unit registries that occur wh
 Custom units and prefixes that we use frequently should be defined here to get consistency.
 
 """
-__author__ = 'hartelt'
-
-# Import pint and initialize a standard unit registry:
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import pint
 import pint.quantity
 import numpy
 
+__author__ = 'hartelt'
+
+# Initialize Standard UnitRegistry:
 ureg = pint.UnitRegistry()
 Quantity = ureg.Quantity
 
@@ -131,6 +134,9 @@ def to_ureg(input_, unit=None, convert_quantities=True):
 
 	:return: The imported quantity.
 	"""
+	# Python2/3 compatibility: If unit is a byte string, decode it for usage in pint.Quantity.
+	if isinstance(unit, bytes):
+		unit = unit.decode()
 
 	# Check if input is quantity:
 	if is_quantity(input_):
@@ -150,7 +156,7 @@ def to_ureg(input_, unit=None, convert_quantities=True):
 				return Quantity(input_.magnitude, str(input_.units)).to(unit)
 			else:
 				return Quantity(input_.magnitude, str(input_.units))
-	elif (isinstance(input_, str) or isinstance(input_, unicode)):
+	elif (isinstance(input_, str) or isinstance(input_, str)):
 		if unit:
 			return ureg(input_).to(unit)
 		else:
@@ -163,13 +169,16 @@ def as_ureg_quantities(stream, unit=None):
 	for e in stream:
 		yield to_ureg(e, unit)
 
+
 def magnitudes(stream):
 	for e in stream:
 		yield e.magnitude
 
+
 def units(stream):
 	for e in stream:
 		yield e.units
+
 
 def meshgrid(*args):
 	"""
