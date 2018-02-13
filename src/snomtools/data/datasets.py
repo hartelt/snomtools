@@ -7,7 +7,7 @@ from __future__ import division
 from __future__ import print_function
 import snomtools.calcs.units as u
 from snomtools.data import h5tools
-from snomtools import __version__
+from snomtools import __package__, __version__
 import numpy
 import os
 import h5py
@@ -836,7 +836,7 @@ class DataArray(object):
 				self.plotlabel = plotlabel
 			else:
 				self.plotlabel = data.get_plotlabel()
-			# A DataArray contains everything we need, so we should be done here!
+		# A DataArray contains everything we need, so we should be done here!
 		elif isinstance(data, h5py.Group):  # If a HDF5 Group was given, load data directly.
 			self.load_from_h5(data)
 		else:  # We DON'T have everything contained in data, so we need to process it seperately.
@@ -1843,7 +1843,8 @@ class ROI(object):
 		else:
 			print("WARNING: Normalization method not valid. Returning unnormalized data.")
 			return ds
-		# TODO: Testing of this method.
+
+	# TODO: Testing of this method.
 
 	def get_datafield_by_dimension(self, unit):
 		"""
@@ -2176,7 +2177,8 @@ class DataSet(object):
 		else:
 			print("WARNING: Normalization method not valid. Returning unnormalized data.")
 			return ds
-		# TODO: Testing of this method.
+
+	# TODO: Testing of this method.
 
 	def get_datafield_by_dimension(self, unit):
 		"""
@@ -2422,7 +2424,7 @@ class DataSet(object):
 			path = False
 		assert isinstance(h5dest, h5py.Group), "DataSet.saveh5 needs h5 group or destination path as argument!"
 
-		h5tools.write_dataset(h5dest,"snomtools-version",__version__)
+		h5tools.write_dataset(h5dest, "version", __package__ + " " + __version__)
 		h5tools.write_dataset(h5dest, "savedate", datetime.datetime.now().isoformat())
 		datafieldgrp = h5dest.require_group("datafields")
 		for i in range(len(self.datafields)):
@@ -2447,7 +2449,7 @@ class DataSet(object):
 			path = False
 		assert isinstance(h5source, h5py.Group), \
 			"DataSet.saveh5 needs h5 group or destination path as argument if no instance h5target is set."
-
+		h5tools.check_version(h5source)
 		self.label = str(h5source["label"][()])
 		datafieldgrp = h5source["datafields"]
 		self.datafields = [None for i in range(len(datafieldgrp))]
@@ -2619,7 +2621,8 @@ class DataSet(object):
 		# Check if data is compatible: All DataSets must have same dimensions and number of datafields:
 		for ds in datastack:
 			assert (
-				ds.shape == datastack[0].shape), "ERROR: DataSets of inconsistent dimensions given to stack_DataSets"
+					ds.shape == datastack[
+				0].shape), "ERROR: DataSets of inconsistent dimensions given to stack_DataSets"
 			assert (len(ds.datafields) == len(datastack[0].datafields)), "ERROR: DataSets with different number of " \
 																		 "datafields given to stack_DataSets"
 
@@ -2668,7 +2671,7 @@ def stack_DataSets(datastack, new_axis, axis=0, label=None, plotconf=None, h5tar
 
 
 if __name__ == "__main__":  # just for testing
-	print("snomtools version "+__version__)
+	print("snomtools version " + __version__)
 	print('Testing...')
 	testarray = numpy.arange(0, 10, 2.)
 	testaxis = DataArray(testarray, 'meter', label="xaxis")

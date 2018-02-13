@@ -8,9 +8,10 @@ from __future__ import print_function
 import h5py
 import h5py_cache
 import psutil
+import warnings
+from snomtools import __package__, __version__
 
 __author__ = 'hartelt'
-
 
 # Set default cache size for h5py-cache files. h5py-default is 1024**2 (1 MB)
 chunk_cache_mem_size_default = 16 * 1024 ** 2  # 16 MB
@@ -84,3 +85,30 @@ def clear_name(h5dest, name):
 	assert isinstance(h5dest, h5py.Group)
 	if h5dest.get(name):
 		del h5dest[name]
+
+
+def check_version(h5root):
+	"""
+	Checks if the version information in h5root fits the running version of the package. If not, warnings are issued
+	accordingly.
+
+	:param h5root: A h5py entity containing version information as a string dataset named 'version'.
+	:type h5root: h5py.Group
+
+	:returns: :code:`True` if same version is detected, :code:`False` if not.
+	:rtype: bool
+	"""
+	try:
+		version_str = str(h5root['version'][()])
+		packagename, version = version_str.split()
+		if packagename != __package__:
+			warnings.warn("Accessed H5 entity {0} was not written with {1}".format(h5root, __package__))
+			return False
+		if version != __version__:
+			warnings.warn(
+				"Accessed H5 entity {0} was not written with {1} {2}".format(h5root, __package__, __version__))
+			return False
+	except Exception as e:
+		warnings.warn("No compatible version string in accessed H5 entity {0}".format(h5root))
+		return False
+	return True
