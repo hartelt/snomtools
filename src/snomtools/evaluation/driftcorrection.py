@@ -21,9 +21,11 @@ class Drift(object):
 		three axes stackAxis, yAxis, xAxis.
 		Differend methods and subpixel accuracy are available.
 
-		:param data: n-D dataset
+		:param data: n-D Dataset to be driftcorrected.
+		:type data: snomtools.data.datasets.Dataset **or** snomtools.data.datasets.ROI
 
-		:param template: 2D template array
+		:param template: A template dataset to match to. This is typically a subset of ROI of :code:`data`.
+		:type template: snomtools.data.datasets.Dataset **or** snomtools.data.datasets.ROI
 
 		:param stackAxisID: Axis, along which the template_matching is calculated
 
@@ -38,7 +40,7 @@ class Drift(object):
 			'cv.TM_SQDIFF_NORMED'
 
 		:param template_origin: An origin for the relative drift vectors in the form (y_pixel, x_pixel). If :code:`None`
-			is given (the default), the first detected drift vector is used.
+			is given (the default), the first detected drift vector along stackAxis is used.
 		:type template_origin: tuple(int **or** float) of len==2 **or** None
 		"""
 
@@ -79,6 +81,45 @@ class Drift(object):
 		self.drift = self.template_matching_stack(self.data3D.get_datafield(0), self.template, stackAxisID,
 												  method=method, subpixel=subpixel)
 		self.data = data
+		self.subpixel = subpixel
+		if template_origin is None:
+			self.template_origin = self.drift[0]
+		else:
+			template_origin = tuple(template_origin)
+			assert len(template_origin) == 2, "template_origin has invalid length."
+			self.template_origin = template_origin
+
+	@property
+	def drift_relative(self):
+		return self.as_relative_vectors(self.drift)
+
+	def as_relative_vectors(self, vectors):
+		for vec in vectors:
+			yield self.relative_vector(vec)
+
+	def relative_vector(self, vector):
+		o_y, o_x = self.template_origin
+		d_y, d_x = vector
+		return (d_y - o_y, d_x - o_x)
+
+	def __getitem__(self, sel):
+		# Get full addressed slice from selection.
+		full_selection = full_slice(sel, len(self.data.shape))
+		slicebase_wo_stackaxis = np.delete(full_selection, self.dstackAxisID)
+
+		if self.subpixel:
+			# TODO: Implement selection of interpolation order.
+			order = 1
+		else:
+			order = 0
+
+		data = np.zeros(sliced_shape(full_selection, self.data.shape))
+		for i in np.arange(self.data.shape[self.dstackAxisID])[full_selection[self.dstackAxisID]]:
+			subset_slice = tuple(np.insert(slicebase_wo_stackaxis, self.dstackAxisID, i))
+			# TODO: Generate shift.
+			shifted_data = self.data.get_datafield(0).data.shift_slice(subset_slice, shift, order=order)
+		raise NotImplementedError('Not as easy as I thought...')
+		return data
 
 	@classmethod
 	def template_matching_stack(cls, data, template, stackAxisID, method='cv.TM_CCOEFF_NORMED', subpixel=True):
@@ -239,6 +280,52 @@ class Drift(object):
 		return roi.project_nd(yAxisID, xAxisID).get_datafield(0)
 
 
+def full_slice(slice_, len_):
+	"""
+	Generate a full slice tuple from a general slice tuple, which can have entries for only some of the first
+	dimensions.
+
+	:param slice_: The incomplete slice, as generated with numpy.s_[something].
+	:type slice_: tuple **or** slice **or** int
+
+	:param int len_: The length of the full slice tuple (number of dimensions).
+
+	:return: The complete slice.
+	:rtype: tuple
+	"""
+	try:
+		slice_ = tuple(np.s_[slice_])
+	except TypeError:
+		slice_ = (np.s_[slice_],)
+	missing = tuple([np.s_[:] for i in range(len_ - len(slice_))])
+	return slice_ + missing
+
+
+def sliced_shape(slice_, shape_):
+	"""
+	Calculate the shape one would get by slicing an array of shape :code:`shape_` with a slice :code:`slice_`.
+
+	.. note:: This is propably very inefficient, because an 1D-Array is initialized and sliced for each dimension.
+
+	:param slice_: A slice, as generated with numpy.s_[something].
+
+	:param tuple shape_: The shape of the hypothetical array to be sliced.
+
+	:return: The resulting shape.
+	:rtype: tuple
+	"""
+	full_slice_ = full_slice(slice_, len(shape_))
+	sizes = []
+	for i in range(len(shape_)):
+		arr = np.empty(shape_[i])
+		subarr = arr[full_slice_[i]]
+		try:
+			sizes.append(len(subarr))
+		except TypeError:
+			pass
+	return tuple(sizes)
+
+
 if __name__ == '__main__':  # Testing...
 	testfolder = "test/Drifttest/new"
 
@@ -258,4 +345,5 @@ if __name__ == '__main__':  # Testing...
 	drift = Drift(data, template, stackAxisID="faketime", subpixel=False)
 	drift2 = Drift(data, template, stackAxisID="faketime", subpixel=True)
 
+	drift[1, 2, 3]
 	print("done.")

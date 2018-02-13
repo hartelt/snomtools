@@ -475,8 +475,9 @@ class Data_Handler_H5(u.Quantity):
 		:param h5target: The h5target to in case a new Data_Handler_H5 is generated.
 
 		:returns: The shifted data. If output is given as a parameter or :code:`False`, None is returned.
-		:rtype: Data_Handler_np *or* None
+		:rtype: Data_Handler_H5 *or* None
 		"""
+		# TODO: Implement usage of values at the edge of the selected slice.
 		if prefilter is None:  # if not explicitly set, determine neccesity of prefiltering
 			if order > 0:  # if interpolation is required, spline prefilter is neccesary.
 				prefilter = True
