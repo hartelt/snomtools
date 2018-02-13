@@ -16,6 +16,7 @@ import tempfile
 from six import string_types
 import scipy.ndimage
 import datetime
+import warnings
 
 __author__ = 'Michael Hartelt'
 
@@ -538,7 +539,7 @@ class Data_Handler_H5(u.Quantity):
 			try:
 				os.rmdir(self.temp_dir)
 			except OSError as e:
-				print("WARNING: Data_Handler_H5 could not remove tempdir. Propably not empty.")
+				warnings.warn("Data_Handler_H5 could not remove tempdir. Propably not empty.")
 				print(e)
 
 	@classmethod
@@ -917,7 +918,7 @@ class DataArray(object):
 			self._data = Data_Handler_np(val)
 
 	def del_data(self):
-		print('WARNING: Trying to delete data from DataArray.')
+		warnings.warn("Trying to delete data from DataArray.")
 
 	data = property(get_data, _set_data, del_data, "The data property for the DataArray.")
 
@@ -966,7 +967,9 @@ class DataArray(object):
 	def set_unit(self, unitstr):
 		"""
 		Set the unit of the dataarray as specified.
-		Warning: The plotlabel typically includes a unit, so this might get invalid!
+
+		.. warning::
+			The plotlabel typically includes a unit, so this might get invalid!
 
 		:param unitstr: A valid unit string.
 
@@ -977,7 +980,9 @@ class DataArray(object):
 	def to(self, unitstr):
 		"""
 		Returns a copy of the dataarray with the unit set as specified. For compatibility with pint quantity.
-		Warning: The plotlabel typically includes a unit, so this might get invalid!
+
+		.. warning::
+			The plotlabel typically includes a unit, so this might get invalid!
 
 		:param unitstr: A valid unit string.
 
@@ -1074,7 +1079,7 @@ class DataArray(object):
 		if isinstance(self.h5target, h5py.Group):
 			self.write_to_h5()
 		else:
-			print("WARNING: DataSet cannot flush without working on valid HDF5 file.")
+			warnings.warn("DataSet cannot flush without working on valid HDF5 file.")
 
 	def get_nearest_index(self, value):
 		"""
@@ -1841,7 +1846,7 @@ class ROI(object):
 		elif method in ["absolute minimum", "min"]:
 			return ds / ds.absmin()
 		else:
-			print("WARNING: Normalization method not valid. Returning unnormalized data.")
+			warnings.warn("Normalization method not valid. Returning unnormalized data.")
 			return ds
 
 	# TODO: Testing of this method.
@@ -2175,7 +2180,7 @@ class DataSet(object):
 		elif method in ["absolute minimum", "min"]:
 			return ds / ds.absmin()
 		else:
-			print("WARNING: Normalization method not valid. Returning unnormalized data.")
+			warnings.warn("Normalization method not valid. Returning unnormalized data.")
 			return ds
 
 	# TODO: Testing of this method.
@@ -2540,7 +2545,7 @@ class DataSet(object):
 			if len(commentsentries[comments_line_i]) != len(datacolumns):
 				lines_not_ok.append(comments_line_i)
 		if lines_not_ok:  # The list is not empty.
-			print(("WARNING: Comment line(s) {0} in textfile {1} has wrong number of columns. "
+			warnings.warn("Comment line(s) {0} in textfile {1} has wrong number of columns. "
 				   "No metadata can be read.".format(lines_not_ok, path)))
 		else:  # There is a corresponding column in the comment line to each data line.
 			if labelline == unitsline:  # Labels and units in same line. We need to extract units, rest are labels:

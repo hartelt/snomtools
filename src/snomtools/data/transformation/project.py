@@ -5,6 +5,7 @@ This script holds transformation functions for datasets, that project data onto 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+import warnings
 import snomtools.data.datasets as datasets
 
 __author__ = 'hartelt'
@@ -81,7 +82,7 @@ def project_1d(data, axis_id=0, data_id=None, outlabel=None, normalization=None)
 				try:
 					normdat = sumdat / normalization
 				except TypeError:
-					print("WARNING: Normalization normalization not valid. Returning unnormalized data.")
+					warnings.warn("Normalization mode not valid. Returning unnormalized data.")
 					normdat = sumdat
 		else:
 			normdat = sumdat
@@ -173,7 +174,7 @@ def project_2d(data, axis1_id=0, axis2_id=0, data_id=None, outlabel=None, normal
 				try:
 					normdat = sumdat / normalization
 				except TypeError:
-					print("WARNING: Normalization normalization not valid. Returning unnormalized data.")
+					warnings.warn("Normalization mode not valid. Returning unnormalized data.")
 					normdat = sumdat
 		else:
 			normdat = sumdat

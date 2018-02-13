@@ -12,6 +12,7 @@ import os
 import numpy
 import tifffile
 import re
+import warnings
 import snomtools.calcs.units as u
 
 __author__ = 'Michael Hartelt'
@@ -87,7 +88,7 @@ def search_tag(tif, tag_id):
 					return tag
 	except TypeError as e:  # In newer versions of tifffile, tags are stored in a dict.
 		return tif.pages._keyframe.tags[tag_id]
-	print("WARNING: Tiff tag not found.")
+	warnings.warn("Tiff tag not found.")
 	return None
 
 
@@ -355,7 +356,8 @@ def tr_folder_peem_camera_terra(folderpath, delayunit="um", delayfactor=0.2, del
 	:rtype: DataSet
 	"""
 	if len(kwargs):
-		print("WARNING: Unrecognized (propably depreciated) keyword args used in tr_folder_peem_dld_terra!")
+		warnings.warn("Unrecognized (propably depreciated) keyword args used in tr_folder_peem_dld_terra!",
+					  DeprecationWarning)
 
 	if delayunitlabel is None:
 		delayunitlabel = delayunit
@@ -410,7 +412,8 @@ def tr_folder_peem_dld_terra(folderpath, delayunit="um", delayfactor=0.2, delayu
 	:rtype: DataSet
 	"""
 	if len(kwargs):
-		print("WARNING: Unrecognized (propably depreciated) keyword args used in tr_folder_peem_dld_terra!")
+		warnings.warn("Unrecognized (propably depreciated) keyword args used in tr_folder_peem_dld_terra!",
+					  DeprecationWarning)
 
 	if delayunitlabel is None:
 		delayunitlabel = delayunit
