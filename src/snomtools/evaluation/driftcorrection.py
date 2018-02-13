@@ -229,7 +229,7 @@ class Drift:
 		yAxisID = data.get_axis_index(yAxisID)
 		xAxisID = data.get_axis_index(xAxisID)
 		fieldshape = (data.shape[yAxisID], data.shape[xAxisID])
-		yl, yr, xl, xr = fieldshape[0] * 2 / 5, fieldshape[0] * 3 / 5, fieldshape[1] * 2 / 5, fieldshape[1] * 3 / 5
+		yl, yr, xl, xr = fieldshape[0] * 2 // 5, fieldshape[0] * 3 // 5, fieldshape[1] * 2 // 5, fieldshape[1] * 3 // 5
 		limitlist = {yAxisID: (yl, yr), xAxisID: (xl, xr)}
 		roi = snomtools.data.datasets.ROI(data, limitlist, by_index=True)
 		return roi.project_nd(yAxisID, xAxisID).get_datafield(0)
