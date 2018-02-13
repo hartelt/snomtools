@@ -186,7 +186,7 @@ class Data_Handler_H5(u.Quantity):
 	_magnitude = property(_get__magnitude, _set__magnitude, None, "The _magnitude property for Quantity emulation.")
 
 	def _get__units(self):
-		return u.unit_from_str(self.ds_unit[()])._units
+		return u.unit_from_str(h5tools.read_as_str(self.ds_unit))._units
 
 	def _set__units(self, val):
 		self.ds_unit[()] = str(u.Quantity(1., val).units)
@@ -1067,9 +1067,9 @@ class DataArray(object):
 				h5source.copy(h5set, self.h5target)
 			self._data = Data_Handler_H5(h5target=self.h5target)
 		else:
-			self.set_data(numpy.array(h5source["data"]), h5source["unit"][()])
-		self.set_label(h5source["label"][()])
-		self.set_plotlabel(h5source["plotlabel"][()])
+			self.set_data(numpy.array(h5source["data"]), h5tools.read_as_str(h5source["unit"]))
+		self.set_label(h5tools.read_as_str(h5source["label"]))
+		self.set_plotlabel(h5tools.read_as_str(h5source["plotlabel"]))
 
 	def flush(self):
 		"""
@@ -1943,6 +1943,7 @@ class DataSet(object):
 	"""
 
 	# FIXME: check for unique axis and datafield identifiers.
+	# TODO: Handle 'synonyms' of axes (Several axis per data dimension.)
 
 	def __init__(self, label="", datafields=(), axes=(), plotconf=(), h5target=None, chunk_cache_mem_size=None):
 		if isinstance(h5target, h5py.Group):
@@ -2413,6 +2414,7 @@ class DataSet(object):
 			assert (len(self.labels) == len(set(self.labels))), "DataSet data array and axes labels not unique."
 			return True
 
+	# FIXME: When files are modified and saved again, old entries are not deleted.
 	def saveh5(self, h5dest=None):
 		"""
 		Saves the Dataset to a HDF5 destination in a unified format.
@@ -2456,7 +2458,7 @@ class DataSet(object):
 		assert isinstance(h5source, h5py.Group), \
 			"DataSet.saveh5 needs h5 group or destination path as argument if no instance h5target is set."
 		h5tools.check_version(h5source)
-		self.label = str(h5source["label"][()])
+		self.label = h5tools.read_as_str(h5source["label"])
 		datafieldgrp = h5source["datafields"]
 		self.datafields = [None for i in range(len(datafieldgrp))]
 		for datafield in datafieldgrp:

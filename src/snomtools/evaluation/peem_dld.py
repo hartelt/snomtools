@@ -70,8 +70,8 @@ def energy_get_fitparams_quadratic(filename):
 	:return: The fitparameters as a tuple C,t0
 	"""
 	filepath = os.path.abspath(filename)
-	fitfile = open(filepath, 'r')
-	lines = fitfile.readlines()
+	with open(filepath, 'r', encoding='ISO-8859-1') as fitfile:
+		lines = fitfile.readlines()
 	# The lines we are looking for look like this:
 	# C=118259,8710948820
 	# t0=-24977,8555008616
