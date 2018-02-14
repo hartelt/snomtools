@@ -512,13 +512,13 @@ class Data_Handler_H5(u.Quantity):
 
 		if output == False:
 			self.ds_data[slice_] = \
-			scipy.ndimage.interpolation.shift(self.ds_data[expanded_slice], shift_dimensioncorrected, None, order, mode,
-											  cval, prefilter)[recover_slice]
+				scipy.ndimage.interpolation.shift(self.ds_data[expanded_slice], shift_dimensioncorrected, None, order,
+												  mode, cval, prefilter)[recover_slice]
 			return None
 		elif isinstance(output, numpy.ndarray):
 			output[:] = \
-			scipy.ndimage.interpolation.shift(self.ds_data[expanded_slice], shift_dimensioncorrected, None, order, mode,
-											  cval, prefilter)[recover_slice]
+				scipy.ndimage.interpolation.shift(self.ds_data[expanded_slice], shift_dimensioncorrected, None, order,
+												  mode, cval, prefilter)[recover_slice]
 			return None
 		else:
 			assert (output is None) or isinstance(output, type), "Invalid output argument given."
@@ -587,7 +587,6 @@ class Data_Handler_H5(u.Quantity):
 
 		:return: stacked Data_Handler
 		"""
-		# TODO: Tweak buffer size for better write performance.
 		if unit is None:
 			unit = str(tostack[0].units)
 		inshape = tostack[0].shape
@@ -596,7 +595,13 @@ class Data_Handler_H5(u.Quantity):
 		shapelist = list(inshape)
 		shapelist.insert(axis, len(tostack))
 		outshape = tuple(shapelist)
-		inst = cls(shape=outshape, unit=unit, h5target=h5target)
+
+		# Find optimized buffer size:
+		chunk_size = h5tools.probe_chunksize(outshape)
+		min_cache_size = chunk_size[axis] * numpy.prod(inshape) * 4  # 32bit floats require 4 bytes.
+		use_cache_size = min_cache_size + 64 * 1024 ** 2  # Add 64 MB just to be sure.
+
+		inst = cls(shape=outshape, unit=unit, h5target=h5target, chunk_cache_mem_size=use_cache_size)
 		for i in range(len(tostack)):
 			slicebase = [numpy.s_[:] for j in range(len(inshape))]
 			slicebase.insert(axis, i)
