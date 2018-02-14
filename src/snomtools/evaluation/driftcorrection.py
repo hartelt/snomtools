@@ -6,14 +6,18 @@ Crosscorrelation-Methods provided by the OpenCV library
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+from six import string_types
 import cv2 as cv
 import numpy as np
 import snomtools.data.datasets
+from snomtools.data.tools import iterfy, full_slice, sliced_shape
 
 __author__ = 'Benjamin Frisch'
 
 
 class Drift(object):
+	# TODO: Implement usage of more than one DataArray in the DataSet.
+
 	def __init__(self, data=None, template=None, stackAxisID=None, yAxisID=None, xAxisID=None,
 				 subpixel=True, method='cv.TM_CCOEFF_NORMED', template_origin=None, interpolation_order=None):
 		"""
@@ -109,19 +113,55 @@ class Drift(object):
 		d_y, d_x = vector
 		return (d_y - o_y, d_x - o_x)
 
+	def generate_shiftvector(self, stack_index):
+		"""
+		Generates the full shift vector according to the shape of self.data (minus the stackAxis) out of the 2d drift
+			vectors at a given index along the stackAxis.
+
+		:param int stack_index: An index along the stackAxis
+
+		:return: The 1D array of shift values of length len(self.data)-1.
+		:rtype: np.ndarray
+		"""
+		# Initialize empty shiftvector according to the number of dimensions of the data:
+		arr = np.zeros(len(self.data.shape))
+		# Get the drift at the index position as a numpy array:
+		drift = np.array(list(self.drift_relative)[stack_index])
+		# Put the negated drift in the corresponding shiftvector places:
+		np.put(arr, [self.dyAxisID, self.dxAxisID], -drift)
+		# Remove the element corresponding to the shift axis:
+		arr = np.delete(arr, self.dstackAxisID)
+		return arr
+
 	def __getitem__(self, sel):
 		# Get full addressed slice from selection.
 		full_selection = full_slice(sel, len(self.data.shape))
 		slicebase_wo_stackaxis = np.delete(full_selection, self.dstackAxisID)
 
-		data = np.zeros(sliced_shape(full_selection, self.data.shape))
-		for i in np.arange(self.data.shape[self.dstackAxisID])[full_selection[self.dstackAxisID]]:
+		shifted_slice_list = []
+		for i in iterfy(np.arange(self.data.shape[self.dstackAxisID])[full_selection[self.dstackAxisID]]):
 			subset_slice = tuple(np.insert(slicebase_wo_stackaxis, self.dstackAxisID, i))
-			# TODO: Generate shift.
+			shift = self.generate_shiftvector(i)
 			shifted_data = self.data.get_datafield(0).data.shift_slice(subset_slice, shift,
 																	   order=self.interpolation_order)
-		raise NotImplementedError('Not as easy as I thought...')
-		return data
+			shifted_slice_list.append(shifted_data)
+		if len(shifted_slice_list) < 2:  # We shifted only a single slice along the stackAxis:
+			return shifted_slice_list[0]
+		else:  # We shifted several slices, so we have to stack them together again.
+			return shifted_slice_list[0].__class__.stack(shifted_slice_list)
+
+	def corrected_data(self, h5target=None):
+		"""Return the full driftcorrected dataset."""
+		oldda = self.data.get_datafield(0)
+		if h5target:
+			temph5 = True
+		else:
+			temph5 = None
+		newda = snomtools.data.datasets.DataArray(self[:], label=oldda.label, plotlabel=oldda.plotlabel,
+												  h5target=temph5)
+		newds = snomtools.data.datasets.DataSet(self.data.label + " driftcorrected", (newda,), self.data.axes,
+												self.data.plotconf, h5target=h5target)
+		return newds
 
 	@classmethod
 	def template_matching_stack(cls, data, template, stackAxisID, method='cv.TM_CCOEFF_NORMED', subpixel=True):
@@ -282,70 +322,29 @@ class Drift(object):
 		return roi.project_nd(yAxisID, xAxisID).get_datafield(0)
 
 
-def full_slice(slice_, len_):
-	"""
-	Generate a full slice tuple from a general slice tuple, which can have entries for only some of the first
-	dimensions.
-
-	:param slice_: The incomplete slice, as generated with numpy.s_[something].
-	:type slice_: tuple **or** slice **or** int
-
-	:param int len_: The length of the full slice tuple (number of dimensions).
-
-	:return: The complete slice.
-	:rtype: tuple
-	"""
-	try:
-		slice_ = tuple(np.s_[slice_])
-	except TypeError:
-		slice_ = (np.s_[slice_],)
-	missing = tuple([np.s_[:] for i in range(len_ - len(slice_))])
-	return slice_ + missing
-
-
-def sliced_shape(slice_, shape_):
-	"""
-	Calculate the shape one would get by slicing an array of shape :code:`shape_` with a slice :code:`slice_`.
-
-	.. note:: This is propably very inefficient, because an 1D-Array is initialized and sliced for each dimension.
-
-	:param slice_: A slice, as generated with numpy.s_[something].
-
-	:param tuple shape_: The shape of the hypothetical array to be sliced.
-
-	:return: The resulting shape.
-	:rtype: tuple
-	"""
-	full_slice_ = full_slice(slice_, len(shape_))
-	sizes = []
-	for i in range(len(shape_)):
-		arr = np.empty(shape_[i])
-		subarr = arr[full_slice_[i]]
-		try:
-			sizes.append(len(subarr))
-		except TypeError:
-			pass
-	return tuple(sizes)
-
-
 if __name__ == '__main__':  # Testing...
-	testfolder = "test/Drifttest/new"
+	# testfolder = "test/Drifttest/new"
 
 	import snomtools.data.imports.tiff as imp
-	import os.path
 
 	files = ["{0:1d}full.tif".format(i) for i in range(1, 4)]
 	templatefile = "template.tif"
 
-	data = [imp.peem_camera_read_camware(os.path.join(testfolder, f)) for f in files]
-	template = imp.peem_camera_read_camware(os.path.join(testfolder, templatefile))
+	data = [imp.peem_camera_read_camware(f) for f in files]
+	template = imp.peem_camera_read_camware(templatefile)
 
 	data = snomtools.data.datasets.stack_DataSets(data, snomtools.data.datasets.Axis([1, 2, 3], 's', 'faketime'))
 
-	data.saveh5(os.path.join(testfolder, 'testdata.hdf5'))
+	data.saveh5('testdata.hdf5')
 
 	drift = Drift(data, template, stackAxisID="faketime", subpixel=False)
 	drift2 = Drift(data, template, stackAxisID="faketime", subpixel=True)
 
-	drift[1, 2, 3]
+	# Calculate corrected data:
+	correcteddata1 = drift.corrected_data(h5target='correcteddata.hdf5')
+	correcteddata2 = drift2.corrected_data(h5target='correcteddata_subpixel.hdf5')
+
+	correcteddata1.saveh5()
+	correcteddata2.saveh5()
+
 	print("done.")
