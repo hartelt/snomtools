@@ -587,6 +587,7 @@ class Data_Handler_H5(u.Quantity):
 
 		:return: stacked Data_Handler
 		"""
+		# TODO: Tweak buffer size for better write performance.
 		if unit is None:
 			unit = str(tostack[0].units)
 		inshape = tostack[0].shape

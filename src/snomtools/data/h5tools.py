@@ -27,6 +27,7 @@ def File(*args, **kwargs):
 
 	:return: A h5py.File object with the chosen buffer settings.
 	"""
+	# TODO: Write proper class from code in h5py_cache.File
 	key = "chunk_cache_mem_size"
 	if not key in kwargs or kwargs[key] is None:
 		kwargs[key] = chunk_cache_mem_size_default
