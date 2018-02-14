@@ -14,6 +14,7 @@ import tifffile
 import re
 import warnings
 import snomtools.calcs.units as u
+from snomtools.data.h5tools import probe_chunksize
 
 __author__ = 'Michael Hartelt'
 
@@ -557,11 +558,7 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
 
 	# Probe HDF5 initialization to optimize buffer size:
 	if chunks is True:  # Default is auto chunk alignment, so we need to probe.
-		h5probe = snomtools.data.datasets.Data_Handler_H5(unit=sample_data.get_datafield(0).get_unit(),
-														  shape=newshape, chunks=chunks,
-														  compression=compression, compression_opts=compression_opts)
-		chunk_size = h5probe.chunks
-		del h5probe
+		chunk_size = probe_chunksize(shape=newshape, compression=compression, compression_opts=compression_opts)
 	else:
 		chunk_size = chunks
 	min_cache_size = chunk_size[0] * numpy.prod(sample_data.shape) * 4  # 32bit floats require 4 bytes.
