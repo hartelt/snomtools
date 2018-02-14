@@ -15,7 +15,7 @@ __author__ = 'Benjamin Frisch'
 
 class Drift(object):
 	def __init__(self, data=None, template=None, stackAxisID=None, yAxisID=None, xAxisID=None,
-				 subpixel=True, method='cv.TM_CCOEFF_NORMED', template_origin=None):
+				 subpixel=True, method='cv.TM_CCOEFF_NORMED', template_origin=None, interpolation_order=None):
 		"""
 		Calculates the correlation of a given 2D template with all slices in a n-D dataset which gets projected onto the
 		three axes stackAxis, yAxis, xAxis.
@@ -88,6 +88,13 @@ class Drift(object):
 			template_origin = tuple(template_origin)
 			assert len(template_origin) == 2, "template_origin has invalid length."
 			self.template_origin = template_origin
+		if interpolation_order is None:
+			if self.subpixel:
+				self.interpolation_order = 1
+			else:
+				self.interpolation_order = 0
+		else:
+			self.interpolation_order = interpolation_order
 
 	@property
 	def drift_relative(self):
@@ -107,17 +114,12 @@ class Drift(object):
 		full_selection = full_slice(sel, len(self.data.shape))
 		slicebase_wo_stackaxis = np.delete(full_selection, self.dstackAxisID)
 
-		if self.subpixel:
-			# TODO: Implement selection of interpolation order.
-			order = 1
-		else:
-			order = 0
-
 		data = np.zeros(sliced_shape(full_selection, self.data.shape))
 		for i in np.arange(self.data.shape[self.dstackAxisID])[full_selection[self.dstackAxisID]]:
 			subset_slice = tuple(np.insert(slicebase_wo_stackaxis, self.dstackAxisID, i))
 			# TODO: Generate shift.
-			shifted_data = self.data.get_datafield(0).data.shift_slice(subset_slice, shift, order=order)
+			shifted_data = self.data.get_datafield(0).data.shift_slice(subset_slice, shift,
+																	   order=self.interpolation_order)
 		raise NotImplementedError('Not as easy as I thought...')
 		return data
 
