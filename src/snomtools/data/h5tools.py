@@ -9,12 +9,15 @@ import h5py
 import h5py_cache
 import psutil
 import warnings
+import tempfile
+import os.path
 from snomtools import __package__, __version__
 
-__author__ = 'hartelt'
+__author__ = 'Michael Hartelt'
 
 # Set default cache size for h5py-cache files. h5py-default is 1024**2 (1 MB)
 chunk_cache_mem_size_default = 16 * 1024 ** 2  # 16 MB
+chunk_cache_mem_size_tempdefault = 8 * 1024 ** 2  # 8 MB
 
 
 def File(*args, **kwargs):
@@ -38,6 +41,46 @@ def File(*args, **kwargs):
 		kwargs[key] = mem_use
 
 	return h5py_cache.File(*args, **kwargs)
+
+
+class Tempfile(object):
+	""" A temporary h5 file with adjustable buffer size."""
+
+	def __init__(self, **kwargs):
+		temp_dir = tempfile.mkdtemp(prefix="snomtools_H5_tempspace-")
+		# temp_dir = os.getcwd() # upper line can be replaced by this for debugging.
+		temp_file_path = os.path.join(temp_dir, "snomtools_H5_tempspace.hdf5")
+
+		key = "chunk_cache_mem_size"
+		if not key in kwargs or kwargs[key] is None:
+			kwargs[key] = chunk_cache_mem_size_tempdefault
+
+		# Check if required buffer size is available, and reduce if necessary:
+		mem_free = psutil.virtual_memory().available
+		if kwargs[key] >= mem_free:
+			mem_use = mem_free - (32 * 1024 ** 2)
+			print(("WARNING: Required buffer size of {0:d} MB exceeds free memory. \
+					  Reducing to {1:d} MB.".format(kwargs[key] / 1024 ** 2, mem_use / 1024 ** 2)))
+			print("Performance might be worse than expected!")
+			kwargs[key] = mem_use
+
+		self.tempfile = h5py_cache.File(temp_file_path, 'w', **kwargs)
+
+		self.temp_dir = temp_dir
+		self.temp_file_path = temp_file_path
+
+	def __getattr__(self, item):
+		return self.tempfile.__getattribute__(item)
+
+	def __del__(self):
+		file_to_remove = self.temp_file_path
+		del self.tempfile
+		os.remove(file_to_remove)
+		try:
+			os.rmdir(self.temp_dir)
+		except OSError as e:
+			warnings.warn("Tempfile could not remove tempdir. Propably not empty.")
+			print(e)
 
 
 def store_dictionary(dict_to_store, h5target):
@@ -130,3 +173,17 @@ def check_version(h5root):
 		warnings.warn("No compatible version string in accessed H5 entity {0}".format(h5root))
 		return False
 	return True
+
+
+def probe_chunksize(shape, compression="gzip", compression_opts=4):
+	"""Probe the chunk size that would be guessed by the h5py driver."""
+	h5target = Tempfile()
+	ds = h5target.create_dataset("data", shape, chunks=True, compression=compression, compression_opts=compression_opts)
+	chunk_size = ds.chunks
+	del h5target
+	return chunk_size
+
+
+if __name__ == "__main__":
+	cs = probe_chunksize((10, 10, 10))
+	print("done")
