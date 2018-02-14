@@ -6,11 +6,10 @@ Crosscorrelation-Methods provided by the OpenCV library
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-from six import string_types
 import cv2 as cv
 import numpy as np
 import snomtools.data.datasets
-from snomtools.data.tools import iterfy, full_slice, sliced_shape
+from snomtools.data.tools import iterfy, full_slice
 
 __author__ = 'Benjamin Frisch'
 
@@ -129,8 +128,6 @@ class Drift(object):
 		drift = np.array(list(self.drift_relative)[stack_index])
 		# Put the negated drift in the corresponding shiftvector places:
 		np.put(arr, [self.dyAxisID, self.dxAxisID], -drift)
-		# Remove the element corresponding to the shift axis:
-		arr = np.delete(arr, self.dstackAxisID)
 		return arr
 
 	def __getitem__(self, sel):
@@ -346,5 +343,11 @@ if __name__ == '__main__':  # Testing...
 
 	correcteddata1.saveh5()
 	correcteddata2.saveh5()
+
+	import h5py
+	testh5 = h5py.File('testoutput.hdf5')
+	h5handler = snomtools.data.datasets.Data_Handler_H5(drift2[:,52:75,140:160],h5target=testh5)
+	h5handler.flush()
+	del h5handler
 
 	print("done.")

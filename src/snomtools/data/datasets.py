@@ -5,18 +5,19 @@ This file contains the base class for datasets.
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-import snomtools.calcs.units as u
-from snomtools.data import h5tools
-from snomtools import __package__, __version__
+from six import string_types
 import numpy
 import os
 import h5py
 import re
 import tempfile
-from six import string_types
 import scipy.ndimage
 import datetime
 import warnings
+import snomtools.calcs.units as u
+from snomtools.data import h5tools
+from snomtools import __package__, __version__
+from snomtools.data.tools import full_slice
 
 __author__ = 'Michael Hartelt'
 
@@ -477,26 +478,53 @@ class Data_Handler_H5(u.Quantity):
 		:returns: The shifted data. If output is given as a parameter or :code:`False`, None is returned.
 		:rtype: Data_Handler_H5 *or* None
 		"""
-		# TODO: Implement usage of values at the edge of the selected slice.
+		# TODO: Optimize performance by not loading full data along shifted axes.
 		if prefilter is None:  # if not explicitly set, determine neccesity of prefiltering
 			if order > 0:  # if interpolation is required, spline prefilter is neccesary.
 				prefilter = True
 			else:
 				prefilter = False
+		slice_ = full_slice(slice_, len(self.shape))
+
+		try:
+			test = float(shift)
+			expanded_slice = full_slice(numpy.s_[:], len(self.shape))
+			recover_slice = slice_
+			shift_dimensioncorrected = shift
+		except TypeError:  # Shift is a sequence with shifts for each dimension
+			assert len(shift) == len(slice_), "Propably invalid shift argument."
+			expanded_slice = []
+			recover_slice = []
+			shift_dimensioncorrected = []
+			for shift_element, slice_element in zip(shift, slice_):
+				if shift_element != 0:
+					expanded_slice.append(numpy.s_[:])
+					recover_slice.append(slice_element)
+					shift_dimensioncorrected.append(shift_element)
+				else:
+					expanded_slice.append(slice_element)
+					if isinstance(slice_element, slice):  # If we don't end up with one less dimension.
+						recover_slice.append(numpy.s_[:])
+						shift_dimensioncorrected.append(0.)
+			expanded_slice = tuple(expanded_slice)  # Part of the data we need for shifting.
+			recover_slice = tuple(recover_slice)  # Part of the shifted data we wanted to address.
+			shift_dimensioncorrected = tuple(shift_dimensioncorrected)
 
 		if output == False:
-			self.ds_data[slice_] = scipy.ndimage.interpolation.shift(self.ds_data[slice_], shift, None, order, mode,
-																	 cval, prefilter)
+			self.ds_data[slice_] = \
+			scipy.ndimage.interpolation.shift(self.ds_data[expanded_slice], shift_dimensioncorrected, None, order, mode,
+											  cval, prefilter)[recover_slice]
 			return None
 		elif isinstance(output, numpy.ndarray):
-			scipy.ndimage.interpolation.shift(self.ds_data[slice_], shift, output, order, mode, cval, prefilter)
+			output[:] = \
+			scipy.ndimage.interpolation.shift(self.ds_data[expanded_slice], shift_dimensioncorrected, None, order, mode,
+											  cval, prefilter)[recover_slice]
 			return None
 		else:
 			assert (output is None) or isinstance(output, type), "Invalid output argument given."
 			return Data_Handler_H5(
-				scipy.ndimage.interpolation.shift(self.ds_data[slice_], shift, output, order, mode, cval,
-												  prefilter),
-				self.units, h5target=h5target)
+				scipy.ndimage.interpolation.shift(self.ds_data[expanded_slice], shift_dimensioncorrected, output, order,
+												  mode, cval, prefilter)[recover_slice], self.units, h5target=h5target)
 
 	def __add__(self, other):
 		other = u.to_ureg(other, self.get_unit())
@@ -707,25 +735,54 @@ class Data_Handler_np(u.Quantity):
 		:returns: The shifted data. If output is given as a parameter or :code:`False`, None is returned.
 		:rtype: Data_Handler_np *or* None
 		"""
+		# TODO: Optimize performance by not loading full data along shifted axes.
 		if prefilter is None:  # if not explicitly set, determine neccesity of prefiltering
 			if order > 0:  # if interpolation is required, spline prefilter is neccesary.
 				prefilter = True
 			else:
 				prefilter = False
 
+		slice_ = full_slice(slice_, len(self.shape))
+
+		try:
+			test = float(shift)
+			expanded_slice = full_slice(numpy.s_[:], len(self.shape))
+			recover_slice = slice_
+			shift_dimensioncorrected = shift
+		except TypeError:  # Shift is a sequence with shifts for each dimension
+			assert len(shift) == len(slice_), "Propably invalid shift argument."
+			expanded_slice = []
+			recover_slice = []
+			shift_dimensioncorrected = []
+			for shift_element, slice_element in zip(shift, slice_):
+				if shift_element != 0:
+					expanded_slice.append(numpy.s_[:])
+					recover_slice.append(slice_element)
+					shift_dimensioncorrected.append(shift_element)
+				else:
+					expanded_slice.append(slice_element)
+					if isinstance(slice_element, slice):  # If we don't end up with one less dimension.
+						recover_slice.append(numpy.s_[:])
+						shift_dimensioncorrected.append(0.)
+			expanded_slice = tuple(expanded_slice)  # Part of the data we need for shifting.
+			recover_slice = tuple(recover_slice)  # Part of the shifted data we wanted to address.
+			shift_dimensioncorrected = tuple(shift_dimensioncorrected)
+
 		if output == False:
-			self.magnitude[slice_] = scipy.ndimage.interpolation.shift(self.magnitude[slice_], shift, None, order, mode,
-																	   cval, prefilter)
+			self.magnitude[slice_] = \
+				scipy.ndimage.interpolation.shift(self.ds_data[expanded_slice], shift_dimensioncorrected, None, order,
+												  mode, cval, prefilter)[recover_slice]
 			return None
 		elif isinstance(output, numpy.ndarray):
-			scipy.ndimage.interpolation.shift(self.magnitude[slice_], shift, output, order, mode, cval, prefilter)
+			output[:] = \
+				scipy.ndimage.interpolation.shift(self.ds_data[expanded_slice], shift_dimensioncorrected, None, order,
+												  mode, cval, prefilter)[recover_slice]
 			return None
 		else:
 			assert (output is None) or isinstance(output, type), "Invalid output argument given."
 			return Data_Handler_np(
-				scipy.ndimage.interpolation.shift(self.magnitude[slice_], shift, output, order, mode, cval,
-												  prefilter),
-				self.units)
+				scipy.ndimage.interpolation.shift(self.magnitude[expanded_slice], shift_dimensioncorrected, output,
+												  order, mode, cval, prefilter)[recover_slice], self.units)
 
 	def __add__(self, other):
 		other = u.to_ureg(other, self.get_unit())
