@@ -2739,7 +2739,7 @@ def stack_DataSets(datastack, new_axis, axis=0, label=None, plotconf=None, h5tar
 	Stacks a sequence of DataSets to a new DataSet.
 	See DataSet.stack.
 	"""
-	return DataSet.stack(datastack, new_axis, axis=0, label=None, plotconf=None, h5target=h5target)
+	return DataSet.stack(datastack, new_axis, axis=axis, label=label, plotconf=plotconf, h5target=h5target)
 
 
 if __name__ == "__main__":  # just for testing
