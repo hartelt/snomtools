@@ -6,12 +6,14 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 import h5py
-import h5py_cache
 import psutil
 import warnings
 import tempfile
 import os.path
+import sys
+import numpy
 from snomtools import __package__, __version__
+from snomtools.data.tools import find_next_prime
 
 __author__ = 'Michael Hartelt'
 
@@ -20,62 +22,109 @@ chunk_cache_mem_size_default = 16 * 1024 ** 2  # 16 MB
 chunk_cache_mem_size_tempdefault = 8 * 1024 ** 2  # 8 MB
 
 
-def File(*args, **kwargs):
+class File(h5py.File):
 	"""
-	Initializes a h5py_cache File object as documented in h5py_cache.File and h5py.File. Uses the value
+	A h5py.File object with the additional functionality of h5py_cache.File of setting buffer sizes. Uses the value
 	chunk_cache_mem_size_default as defined above as buffer size if not given otherwise explicitly.
-
-	:return: A h5py.File object with the chosen buffer settings.
 	"""
-	# TODO: Write proper class from code in h5py_cache.File
-	key = "chunk_cache_mem_size"
-	if not key in kwargs or kwargs[key] is None:
-		kwargs[key] = chunk_cache_mem_size_default
 
-	# Check if required buffer size is available, and reduce if necessary:
-	mem_free = psutil.virtual_memory().available
-	if kwargs[key] >= mem_free:
-		mem_use = mem_free - (32 * 1024 ** 2)
-		print(("WARNING: Required buffer size of {0:d} MB exceeds free memory. \
-			  Reducing to {1:d} MB.".format(kwargs[key] / 1024 ** 2, mem_use / 1024 ** 2)))
-		print("Performance might be worse than expected!")
-		kwargs[key] = mem_use
+	def __init__(self, name, mode='a', chunk_cache_mem_size=None, w0=0.75, n_cache_chunks=None,
+				 **kwargs):
+		"""
+		The constructor. Apart from calling the parent constructor. It uses code from the h5py_cache package
+		(Copyright (c) 2016 Mike Boyle, under MIT license)
+		to set the buffer settings for the file to be opened.
 
-	return h5py_cache.File(*args, **kwargs)
+		:param str name:
+
+		:param str mode:
+
+		:param **kwargs : dict (as keywords)
+			Standard h5py.File arguments, passed to its constructor
+
+		:param int chunk_cache_mem_size:
+			Number of bytes to use for the chunk cache.  Defaults to 1024**2 (1MB), which
+			is also the default for h5py.File -- though it cannot be changed through the
+			standard interface.
+
+		:param float w0: float between 0.0 and 1.0
+			Eviction parameter.  Defaults to 0.75.  "If the application will access the
+			same data more than once, w0 should be set closer to 0, and if the application
+			does not, w0 should be set closer to 1."
+			<https://www.hdfgroup.org/HDF5/doc/Advanced/Chunking/>
+
+		:param int n_cache_chunks: int
+			Number of chunks to be kept in cache at a time.  Defaults to the (smallest
+			integer greater than) the square root of the number of elements that can fit
+			into memory.  This is just used for the number of slots (nslots) maintained
+			in the cache metadata, so it can be set larger than needed with little cost.
+		"""
+		# Get default cache size if needed:
+		if chunk_cache_mem_size is None:
+			chunk_cache_mem_size = chunk_cache_mem_size_default
+		# Check if required buffer size is available, and reduce if necessary:
+		mem_free = psutil.virtual_memory().available
+		if chunk_cache_mem_size >= mem_free:
+			mem_use = mem_free - (32 * 1024 ** 2)
+			warning_message = (("Required buffer size of {0:d} MB exceeds free memory. \
+					  Reducing to {1:d} MB.".format(chunk_cache_mem_size / 1024 ** 2, mem_use / 1024 ** 2)))
+			warning_message += "\n Performance might be worse than expected!"
+			warnings.warn(warning_message)
+			chunk_cache_mem_size = mem_use
+
+		# From h5py_cache.File:
+		name = name.encode(sys.getfilesystemencoding())
+		open(name, mode).close()  # Just make sure the file exists
+		if mode in [m + b for m in ['w', 'w+', 'r+', 'a', 'a+'] for b in ['', 'b']]:
+			mode = h5py.h5f.ACC_RDWR
+		else:
+			mode = h5py.h5f.ACC_RDONLY
+		if 'dtype' in kwargs:
+			bytes_per_object = numpy.dtype(kwargs['dtype']).itemsize
+		else:
+			bytes_per_object = numpy.dtype(numpy.float).itemsize  # assume float as most likely
+		if n_cache_chunks is None:
+			n_cache_chunks = int(numpy.ceil(numpy.sqrt(chunk_cache_mem_size / bytes_per_object)))
+		nslots = find_next_prime(100 * n_cache_chunks)
+		propfaid = h5py.h5p.create(h5py.h5p.FILE_ACCESS)
+		settings = list(propfaid.get_cache())
+		settings[1:] = (nslots, chunk_cache_mem_size, w0)
+		propfaid.set_cache(*settings)
+
+		h5py.File.__init__(self, h5py.h5f.open(name, flags=mode, fapl=propfaid), **kwargs)
+
+	def __del__(self):
+		self.__exit__()
 
 
-class Tempfile(object):
+class Tempfile(File):
 	""" A temporary h5 file with adjustable buffer size."""
 
 	def __init__(self, **kwargs):
+		# Make temporary space for file, with tempfile module:
 		temp_dir = tempfile.mkdtemp(prefix="snomtools_H5_tempspace-")
 		# temp_dir = os.getcwd() # upper line can be replaced by this for debugging.
 		temp_file_path = os.path.join(temp_dir, "snomtools_H5_tempspace.hdf5")
 
+		# Handle cache size in kwargs:
 		key = "chunk_cache_mem_size"
 		if not key in kwargs or kwargs[key] is None:
 			kwargs[key] = chunk_cache_mem_size_tempdefault
 
-		# Check if required buffer size is available, and reduce if necessary:
-		mem_free = psutil.virtual_memory().available
-		if kwargs[key] >= mem_free:
-			mem_use = mem_free - (32 * 1024 ** 2)
-			print(("WARNING: Required buffer size of {0:d} MB exceeds free memory. \
-					  Reducing to {1:d} MB.".format(kwargs[key] / 1024 ** 2, mem_use / 1024 ** 2)))
-			print("Performance might be worse than expected!")
-			kwargs[key] = mem_use
+		# Call parent constructor:
+		File.__init__(self, temp_file_path, 'w', **kwargs)
 
-		self.tempfile = h5py_cache.File(temp_file_path, 'w', **kwargs)
-
+		# Save paths to clean up later:
 		self.temp_dir = temp_dir
 		self.temp_file_path = temp_file_path
 
-	def __getattr__(self, item):
-		return self.tempfile.__getattribute__(item)
-
 	def __del__(self):
+		"""
+		Clean up the temporary file.
+
+		"""
 		file_to_remove = self.temp_file_path
-		del self.tempfile
+		self.__exit__()
 		os.remove(file_to_remove)
 		try:
 			os.rmdir(self.temp_dir)
@@ -197,5 +246,9 @@ def probe_chunksize(shape, compression="gzip", compression_opts=4):
 
 
 if __name__ == "__main__":
+	testfile = File('test.hdf5')
+	testfile.flush()
+	testfile.close()
+
 	cs = probe_chunksize((10, 10, 10))
 	print("done")

@@ -10,7 +10,7 @@ from __future__ import print_function
 from six import string_types
 import numpy as np
 
-__author__ = 'hartelt'
+__author__ = 'Michael Hartelt'
 
 
 def assure_1D(data):
@@ -168,3 +168,36 @@ def iterfy(iterable):
 	except TypeError:
 		iterable = [iterable]
 	return iterable
+
+
+def find_next_prime(N):
+	"""
+	Find next prime >= N
+
+	This is modified from the _find_next_prime function in the h5py_cache package. Copyright (c) 2016 Mike Boyle,
+	under MIT license.
+
+	:param N: A number.
+
+	:return: The next prime number >= N.
+	"""
+
+	def is_prime(n):
+		if n % 2 == 0:
+			return False
+		i = 3
+		while i * i <= n:
+			if n % i:
+				i += 2
+			else:
+				return False
+		return True
+
+	if N < 3:
+		return 2
+	if N % 2 == 0:
+		N += 1
+	for n in range(N, 2 * N, 2):
+		if is_prime(n):
+			return n
+	raise AssertionError("Failed to find a prime number between {0} and {1}...".format(N, 2 * N))
