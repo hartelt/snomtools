@@ -10,7 +10,6 @@ import numpy
 import os
 import h5py
 import re
-import tempfile
 import scipy.ndimage
 import datetime
 import warnings
