@@ -59,10 +59,8 @@ class Data_Handler_H5(u.Quantity):
 			compression = None
 			compression_opts = None
 		if h5target is None or h5target is True:
-			temp_dir = tempfile.mkdtemp(prefix="snomtools_H5_tempspace-")
-			# temp_dir = os.getcwd() # upper line can be replaced by this for debugging.
-			temp_file_path = os.path.join(temp_dir, "snomtools_H5_tempspace.hdf5")
-			temp_file = h5tools.File(temp_file_path, 'w', chunk_cache_mem_size=chunk_cache_mem_size)
+			temp_file = h5tools.Tempfile(chunk_cache_mem_size=chunk_cache_mem_size)
+			temp_dir = temp_file.temp_dir
 			h5target = temp_file
 		else:
 			temp_file = None
@@ -562,14 +560,7 @@ class Data_Handler_H5(u.Quantity):
 
 	def __del__(self):
 		if not (self.temp_file is None):
-			file_to_remove = self.temp_file_path
-			self.temp_file.close()
-			os.remove(file_to_remove)
-			try:
-				os.rmdir(self.temp_dir)
-			except OSError as e:
-				warnings.warn("Data_Handler_H5 could not remove tempdir. Propably not empty.")
-				print(e)
+			del self.temp_file
 
 	@classmethod
 	def stack(cls, tostack, axis=0, unit=None, h5target=None):
