@@ -31,7 +31,8 @@ def get_subversion_from_git(version_base=None):
 	"""
     Get the short version string of a git repository
 
-    :return: (str) version information
+    :return: version information
+    :rtype: str
     """
 	import subprocess
 	try:

@@ -1,6 +1,6 @@
 SNOMTOOLS Package
 
-Copyright (C) 2017
+Copyright (C) 2017 M. Hartelt and others, AG Aeschlimann, FB Physik, TU Kaiserslautern
 
 In case of problems, bugs or questions, contact
     Michael Hartelt
