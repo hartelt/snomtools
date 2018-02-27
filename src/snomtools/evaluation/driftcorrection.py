@@ -323,14 +323,15 @@ if __name__ == '__main__':  # Testing...
 	# testfolder = "test/Drifttest/new"
 
 	import snomtools.data.imports.tiff as imp
+	import snomtools.data.datasets
 
-	files = ["{0:1d}full.tif".format(i) for i in range(1, 4)]
 	templatefile = "template.tif"
 
-	data = [imp.peem_camera_read_camware(f) for f in files]
+	data = snomtools.data.datasets.DataSet.from_h5file('6. Durchlauf.hdf5',h5target='pimmel.hdf5')
 	template = imp.peem_camera_read_camware(templatefile)
 
-	data = snomtools.data.datasets.stack_DataSets(data, snomtools.data.datasets.Axis([1, 2, 3], 's', 'faketime'))
+
+	#data = snomtools.data.datasets.stack_DataSets(data, snomtools.data.datasets.Axis([1, 2, 3], 's', 'faketime'))
 
 	data.saveh5('testdata.hdf5')
 

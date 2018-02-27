@@ -2529,7 +2529,12 @@ class DataSet(object):
 		axesgrp = h5source["axes"]
 		self.axes = [None for i in range(len(axesgrp))]
 		for axis in axesgrp:
-			index = axesgrp[axis]['index'][()]
+			try:
+				index = axesgrp[axis]['index'][()]
+			except KeyError as e:
+				warnings.warn("Axis Group '{0}' without key in H5 structure... ignoring".format(axis), UserWarning)
+				self.axes.remove(None)
+				continue
 			if h5source == self.h5target:
 				dest = axesgrp[axis]
 			elif self.h5target is True:
@@ -2538,6 +2543,9 @@ class DataSet(object):
 				dest = self.axesgrp.require_group(axis)
 			else:
 				dest = None
+			if self.axes[index] is not None:
+				warnings.warn(
+					"Axis {0} occurs more than once in H5 file! Overwriting with Axis '{1}'".format(index, axis))
 			self.axes[index] = (Axis.from_h5(axesgrp[axis], h5target=dest))
 		self.plotconf = h5tools.load_dictionary(h5source['plotconf'])
 		self.check_data_consistency()
@@ -2683,8 +2691,8 @@ class DataSet(object):
 		# Check if data is compatible: All DataSets must have same dimensions and number of datafields:
 		for ds in datastack:
 			assert (
-					ds.shape == datastack[
-				0].shape), "ERROR: DataSets of inconsistent dimensions given to stack_DataSets"
+				ds.shape == datastack[
+					0].shape), "ERROR: DataSets of inconsistent dimensions given to stack_DataSets"
 			assert (len(ds.datafields) == len(datastack[0].datafields)), "ERROR: DataSets with different number of " \
 																		 "datafields given to stack_DataSets"
 
