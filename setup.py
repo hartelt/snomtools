@@ -28,7 +28,7 @@ __version__ = '1.0'
 # 						'tifffile', 'h5py_cache', 'six', 'psutil', 'opencv-python']
 
 # Parse requirements from requirements.txt
-install_reqs = parse_requirements('requirements.txt')
+install_reqs = parse_requirements('requirements.txt', session=False)
 reqs = [str(ir.req) for ir in install_reqs]
 
 packages = find_packages(source_path)
