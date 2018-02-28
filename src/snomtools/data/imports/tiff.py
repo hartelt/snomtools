@@ -562,7 +562,7 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
 	else:
 		chunk_size = chunks
 	min_cache_size = chunk_size[0] * numpy.prod(sample_data.shape) * 4  # 32bit floats require 4 bytes.
-	use_cache_size = min_cache_size + 64 * 1024 ** 2  # Add 64 MB just to be sure.
+	use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 64 MB just to be sure.
 
 	# Initialize full DataSet with zeroes:
 	dataspace = snomtools.data.datasets.Data_Handler_H5(unit=sample_data.get_datafield(0).get_unit(),
