@@ -2546,6 +2546,8 @@ class DataSet(object):
 			if self.axes[index] is not None:
 				warnings.warn(
 					"Axis {0} occurs more than once in H5 file! Overwriting with Axis '{1}'".format(index, axis))
+				# If one element is overwritten, there was one too much initialized... remove one None element:
+				self.axes.remove(None)
 			self.axes[index] = (Axis.from_h5(axesgrp[axis], h5target=dest))
 		self.plotconf = h5tools.load_dictionary(h5source['plotconf'])
 		self.check_data_consistency()
