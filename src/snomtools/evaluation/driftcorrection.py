@@ -161,7 +161,7 @@ class Drift(object):
 		return newds
 
 	@classmethod
-	def template_matching_stack(cls, data, template, stackAxisID, method='cv.TM_CCOEFF_NORMED', subpixel=True):
+	def template_matching_stack(cls, data, template, stackAxisID, method='cv.TM_CCOEFF_NORMED', subpixel=True, threshold = (0,0.1)):
 		"""
 		Passes the data of a 3D array along the stackAxis in form of 2D data to the template_matching function
 
@@ -176,7 +176,7 @@ class Drift(object):
 
 		:param subpixel: Generate subpixel accurate drift vectors
 
-		:return: List of tuples containing the coordinates of best correlation
+		:return: List of tuples containing the coordinates of best correlation corrected for values below threshold
 		"""
 		driftlist = []
 		for i in range(data.shape[stackAxisID]):
@@ -184,7 +184,9 @@ class Drift(object):
 			slicebase.insert(stackAxisID, i)
 			slice_ = tuple(slicebase)
 			driftlist.append(cls.template_matching((data.data[slice_]), template, method, subpixel))
-		return driftlist
+		indexList = findindex(threshold[0],threshold[1],driftlist[2])#ToDo: fix this with real indices..
+		driftlist[0,1] = cleanList(driftlist[0,1],indexList)
+		return driftlist[0,1]
 
 	@staticmethod
 	def template_matching(data_to_match, template, method='cv.TM_CCOEFF_NORMED', subpixel=True):
@@ -203,7 +205,7 @@ class Drift(object):
 		:param subpixel: Generate subpixel accurate drift vectors
 
 		:return: Returns the coordinate (y,x) of the correlation maximum referenced to the top left corner of the
-			template.
+			template and the value of the correlation at that point.
 		"""
 		method = eval(method)
 
@@ -213,19 +215,22 @@ class Drift(object):
 		res = cv.matchTemplate(data_to_match, template, method)
 
 		if method in [cv.TM_SQDIFF, cv.TM_SQDIFF_NORMED]:
-			min_loc = np.unravel_index(res.argmin(), res.shape)
+			xCorrValue = res.argmin()
+			min_loc = np.unravel_index(xCorrValue, res.shape)
 			if subpixel:
 				top_left = Drift.subpixel_peak(min_loc, res)
 			else:
 				top_left = min_loc
 		else:
-			max_loc = np.unravel_index(res.argmax(), res.shape)
+			xCorrValue = res.argmax()
+			max_loc = np.unravel_index(xCorrValue, res.shape)
+
 			if subpixel:
 				top_left = Drift.subpixel_peak(max_loc, res)
 			else:
 				top_left = max_loc
 
-		return top_left
+		return top_left, xCorrValue
 
 	@staticmethod
 	def subpixel_peak(max_var, results):
@@ -318,6 +323,18 @@ class Drift(object):
 		roi = snomtools.data.datasets.ROI(data, limitlist, by_index=True)
 		return roi.project_nd(yAxisID, xAxisID).get_datafield(0)
 
+	@staticmethod
+	def findindex(lowerlim, upperlim, inputlist):
+		"""Returns List indices for all elements between lower and upper limit"""
+		return  [n for n,item in enumerate(inputlist) if lowerlim<item and item<upperlim]
+
+	@staticmethod
+	def cleanList(indexes, inputlist):
+		"""Substitutes list[i] with [i-1] for all i in indexes"""
+		for i in indexes: #ToDo: fix case i=0
+			inputlist[i]=inputlist[i-1]
+	return inputlist
+
 
 if __name__ == '__main__':  # Testing...
 	# testfolder = "test/Drifttest/new"
@@ -328,15 +345,15 @@ if __name__ == '__main__':  # Testing...
 	templatefile = "template.tif"
 
 	data = snomtools.data.datasets.DataSet.from_h5file('6. Durchlauf.hdf5',h5target='pimmel.hdf5')
-	template = imp.peem_camera_read_camware(templatefile)
+	#template = imp.peem_camera_read_camware(templatefile)
 
 
 	#data = snomtools.data.datasets.stack_DataSets(data, snomtools.data.datasets.Axis([1, 2, 3], 's', 'faketime'))
 
 	data.saveh5('testdata.hdf5')
 
-	drift = Drift(data, template, stackAxisID="faketime", subpixel=False)
-	drift2 = Drift(data, template, stackAxisID="faketime", subpixel=True)
+	drift = Drift(data,  stackAxisID="faketime", subpixel=False)
+	drift2 = Drift(data,  stackAxisID="faketime", subpixel=True)
 
 	# Calculate corrected data:
 	correcteddata1 = drift.corrected_data(h5target='correcteddata.hdf5')
