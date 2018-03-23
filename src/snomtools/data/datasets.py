@@ -2063,7 +2063,7 @@ class DataSet(object):
 
 		:return: The initialized DataSet
 		"""
-		return cls.from_h5(path, h5target=h5target)
+		return cls.from_h5(path, h5target=h5target, chunk_cache_mem_size=chunk_cache_mem_size)
 
 	@classmethod
 	def from_h5(cls, h5source, h5target=None, chunk_cache_mem_size=None):
@@ -2469,6 +2469,7 @@ class DataSet(object):
 			return True
 
 	# FIXME: When files are modified and saved again, old entries are not deleted.
+	# FIXME: Error when specifically setting h5dest to h5target that is worked on.
 	def saveh5(self, h5dest=None):
 		"""
 		Saves the Dataset to a HDF5 destination in a unified format.

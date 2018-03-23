@@ -13,6 +13,8 @@ from snomtools.data.tools import iterfy, full_slice
 
 __author__ = 'Benjamin Frisch'
 
+verbose = True
+
 
 class Drift(object):
 	# TODO: Implement usage of more than one DataArray in the DataSet.
@@ -63,7 +65,11 @@ class Drift(object):
 				self.dxAxisID = data.get_axis_index(xAxisID)
 
 			# process data towards 3d array
+			if verbose:
+				print("Projecting 3D data...", end=None)
 			self.data3D = self.extract_3Ddata(data, self.dstackAxisID, self.dyAxisID, self.dxAxisID)
+			if verbose:
+				print("...done")
 
 			# read or guess template
 			if template:
@@ -161,7 +167,8 @@ class Drift(object):
 		return newds
 
 	@classmethod
-	def template_matching_stack(cls, data, template, stackAxisID, method='cv.TM_CCOEFF_NORMED', subpixel=True, threshold = (0,0.1)):
+	def template_matching_stack(cls, data, template, stackAxisID, method='cv.TM_CCOEFF_NORMED', subpixel=True,
+								threshold=(0, 0.1)):
 		"""
 		Passes the data of a 3D array along the stackAxis in form of 2D data to the template_matching function
 
@@ -179,14 +186,27 @@ class Drift(object):
 		:return: List of tuples containing the coordinates of best correlation corrected for values below threshold
 		"""
 		driftlist = []
+
+		if verbose:
+			import time
+			print("Calculating {0} driftvectors...".format(data.shape[stackAxisID]))
+			start_time = time.time()
+
 		for i in range(data.shape[stackAxisID]):
 			slicebase = [np.s_[:], np.s_[:]]
 			slicebase.insert(stackAxisID, i)
 			slice_ = tuple(slicebase)
 			driftlist.append(cls.template_matching((data.data[slice_]), template, method, subpixel))
-		indexList = findindex(threshold[0],threshold[1],driftlist[2])#ToDo: fix this with real indices..
-		driftlist[0,1] = cleanList(driftlist[0,1],indexList)
-		return driftlist[0,1]
+
+			if verbose:
+				tpf = ((time.time() - start_time) / float(i + 1))
+				etr = tpf * (data.shape[stackAxisID] - i + 1)
+				print("vector {0:d} / {1:d}, Time/slice {3:.2f}s ETR: {2:.1f}s".format(i, data.shape[stackAxisID], etr,
+																					   tpf))
+
+		indexList = cls.findindex(threshold[0], threshold[1], [result[2] for result in driftlist])
+		driftlist_corrected = cls.cleanList([xydata[0] for xydata in driftlist], indexList)
+		return driftlist_corrected
 
 	@staticmethod
 	def template_matching(data_to_match, template, method='cv.TM_CCOEFF_NORMED', subpixel=True):
@@ -250,8 +270,8 @@ class Drift(object):
 
 		y_sub = y \
 				+ (np.log(results[y - 1, x]) - np.log(results[y + 1, x])) \
-				/ \
-				(2 * np.log(results[y - 1, x]) + 2 * np.log(results[y + 1, x]) - 4 * np.log(results[y, x]))
+				  / \
+				  (2 * np.log(results[y - 1, x]) + 2 * np.log(results[y + 1, x]) - 4 * np.log(results[y, x]))
 		x_sub = x + \
 				(np.log(results[y, x - 1]) - np.log(results[y, x + 1])) \
 				/ \
@@ -326,14 +346,14 @@ class Drift(object):
 	@staticmethod
 	def findindex(lowerlim, upperlim, inputlist):
 		"""Returns List indices for all elements between lower and upper limit"""
-		return  [n for n,item in enumerate(inputlist) if lowerlim<item and item<upperlim]
+		return [n for n, item in enumerate(inputlist) if lowerlim < item and item < upperlim]
 
 	@staticmethod
 	def cleanList(indexes, inputlist):
 		"""Substitutes list[i] with [i-1] for all i in indexes"""
-		for i in indexes: #ToDo: fix case i=0
-			inputlist[i]=inputlist[i-1]
-	return inputlist
+		for i in indexes:  # ToDo: fix case i=0
+			inputlist[i] = inputlist[i - 1]
+		return inputlist
 
 
 if __name__ == '__main__':  # Testing...
@@ -343,29 +363,20 @@ if __name__ == '__main__':  # Testing...
 	import snomtools.data.datasets
 
 	templatefile = "template.tif"
+	template = imp.peem_camera_read_camware(templatefile)
 
-	data = snomtools.data.datasets.DataSet.from_h5file('6. Durchlauf.hdf5',h5target='pimmel.hdf5')
-	#template = imp.peem_camera_read_camware(templatefile)
+	data = snomtools.data.datasets.DataSet.from_h5file('6. Durchlauf.hdf5', h5target='testdata.hdf5',
+													   chunk_cache_mem_size=2048 * 1024 ** 2)
 
+	# data = snomtools.data.datasets.stack_DataSets(data, snomtools.data.datasets.Axis([1, 2, 3], 's', 'faketime'))
 
-	#data = snomtools.data.datasets.stack_DataSets(data, snomtools.data.datasets.Axis([1, 2, 3], 's', 'faketime'))
+	data.saveh5()
 
-	data.saveh5('testdata.hdf5')
-
-	drift = Drift(data,  stackAxisID="faketime", subpixel=False)
-	drift2 = Drift(data,  stackAxisID="faketime", subpixel=True)
+	drift = Drift(data, stackAxisID="delay", template=template, subpixel=False)
 
 	# Calculate corrected data:
 	correcteddata1 = drift.corrected_data(h5target='correcteddata.hdf5')
-	correcteddata2 = drift2.corrected_data(h5target='correcteddata_subpixel.hdf5')
 
 	correcteddata1.saveh5()
-	correcteddata2.saveh5()
-
-	import h5py
-	testh5 = h5py.File('testoutput.hdf5')
-	h5handler = snomtools.data.datasets.Data_Handler_H5(drift2[:,52:75,140:160],h5target=testh5)
-	h5handler.flush()
-	del h5handler
 
 	print("done.")
