@@ -1998,6 +1998,7 @@ class DataSet(object):
 
 	# FIXME: check for unique axis and datafield identifiers.
 	# TODO: Handle 'synonyms' of axes (Several axis per data dimension.)
+	# TODO: Handle metadata!
 
 	def __init__(self, label="", datafields=(), axes=(), plotconf=(), h5target=None, chunk_cache_mem_size=None):
 		if isinstance(h5target, h5py.Group):

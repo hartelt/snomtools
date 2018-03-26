@@ -28,6 +28,8 @@ class File(h5py.File):
 	chunk_cache_mem_size_default as defined above as buffer size if not given otherwise explicitly.
 	"""
 
+	# TODO: Control method for cache size of existing file.
+
 	def __init__(self, name, mode='a', chunk_cache_mem_size=None, w0=0.75, n_cache_chunks=None,
 				 **kwargs):
 		"""
@@ -133,6 +135,7 @@ class Tempfile(File):
 			print(e)
 
 
+# TODO: Handle different data types including DataSets in dictionaries.
 def store_dictionary(dict_to_store, h5target):
 	for key in list(dict_to_store.keys()):
 		assert (not ('/' in key)), "Special group separation char '/' used as key."

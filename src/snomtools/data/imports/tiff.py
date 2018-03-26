@@ -59,6 +59,7 @@ terra_tag_descriptions = {
 	"artist": "The image artist and copyright owner of the image."
 }
 
+# TODO: Handle keeping of sum images in metadata for terra import.
 
 def is_tif(filename):
 	"""
