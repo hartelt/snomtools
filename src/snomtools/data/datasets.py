@@ -2470,7 +2470,6 @@ class DataSet(object):
 			return True
 
 	# FIXME: When files are modified and saved again, old entries are not deleted.
-	# FIXME: Error when specifically setting h5dest to h5target that is worked on.
 	def saveh5(self, h5dest=None):
 		"""
 		Saves the Dataset to a HDF5 destination in a unified format.
@@ -2483,7 +2482,12 @@ class DataSet(object):
 			h5dest = self.h5target
 		if isinstance(h5dest, string_types):
 			path = os.path.abspath(h5dest)
-			h5dest = h5tools.File(path, 'w')
+			if self.h5target and (path == os.path.abspath(self.h5target.filename)):
+				# own h5target was explicitly (redundantly) requested, so just take it instead of making a new file.
+				h5dest = self.h5target
+				path = False
+			else:
+				h5dest = h5tools.File(path, 'w')
 		else:
 			path = False
 		assert isinstance(h5dest, h5py.Group), "DataSet.saveh5 needs h5 group or destination path as argument!"
@@ -2695,8 +2699,8 @@ class DataSet(object):
 		# Check if data is compatible: All DataSets must have same dimensions and number of datafields:
 		for ds in datastack:
 			assert (
-				ds.shape == datastack[
-					0].shape), "ERROR: DataSets of inconsistent dimensions given to stack_DataSets"
+					ds.shape == datastack[
+				0].shape), "ERROR: DataSets of inconsistent dimensions given to stack_DataSets"
 			assert (len(ds.datafields) == len(datastack[0].datafields)), "ERROR: DataSets with different number of " \
 																		 "datafields given to stack_DataSets"
 
@@ -2771,7 +2775,7 @@ if __name__ == "__main__":  # just for testing
 	testdataset2.saveh5("exampledata.hdf5")
 
 	testdataset3 = DataSet.from_textfile('test2.txt', unitsline=1, h5target="test3.hdf5")
-	testdataset3.saveh5()
+	testdataset3.saveh5("test3.hdf5")
 
 	testh5 = h5tools.File('test.hdf5')
 
