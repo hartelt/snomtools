@@ -205,7 +205,7 @@ class Drift(object):
 																					   tpf))
 
 		indexList = cls.findindex(threshold[0], threshold[1], [result[1] for result in driftlist])
-		driftlist_corrected = cls.cleanList([xydata[0] for xydata in driftlist], indexList)
+		driftlist_corrected = cls.cleanList(indexList, [xydata[0] for xydata in driftlist])
 		return driftlist_corrected
 
 	@staticmethod
@@ -235,15 +235,15 @@ class Drift(object):
 		res = cv.matchTemplate(data_to_match, template, method)
 
 		if method in [cv.TM_SQDIFF, cv.TM_SQDIFF_NORMED]:
-			xCorrValue = res.argmin()
-			min_loc = np.unravel_index(xCorrValue, res.shape)
+			xCorrValue = res.min()
+			min_loc = np.unravel_index(res.argmin(), res.shape)
 			if subpixel:
 				top_left = Drift.subpixel_peak(min_loc, res)
 			else:
 				top_left = min_loc
 		else:
-			xCorrValue = res.argmax()
-			max_loc = np.unravel_index(xCorrValue, res.shape)
+			xCorrValue = res.max()
+			max_loc = np.unravel_index(res.argmax(), res.shape)
 
 			if subpixel:
 				top_left = Drift.subpixel_peak(max_loc, res)
@@ -365,17 +365,17 @@ if __name__ == '__main__':  # Testing...
 	templatefile = "template.tif"
 	template = imp.peem_camera_read_camware(templatefile)
 
-	data = snomtools.data.datasets.DataSet.from_h5file('6. Durchlauf.hdf5', h5target='testdata.hdf5',
+	data = snomtools.data.datasets.DataSet.from_h5file('projected_run6.hdf5', h5target='testdata.hdf5',
 													   chunk_cache_mem_size=2048 * 1024 ** 2)
 
 	# data = snomtools.data.datasets.stack_DataSets(data, snomtools.data.datasets.Axis([1, 2, 3], 's', 'faketime'))
 
 	data.saveh5()
 
-	drift = Drift(data, stackAxisID="delay", template=template, subpixel=False)
+	drift = Drift(data, stackAxisID="delay", template=template, subpixel=True)
 
 	# Calculate corrected data:
-	correcteddata1 = drift.corrected_data(h5target='correcteddata.hdf5')
+	correcteddata1 = drift.corrected_data(h5target='correcteddata_sub.hdf5')
 
 	correcteddata1.saveh5()
 
