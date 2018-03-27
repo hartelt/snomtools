@@ -201,6 +201,22 @@ def clear_name(h5dest, name):
 		del h5dest[name]
 
 
+def clean_group(h5group, validitems):
+	"""
+	Deletes all items in an h5 group that are not listed in validitems.
+
+	:param h5group: The h5py group in which to clean entries.
+	:type h5group: h5py.Group
+
+	:param validitems: Valid identifiers of items to keep.
+	:type validitems: list of strings
+	"""
+	assert isinstance(h5group, h5py.Group)
+	for key in h5group.keys():
+		if key not in validitems:
+			del h5group[key]
+
+
 def check_version(h5root):
 	"""
 	Checks if the version information in h5root fits the running version of the package. If not, warnings are issued

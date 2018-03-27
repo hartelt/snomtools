@@ -2120,7 +2120,6 @@ class DataSet(object):
 		dataset.load_textfile(path, **kwargs)
 		return dataset
 
-	# TODO: Property all the things in __getattr__!
 	def __getattr__(self, item):
 		"""
 		This method provides dynamical naming in instances. It is called any time an attribute of the intstance is
@@ -2130,33 +2129,38 @@ class DataSet(object):
 
 		:return: The attribute corresponding to the given name.
 		"""
-		if item == "alldata":
-			return self.datafields + self.axes
-		elif item == "axlabels":
-			labels = []
-			for e in self.axes:
-				labels.append(e.get_label())
-			return labels
-		elif item == "dlabels":
-			labels = []
-			for e in self.datafields:
-				labels.append(e.get_label())
-			return labels
-		elif item == "labels":
-			return self.dlabels + self.axlabels
-		elif item == "dimensions":
-			return len(self.axes)
-		elif item == "shape":
-			if self.datafields:
-				return self.datafields[0].shape
-			else:
-				return ()
-		elif item in self.labels:
+		if item in self.labels:
 			for darray in self.alldata:
 				if item == darray.get_label():
 					return darray
-		# TODO: address xyz.
 		raise AttributeError("Name \'{0}\' in DataSet object cannot be resolved!".format(item))
+
+	@property
+	def axlabels(self):
+		return [a.get_label() for a in self.axes]
+
+	@property
+	def dlabels(self):
+		return [d.get_label() for d in self.datafields]
+
+	@property
+	def labels(self):
+		return self.dlabels + self.axlabels
+
+	@property
+	def alldata(self):
+		return self.datafields + self.axes
+
+	@property
+	def dimensions(self):
+		return len(self.axes)
+
+	@property
+	def shape(self):
+		if self.datafields:
+			return self.datafields[0].shape
+		else:
+			return ()
 
 	def add_datafield(self, data, unit=None, label=None, plotlabel=None):
 		"""
@@ -2469,13 +2473,12 @@ class DataSet(object):
 			assert (len(self.labels) == len(set(self.labels))), "DataSet data array and axes labels not unique."
 			return True
 
-	# FIXME: When files are modified and saved again, old entries are not deleted.
 	def saveh5(self, h5dest=None):
 		"""
 		Saves the Dataset to a HDF5 destination in a unified format.
 
 		:param h5dest: String or h5py Group/File: The destination to write to.
-		 
+
 		:return: Nothing.
 		"""
 		if h5dest is None:
@@ -2498,10 +2501,12 @@ class DataSet(object):
 		for i in range(len(self.datafields)):
 			grp = self.datafields[i].store_to_h5(datafieldgrp)
 			h5tools.write_dataset(grp, "index", i)
+		h5tools.clean_group(datafieldgrp, self.dlabels)  # Remove old entries from h5 file.
 		axesgrp = h5dest.require_group("axes")
 		for i in range(len(self.axes)):
 			grp = self.axes[i].store_to_h5(axesgrp)
 			h5tools.write_dataset(grp, "index", i)
+		h5tools.clean_group(axesgrp, self.axlabels)  # Remove old entries from h5 file.
 		h5tools.write_dataset(h5dest, "label", self.label)
 		plotconfgrp = h5dest.require_group("plotconf")
 		h5tools.store_dictionary(self.plotconf, plotconfgrp)
@@ -2767,6 +2772,9 @@ if __name__ == "__main__":  # just for testing
 	testroi = ROI(testdataset)
 	testroi.set_limits('xaxis', (2, 4))
 
+	testdataset.saveh5()
+
+	testdataset.replace_axis('xaxis', Axis(testarray, 'second', label="newaxis"))
 	testdataset.saveh5()
 
 	del testdataset
