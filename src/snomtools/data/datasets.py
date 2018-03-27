@@ -1996,7 +1996,6 @@ class DataSet(object):
 	y in micrometers) and a time delay (z = t in femtoseconds).
 	"""
 
-	# FIXME: check for unique axis and datafield identifiers.
 	# TODO: Handle 'synonyms' of axes (Several axis per data dimension.)
 	# TODO: Handle metadata!
 
@@ -2047,6 +2046,7 @@ class DataSet(object):
 				moep = Axis(ax)
 			self.axes.append(moep)
 		self.check_data_consistency()
+		self.check_label_uniqueness()
 
 		if type(plotconf) == str:
 			self.plotconf = dict(eval(plotconf))
@@ -2185,6 +2185,7 @@ class DataSet(object):
 			moep = DataArray.in_h5(grp)
 		else:  # Numpy mode
 			moep = DataArray(data, unit, label, plotlabel)
+		assert self.check_label_uniqueness(moep.label), "Cannot add datafield. Label already exists!"
 		self.datafields.append(moep)
 
 	def get_datafield(self, label_or_index):
@@ -2277,6 +2278,8 @@ class DataSet(object):
 													 "DataArray instance."
 		assert (old_datafield.shape == new_datafield.shape), "ERROR in replace_datafield: New Datafield must have " \
 															 "same shape as old one."
+		assert self.check_label_uniqueness(new_datafield.label) or old_datafield.label == new_datafield.label, \
+			"Cannot add datafield. Label already exists!"
 		self.datafields[old_datafield_index] = new_datafield
 
 	def add_axis(self, data, unit=None, label=None, plotlabel=None):
@@ -2302,6 +2305,7 @@ class DataSet(object):
 			moep = Axis.in_h5(grp)
 		else:  # Numpy mode
 			moep = Axis(data, unit, label, plotlabel)
+		assert self.check_label_uniqueness(moep.label), "Cannot add axis. Label already exists!"
 		self.axes.append(moep)
 
 	def get_axis(self, label_or_index):
@@ -2359,6 +2363,8 @@ class DataSet(object):
 		old_axis = self.get_axis(axis_id)
 		assert isinstance(new_axis, Axis), "ERROR in replace_axis: Axis can only be replaced with Axis instance."
 		assert (old_axis.shape == new_axis.shape), "ERROR in replace_axis: New Axis must have same shape as old one."
+		assert self.check_label_uniqueness(new_axis.label) or old_axis.label == new_axis.label, \
+			"Cannot add axis. Label already exists!"
 		self.axes[old_axis_index] = new_axis
 
 	def get_plotconf(self):
@@ -2437,6 +2443,7 @@ class DataSet(object):
 		:param bin_size:
 		:return:
 		"""
+		# TODO: Implement binning.
 		raise NotImplementedError()
 
 	def check_data_consistency(self):
