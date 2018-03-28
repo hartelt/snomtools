@@ -6,6 +6,7 @@ Crosscorrelation-Methods provided by the OpenCV library
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+import sys
 import cv2 as cv
 import numpy as np
 import snomtools.data.datasets
@@ -13,7 +14,10 @@ from snomtools.data.tools import iterfy, full_slice
 
 __author__ = 'Benjamin Frisch'
 
-verbose = True
+if '-v' in sys.argv:
+	verbose = True
+else:
+	verbose = False
 
 
 class Drift(object):
@@ -270,8 +274,8 @@ class Drift(object):
 
 		y_sub = y \
 				+ (np.log(results[y - 1, x]) - np.log(results[y + 1, x])) \
-				  / \
-				  (2 * np.log(results[y - 1, x]) + 2 * np.log(results[y + 1, x]) - 4 * np.log(results[y, x]))
+				/ \
+				(2 * np.log(results[y - 1, x]) + 2 * np.log(results[y + 1, x]) - 4 * np.log(results[y, x]))
 		x_sub = x + \
 				(np.log(results[y, x - 1]) - np.log(results[y, x + 1])) \
 				/ \

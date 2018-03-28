@@ -13,10 +13,16 @@ import numpy
 import tifffile
 import re
 import warnings
+import sys
 import snomtools.calcs.units as u
 from snomtools.data.h5tools import probe_chunksize
 
 __author__ = 'Michael Hartelt'
+
+if '-v' in sys.argv or __name__ == "__main__":
+	verbose = True
+else:
+	verbose = False
 
 terra_tag_ids = {
 	"peem_settings": "41000",
@@ -59,7 +65,9 @@ terra_tag_descriptions = {
 	"artist": "The image artist and copyright owner of the image."
 }
 
+
 # TODO: Handle keeping of sum images in metadata for terra import.
+# TODO: Save metadata from Terra tifftags.
 
 def is_tif(filename):
 	"""
@@ -330,7 +338,7 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 
 
 def tr_folder_peem_camera_terra(folderpath, delayunit="um", delayfactor=0.2, delayunitlabel=None,
-								h5target=True, verbose=False, **kwargs):
+								h5target=True, **kwargs):
 	"""
 	Imports a Terra time scan folder that was measured by scanning the time steps in an interferometer while using
 	the Camera.
@@ -352,8 +360,6 @@ def tr_folder_peem_camera_terra(folderpath, delayunit="um", delayfactor=0.2, del
 	:param h5target: The HDF5 target to write to.
 	:type h5target: str **or** h5py.Group **or** True, *optional*
 
-	:param bool verbose: Flag to print progress to stdout.
-
 	:return: Imported DataSet.
 	:rtype: DataSet
 	"""
@@ -364,29 +370,28 @@ def tr_folder_peem_camera_terra(folderpath, delayunit="um", delayfactor=0.2, del
 	if delayunitlabel is None:
 		delayunitlabel = delayunit
 	pl = 'Pulse Delay / ' + delayunitlabel  # Plot label for time axis
-	return measurement_folder_peem_terra(folderpath, "camera", "D", delayunit, delayfactor, "delay", pl, h5target,
-										 verbose)
+	return measurement_folder_peem_terra(folderpath, "camera", "D", delayunit, delayfactor, "delay", pl, h5target)
 
 
-def tr_psi_folder_peem_camera_terra(folderpath, h5target=True, verbose=False):
+def tr_psi_folder_peem_camera_terra(folderpath, h5target=True):
 	"""
 	Convenience shortcut method for PSI scans with Camera. Calls tr_folder_peem_camera_terra with correct parameters.
 	See: :func:`tr_folder_peem_camera_terra`
 	"""
-	return tr_folder_peem_camera_terra(folderpath, 'as', 0.2, "\\si{\\atto\\second}", h5target, verbose)
+	return tr_folder_peem_camera_terra(folderpath, 'as', 0.2, "\\si{\\atto\\second}", h5target)
 
 
-def tr_normal_folder_peem_camera_terra(folderpath, h5target=True, verbose=False):
+def tr_normal_folder_peem_camera_terra(folderpath, h5target=True):
 	"""
 	Convenience shortcut method for normal interferometer scans with Camera. Calls tr_folder_peem_camera_terra with
 	correct parameters.
 	See: :func:`tr_folder_peem_camera_terra`
 	"""
-	return tr_folder_peem_camera_terra(folderpath, 'um', 0.2, "\\si{\\micro\\meter}", h5target, verbose)
+	return tr_folder_peem_camera_terra(folderpath, 'um', 0.2, "\\si{\\micro\\meter}", h5target)
 
 
 def tr_folder_peem_dld_terra(folderpath, delayunit="um", delayfactor=0.2, delayunitlabel=None,
-							 h5target=True, verbose=False, **kwargs):
+							 h5target=True, **kwargs):
 	"""
 	Imports a Terra time scan folder that was measured by scanning the time steps in an interferometer while using
 	the Delaylinedetector (DLD).
@@ -408,8 +413,6 @@ def tr_folder_peem_dld_terra(folderpath, delayunit="um", delayfactor=0.2, delayu
 	:param h5target: The HDF5 target to write to.
 	:type h5target: str **or** h5py.Group **or** True, *optional*
 
-	:param bool verbose: Flag to print progress to stdout.
-
 	:return: Imported DataSet.
 	:rtype: DataSet
 	"""
@@ -420,68 +423,68 @@ def tr_folder_peem_dld_terra(folderpath, delayunit="um", delayfactor=0.2, delayu
 	if delayunitlabel is None:
 		delayunitlabel = delayunit
 	pl = 'Pulse Delay / ' + delayunitlabel  # Plot label for time axis
-	return measurement_folder_peem_terra(folderpath, "dld", "D", delayunit, delayfactor, "delay", pl, h5target, verbose)
+	return measurement_folder_peem_terra(folderpath, "dld", "D", delayunit, delayfactor, "delay", pl, h5target)
 
 
-def tr_psi_folder_peem_dld_terra(folderpath, h5target=True, verbose=False):
+def tr_psi_folder_peem_dld_terra(folderpath, h5target=True):
 	"""
 	Convenience shortcut method for PSI scans with the DLD. Calls tr_folder_peem_camera_terra with correct parameters.
 	See: :func:`tr_folder_peem_dld_terra`
 	"""
-	return tr_folder_peem_dld_terra(folderpath, 'as', 0.2, "\\si{\\atto\\second}", h5target, verbose)
+	return tr_folder_peem_dld_terra(folderpath, 'as', 0.2, "\\si{\\atto\\second}", h5target)
 
 
-def tr_normal_folder_peem_dld_terra(folderpath, h5target=True, verbose=False):
+def tr_normal_folder_peem_dld_terra(folderpath, h5target=True):
 	"""
 	Convenience shortcut method for normal interferometer scans with DLD. Calls tr_folder_peem_camera_terra with
 	correct parameters.
 	See: :func:`tr_folder_peem_dld_terra`
 	"""
-	return tr_folder_peem_dld_terra(folderpath, 'um', 0.2, "\\si{\\micro\\meter}", h5target, verbose)
+	return tr_folder_peem_dld_terra(folderpath, 'um', 0.2, "\\si{\\micro\\meter}", h5target)
 
 
-def rotationmount_folder_peem_camera_terra(folderpath, h5target=True, verbose=False):
+def rotationmount_folder_peem_camera_terra(folderpath, h5target=True):
 	"""
 	Convenience shortcut method for rotation mount scans with camera. Calls measurement_folder_peem_terra with
 	correct parameters.
 	See: :func:`measurement_folder_peem_terra`
 	"""
 	pl = 'Rotation Mount Angle / \\si{\\degree}'  # Plot label for time axis
-	return measurement_folder_peem_terra(folderpath, "camera", "R", "deg", 0.1, "angle", pl, h5target, verbose)
+	return measurement_folder_peem_terra(folderpath, "camera", "R", "deg", 0.1, "angle", pl, h5target)
 
 
-def rotationmount_folder_peem_dld_terra(folderpath, h5target=True, verbose=False):
+def rotationmount_folder_peem_dld_terra(folderpath, h5target=True):
 	"""
 	Convenience shortcut method for rotation mount scans with DLD. Calls measurement_folder_peem_terra with
 	correct parameters.
 	See: :func:`measurement_folder_peem_terra`
 	"""
 	pl = 'Rotation Mount Angle / \\si{\\degree}'  # Plot label for time axis
-	return measurement_folder_peem_terra(folderpath, "dld", "R", "deg", 0.1, "angle", pl, h5target, verbose)
+	return measurement_folder_peem_terra(folderpath, "dld", "R", "deg", 0.1, "angle", pl, h5target)
 
 
-def dummy_folder_peem_camera_terra(folderpath, h5target=True, verbose=False):
+def dummy_folder_peem_camera_terra(folderpath, h5target=True):
 	"""
 	Convenience shortcut method for dummy device scans with camera. Calls measurement_folder_peem_terra with
 	correct parameters.
 	See: :func:`measurement_folder_peem_terra`
 	"""
 	pl = 'Dummy Index'  # Plot label for time axis
-	return measurement_folder_peem_terra(folderpath, "camera", "N", "", 1, "dummyaxis", pl, h5target, verbose)
+	return measurement_folder_peem_terra(folderpath, "camera", "N", "", 1, "dummyaxis", pl, h5target)
 
 
-def dummy_folder_peem_dld_terra(folderpath, h5target=True, verbose=False):
+def dummy_folder_peem_dld_terra(folderpath, h5target=True):
 	"""
 	Convenience shortcut method for dummy device scans with dld. Calls measurement_folder_peem_terra with
 	correct parameters.
 	See: :func:`measurement_folder_peem_terra`
 	"""
 	pl = 'Dummy Index'  # Plot label for time axis
-	return measurement_folder_peem_terra(folderpath, "dld", "N", "", 1, "dummyaxis", pl, h5target, verbose)
+	return measurement_folder_peem_terra(folderpath, "dld", "N", "", 1, "dummyaxis", pl, h5target)
 
 
 def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanunit="um", scanfactor=1,
-								  scanaxislabel="scanaxis", scanaxispl=None, h5target=True, verbose=False):
+								  scanaxislabel="scanaxis", scanaxispl=None, h5target=True):
 	"""
 	The base method for importing terra scan folders. Covers all scan possibilities, so far only in 1D scans.
 
@@ -514,8 +517,6 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
 
 	:param h5target: The HDF5 target to write to.
 	:type h5target: str **or** h5py.Group **or** True, *optional*
-
-	:param bool verbose: Flag to print progress to stdout.
 
 	:return: Imported DataSet.
 	:rtype: DataSet
@@ -648,23 +649,23 @@ if __name__ == "__main__":
 	test_timeresolved = True
 	if test_timeresolved:
 		trfolder = "terra-dummy-dld"
-		trdata = dummy_folder_peem_dld_terra(trfolder, h5target=trfolder + '.hdf5', verbose=True)
+		trdata = dummy_folder_peem_dld_terra(trfolder, h5target=trfolder + '.hdf5')
 		trdata.saveh5()
 
 		trfolder = "terra-rotationmount-dld"
-		trdata = rotationmount_folder_peem_dld_terra(trfolder, h5target=trfolder + '.hdf5', verbose=True)
+		trdata = rotationmount_folder_peem_dld_terra(trfolder, h5target=trfolder + '.hdf5')
 		trdata.saveh5()
 
 		trfolder = "terra-tr-psi-camera"
-		trdata = tr_psi_folder_peem_camera_terra(trfolder, h5target=trfolder + '.hdf5', verbose=True)
+		trdata = tr_psi_folder_peem_camera_terra(trfolder, h5target=trfolder + '.hdf5')
 		trdata.saveh5()
 
 		trfolder = "terra-tr-psi-dld"
-		trdata = tr_psi_folder_peem_dld_terra(trfolder, h5target=trfolder + '.hdf5', verbose=True)
+		trdata = tr_psi_folder_peem_dld_terra(trfolder, h5target=trfolder + '.hdf5')
 		trdata.saveh5()
 
 		trfolder = "terra-tr-normal-dld"
-		trdata = tr_normal_folder_peem_dld_terra(trfolder, h5target=trfolder + '.hdf5', verbose=True)
+		trdata = tr_normal_folder_peem_dld_terra(trfolder, h5target=trfolder + '.hdf5')
 		trdata.saveh5()
 
 	print('done.')

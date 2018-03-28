@@ -13,12 +13,18 @@ import re
 import scipy.ndimage
 import datetime
 import warnings
+import sys
 import snomtools.calcs.units as u
 from snomtools.data import h5tools
 from snomtools import __package__, __version__
 from snomtools.data.tools import full_slice
 
 __author__ = 'Michael Hartelt'
+
+if '-v' in sys.argv:
+	verbose = True
+else:
+	verbose = False
 
 
 class Data_Handler_H5(u.Quantity):
@@ -369,6 +375,7 @@ class Data_Handler_H5(u.Quantity):
 		"""
 		# TODO: Handle datatypes.
 		# TODO: Autodetect appropriate chunk size for better performance.
+		# TODO: printing progress when verbose option is set
 		inshape = self.shape
 		if axis is None:
 			axis = tuple(range(len(inshape)))
