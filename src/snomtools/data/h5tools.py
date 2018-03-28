@@ -14,6 +14,7 @@ import sys
 import numpy
 from snomtools import __package__, __version__
 from snomtools.data.tools import find_next_prime
+import snomtools.calcs.units as u
 
 __author__ = 'Michael Hartelt'
 
@@ -25,7 +26,7 @@ chunk_cache_mem_size_tempdefault = 8 * 1024 ** 2  # 8 MB
 class File(h5py.File):
 	"""
 	A h5py.File object with the additional functionality of h5py_cache.File of setting buffer sizes. Uses the value
-	chunk_cache_mem_size_default as defined above as buffer size if not given otherwise explicitly.
+	:code:`chunk_cache_mem_size_default` as defined above as buffer size if not given otherwise explicitly.
 	"""
 
 	def __init__(self, name, mode='a', chunk_cache_mem_size=None, w0=0.75, n_cache_chunks=None,
@@ -176,6 +177,63 @@ def load_dictionary(h5source):
 	return outdict
 
 
+def store_quantity(h5grp, name, q, chunks=True, compression="gzip", compression_opts=4):
+	"""
+	Stores a pint quantity in an open HDF5 file. Because a quantity consists of a magnitude and a unit, a group
+	containing the two is created instead of just creating a dataset.
+
+	:param h5grp: The h5 group to store the data in.
+	:type h5grp: h5py.Group
+
+	:param str name: The name (key) under which the data is stored.
+
+	:param q: The Quantity to store.
+	:type q: Quantity
+
+	:param bool chunks: (Optional) Bool flag to enable chunked data storage.
+
+	:param str compression: (Optional) Specify compression mode for chunked data storage.
+
+	:param compression_opts: (Optional) Define compression options according to used compression mode.
+	"""
+	if not chunks:
+		compression = None
+		compression_opts = None
+	assert isinstance(h5grp, h5py.Group)
+	assert isinstance(q, u.Quantity)
+	if not hasattr(q, 'shape') or q.shape == ():
+		chunks = False
+		compression = None
+		compression_opts = None
+	clear_name(h5grp, name)
+	qgrp = h5grp.create_group(name)
+	qgrp.create_dataset("data", data=q.magnitude, chunks=chunks, compression=compression,
+						compression_opts=compression_opts)
+	qgrp.create_dataset("unit", data=str(q.units))
+
+
+def load_quantity(h5grp, name=None):
+	"""
+	Loads a pint quantity from a group in an open HDF5 file.
+
+	:param h5grp: The h5 group to store the data in.
+	:type h5grp: h5py.Group
+
+	:param str name: (Optional) If given, data is not read directly from h5grp, but from a member with key :code:`name`.
+
+	:return: The read Quantity.
+	:rtype: Quantity
+	"""
+	assert isinstance(h5grp, h5py.Group)
+	if name is not None:
+		h5grp = h5grp[name]
+	try:
+		magnitude = h5grp['data'][:]
+	except ValueError as e:
+		magnitude = h5grp['data'][()]
+	return u.to_ureg(magnitude, h5grp['unit'][()])
+
+
 def write_dataset(h5dest, name, data, **kwargs):
 	"""
 	Writes a HDF5 dataset to a destination, deleting any data of the same name that are already there first.
@@ -293,6 +351,13 @@ def probe_chunksize(shape, compression="gzip", compression_opts=4):
 if __name__ == "__main__":
 	testfile = File('test.hdf5')
 	cc_size = testfile.get_chunk_cache_mem_size()
+
+	testarray = numpy.arange(9).reshape((3, 3))
+	testquantity = u.to_ureg(testarray, 'meter')
+	store_quantity(testfile, 'moep', testquantity)
+
+	loadtest = load_quantity(testfile, 'moep')
+
 	testfile.flush()
 	testfile.close()
 
