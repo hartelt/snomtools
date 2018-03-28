@@ -368,6 +368,7 @@ class Data_Handler_H5(u.Quantity):
 			scalar is returned. If an output array is specified, a reference to out is returned.
 		"""
 		# TODO: Handle datatypes.
+		# TODO: Autodetect appropriate chunk size for better performance.
 		inshape = self.shape
 		if axis is None:
 			axis = tuple(range(len(inshape)))

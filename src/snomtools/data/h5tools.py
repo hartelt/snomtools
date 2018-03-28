@@ -28,8 +28,6 @@ class File(h5py.File):
 	chunk_cache_mem_size_default as defined above as buffer size if not given otherwise explicitly.
 	"""
 
-	# TODO: Control method for cache size of existing file.
-
 	def __init__(self, name, mode='a', chunk_cache_mem_size=None, w0=0.75, n_cache_chunks=None,
 				 **kwargs):
 		"""
@@ -94,6 +92,34 @@ class File(h5py.File):
 		propfaid.set_cache(*settings)
 
 		h5py.File.__init__(self, h5py.h5f.open(name, flags=mode, fapl=propfaid), **kwargs)
+
+	def get_PropFAID(self):
+		"""
+		Retrieve a copy of the file access property list which manages access to this file.
+
+		:returns: File access properties.
+		:rtype: h5py.h5p.PropFAID
+		"""
+		return self.fid.get_access_plist()
+
+	def get_cache_params(self):
+		"""
+		Gets the caching parameters from the File Access Properties.
+		See :func:`File.__init__` for details about those parameters.
+
+		:return: A tuple of length 4 containing the cache parameters (0, nslots, chunk_cache_mem_size, w0)
+		:rtype: tuple
+		"""
+		return self.get_PropFAID().get_cache()
+
+	def get_chunk_cache_mem_size(self):
+		"""
+		Gets the chunk_cache size from the File Access Properties out of the low-level API.
+
+		:return: The chunk cache size in bytes.
+		:rtype: int
+		"""
+		return self.get_cache_params()[2]
 
 	def __del__(self):
 		self.__exit__()
@@ -266,6 +292,7 @@ def probe_chunksize(shape, compression="gzip", compression_opts=4):
 
 if __name__ == "__main__":
 	testfile = File('test.hdf5')
+	cc_size = testfile.get_chunk_cache_mem_size()
 	testfile.flush()
 	testfile.close()
 
