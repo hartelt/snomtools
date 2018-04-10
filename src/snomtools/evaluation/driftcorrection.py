@@ -193,8 +193,10 @@ class Drift(object):
 
 		if verbose:
 			import time
-			print("Calculating {0} driftvectors...".format(data.shape[stackAxisID]))
 			start_time = time.time()
+			print (str(start_time))
+			print("Calculating {0} driftvectors...".format(data.shape[stackAxisID]))
+
 
 		for i in range(data.shape[stackAxisID]):
 			slicebase = [np.s_[:], np.s_[:]]
@@ -359,7 +361,7 @@ class Drift(object):
 	@staticmethod
 	def cleanList(indexes, inputlist):
 		"""Substitutes list[i] with [i-1] for all i in indexes"""
-		for i in indexes: 
+		for i in indexes:
 			try:
 				inputlist[i] = inputlist[i - 1]
 			except (IndexError):
