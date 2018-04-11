@@ -193,8 +193,10 @@ class Drift(object):
 
 		if verbose:
 			import time
-			print("Calculating {0} driftvectors...".format(data.shape[stackAxisID]))
 			start_time = time.time()
+			print (str(start_time))
+			print("Calculating {0} driftvectors...".format(data.shape[stackAxisID]))
+
 
 		for i in range(data.shape[stackAxisID]):
 			slicebase = [np.s_[:], np.s_[:]]
@@ -271,15 +273,19 @@ class Drift(object):
 		"""
 		y = max_var[0]
 		x = max_var[1]
-
-		y_sub = y \
-				+ (np.log(results[y - 1, x]) - np.log(results[y + 1, x])) \
-				/ \
-				(2 * np.log(results[y - 1, x]) + 2 * np.log(results[y + 1, x]) - 4 * np.log(results[y, x]))
-		x_sub = x + \
-				(np.log(results[y, x - 1]) - np.log(results[y, x + 1])) \
-				/ \
-				(2 * np.log(results[y, x - 1]) - 4 * np.log(results[y, x]) + 2 * np.log(results[y, x + 1]))
+		try:
+			y_sub = y \
+					+ (np.log(results[y - 1, x]) - np.log(results[y + 1, x])) \
+					/ \
+					(2 * np.log(results[y - 1, x]) + 2 * np.log(results[y + 1, x]) - 4 * np.log(results[y, x]))
+			x_sub = x + \
+					(np.log(results[y, x - 1]) - np.log(results[y, x + 1])) \
+					/ \
+					(2 * np.log(results[y, x - 1]) - 4 * np.log(results[y, x]) + 2 * np.log(results[y, x + 1]))
+		except (IndexError):
+			y_sub = y
+			x_sub = x
+			print('Warning: Subpixel ignored once. Index out of bounds')
 		return (y_sub, x_sub)
 
 	@staticmethod
@@ -355,8 +361,18 @@ class Drift(object):
 	@staticmethod
 	def cleanList(indexes, inputlist):
 		"""Substitutes list[i] with [i-1] for all i in indexes"""
-		for i in indexes:  # ToDo: fix case i=0
-			inputlist[i] = inputlist[i - 1]
+		for i in indexes:
+			try:
+				inputlist[i] = inputlist[i - 1]
+			except (IndexError):
+				j=i+1
+				while j in indexes:
+					j=j+1
+				inputlist[i] = inputlist[j]
+			except:
+				print('Warning: cleanlist failed for Object ' + str(i))
+				pass
+
 		return inputlist
 
 
@@ -365,22 +381,31 @@ if __name__ == '__main__':  # Testing...
 
 	import snomtools.data.imports.tiff as imp
 	import snomtools.data.datasets
+	import os
 
 	templatefile = "template.tif"
 	template = imp.peem_camera_read_camware(templatefile)
 
-	data = snomtools.data.datasets.DataSet.from_h5file('projected_run6.hdf5', h5target='testdata.hdf5',
-													   chunk_cache_mem_size=2048 * 1024 ** 2)
 
-	# data = snomtools.data.datasets.stack_DataSets(data, snomtools.data.datasets.Axis([1, 2, 3], 's', 'faketime'))
+	objects = os.listdir('rawdata/')
+	rawdatalist = []
+	for i in objects:
+		if i.endswith("Durchlauf.hdf5"):
+			rawdatalist.append(i)
 
-	data.saveh5()
+	for run in rawdatalist:
+		data = snomtools.data.datasets.DataSet.from_h5file('rawdata/'+ run, h5target=run+'_testdata.hdf5',
+														   chunk_cache_mem_size=2048 * 1024 ** 2)
 
-	drift = Drift(data, stackAxisID="delay", template=template, subpixel=True)
+		# data = snomtools.data.datasets.stack_DataSets(data, snomtools.data.datasets.Axis([1, 2, 3], 's', 'faketime'))
 
-	# Calculate corrected data:
-	correcteddata1 = drift.corrected_data(h5target='correcteddata_sub.hdf5')
+		data.saveh5()
 
-	correcteddata1.saveh5()
+		drift = Drift(data, stackAxisID="delay", template=template, subpixel=True, template_origin=(123, 347))
 
-	print("done.")
+		# Calculate corrected data:
+		correcteddata = drift.corrected_data(h5target='Driftcorrected/' + run)
+
+		correcteddata.saveh5()
+
+		print("done.")
