@@ -23,7 +23,7 @@ else:
 class Drift(object):
 	# TODO: Implement usage of more than one DataArray in the DataSet.
 
-	def __init__(self, data=None, template=None, stackAxisID=None, yAxisID=None, xAxisID=None,
+	def __init__(self, data=None, precalculated_drift= None, template=None, stackAxisID=None, yAxisID=None, xAxisID=None,
 				 subpixel=True, method='cv.TM_CCOEFF_NORMED', template_origin=None, interpolation_order=None):
 		"""
 		Calculates the correlation of a given 2D template with all slices in a n-D dataset which gets projected onto the
@@ -58,6 +58,7 @@ class Drift(object):
 		# TODO: Initialize with precalculated drift vectors.
 
 		# read axis
+
 		if data:
 			if stackAxisID is None:
 				self.dstackAxisID = data.get_axis_index('delay')
@@ -71,13 +72,6 @@ class Drift(object):
 				self.dxAxisID = data.get_axis_index('x')
 			else:
 				self.dxAxisID = data.get_axis_index(xAxisID)
-
-			# process data towards 3d array
-			if verbose:
-				print("Projecting 3D data...", end=None)
-			self.data3D = self.extract_3Ddata(data, self.dstackAxisID, self.dyAxisID, self.dxAxisID)
-			if verbose:
-				print("...done")
 
 			# read or guess template
 			if template:
@@ -94,11 +88,29 @@ class Drift(object):
 				self.template = self.guess_templatedata(data, self.dyAxisID, self.dxAxisID)
 
 			stackAxisID = data.get_axis_index(stackAxisID)
-			# for layers along stackAxisID find drift:
-			self.drift = self.template_matching_stack(self.data3D.get_datafield(0), self.template, stackAxisID,
-												  method=method, subpixel=subpixel)
+
+			# check for external drift vectors
+			if precalculated_drift:
+				assert len(precalculated_drift) == self.data.shape[self.dstackAxisID], "Number of driftvectors unequal to stack dimension of data"
+				assert len(precalculated_drift[0]) == 2, "Driftvector has not dimension 2"
+				self.drift = precalculated_drift
+			else:
+				# process data towards 3d array
+				if verbose:
+					print("Projecting 3D data...", end=None)
+				self.data3D = self.extract_3Ddata(data, self.dstackAxisID, self.dyAxisID, self.dxAxisID)
+				if verbose:
+					print("...done")
+
+				# for layers along stackAxisID find drift:
+				self.drift = self.template_matching_stack(self.data3D.get_datafield(0), self.template, stackAxisID,
+													  method=method, subpixel=subpixel)
 		else:
-			self.drift=None
+			if precalculated_drift:
+				assert len(precalculated_drift[0])==2, "Driftvector has not dimension 2"
+				self.drift = precalculated_drift
+			else:
+				self.drift=None
 
 		if template_origin is None:
 			if self.drift is not None:
