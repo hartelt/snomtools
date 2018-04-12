@@ -51,7 +51,11 @@ class Drift(object):
 		:param template_origin: An origin for the relative drift vectors in the form (y_pixel, x_pixel). If :code:`None`
 			is given (the default), the first detected drift vector along stackAxis is used.
 		:type template_origin: tuple(int **or** float) of len==2 **or** None
+
+		:param int interpolation_order: An order for the interpolation for the calculation of driftcorrected data.
+			See: :func:`scipy.ndimage.interpolation.shift` for details.
 		"""
+		# TODO: Initialize with precalculated drift vectors.
 
 		# read axis
 		if data:
@@ -89,18 +93,25 @@ class Drift(object):
 			else:
 				self.template = self.guess_templatedata(data, self.dyAxisID, self.dxAxisID)
 
-		stackAxisID = data.get_axis_index(stackAxisID)
-		# for layers along stackAxisID find drift:
-		self.drift = self.template_matching_stack(self.data3D.get_datafield(0), self.template, stackAxisID,
+			stackAxisID = data.get_axis_index(stackAxisID)
+			# for layers along stackAxisID find drift:
+			self.drift = self.template_matching_stack(self.data3D.get_datafield(0), self.template, stackAxisID,
 												  method=method, subpixel=subpixel)
-		self.data = data
-		self.subpixel = subpixel
+		else:
+			self.drift=None
+
 		if template_origin is None:
-			self.template_origin = self.drift[0]
+			if self.drift is not None:
+				self.template_origin = self.drift[0]
+			else:
+				self.template_origin = None
 		else:
 			template_origin = tuple(template_origin)
 			assert len(template_origin) == 2, "template_origin has invalid length."
 			self.template_origin = template_origin
+
+		self.data = data
+		self.subpixel = subpixel
 		if interpolation_order is None:
 			if self.subpixel:
 				self.interpolation_order = 1
