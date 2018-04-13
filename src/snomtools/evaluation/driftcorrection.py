@@ -55,10 +55,6 @@ class Drift(object):
 		:param int interpolation_order: An order for the interpolation for the calculation of driftcorrected data.
 			See: :func:`scipy.ndimage.interpolation.shift` for details.
 		"""
-		# TODO: Initialize with precalculated drift vectors.
-
-		# read axis
-
 		if data:
 			if stackAxisID is None:
 				self.dstackAxisID = data.get_axis_index('delay')
@@ -414,7 +410,7 @@ if __name__ == '__main__':  # Testing...
 		if i.endswith("Durchlauf.hdf5"):
 			rawdatalist.append(i)
 
-	for run in rawdatalist:
+	for i, run in enumerate(rawdatalist):
 		data = snomtools.data.datasets.DataSet.from_h5file('rawdata/' + run, h5target=run + '_testdata.hdf5',
 														   chunk_cache_mem_size=2048 * 1024 ** 2)
 
@@ -422,9 +418,9 @@ if __name__ == '__main__':  # Testing...
 
 		data.saveh5()
 
-		i = 1
+
 		driftfile = ('Summenbilder/' + str(i) + '. Durchlauf.txt')
-		i = i + 1
+
 		precal_drift = np.loadtxt(driftfile)
 		precal_drift = [tuple(row) for row in precal_drift]
 
