@@ -23,7 +23,7 @@ else:
 class Drift(object):
 	# TODO: Implement usage of more than one DataArray in the DataSet.
 
-	def __init__(self, data=None, precalculated_drift= None, template=None, stackAxisID=None, yAxisID=None, xAxisID=None,
+	def __init__(self, data=None, precalculated_drift=None, template=None, stackAxisID=None, yAxisID=None, xAxisID=None,
 				 subpixel=True, method='cv.TM_CCOEFF_NORMED', template_origin=None, interpolation_order=None):
 		"""
 		Calculates the correlation of a given 2D template with all slices in a n-D dataset which gets projected onto the
@@ -91,7 +91,7 @@ class Drift(object):
 
 			# check for external drift vectors
 			if precalculated_drift:
-				assert len(precalculated_drift) == self.data.shape[self.dstackAxisID], "Number of driftvectors unequal to stack dimension of data"
+				assert len(precalculated_drift) == data.shape[self.dstackAxisID], "Number of driftvectors unequal to stack dimension of data"
 				assert len(precalculated_drift[0]) == 2, "Driftvector has not dimension 2"
 				self.drift = precalculated_drift
 			else:
@@ -104,13 +104,13 @@ class Drift(object):
 
 				# for layers along stackAxisID find drift:
 				self.drift = self.template_matching_stack(self.data3D.get_datafield(0), self.template, stackAxisID,
-													  method=method, subpixel=subpixel)
+														  method=method, subpixel=subpixel)
 		else:
 			if precalculated_drift:
-				assert len(precalculated_drift[0])==2, "Driftvector has not dimension 2"
+				assert len(precalculated_drift[0]) == 2, "Driftvector has not dimension 2"
 				self.drift = precalculated_drift
 			else:
-				self.drift=None
+				self.drift = None
 
 		if template_origin is None:
 			if self.drift is not None:
@@ -217,9 +217,8 @@ class Drift(object):
 		if verbose:
 			import time
 			start_time = time.time()
-			print (str(start_time))
+			print(str(start_time))
 			print("Calculating {0} driftvectors...".format(data.shape[stackAxisID]))
-
 
 		for i in range(data.shape[stackAxisID]):
 			slicebase = [np.s_[:], np.s_[:]]
@@ -299,8 +298,8 @@ class Drift(object):
 		try:
 			y_sub = y \
 					+ (np.log(results[y - 1, x]) - np.log(results[y + 1, x])) \
-					/ \
-					(2 * np.log(results[y - 1, x]) + 2 * np.log(results[y + 1, x]) - 4 * np.log(results[y, x]))
+					  / \
+					  (2 * np.log(results[y - 1, x]) + 2 * np.log(results[y + 1, x]) - 4 * np.log(results[y, x]))
 			x_sub = x + \
 					(np.log(results[y, x - 1]) - np.log(results[y, x + 1])) \
 					/ \
@@ -388,9 +387,9 @@ class Drift(object):
 			try:
 				inputlist[i] = inputlist[i - 1]
 			except (IndexError):
-				j=i+1
+				j = i + 1
 				while j in indexes:
-					j=j+1
+					j = j + 1
 				inputlist[i] = inputlist[j]
 			except:
 				print('Warning: cleanlist failed for Object ' + str(i))
@@ -409,7 +408,6 @@ if __name__ == '__main__':  # Testing...
 	templatefile = "template.tif"
 	template = imp.peem_camera_read_camware(templatefile)
 
-
 	objects = os.listdir('rawdata/')
 	rawdatalist = []
 	for i in objects:
@@ -417,17 +415,24 @@ if __name__ == '__main__':  # Testing...
 			rawdatalist.append(i)
 
 	for run in rawdatalist:
-		data = snomtools.data.datasets.DataSet.from_h5file('rawdata/'+ run, h5target=run+'_testdata.hdf5',
+		data = snomtools.data.datasets.DataSet.from_h5file('rawdata/' + run, h5target=run + '_testdata.hdf5',
 														   chunk_cache_mem_size=2048 * 1024 ** 2)
 
 		# data = snomtools.data.datasets.stack_DataSets(data, snomtools.data.datasets.Axis([1, 2, 3], 's', 'faketime'))
 
 		data.saveh5()
 
-		drift = Drift(data, stackAxisID="delay", template=template, subpixel=True, template_origin=(123, 347))
+		i = 1
+		driftfile = ('Summenbilder/' + str(i) + '. Durchlauf.txt')
+		i = i + 1
+		precal_drift = np.loadtxt(driftfile)
+		precal_drift = [tuple(row) for row in precal_drift]
+
+		drift = Drift(data, precalculated_drift=precal_drift, stackAxisID="delay", template=template, subpixel=True,
+					  template_origin=(123, 347))
 
 		# Calculate corrected data:
-		correcteddata = drift.corrected_data(h5target='Driftcorrected/' + run)
+		correcteddata = drift.corrected_data(h5target='Driftcorrected_external/' + run)
 
 		correcteddata.saveh5()
 
