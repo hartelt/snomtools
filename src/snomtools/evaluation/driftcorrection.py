@@ -10,6 +10,7 @@ import sys
 import cv2 as cv
 import numpy as np
 import snomtools.data.datasets
+import snomtools.data.datasets.h5tools
 from snomtools.data.tools import iterfy, full_slice
 
 __author__ = 'Benjamin Frisch'
@@ -87,7 +88,8 @@ class Drift(object):
 
 			# check for external drift vectors
 			if precalculated_drift:
-				assert len(precalculated_drift) == data.shape[self.dstackAxisID], "Number of driftvectors unequal to stack dimension of data"
+				assert len(precalculated_drift) == data.shape[
+					self.dstackAxisID], "Number of driftvectors unequal to stack dimension of data"
 				assert len(precalculated_drift[0]) == 2, "Driftvector has not dimension 2"
 				self.drift = precalculated_drift
 			else:
@@ -178,13 +180,50 @@ class Drift(object):
 
 	def corrected_data(self, h5target=None):
 		"""Return the full driftcorrected dataset."""
+		# TODO: Testme!
 		oldda = self.data.get_datafield(0)
 		if h5target:
-			temph5 = True
+			# Probe HDF5 initialization to optimize buffer size:
+			chunk_size = snomtools.data.h5tools.probe_chunksize(shape=self.data.shape)
+			min_cache_size = chunk_size[self.dstackAxisID] * np.prod(self.data.shape) / self.data.shape[
+				self.dstackAxisID] * 4  # 32bit floats require 4 bytes.
+			use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 128 MB just to be sure.
+			# Initialize data handler to write to:
+			dh = snomtools.data.datasets.Data_Handler_H5(unit=self.data.unit, shape=self.data.shape,
+														 chunk_cache_mem_size=use_cache_size)
+
+			# Calculate driftcorrected data and write it to dh:
+			if verbose:
+				import time
+				start_time = time.time()
+				print(str(start_time))
+				print("Calculating {0} driftcorrected slices...".format(self.data.shape[self.dstackAxisID]))
+			full_selection = full_slice(np.s_[:], len(self.data.shape))
+			slicebase_wo_stackaxis = np.delete(full_selection, self.dstackAxisID)
+			for i in range(self.data.shape[self.dstackAxisID]):
+				subset_slice = tuple(np.insert(slicebase_wo_stackaxis, self.dstackAxisID, i))
+				shift = self.generate_shiftvector(i)
+				if verbose:
+					step_starttime = time.time()
+				shifted_data = self.data.get_datafield(0).data.shift_slice(subset_slice, shift,
+																		   order=self.interpolation_order)
+				if verbose:
+					print('interpolation done in {0:.2f} s'.format(time.time()-step_starttime))
+					step_starttime = time.time()
+				dh[subset_slice] = shifted_data
+				if verbose:
+					print('data written in {0:.2f} s'.format(time.time()-step_starttime))
+				if verbose:
+					tpf = ((time.time() - start_time) / float(i + 1))
+					etr = tpf * (self.data.shape[self.dstackAxisID] - i + 1)
+					print("Slice {0:d} / {1:d}, Time/slice {3:.2f}s ETR: {2:.1f}s".format(i, self.data.shape[
+						self.dstackAxisID], etr, tpf))
+
+			# Initialize DataArray with data from dh:
+			newda = snomtools.data.datasets.DataArray(dh, label=oldda.label, plotlabel=oldda.plotlabel,
+													  h5target=dh.h5target)
 		else:
-			temph5 = None
-		newda = snomtools.data.datasets.DataArray(self[:], label=oldda.label, plotlabel=oldda.plotlabel,
-												  h5target=temph5)
+			newda = snomtools.data.datasets.DataArray(self[:], label=oldda.label, plotlabel=oldda.plotlabel)
 		newds = snomtools.data.datasets.DataSet(self.data.label + " driftcorrected", (newda,), self.data.axes,
 												self.data.plotconf, h5target=h5target)
 		return newds
@@ -294,8 +333,8 @@ class Drift(object):
 		try:
 			y_sub = y \
 					+ (np.log(results[y - 1, x]) - np.log(results[y + 1, x])) \
-					  / \
-					  (2 * np.log(results[y - 1, x]) + 2 * np.log(results[y + 1, x]) - 4 * np.log(results[y, x]))
+					/ \
+					(2 * np.log(results[y - 1, x]) + 2 * np.log(results[y + 1, x]) - 4 * np.log(results[y, x]))
 			x_sub = x + \
 					(np.log(results[y, x - 1]) - np.log(results[y, x + 1])) \
 					/ \
@@ -417,7 +456,6 @@ if __name__ == '__main__':  # Testing...
 		# data = snomtools.data.datasets.stack_DataSets(data, snomtools.data.datasets.Axis([1, 2, 3], 's', 'faketime'))
 
 		data.saveh5()
-
 
 		driftfile = ('Summenbilder/' + str(i) + '. Durchlauf.txt')
 
