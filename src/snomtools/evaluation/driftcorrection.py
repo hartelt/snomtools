@@ -10,6 +10,7 @@ import sys
 import cv2 as cv
 import numpy as np
 import snomtools.data.datasets
+import snomtools.data.h5tools
 from snomtools.data.tools import iterfy, full_slice
 
 __author__ = 'Benjamin Frisch'
@@ -23,7 +24,7 @@ else:
 class Drift(object):
 	# TODO: Implement usage of more than one DataArray in the DataSet.
 
-	def __init__(self, data=None, template=None, stackAxisID=None, yAxisID=None, xAxisID=None,
+	def __init__(self, data=None, precalculated_drift=None, template=None, stackAxisID=None, yAxisID=None, xAxisID=None,
 				 subpixel=True, method='cv.TM_CCOEFF_NORMED', template_origin=None, interpolation_order=None):
 		"""
 		Calculates the correlation of a given 2D template with all slices in a n-D dataset which gets projected onto the
@@ -55,9 +56,6 @@ class Drift(object):
 		:param int interpolation_order: An order for the interpolation for the calculation of driftcorrected data.
 			See: :func:`scipy.ndimage.interpolation.shift` for details.
 		"""
-		# TODO: Initialize with precalculated drift vectors.
-
-		# read axis
 		if data:
 			if stackAxisID is None:
 				self.dstackAxisID = data.get_axis_index('delay')
@@ -71,13 +69,6 @@ class Drift(object):
 				self.dxAxisID = data.get_axis_index('x')
 			else:
 				self.dxAxisID = data.get_axis_index(xAxisID)
-
-			# process data towards 3d array
-			if verbose:
-				print("Projecting 3D data...", end=None)
-			self.data3D = self.extract_3Ddata(data, self.dstackAxisID, self.dyAxisID, self.dxAxisID)
-			if verbose:
-				print("...done")
 
 			# read or guess template
 			if template:
@@ -94,11 +85,30 @@ class Drift(object):
 				self.template = self.guess_templatedata(data, self.dyAxisID, self.dxAxisID)
 
 			stackAxisID = data.get_axis_index(stackAxisID)
-			# for layers along stackAxisID find drift:
-			self.drift = self.template_matching_stack(self.data3D.get_datafield(0), self.template, stackAxisID,
-												  method=method, subpixel=subpixel)
+
+			# check for external drift vectors
+			if precalculated_drift:
+				assert len(precalculated_drift) == data.shape[
+					self.dstackAxisID], "Number of driftvectors unequal to stack dimension of data"
+				assert len(precalculated_drift[0]) == 2, "Driftvector has not dimension 2"
+				self.drift = precalculated_drift
+			else:
+				# process data towards 3d array
+				if verbose:
+					print("Projecting 3D data...", end=None)
+				self.data3D = self.extract_3Ddata(data, self.dstackAxisID, self.dyAxisID, self.dxAxisID)
+				if verbose:
+					print("...done")
+
+				# for layers along stackAxisID find drift:
+				self.drift = self.template_matching_stack(self.data3D.get_datafield(0), self.template, stackAxisID,
+														  method=method, subpixel=subpixel)
 		else:
-			self.drift=None
+			if precalculated_drift:
+				assert len(precalculated_drift[0]) == 2, "Driftvector has not dimension 2"
+				self.drift = precalculated_drift
+			else:
+				self.drift = None
 
 		if template_origin is None:
 			if self.drift is not None:
@@ -170,13 +180,50 @@ class Drift(object):
 
 	def corrected_data(self, h5target=None):
 		"""Return the full driftcorrected dataset."""
+		
 		oldda = self.data.get_datafield(0)
 		if h5target:
-			temph5 = True
+			# Probe HDF5 initialization to optimize buffer size:
+			chunk_size = snomtools.data.h5tools.probe_chunksize(shape=self.data.shape)
+			min_cache_size = np.prod(self.data.shape, dtype=np.int64) // self.data.shape[self.dstackAxisID] * \
+							 chunk_size[
+								 self.dstackAxisID] * 4  # 32bit floats require 4 bytes.
+			use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 128 MB just to be sure.
+			# Initialize data handler to write to:
+			dh = snomtools.data.datasets.Data_Handler_H5(unit=str(self.data.datafields[0].units), shape=self.data.shape,
+														 chunk_cache_mem_size=use_cache_size)
+
+			# Calculate driftcorrected data and write it to dh:
+			if verbose:
+				import time
+				start_time = time.time()
+				print(str(start_time))
+				print("Calculating {0} driftcorrected slices...".format(self.data.shape[self.dstackAxisID]))
+			full_selection = full_slice(np.s_[:], len(self.data.shape))
+			slicebase_wo_stackaxis = np.delete(full_selection, self.dstackAxisID)
+			for i in range(self.data.shape[self.dstackAxisID]):
+				subset_slice = tuple(np.insert(slicebase_wo_stackaxis, self.dstackAxisID, i))
+				shift = self.generate_shiftvector(i)
+				if verbose:
+					step_starttime = time.time()
+				shifted_data = self.data.get_datafield(0).data.shift_slice(subset_slice, shift,
+																		   order=self.interpolation_order)
+				if verbose:
+					print('interpolation done in {0:.2f} s'.format(time.time() - step_starttime))
+					step_starttime = time.time()
+				dh[subset_slice] = shifted_data
+				if verbose:
+					print('data written in {0:.2f} s'.format(time.time() - step_starttime))
+					tpf = ((time.time() - start_time) / float(i + 1))
+					etr = tpf * (self.data.shape[self.dstackAxisID] - i + 1)
+					print("Slice {0:d} / {1:d}, Time/slice {3:.2f}s ETR: {2:.1f}s".format(i, self.data.shape[
+						self.dstackAxisID], etr, tpf))
+
+			# Initialize DataArray with data from dh:
+			newda = snomtools.data.datasets.DataArray(dh, label=oldda.label, plotlabel=oldda.plotlabel,
+													  h5target=dh.h5target)
 		else:
-			temph5 = None
-		newda = snomtools.data.datasets.DataArray(self[:], label=oldda.label, plotlabel=oldda.plotlabel,
-												  h5target=temph5)
+			newda = snomtools.data.datasets.DataArray(self[:], label=oldda.label, plotlabel=oldda.plotlabel)
 		newds = snomtools.data.datasets.DataSet(self.data.label + " driftcorrected", (newda,), self.data.axes,
 												self.data.plotconf, h5target=h5target)
 		return newds
@@ -205,9 +252,8 @@ class Drift(object):
 		if verbose:
 			import time
 			start_time = time.time()
-			print (str(start_time))
+			print(str(start_time))
 			print("Calculating {0} driftvectors...".format(data.shape[stackAxisID]))
-
 
 		for i in range(data.shape[stackAxisID]):
 			slicebase = [np.s_[:], np.s_[:]]
@@ -287,8 +333,8 @@ class Drift(object):
 		try:
 			y_sub = y \
 					+ (np.log(results[y - 1, x]) - np.log(results[y + 1, x])) \
-					/ \
-					(2 * np.log(results[y - 1, x]) + 2 * np.log(results[y + 1, x]) - 4 * np.log(results[y, x]))
+					  / \
+					  (2 * np.log(results[y - 1, x]) + 2 * np.log(results[y + 1, x]) - 4 * np.log(results[y, x]))
 			x_sub = x + \
 					(np.log(results[y, x - 1]) - np.log(results[y, x + 1])) \
 					/ \
@@ -376,9 +422,9 @@ class Drift(object):
 			try:
 				inputlist[i] = inputlist[i - 1]
 			except (IndexError):
-				j=i+1
+				j = i + 1
 				while j in indexes:
-					j=j+1
+					j = j + 1
 				inputlist[i] = inputlist[j]
 			except:
 				print('Warning: cleanlist failed for Object ' + str(i))
@@ -397,7 +443,6 @@ if __name__ == '__main__':  # Testing...
 	templatefile = "template.tif"
 	template = imp.peem_camera_read_camware(templatefile)
 
-
 	objects = os.listdir('rawdata/')
 	rawdatalist = []
 	for i in objects:
@@ -405,17 +450,23 @@ if __name__ == '__main__':  # Testing...
 			rawdatalist.append(i)
 
 	for run in rawdatalist:
-		data = snomtools.data.datasets.DataSet.from_h5file('rawdata/'+ run, h5target=run+'_testdata.hdf5',
+		data = snomtools.data.datasets.DataSet.from_h5file('rawdata/' + run, h5target=run + '_testdata.hdf5',
 														   chunk_cache_mem_size=2048 * 1024 ** 2)
 
 		# data = snomtools.data.datasets.stack_DataSets(data, snomtools.data.datasets.Axis([1, 2, 3], 's', 'faketime'))
 
 		data.saveh5()
 
-		drift = Drift(data, stackAxisID="delay", template=template, subpixel=True, template_origin=(123, 347))
+		driftfile = ('Summenbilder/' + run.replace('.hdf5', '.txt'))
+
+		precal_drift = np.loadtxt(driftfile)
+		precal_drift = [tuple(row) for row in precal_drift]
+
+		drift = Drift(data, precalculated_drift=precal_drift, stackAxisID="delay", template=template, subpixel=True,
+					  template_origin=(123, 347))
 
 		# Calculate corrected data:
-		correcteddata = drift.corrected_data(h5target='Driftcorrected/' + run)
+		correcteddata = drift.corrected_data(h5target='Driftcorrected_external/' + run)
 
 		correcteddata.saveh5()
 
