@@ -10,7 +10,7 @@ import sys
 import cv2 as cv
 import numpy as np
 import snomtools.data.datasets
-import snomtools.data.datasets.h5tools
+import snomtools.data.h5tools
 from snomtools.data.tools import iterfy, full_slice
 
 __author__ = 'Benjamin Frisch'
@@ -180,16 +180,17 @@ class Drift(object):
 
 	def corrected_data(self, h5target=None):
 		"""Return the full driftcorrected dataset."""
-		# TODO: Testme!
+		
 		oldda = self.data.get_datafield(0)
 		if h5target:
 			# Probe HDF5 initialization to optimize buffer size:
 			chunk_size = snomtools.data.h5tools.probe_chunksize(shape=self.data.shape)
-			min_cache_size = chunk_size[self.dstackAxisID] * np.prod(self.data.shape) / self.data.shape[
-				self.dstackAxisID] * 4  # 32bit floats require 4 bytes.
+			min_cache_size = np.prod(self.data.shape, dtype=np.int64) // self.data.shape[self.dstackAxisID] * \
+							 chunk_size[
+								 self.dstackAxisID] * 4  # 32bit floats require 4 bytes.
 			use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 128 MB just to be sure.
 			# Initialize data handler to write to:
-			dh = snomtools.data.datasets.Data_Handler_H5(unit=self.data.unit, shape=self.data.shape,
+			dh = snomtools.data.datasets.Data_Handler_H5(unit=str(self.data.datafields[0].units), shape=self.data.shape,
 														 chunk_cache_mem_size=use_cache_size)
 
 			# Calculate driftcorrected data and write it to dh:
@@ -208,11 +209,11 @@ class Drift(object):
 				shifted_data = self.data.get_datafield(0).data.shift_slice(subset_slice, shift,
 																		   order=self.interpolation_order)
 				if verbose:
-					print('interpolation done in {0:.2f} s'.format(time.time()-step_starttime))
+					print('interpolation done in {0:.2f} s'.format(time.time() - step_starttime))
 					step_starttime = time.time()
 				dh[subset_slice] = shifted_data
 				if verbose:
-					print('data written in {0:.2f} s'.format(time.time()-step_starttime))
+					print('data written in {0:.2f} s'.format(time.time() - step_starttime))
 					tpf = ((time.time() - start_time) / float(i + 1))
 					etr = tpf * (self.data.shape[self.dstackAxisID] - i + 1)
 					print("Slice {0:d} / {1:d}, Time/slice {3:.2f}s ETR: {2:.1f}s".format(i, self.data.shape[
@@ -332,8 +333,8 @@ class Drift(object):
 		try:
 			y_sub = y \
 					+ (np.log(results[y - 1, x]) - np.log(results[y + 1, x])) \
-					/ \
-					(2 * np.log(results[y - 1, x]) + 2 * np.log(results[y + 1, x]) - 4 * np.log(results[y, x]))
+					  / \
+					  (2 * np.log(results[y - 1, x]) + 2 * np.log(results[y + 1, x]) - 4 * np.log(results[y, x]))
 			x_sub = x + \
 					(np.log(results[y, x - 1]) - np.log(results[y, x + 1])) \
 					/ \
@@ -448,7 +449,7 @@ if __name__ == '__main__':  # Testing...
 		if i.endswith("Durchlauf.hdf5"):
 			rawdatalist.append(i)
 
-	for i, run in enumerate(rawdatalist):
+	for run in rawdatalist:
 		data = snomtools.data.datasets.DataSet.from_h5file('rawdata/' + run, h5target=run + '_testdata.hdf5',
 														   chunk_cache_mem_size=2048 * 1024 ** 2)
 
@@ -456,7 +457,7 @@ if __name__ == '__main__':  # Testing...
 
 		data.saveh5()
 
-		driftfile = ('Summenbilder/' + str(i) + '. Durchlauf.txt')
+		driftfile = ('Summenbilder/' + run.replace('.hdf5', '.txt'))
 
 		precal_drift = np.loadtxt(driftfile)
 		precal_drift = [tuple(row) for row in precal_drift]

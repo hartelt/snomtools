@@ -2087,7 +2087,7 @@ class DataSet(object):
 
 		:return: The initialized DataSet
 		"""
-		dataset = cls(repr(h5source), h5target=h5target)
+		dataset = cls(repr(h5source), h5target=h5target, chunk_cache_mem_size=chunk_cache_mem_size)
 		if isinstance(h5source, string_types):
 			path = os.path.abspath(h5source)
 			h5source = h5tools.File(path, chunk_cache_mem_size=chunk_cache_mem_size)
