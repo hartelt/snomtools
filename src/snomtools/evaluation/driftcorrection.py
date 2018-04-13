@@ -213,7 +213,6 @@ class Drift(object):
 				dh[subset_slice] = shifted_data
 				if verbose:
 					print('data written in {0:.2f} s'.format(time.time()-step_starttime))
-				if verbose:
 					tpf = ((time.time() - start_time) / float(i + 1))
 					etr = tpf * (self.data.shape[self.dstackAxisID] - i + 1)
 					print("Slice {0:d} / {1:d}, Time/slice {3:.2f}s ETR: {2:.1f}s".format(i, self.data.shape[
