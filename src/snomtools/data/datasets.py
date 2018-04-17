@@ -533,6 +533,50 @@ class Data_Handler_H5(u.Quantity):
 
 	# TODO: Rewrite operator magic methods below to work with arbitrary large data.
 
+	def iterchunkslices(self, dim=None):
+		"""
+		Iterator, which returns slice objects which address the data chunk-wise. This can be used wo very efficiently
+		perform operations on the data since chunk-wise is the fastest way to access the data in the HDF5 file.
+
+		:param int dim: Do this only for the first :code:`dim` dimensions. Used for recursively calling the generator.
+			If not given, all dimensions are used, so this defaults to :code:`dim = len(self.shape)-1`
+
+		:return: A tuple of slice objects of length :code:`dim`
+		"""
+		if dim is None:
+			dim = len(self.shape) - 1
+
+		if dim == 0:  # Break condition
+			csize_dim = self.chunks[dim]
+			start = 0
+			while start < self.shape[dim]:
+				stop = start + csize_dim
+				if stop >= self.shape[dim]:
+					stop = None
+				yield (slice(start, stop),)
+				start = start + csize_dim
+		else: # Generate slices for dim and attach them to all slices for dim-1 recursively
+			csize_dim = self.chunks[dim]
+			start = 0
+			while start < self.shape[dim]:
+				stop = start + csize_dim
+				if stop >= self.shape[dim]:
+					stop = None
+				for slicetuple_before in self.iterchunkslices(dim - 1):
+					yield slicetuple_before + (slice(start, stop),)
+				start = start + csize_dim
+
+	def iterchunks(self):
+		"""
+		Iterator, which returns the data of the chunks, chunk-wise.
+
+		:return: The data in the chunk.
+		:rtype: Data_Handler_H5
+		"""
+		for chunkslice in self.iterchunkslices():
+			yield self[chunkslice]
+
+
 	def __add__(self, other):
 		other = u.to_ureg(other, self.get_unit())
 		return super(Data_Handler_H5, self).__add__(other)
@@ -1997,7 +2041,7 @@ class ROI(object):
 							  limitlist=[self.get_limits(by_index=True)[i] for i in indexlist],
 							  by_index=True)
 
-	# TODO: ROI.saveh5
+# TODO: ROI.saveh5
 
 
 class DataSet(object):
@@ -2863,7 +2907,7 @@ if __name__ == "__main__":  # just for testing
 
 	test_bigdata_operations = True
 	if test_bigdata_operations:
-		bigfuckindata = Data_Handler_H5(unit='km', shape=(1000, 1000, 1000, 1000))
+		bigfuckindata = Data_Handler_H5(unit='km', shape=(1000, 1000, 1000))
 		bigplus = bigfuckindata + 1
 
 	test_manyfiles = False
