@@ -14,6 +14,7 @@ import scipy.ndimage
 import datetime
 import warnings
 import sys
+import itertools
 import snomtools.calcs.units as u
 from snomtools.data import h5tools
 from snomtools import __package__, __version__
@@ -555,7 +556,7 @@ class Data_Handler_H5(u.Quantity):
 					stop = None
 				yield (slice(start, stop),)
 				start = start + csize_dim
-		else: # Generate slices for dim and attach them to all slices for dim-1 recursively
+		else:  # Generate slices for dim and attach them to all slices for dim-1 recursively
 			csize_dim = self.chunks[dim]
 			start = 0
 			while start < self.shape[dim]:
@@ -576,6 +577,21 @@ class Data_Handler_H5(u.Quantity):
 		for chunkslice in self.iterchunkslices():
 			yield self[chunkslice]
 
+	def iterfast(self):
+		"""
+		Iterator, which returns slice objects which iterate over the data as fast as possible according to memory order.
+		This means chunk-wise for chunked data, line-wise for unchunked data. This provides the fastest way of accessing
+		the data sequentially.
+
+		:return: A tuple of slice objects.
+		"""
+		if self.chunks:
+			return self.iterchunkslices()
+		else:
+			iterlist = [range(i) for i in self.shape]
+			iterlist.pop()
+			iterlist.append([numpy.s_[:]])
+			return itertools.product(*iterlist)
 
 	def __add__(self, other):
 		other = u.to_ureg(other, self.get_unit())
@@ -833,6 +849,18 @@ class Data_Handler_np(u.Quantity):
 			return Data_Handler_np(
 				scipy.ndimage.interpolation.shift(self.magnitude[expanded_slice], shift_dimensioncorrected, output,
 												  order, mode, cval, prefilter)[recover_slice], self.units)
+
+	def iterfast(self):
+		"""
+		Iterator, which returns slice objects which iterate over the data as fast as possible according to memory order.
+		This means line-wise for numpy arrays. This provides the fastest way of accessing the data sequentially.
+
+		:return: A tuple of slice objects.
+		"""
+		iterlist = [range(i) for i in self.shape]
+		iterlist.pop()
+		iterlist.append([numpy.s_[:]])
+		return itertools.product(*iterlist)
 
 	def __add__(self, other):
 		other = u.to_ureg(other, self.get_unit())
@@ -2040,6 +2068,7 @@ class ROI(object):
 		return self.__class__(newdataset,
 							  limitlist=[self.get_limits(by_index=True)[i] for i in indexlist],
 							  by_index=True)
+
 
 # TODO: ROI.saveh5
 
