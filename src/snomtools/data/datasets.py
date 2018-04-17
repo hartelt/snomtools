@@ -531,6 +531,8 @@ class Data_Handler_H5(u.Quantity):
 				scipy.ndimage.interpolation.shift(self.ds_data[expanded_slice], shift_dimensioncorrected, output, order,
 												  mode, cval, prefilter)[recover_slice], self.units, h5target=h5target)
 
+	# TODO: Rewrite operator magic methods below to work with arbitrary large data.
+
 	def __add__(self, other):
 		other = u.to_ureg(other, self.get_unit())
 		return super(Data_Handler_H5, self).__add__(other)
@@ -2804,7 +2806,7 @@ if __name__ == "__main__":  # just for testing
 
 	testh5 = h5tools.File('test.hdf5')
 
-	test_dataarray = True
+	test_dataarray = False
 	# noinspection PyPackageRequirements
 	if test_dataarray:
 		moep = DataArray(testaxis.data, label="test", h5target=testh5)
@@ -2858,6 +2860,11 @@ if __name__ == "__main__":  # just for testing
 		sum6 = mediumfuckindata.sum((0, 1), keepdims=True)
 		sum7 = mediumfuckindata.sum((0, 2), h5target=h5)
 		sum8 = mediumfuckindata.sum()
+
+	test_bigdata_operations = True
+	if test_bigdata_operations:
+		bigfuckindata = Data_Handler_H5(unit='km', shape=(1000, 1000, 1000, 1000))
+		bigplus = bigfuckindata + 1
 
 	test_manyfiles = False
 	if test_manyfiles:
