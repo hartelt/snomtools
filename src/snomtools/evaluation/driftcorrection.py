@@ -29,7 +29,7 @@ class Drift(object):
 		"""
 		Calculates the correlation of a given 2D template with all slices in a n-D dataset which gets projected onto the
 		three axes stackAxis, yAxis, xAxis.
-		Differend methods and subpixel accuracy are available.
+		Different methods and subpixel accuracy are available.
 
 		:param data: n-D Dataset to be driftcorrected.
 		:type data: snomtools.data.datasets.Dataset **or** snomtools.data.datasets.ROI
@@ -167,11 +167,16 @@ class Drift(object):
 		slicebase_wo_stackaxis = np.delete(full_selection, self.dstackAxisID)
 
 		shifted_slice_list = []
+		# Iterate over all selected elements along dstackAxis:
 		for i in iterfy(np.arange(self.data.shape[self.dstackAxisID])[full_selection[self.dstackAxisID]]):
+			# Generate full slice of data to shift, by inserting i into slicebase:
 			subset_slice = tuple(np.insert(slicebase_wo_stackaxis, self.dstackAxisID, i))
+			# Get shiftvector for the stack element i:
 			shift = self.generate_shiftvector(i)
+			# Get the shifted data from the Data_Handler method:
 			shifted_data = self.data.get_datafield(0).data.shift_slice(subset_slice, shift,
 																	   order=self.interpolation_order)
+			# Attach data to list:
 			shifted_slice_list.append(shifted_data)
 		if len(shifted_slice_list) < 2:  # We shifted only a single slice along the stackAxis:
 			return shifted_slice_list[0]
@@ -199,18 +204,24 @@ class Drift(object):
 				start_time = time.time()
 				print(str(start_time))
 				print("Calculating {0} driftcorrected slices...".format(self.data.shape[self.dstackAxisID]))
+			# Get full slice for all the data:
 			full_selection = full_slice(np.s_[:], len(self.data.shape))
 			slicebase_wo_stackaxis = np.delete(full_selection, self.dstackAxisID)
+			# Iterate over all elements along dstackAxis:
 			for i in range(self.data.shape[self.dstackAxisID]):
+				# Generate full slice of data to shift, by inserting i into slicebase:
 				subset_slice = tuple(np.insert(slicebase_wo_stackaxis, self.dstackAxisID, i))
+				# Get shiftvector for the stack element i:
 				shift = self.generate_shiftvector(i)
 				if verbose:
 					step_starttime = time.time()
+				# Get the shifted data from the Data_Handler method:
 				shifted_data = self.data.get_datafield(0).data.shift_slice(subset_slice, shift,
 																		   order=self.interpolation_order)
 				if verbose:
 					print('interpolation done in {0:.2f} s'.format(time.time() - step_starttime))
 					step_starttime = time.time()
+				# Write shifted data to corresponding place in dh:
 				dh[subset_slice] = shifted_data
 				if verbose:
 					print('data written in {0:.2f} s'.format(time.time() - step_starttime))
@@ -224,6 +235,7 @@ class Drift(object):
 													  h5target=dh.h5target)
 		else:
 			newda = snomtools.data.datasets.DataArray(self[:], label=oldda.label, plotlabel=oldda.plotlabel)
+		# Put all the shifted data and old axes together to new DataSet:
 		newds = snomtools.data.datasets.DataSet(self.data.label + " driftcorrected", (newda,), self.data.axes,
 												self.data.plotconf, h5target=h5target)
 		return newds
