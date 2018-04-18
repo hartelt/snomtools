@@ -186,7 +186,7 @@ class Drift(object):
 
 	def corrected_data(self, h5target=None):
 		"""Return the full driftcorrected dataset."""
-		
+
 		oldda = self.data.get_datafield(0)
 		if h5target:
 			# Probe HDF5 initialization to optimize buffer size:
@@ -444,6 +444,144 @@ class Drift(object):
 				pass
 
 		return inputlist
+
+
+class Terra_maxmap(object):
+	def __init__(self, data=None, precalculated_map=None, energyAxisID=None, yAxisID=None, xAxisID=None,
+				 method=None, interpolation_order=None, use_meandrift=True):
+
+		if energyAxisID is None:
+			self.deAxisID = data.get_axis_index('energy')
+		else:
+			self.deAxisID = data.get_axis_index(energyAxisID)
+		if yAxisID is None:
+			self.dyAxisID = data.get_axis_index('y')
+		else:
+			self.dyAxisID = data.get_axis_index(yAxisID)
+		if xAxisID is None:
+			self.dxAxisID = data.get_axis_index('x')
+		else:
+			self.dxAxisID = data.get_axis_index(xAxisID)
+
+		energyAxisID = data.get_axis_index(energyAxisID)
+
+		# check for external drift vectors
+		if precalculated_map:
+			assert len(precalculated_drift) == data.shape[
+				(self.dyAxisID, self.dxAxisID)], "Number of energy shiftvectors unequal to xy dimension of data"
+			self.drift = precalculated_drift
+		else:
+			self.method = method
+			self.drift = None
+			print('No internal maxima map calculation implemented. Please load precalculated map')
+		if use_meandrift:
+			# ToDo: check if this clutters
+			# calculating the mean Drift for the center half of the image to ignore wrong values at edges
+			lower0 = int_(shape(data[:][0])[0] / 4)
+			upper0 = int_(shape(data[:][0])[0] * 3 / 4)
+			lower1 = int_(shape(data[0][:])[0] / 4)
+			upper1 = int_(shape(data[0][:])[0] * 3 / 4)
+
+			self.meanDrift = int_(mean(drift[lower0:upper0][lower1:upper1]))
+
+		self.data = data
+		if interpolation_order is None:
+			if self.subpixel:
+				self.interpolation_order = 1
+			else:
+				self.interpolation_order = 0
+		else:
+			self.interpolation_order = interpolation_order
+
+	@property
+	def drift_relative(self):
+		return self.as_relative_vectors(self.drift)
+
+	def as_relative_vectors(self, vectors):
+		for vec in vectors:
+			yield self.relative_vector(vec)
+
+	def relative_vector(self, vector):
+		o_E = self.meanDrift
+		d_E = vector
+		return (d_E - o_E)
+
+	def generate_shiftvector(self, stack_index):
+		"""
+		Generates the full shift vector according to the shape of self.data (minus the stackAxis) out of the 2d drift
+			vectors at a given index along the stackAxis.
+
+		:param int stack_index: An index along the stackAxis
+
+		:return: The 1D array of shift values of length len(self.data)-1.
+		:rtype: np.ndarray
+		"""
+		# Initialize empty shiftvector according to the number of dimensions of the data:
+		arr = np.zeros(len(self.data.shape))
+		# Get the drift at the index position as a numpy array:
+		drift = np.array(self.relative_vector(self.drift[stack_index[0], stack_index[1]]))
+		# Put the negated drift in the corresponding shiftvector places:
+		np.put(arr, [self.dyAxisID, self.dxAxisID], -drift)
+		return arr
+
+	def corrected_data(self, h5target=None):
+		"""Return the full driftcorrected dataset."""
+
+		oldda = self.data.get_datafield(0)
+		if h5target:
+			# Probe HDF5 initialization to optimize buffer size:
+			chunk_size = snomtools.data.h5tools.probe_chunksize(shape=self.data.shape)
+			min_cache_size = np.prod(self.data.shape, dtype=np.int64) // self.data.shape[self.dstackAxisID] * chunk_size[self.dstackAxisID] * 4  # 32bit floats require 4 bytes.
+			use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 128 MB just to be sure.
+			# Initialize data handler to write to:
+			dh = snomtools.data.datasets.Data_Handler_H5(unit=str(self.data.datafields[0].units), shape=self.data.shape,
+														 chunk_cache_mem_size=use_cache_size)
+
+			# Calculate driftcorrected data and write it to dh:
+			if verbose:
+				import time
+				start_time = time.time()
+				print(str(start_time))
+				print("Calculating {0} driftcorrected slices...".format(self.data.shape[self.dstackAxisID]))
+			# Get full slice for all the data:
+			full_selection = full_slice(np.s_[:], len(self.data.shape))
+			# Delete x and y Axis
+			slicebase_wo_stackaxis = np.delete(np.delete(full_selection, self.dxAxisID), self.dyAxisID)
+			# Iterate over all elements along dstackAxis:
+			for i in range(self.data.shape[self.dyAxisID]):
+				for j in range(self.data.shape[self.dxAxisID]):
+					# Generate full slice of data to shift, by inserting i for yAxis and j for xAxis position of the energy pixel into slicebase:
+					subset_slice = tuple(np.insert(np.insert(slicebase_wo_stackaxis, self.dyAxisID, i)), self.dxAxisID,
+										 j)
+					# Get shiftvector for the stack element i:
+					shift = self.generate_shiftvector(i, j)
+					if verbose:
+						step_starttime = time.time()
+					# Get the shifted data from the Data_Handler method:
+					shifted_data = self.data.get_datafield(0).data.shift_slice(subset_slice, shift,
+																			   order=self.interpolation_order)
+					if verbose:
+						print('interpolation done in {0:.2f} s'.format(time.time() - step_starttime))
+						step_starttime = time.time()
+					# Write shifted data to corresponding place in dh:
+					dh[subset_slice] = shifted_data
+					if verbose:
+						print('data written in {0:.2f} s'.format(time.time() - step_starttime))
+						tpf = ((time.time() - start_time) / float(i + 1))
+						etr = tpf * (
+						self.data.shape[self.dyAxisID] * self.data.shape[self.dxAxisID] - (i + 1) * (j + 1))
+						print("Slice {0:d} / {1:d}, Time/slice {3:.2f}s ETR: {2:.1f}s".format(i, self.data.shape[
+							self.dyAxisID] * self.data.shape[self.dxAxisID], etr, tpf))
+
+			# Initialize DataArray with data from dh:
+			newda = snomtools.data.datasets.DataArray(dh, label=oldda.label, plotlabel=oldda.plotlabel,
+													  h5target=dh.h5target)
+		else:
+			newda = snomtools.data.datasets.DataArray(self[:], label=oldda.label, plotlabel=oldda.plotlabel)
+		# Put all the shifted data and old axes together to new DataSet:
+		newds = snomtools.data.datasets.DataSet(self.data.label + " maximacorrected", (newda,), self.data.axes,
+												self.data.plotconf, h5target=h5target)
+		return newds
 
 
 if __name__ == '__main__':  # Testing...
