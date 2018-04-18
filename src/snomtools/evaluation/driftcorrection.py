@@ -156,7 +156,8 @@ class Drift(object):
 		# Initialize empty shiftvector according to the number of dimensions of the data:
 		arr = np.zeros(len(self.data.shape))
 		# Get the drift at the index position as a numpy array:
-		drift = np.array(list(self.drift_relative)[stack_index])
+		# drift = np.array(list(self.drift_relative)[stack_index])
+		drift = np.array(self.relative_vector(self.drift[stack_index]))
 		# Put the negated drift in the corresponding shiftvector places:
 		np.put(arr, [self.dyAxisID, self.dxAxisID], -drift)
 		return arr
