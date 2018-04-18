@@ -658,7 +658,6 @@ class Data_Handler_H5(u.Quantity):
 			# If other has the same shape, the shape doesn't change and we can do everything chunk-wise with better
 			# performance and memory use.
 			newdh = self.__class__(shape=self.shape, unit=self.get_unit())
-			assert newdh.shape == self.shape, "The shape detection through broadcasting went seriously wrong."
 			for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
 				newdh[slice_] = owndata + other[slice_]
 			return newdh
@@ -682,7 +681,6 @@ class Data_Handler_H5(u.Quantity):
 			# If other has the same shape, the shape doesn't change and we can do everything chunk-wise with better
 			# performance and memory use.
 			newdh = self.__class__(shape=self.shape, unit=self.get_unit())
-			assert newdh.shape == self.shape, "The shape detection through broadcasting went seriously wrong."
 			for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
 				newdh[slice_] = owndata - other[slice_]
 			return newdh
@@ -694,7 +692,28 @@ class Data_Handler_H5(u.Quantity):
 
 	def __mul__(self, other):
 		other = u.to_ureg(other)
-		return super(Data_Handler_H5, self).__mul__(other)
+		if not hasattr(other, 'shape'):
+			# If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use.
+			assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+			newunit = str((other * u.to_ureg(1., self.get_unit())).units)
+			newdh = self.__class__(shape=self.shape, unit=newunit)
+			for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
+				newdh[slice_] = owndata * other
+			return newdh
+		elif other.shape == self.shape:
+			# If other has the same shape, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use.
+			newunit = str((u.to_ureg(1., str(other.units)) * u.to_ureg(1., self.get_unit())).units)
+			newdh = self.__class__(shape=self.shape, unit=newunit)
+			for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
+				newdh[slice_] = owndata * other[slice_]
+			return newdh
+		else:
+			# Else we need the numpy broadcasting magic to an array of different shape.
+			# TODO: Implement this memory-efficiently with broadcasting.
+			# The following line is a fallback which will break for big data due to using magnitudes.
+			return super(Data_Handler_H5, self).__mul__(other)
 
 	def __truediv__(self, other):
 		"""
@@ -702,15 +721,78 @@ class Data_Handler_H5(u.Quantity):
 		In python 2, this new function is called anyway due to :code:`from __future__ import division`.
 		"""
 		other = u.to_ureg(other)
-		return super(Data_Handler_H5, self).__truediv__(other)
+		if not hasattr(other, 'shape'):
+			# If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use.
+			assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+			newunit = str((u.to_ureg(1., self.get_unit()) / other).units)
+			newdh = self.__class__(shape=self.shape, unit=newunit)
+			for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
+				newdh[slice_] = owndata / other
+			return newdh
+		elif other.shape == self.shape:
+			# If other has the same shape, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use.
+			newunit = str((u.to_ureg(1., str(other.units)) / u.to_ureg(1., self.get_unit())).units)
+			newdh = self.__class__(shape=self.shape, unit=newunit)
+			for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
+				newdh[slice_] = owndata / other[slice_]
+			return newdh
+		else:
+			# Else we need the numpy broadcasting magic to an array of different shape.
+			# TODO: Implement this memory-efficiently with broadcasting.
+			# The following line is a fallback which will break for big data due to using magnitudes.
+			return super(Data_Handler_H5, self).__truediv__(other)
 
 	def __floordiv__(self, other):
 		other = u.to_ureg(other)
-		return super(Data_Handler_H5, self).__floordiv__(other)
+		if not hasattr(other, 'shape'):
+			# If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use.
+			assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+			newunit = str((u.to_ureg(1., self.get_unit()) // other).units)
+			newdh = self.__class__(shape=self.shape, unit=newunit)
+			for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
+				newdh[slice_] = owndata // other
+			return newdh
+		elif other.shape == self.shape:
+			# If other has the same shape, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use.
+			newunit = str((u.to_ureg(1., str(other.units)) // u.to_ureg(1., self.get_unit())).units)
+			newdh = self.__class__(shape=self.shape, unit=newunit)
+			for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
+				newdh[slice_] = owndata // other[slice_]
+			return newdh
+		else:
+			# Else we need the numpy broadcasting magic to an array of different shape.
+			# TODO: Implement this memory-efficiently with broadcasting.
+			# The following line is a fallback which will break for big data due to using magnitudes.
+			return super(Data_Handler_H5, self).__floordiv__(other)
 
 	def __pow__(self, other):
 		other = u.to_ureg(other, 'dimensionless')
-		return super(Data_Handler_H5, self).__pow__(other)
+		if not hasattr(other, 'shape'):
+			# If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use.
+			assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+			newunit = str((u.to_ureg(1., self.get_unit()) ** other).units)
+			newdh = self.__class__(shape=self.shape, unit=newunit)
+			for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
+				newdh[slice_] = owndata ** other
+			return newdh
+		elif other.shape == self.shape:
+			# If other has the same shape, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use.
+			assert self.dimensionless(), "Quantity array exponents are only allowed if the base is dimensionless"
+			newdh = self.__class__(shape=self.shape, unit="dimensionless")
+			for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
+				newdh[slice_] = owndata ** other[slice_]
+			return newdh
+		else:
+			# Else we need the numpy broadcasting magic to an array of different shape.
+			# TODO: Implement this memory-efficiently with broadcasting.
+			# The following line is a fallback which will break for big data due to using magnitudes.
+			return super(Data_Handler_H5, self).__pow__(other)
 
 	def __array__(self):
 		return self.magnitude
@@ -3076,14 +3158,27 @@ if __name__ == "__main__":  # just for testing
 
 	test_bigdata_operations = True
 	if test_bigdata_operations:
-		bigfuckindata = Data_Handler_H5(unit='km', shape=(1000, 1000, 1000, 10))
+		bigfuckindata = Data_Handler_H5(unit='km', shape=(1000, 1000, 1000))
 		import time
+
 		start_time = time.time()
 		bigplus = bigfuckindata + 1
 		print("Plus 1 took {0:.2f} seconds".format(time.time() - start_time))
 		start_time = time.time()
 		bigplusplus = bigplus + bigplus
 		print("data plus data took {0:.2f} seconds".format(time.time() - start_time))
+		start_time = time.time()
+		bigminus = bigfuckindata - 1
+		print("Minus 1 took {0:.2f} seconds".format(time.time() - start_time))
+		start_time = time.time()
+		bigtimes = bigfuckindata * 2
+		print("Times 2 took {0:.2f} seconds".format(time.time() - start_time))
+		start_time = time.time()
+		bigdiv = bigtimes / 2
+		print("Divided by 2 took {0:.2f} seconds".format(time.time() - start_time))
+		start_time = time.time()
+		bigfloordiv = bigtimes // 2
+		print("Truediv by 2 took {0:.2f} seconds".format(time.time() - start_time))
 
 	test_manyfiles = False
 	if test_manyfiles:
