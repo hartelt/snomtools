@@ -569,37 +569,128 @@ class Data_Handler_H5(u.Quantity):
 
 	def iterchunks(self):
 		"""
-		Iterator, which returns the data of the chunks, chunk-wise.
+		Iterator, which returns the data of the chunks, chunk-wise. It returns the data as Quantities, because they are
+		small, so it will be much faster to keep them in RAM.
 
 		:return: The data in the chunk.
-		:rtype: Data_Handler_H5
+		:rtype: pint.Quantity
 		"""
 		for chunkslice in self.iterchunkslices():
-			yield self[chunkslice]
+			yield u.to_ureg(self.ds_data[chunkslice], self._units)
 
-	def iterfast(self):
+	def iterlineslices(self):
+		"""
+		Iterator, which provides slices corresponding to a line-wise iteration over the data.
+
+		:return: Slice tuple.
+		"""
+		iterlist = [range(i) for i in self.shape]
+		iterlist.pop()
+		iterlist.append([numpy.s_[:]])
+		return itertools.product(*iterlist)
+
+	def iterlines(self):
+		"""
+		Iterator, which yields the data line-wise. It returns the data as Quantities, because they are small, so it
+		will be much faster to keep them in RAM.
+
+		:return: The data of the current line.
+		:rtype: pint.Quantity
+		"""
+		for lineslice in self.iterlineslices():
+			yield u.to_ureg(self.ds_data[lineslice], self._units)
+
+	def iterflatslices(self):
+		"""
+		Iterator, which provides index tuples corresponding to a flat iteration over the array.
+
+		:return: Tuple of ints of length corresponding to the data dimensions.
+		"""
+		iterlist = [range(i) for i in self.shape]
+		return itertools.product(*iterlist)
+
+	def iterflat(self):
+		"""
+		Iterator, which yields the single data elements, as flattened (1D) iteration. It returns the data as
+		Quantities, because they are small (scalar), so it will be much faster to keep them in RAM.
+
+		:return: The data of the current point.
+		:rtype: pint.Quantity
+		"""
+		for indextuple in self.iterflatslices():
+			yield u.to_ureg(self.ds_data[indextuple], self._units)
+
+	def iterfastslices(self):
 		"""
 		Iterator, which returns slice objects which iterate over the data as fast as possible according to memory order.
 		This means chunk-wise for chunked data, line-wise for unchunked data. This provides the fastest way of accessing
 		the data sequentially.
 
-		:return: A tuple of slice objects.
+		:return: An iterator of slices.
 		"""
 		if self.chunks:
 			return self.iterchunkslices()
 		else:
-			iterlist = [range(i) for i in self.shape]
-			iterlist.pop()
-			iterlist.append([numpy.s_[:]])
-			return itertools.product(*iterlist)
+			return self.iterlineslices()
+
+	def iterfast(self):
+		"""
+		Iterator, which yields the data, accessing it in the fastest way to iterate over them, see :func:iterfastslices.
+		It returns the data as Quantities, because they are small, so it will be much faster to keep them in RAM.
+
+		:return: The data of the current slice.
+		:rtype: pint.Quantity
+		"""
+		for slice_ in self.iterfastslices():
+			yield u.to_ureg(self.ds_data[slice_], self._units)
 
 	def __add__(self, other):
 		other = u.to_ureg(other, self.get_unit())
-		return super(Data_Handler_H5, self).__add__(other)
+		if not hasattr(other, 'shape'):
+			# If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use.
+			assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+			newdh = self.__class__(shape=self.shape, unit=self.get_unit())
+			for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
+				newdh[slice_] = owndata + other
+			return newdh
+		elif other.shape == self.shape:
+			# If other has the same shape, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use.
+			newdh = self.__class__(shape=self.shape, unit=self.get_unit())
+			assert newdh.shape == self.shape, "The shape detection through broadcasting went seriously wrong."
+			for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
+				newdh[slice_] = owndata + other[slice_]
+			return newdh
+		else:
+			# Else we need the numpy broadcasting magic to an array of different shape.
+			# TODO: Implement this memory-efficiently with broadcasting.
+			# The following line is a fallback which will break for big data due to using magnitudes.
+			return super(Data_Handler_H5, self).__add__(other)
 
 	def __sub__(self, other):
-		other = u.to_ureg(other, self.units)
-		return super(Data_Handler_H5, self).__sub__(other)
+		other = u.to_ureg(other, self.get_unit())
+		if not hasattr(other, 'shape'):
+			# If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use.
+			assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+			newdh = self.__class__(shape=self.shape, unit=self.get_unit())
+			for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
+				newdh[slice_] = owndata - other
+			return newdh
+		elif other.shape == self.shape:
+			# If other has the same shape, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use.
+			newdh = self.__class__(shape=self.shape, unit=self.get_unit())
+			assert newdh.shape == self.shape, "The shape detection through broadcasting went seriously wrong."
+			for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
+				newdh[slice_] = owndata - other[slice_]
+			return newdh
+		else:
+			# Else we need the numpy broadcasting magic to an array of different shape.
+			# TODO: Implement this memory-efficiently with broadcasting.
+			# The following line is a fallback which will break for big data due to using magnitudes.
+			return super(Data_Handler_H5, self).__sub__(other)
 
 	def __mul__(self, other):
 		other = u.to_ureg(other)
@@ -850,17 +941,66 @@ class Data_Handler_np(u.Quantity):
 				scipy.ndimage.interpolation.shift(self.magnitude[expanded_slice], shift_dimensioncorrected, output,
 												  order, mode, cval, prefilter)[recover_slice], self.units)
 
-	def iterfast(self):
+	def iterlineslices(self):
 		"""
-		Iterator, which returns slice objects which iterate over the data as fast as possible according to memory order.
-		This means line-wise for numpy arrays. This provides the fastest way of accessing the data sequentially.
+		Iterator, which provides slices corresponding to a line-wise iteration over the data.
 
-		:return: A tuple of slice objects.
+		:return: Slice tuple.
 		"""
 		iterlist = [range(i) for i in self.shape]
 		iterlist.pop()
 		iterlist.append([numpy.s_[:]])
 		return itertools.product(*iterlist)
+
+	def iterlines(self):
+		"""
+		Iterator, which yields the data line-wise.
+
+		:return: The data of the current line.
+		:rtype: pint.Quantity
+		"""
+		for lineslice in self.iterlineslices():
+			yield self[lineslice].q
+
+	def iterflatslices(self):
+		"""
+		Iterator, which provides index tuples corresponding to a flat iteration over the array.
+
+		:return: Tuple of ints of length corresponding to the data dimensions.
+		"""
+		iterlist = [range(i) for i in self.shape]
+		return itertools.product(*iterlist)
+
+	def iterflat(self):
+		"""
+		Iterator, which yields the single data elements, as flattened (1D) iteration. It returns the data as
+		Quantities, because they are small (scalar), so it will be much faster to keep them in RAM.
+
+		:return: The data of the current point.
+		:rtype: pint.Quantity
+		"""
+		for indextuple in self.iterflatslices():
+			yield self[indextuple].q
+
+	def iterfastslices(self):
+		"""
+		Iterator, which returns slice objects which iterate over the data as fast as possible according to memory order.
+		This means line-wise for data stored in numpy (C) order. This method is kept as analog for compatibility to
+		Data_Handler_H5.
+
+		:return: Line iterator.
+		"""
+		return self.iterlineslices()
+
+	def iterfast(self):
+		"""
+		Iterator, which yields the data, accessing it in the fastest way to iterate over them, see :func:iterfastslices.
+
+		:return: The data of the current slice.
+		:rtype: pint.Quantity
+		"""
+		for slice_ in self.iterfastslices():
+			yield self[slice_].q
 
 	def __add__(self, other):
 		other = u.to_ureg(other, self.get_unit())
@@ -2936,8 +3076,14 @@ if __name__ == "__main__":  # just for testing
 
 	test_bigdata_operations = True
 	if test_bigdata_operations:
-		bigfuckindata = Data_Handler_H5(unit='km', shape=(1000, 1000, 1000))
+		bigfuckindata = Data_Handler_H5(unit='km', shape=(1000, 1000, 1000, 10))
+		import time
+		start_time = time.time()
 		bigplus = bigfuckindata + 1
+		print("Plus 1 took {0:.2f} seconds".format(time.time() - start_time))
+		start_time = time.time()
+		bigplusplus = bigplus + bigplus
+		print("data plus data took {0:.2f} seconds".format(time.time() - start_time))
 
 	test_manyfiles = False
 	if test_manyfiles:
