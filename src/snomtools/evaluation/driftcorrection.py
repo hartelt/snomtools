@@ -546,29 +546,30 @@ class Terra_maxmap(object):
 			for i in range(self.data.shape[self.dyAxisID]):
 				intermediate_slice = np.insert(slicebase_wo_yaxis, self.dyAxisID, i)
 				slicebase_wo_xyaxis = np.delete(intermediate_slice, self.dxAxisID)
+				if verbose:
+					step_starttime = time.time()
+
 				for j in range(self.data.shape[self.dxAxisID]):
 					# Generate full slice of data to shift, by inserting i for yAxis and j for xAxis position of the energy pixel into slicebase:
 
 					subset_slice = tuple(np.insert(slicebase_wo_xyaxis, self.dxAxisID, j))
 					# Get shiftvector for the stack element i:
 					shift = self.generate_shiftvector((i, j))
-					if verbose:
-						step_starttime = time.time()
+
 					# Get the shifted data from the Data_Handler method:
 					shifted_data = self.data.get_datafield(0).data.shift_slice(subset_slice, shift,
 																			   order=self.interpolation_order)
-					if verbose:
-						print('interpolation done in {0:.2f} s'.format(time.time() - step_starttime))
-						step_starttime = time.time()
+
 					# Write shifted data to corresponding place in dh:
 					dh[subset_slice] = shifted_data
-					if verbose:
-						print('data written in {0:.2f} s'.format(time.time() - step_starttime))
-						tpf = ((time.time() - start_time) / float(i + 1))
-						etr = tpf * (
-							self.data.shape[self.dyAxisID] * self.data.shape[self.dxAxisID] - (i + 1) * (j + 1))
-						print("Slice {0:d} / {1:d}, Time/slice {3:.2f}s ETR: {2:.1f}s".format(i*j, self.data.shape[
-							self.dyAxisID] * self.data.shape[self.dxAxisID], etr, tpf))
+				if verbose:
+					print('data interpolated and written in {0:.2f} s'.format(time.time() - step_starttime))
+					tpf = ((time.time() - start_time) / float(i + 1))
+					etr = tpf * (
+						self.data.shape[self.dyAxisID] * self.data.shape[self.dxAxisID] - (i + 1) * (j + 1))	#ToDO: make nice
+					print("Slice {0:d} / {1:d}, Time/slice {3:.2f}s ETR: {2:.1f}s".format(i*self.data.shape[
+						self.dyAxisID], self.data.shape[
+						self.dyAxisID] * self.data.shape[self.dxAxisID], etr, tpf))
 
 			# Initialize DataArray with data from dh:
 			newda = snomtools.data.datasets.DataArray(dh, label=oldda.label, plotlabel=oldda.plotlabel,
