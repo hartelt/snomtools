@@ -680,11 +680,18 @@ class Data_Handler_H5(u.Quantity):
 		else:
 			# Else we need the numpy broadcasting magic to an array of different shape.
 			newshape = broadcast_shape(self.shape,other.shape)
-			newdh = self.__class__(shape=newshape, unit=self.get_unit())
+			if self.chunks:
+				newchunks = h5tools.probe_chunksize(newshape)
+				# Use at least one line worth of chunks as buffer for performance:
+				min_cache_size = numpy.prod(newchunks, dtype=numpy.int64) // newchunks[-1] * newshape[-1] \
+								 * 4 # 32bit floats require 4 bytes.
+				use_cache_size = min_cache_size + 16 * 1024 ** 2  # Add 16 MB just to be sure.
+				newdh = self.__class__(shape=newshape, unit=self.get_unit(), chunk_cache_mem_size=use_cache_size)
+			else:
+				newdh = self.__class__(shape=newshape, unit=self.get_unit(), chunks=False)
 			# Because we have different shapes and potentially different chunking, we need to iterate element-wise:
 			for ind_self, ind_other, ind_out in broadcast_indices(self.shape,other.shape):
-				# FIXME: Dont kill the machine here. Use quantities directly.
-				newdh[ind_out] = self[ind_self] + other[ind_other]
+				newdh[ind_out] = u.to_ureg(self.ds_data[ind_self], self._units) + other[ind_other]
 			return newdh
 
 	def __sub__(self, other):
@@ -3176,9 +3183,9 @@ if __name__ == "__main__":  # just for testing
 		sum7 = mediumfuckindata.sum((0, 2), h5target=h5)
 		sum8 = mediumfuckindata.sum()
 
-	test_bigdata_operations = False
+	test_bigdata_operations = True
 	if test_bigdata_operations:
-		bigfuckindata = Data_Handler_H5(unit='km', shape=(1000, 1000, 1000))
+		bigfuckindata = Data_Handler_H5(unit='km', shape=(1000, 1000, 1000), chunk_cache_mem_size=500*1024**2)
 		import time
 
 		start_time = time.time()
