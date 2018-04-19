@@ -40,8 +40,6 @@ def hist_asc(source, T_start=None, T_bin=1, tif_probe=None):
 	:return: The imported data.
 	:rtype: snomtools.data.datasets.DataSet
 	"""
-	# TODO: Test me!
-
 	filepath = os.path.abspath(source)
 	filebase = os.path.basename(filepath)
 
@@ -59,7 +57,7 @@ def hist_asc(source, T_start=None, T_bin=1, tif_probe=None):
 	# Read the "HistoXplusY" column from the .asc file to an array:
 	count_data = numpy.loadtxt(filepath, dtype=int, skiprows=1, usecols=2)
 	# Trim the trailing zeroes:
-	numpy.trim_zeros(count_data, 'b')
+	count_data = numpy.trim_zeros(count_data, 'b')
 
 	# If no start channel is given, guess it by taking the first non-zero entry, taking the binning into account.
 	if not tif_probe and T_start is None:
@@ -67,7 +65,7 @@ def hist_asc(source, T_start=None, T_bin=1, tif_probe=None):
 		T_start = start_index * T_bin
 
 	# Trim the leading zeroes:
-	numpy.trim_zeros(count_data)
+	count_data = numpy.trim_zeros(count_data)
 
 	# Initialize Channel axis and Count DataArray
 	taxis = ds.Axis([T_start + i * T_bin for i in range(count_data.shape[0])], label='channel',

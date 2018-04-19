@@ -14,10 +14,11 @@ import scipy.ndimage
 import datetime
 import warnings
 import sys
+import itertools
 import snomtools.calcs.units as u
 from snomtools.data import h5tools
 from snomtools import __package__, __version__
-from snomtools.data.tools import full_slice
+from snomtools.data.tools import full_slice, broadcast_shape, broadcast_indices
 
 __author__ = 'Michael Hartelt'
 
@@ -533,17 +534,215 @@ class Data_Handler_H5(u.Quantity):
 				scipy.ndimage.interpolation.shift(self.ds_data[expanded_slice], shift_dimensioncorrected, output, order,
 												  mode, cval, prefilter)[recover_slice], self.units, h5target=h5target)
 
+	# FIXME: Iterators for scalar data seems to freeze system.
+
+	def iterchunkslices(self, dim=None, dims=None):
+		"""
+		Iterator, which returns slice objects which address the data chunk-wise. This can be used wo very efficiently
+		perform operations on the data since chunk-wise is the fastest way to access the data in the HDF5 file.
+
+		:param int dim: Do this only for the first :code:`dim` dimensions. Used for recursively calling the generator.
+			If not given, all dimensions are used, so this defaults to :code:`dim = len(self.shape)-1`
+
+		:param dims: Iterate chunk-wise only for the dimension in dims. Full-slices [:] are given for all others.
+		:type dims: sequence of ints
+
+		:return: A tuple of slice objects of length :code:`dim`
+		"""
+		if dim is None:
+			dim = len(self.shape) - 1
+		if dims is None:
+			dims = list(range(len(self.shape)))
+
+		if dim == 0:  # Break condition
+			if 0 in dims:
+				csize_dim = self.chunks[dim]
+				start = 0
+				while start < self.shape[dim]:
+					stop = start + csize_dim
+					if stop >= self.shape[dim]:
+						stop = None
+					yield (slice(start, stop),)
+					start = start + csize_dim
+			else:
+				yield (numpy.s_[:],)
+		else:  # Generate slices for dim and attach them to all slices for dim-1 recursively
+			if dim in dims:
+				csize_dim = self.chunks[dim]
+				start = 0
+				while start < self.shape[dim]:
+					stop = start + csize_dim
+					if stop >= self.shape[dim]:
+						stop = None
+					for slicetuple_before in self.iterchunkslices(dim - 1, dims):
+						yield slicetuple_before + (slice(start, stop),)
+					start = start + csize_dim
+			else:
+				for slicetuple_before in self.iterchunkslices(dim - 1, dims):
+					yield slicetuple_before + (numpy.s_[:],)
+
+	def iterchunks(self, dims=None):
+		"""
+		Iterator, which returns the data of the chunks, chunk-wise. It returns the data as Quantities, because they are
+		small, so it will be much faster to keep them in RAM.
+
+		:param dims: Iterate chunk-wise only for the dimension in dims. Full-slices [:] are given for all others.
+		:type dims: sequence of ints
+
+		:return: The data in the chunk.
+		:rtype: pint.Quantity
+		"""
+		for chunkslice in self.iterchunkslices(dims=dims):
+			yield u.to_ureg(self.ds_data[chunkslice], self._units)
+
+	def iterlineslices(self):
+		"""
+		Iterator, which provides slices corresponding to a line-wise iteration over the data.
+
+		:return: Slice tuple.
+		"""
+		iterlist = [range(i) for i in self.shape]
+		if iterlist:
+			iterlist.pop()
+		iterlist.append([numpy.s_[:]])
+		return itertools.product(*iterlist)
+
+	def iterlines(self):
+		"""
+		Iterator, which yields the data line-wise. It returns the data as Quantities, because they are small, so it
+		will be much faster to keep them in RAM.
+
+		:return: The data of the current line.
+		:rtype: pint.Quantity
+		"""
+		for lineslice in self.iterlineslices():
+			yield u.to_ureg(self.ds_data[lineslice], self._units)
+
+	def iterflatslices(self):
+		"""
+		Iterator, which provides index tuples corresponding to a flat iteration over the array.
+
+		:return: Tuple of ints of length corresponding to the data dimensions.
+		"""
+		iterlist = [range(i) for i in self.shape]
+		return itertools.product(*iterlist)
+
+	def iterflat(self):
+		"""
+		Iterator, which yields the single data elements, as flattened (1D) iteration. It returns the data as
+		Quantities, because they are small (scalar), so it will be much faster to keep them in RAM.
+
+		:return: The data of the current point.
+		:rtype: pint.Quantity
+		"""
+		for indextuple in self.iterflatslices():
+			yield u.to_ureg(self.ds_data[indextuple], self._units)
+
+	def iterfastslices(self):
+		"""
+		Iterator, which returns slice objects which iterate over the data as fast as possible according to memory order.
+		This means chunk-wise for chunked data, line-wise for unchunked data. This provides the fastest way of accessing
+		the data sequentially.
+
+		:return: An iterator of slices.
+		"""
+		if self.chunks:
+			return self.iterchunkslices()
+		else:
+			return self.iterlineslices()
+
+	def iterfast(self):
+		"""
+		Iterator, which yields the data, accessing it in the fastest way to iterate over them, see :func:iterfastslices.
+		It returns the data as Quantities, because they are small, so it will be much faster to keep them in RAM.
+
+		:return: The data of the current slice.
+		:rtype: pint.Quantity
+		"""
+		for slice_ in self.iterfastslices():
+			yield u.to_ureg(self.ds_data[slice_], self._units)
+
 	def __add__(self, other):
 		other = u.to_ureg(other, self.get_unit())
-		return super(Data_Handler_H5, self).__add__(other)
+		if not hasattr(other, 'shape'):
+			# If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use.
+			assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+			newdh = self.__class__(shape=self.shape, unit=self.get_unit())
+			for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
+				newdh[slice_] = owndata + other
+			return newdh
+		elif other.shape == self.shape:
+			# If other has the same shape, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use.
+			newdh = self.__class__(shape=self.shape, unit=self.get_unit())
+			for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
+				newdh[slice_] = owndata + other[slice_]
+			return newdh
+		else:
+			# Else we need the numpy broadcasting magic to an array of different shape.
+			newshape = broadcast_shape(self.shape,other.shape)
+			if self.chunks:
+				newchunks = h5tools.probe_chunksize(newshape)
+				# Use at least one line worth of chunks as buffer for performance:
+				min_cache_size = numpy.prod(newchunks, dtype=numpy.int64) // newchunks[-1] * newshape[-1] \
+								 * 4 # 32bit floats require 4 bytes.
+				use_cache_size = min_cache_size + 16 * 1024 ** 2  # Add 16 MB just to be sure.
+				newdh = self.__class__(shape=newshape, unit=self.get_unit(), chunk_cache_mem_size=use_cache_size)
+			else:
+				newdh = self.__class__(shape=newshape, unit=self.get_unit(), chunks=False)
+			# Because we have different shapes and potentially different chunking, we need to iterate element-wise:
+			for ind_self, ind_other, ind_out in broadcast_indices(self.shape,other.shape):
+				newdh[ind_out] = u.to_ureg(self.ds_data[ind_self], self._units) + other[ind_other]
+			return newdh
 
 	def __sub__(self, other):
-		other = u.to_ureg(other, self.units)
-		return super(Data_Handler_H5, self).__sub__(other)
+		other = u.to_ureg(other, self.get_unit())
+		if not hasattr(other, 'shape'):
+			# If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use.
+			assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+			newdh = self.__class__(shape=self.shape, unit=self.get_unit())
+			for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
+				newdh[slice_] = owndata - other
+			return newdh
+		elif other.shape == self.shape:
+			# If other has the same shape, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use.
+			newdh = self.__class__(shape=self.shape, unit=self.get_unit())
+			for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
+				newdh[slice_] = owndata - other[slice_]
+			return newdh
+		else:
+			# Else we need the numpy broadcasting magic to an array of different shape.
+			# TODO: Implement this memory-efficiently with broadcasting.
+			# The following line is a fallback which will break for big data due to using magnitudes.
+			return super(Data_Handler_H5, self).__sub__(other)
 
 	def __mul__(self, other):
 		other = u.to_ureg(other)
-		return super(Data_Handler_H5, self).__mul__(other)
+		if not hasattr(other, 'shape'):
+			# If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use.
+			assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+			newunit = str((other * u.to_ureg(1., self.get_unit())).units)
+			newdh = self.__class__(shape=self.shape, unit=newunit)
+			for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
+				newdh[slice_] = owndata * other
+			return newdh
+		elif other.shape == self.shape:
+			# If other has the same shape, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use.
+			newunit = str((u.to_ureg(1., str(other.units)) * u.to_ureg(1., self.get_unit())).units)
+			newdh = self.__class__(shape=self.shape, unit=newunit)
+			for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
+				newdh[slice_] = owndata * other[slice_]
+			return newdh
+		else:
+			# Else we need the numpy broadcasting magic to an array of different shape.
+			# TODO: Implement this memory-efficiently with broadcasting.
+			# The following line is a fallback which will break for big data due to using magnitudes.
+			return super(Data_Handler_H5, self).__mul__(other)
 
 	def __truediv__(self, other):
 		"""
@@ -551,15 +750,78 @@ class Data_Handler_H5(u.Quantity):
 		In python 2, this new function is called anyway due to :code:`from __future__ import division`.
 		"""
 		other = u.to_ureg(other)
-		return super(Data_Handler_H5, self).__truediv__(other)
+		if not hasattr(other, 'shape'):
+			# If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use.
+			assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+			newunit = str((u.to_ureg(1., self.get_unit()) / other).units)
+			newdh = self.__class__(shape=self.shape, unit=newunit)
+			for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
+				newdh[slice_] = owndata / other
+			return newdh
+		elif other.shape == self.shape:
+			# If other has the same shape, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use.
+			newunit = str((u.to_ureg(1., str(other.units)) / u.to_ureg(1., self.get_unit())).units)
+			newdh = self.__class__(shape=self.shape, unit=newunit)
+			for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
+				newdh[slice_] = owndata / other[slice_]
+			return newdh
+		else:
+			# Else we need the numpy broadcasting magic to an array of different shape.
+			# TODO: Implement this memory-efficiently with broadcasting.
+			# The following line is a fallback which will break for big data due to using magnitudes.
+			return super(Data_Handler_H5, self).__truediv__(other)
 
 	def __floordiv__(self, other):
 		other = u.to_ureg(other)
-		return super(Data_Handler_H5, self).__floordiv__(other)
+		if not hasattr(other, 'shape'):
+			# If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use.
+			assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+			newunit = str((u.to_ureg(1., self.get_unit()) // other).units)
+			newdh = self.__class__(shape=self.shape, unit=newunit)
+			for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
+				newdh[slice_] = owndata // other
+			return newdh
+		elif other.shape == self.shape:
+			# If other has the same shape, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use.
+			newunit = str((u.to_ureg(1., str(other.units)) // u.to_ureg(1., self.get_unit())).units)
+			newdh = self.__class__(shape=self.shape, unit=newunit)
+			for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
+				newdh[slice_] = owndata // other[slice_]
+			return newdh
+		else:
+			# Else we need the numpy broadcasting magic to an array of different shape.
+			# TODO: Implement this memory-efficiently with broadcasting.
+			# The following line is a fallback which will break for big data due to using magnitudes.
+			return super(Data_Handler_H5, self).__floordiv__(other)
 
 	def __pow__(self, other):
 		other = u.to_ureg(other, 'dimensionless')
-		return super(Data_Handler_H5, self).__pow__(other)
+		if not hasattr(other, 'shape'):
+			# If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use.
+			assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+			newunit = str((u.to_ureg(1., self.get_unit()) ** other).units)
+			newdh = self.__class__(shape=self.shape, unit=newunit)
+			for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
+				newdh[slice_] = owndata ** other
+			return newdh
+		elif other.shape == self.shape:
+			# If other has the same shape, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use.
+			assert self.dimensionless(), "Quantity array exponents are only allowed if the base is dimensionless"
+			newdh = self.__class__(shape=self.shape, unit="dimensionless")
+			for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
+				newdh[slice_] = owndata ** other[slice_]
+			return newdh
+		else:
+			# Else we need the numpy broadcasting magic to an array of different shape.
+			# TODO: Implement this memory-efficiently with broadcasting.
+			# The following line is a fallback which will break for big data due to using magnitudes.
+			return super(Data_Handler_H5, self).__pow__(other)
 
 	def __array__(self):
 		return self.magnitude
@@ -789,6 +1051,67 @@ class Data_Handler_np(u.Quantity):
 			return Data_Handler_np(
 				scipy.ndimage.interpolation.shift(self.magnitude[expanded_slice], shift_dimensioncorrected, output,
 												  order, mode, cval, prefilter)[recover_slice], self.units)
+
+	def iterlineslices(self):
+		"""
+		Iterator, which provides slices corresponding to a line-wise iteration over the data.
+
+		:return: Slice tuple.
+		"""
+		iterlist = [range(i) for i in self.shape]
+		iterlist.pop()
+		iterlist.append([numpy.s_[:]])
+		return itertools.product(*iterlist)
+
+	def iterlines(self):
+		"""
+		Iterator, which yields the data line-wise.
+
+		:return: The data of the current line.
+		:rtype: pint.Quantity
+		"""
+		for lineslice in self.iterlineslices():
+			yield self[lineslice].q
+
+	def iterflatslices(self):
+		"""
+		Iterator, which provides index tuples corresponding to a flat iteration over the array.
+
+		:return: Tuple of ints of length corresponding to the data dimensions.
+		"""
+		iterlist = [range(i) for i in self.shape]
+		return itertools.product(*iterlist)
+
+	def iterflat(self):
+		"""
+		Iterator, which yields the single data elements, as flattened (1D) iteration. It returns the data as
+		Quantities, because they are small (scalar), so it will be much faster to keep them in RAM.
+
+		:return: The data of the current point.
+		:rtype: pint.Quantity
+		"""
+		for indextuple in self.iterflatslices():
+			yield self[indextuple].q
+
+	def iterfastslices(self):
+		"""
+		Iterator, which returns slice objects which iterate over the data as fast as possible according to memory order.
+		This means line-wise for data stored in numpy (C) order. This method is kept as analog for compatibility to
+		Data_Handler_H5.
+
+		:return: Line iterator.
+		"""
+		return self.iterlineslices()
+
+	def iterfast(self):
+		"""
+		Iterator, which yields the data, accessing it in the fastest way to iterate over them, see :func:iterfastslices.
+
+		:return: The data of the current slice.
+		:rtype: pint.Quantity
+		"""
+		for slice_ in self.iterfastslices():
+			yield self[slice_].q
 
 	def __add__(self, other):
 		other = u.to_ureg(other, self.get_unit())
@@ -1997,7 +2320,8 @@ class ROI(object):
 							  limitlist=[self.get_limits(by_index=True)[i] for i in indexlist],
 							  by_index=True)
 
-	# TODO: ROI.saveh5
+
+# TODO: ROI.saveh5
 
 
 class DataSet(object):
@@ -2806,7 +3130,7 @@ if __name__ == "__main__":  # just for testing
 
 	testh5 = h5tools.File('test.hdf5')
 
-	test_dataarray = True
+	test_dataarray = False
 	# noinspection PyPackageRequirements
 	if test_dataarray:
 		moep = DataArray(testaxis.data, label="test", h5target=testh5)
@@ -2860,6 +3184,40 @@ if __name__ == "__main__":  # just for testing
 		sum6 = mediumfuckindata.sum((0, 1), keepdims=True)
 		sum7 = mediumfuckindata.sum((0, 2), h5target=h5)
 		sum8 = mediumfuckindata.sum()
+
+	test_bigdata_operations = True
+	if test_bigdata_operations:
+		bigfuckindata = Data_Handler_H5(unit='km', shape=(1000, 1000, 1000), chunk_cache_mem_size=500*1024**2)
+		import time
+
+		start_time = time.time()
+		bigplusline = bigfuckindata + numpy.ones(1000)
+		print("Plus line of ones took {0:.2f} seconds".format(time.time() - start_time))
+
+		start_time = time.time()
+		bigplus = bigfuckindata + 1
+		print("Plus 1 took {0:.2f} seconds".format(time.time() - start_time))
+		start_time = time.time()
+		bigplusplus = bigplus + bigplus
+		print("data plus data took {0:.2f} seconds".format(time.time() - start_time))
+		start_time = time.time()
+		bigminus = bigfuckindata - 1
+		print("Minus 1 took {0:.2f} seconds".format(time.time() - start_time))
+		start_time = time.time()
+		bigtimes = bigfuckindata * 2
+		print("Times 2 took {0:.2f} seconds".format(time.time() - start_time))
+		start_time = time.time()
+		bigdiv = bigtimes / 2
+		print("Divided by 2 took {0:.2f} seconds".format(time.time() - start_time))
+		start_time = time.time()
+		bigfloordiv = bigtimes // 2
+		print("Truediv by 2 took {0:.2f} seconds".format(time.time() - start_time))
+
+		if False:
+			bignumpy = numpy.zeros(shape=(1000,1000,1000), dtype=numpy.float32)
+			start_time = time.time()
+			bignumpyplus = bignumpy + 1
+			print("Numpy plus 1 took {0:.2f} seconds".format(time.time() - start_time))
 
 	test_manyfiles = False
 	if test_manyfiles:

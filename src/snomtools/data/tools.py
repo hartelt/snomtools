@@ -9,6 +9,7 @@ from __future__ import division
 from __future__ import print_function
 from six import string_types
 import numpy as np
+from numpy.lib.stride_tricks import as_strided
 
 __author__ = 'Michael Hartelt'
 
@@ -201,3 +202,60 @@ def find_next_prime(N):
 		if is_prime(n):
 			return n
 	raise AssertionError("Failed to find a prime number between {0} and {1}...".format(N, 2 * N))
+
+
+def dummy_array(shape_):
+	"""
+	Dummy array of a given shape, meaning an array that needs virtually no memory, by just referencing every element of
+	the array to one :code:`0` in memory.
+
+	:param tuple shape_: A tuple of ints, corresponding to the required shape.
+
+	:return: An array view of the required shape.
+	:rtype: numpy.ndarray
+	"""
+	x = np.array([0])
+	return as_strided(x, shape=shape_, strides=[0] * len(shape_), writeable=False)
+
+
+def broadcast_shape(*shapes):
+	"""
+	Given a set of array shapes, return the shape of the output when arrays of those
+	shapes are broadcast together
+
+	:param shapes: One or more shapes (tuples of ints) representing the shape of the arrays to be broadcasted.
+
+	:returns: The shape of the array that is generated, when arrays of the input shapes are broadcast together.
+	:rtype: tuple(int)
+	"""
+	max_nim = max(len(s) for s in shapes)
+	equal_len_shapes = np.array([(1,) * (max_nim - len(s)) + s for s in shapes])
+	max_dim_shapes = np.max(equal_len_shapes, axis=0)
+	assert np.all(np.bitwise_or(equal_len_shapes == 1, equal_len_shapes == max_dim_shapes[None, :])), \
+		'Shapes %s are not broadcastable together' % (shapes,)
+	return tuple(max_dim_shapes)
+
+
+def broadcast_indices(*shapes):
+	"""
+	Given a set of shapes of arrays that you could broadcast together, return an iterator that returns a len(shapes)+1
+	tuple of the indices of each input array and their corresponding index in the output array.
+
+	:param shapes: One or more shapes (tuples of ints) representing the shape of the arrays to be broadcasted.
+
+	:returns: broadcast_shape_iterator: An iterator that for every iterations gives a len(shapes)+1 tuple of the
+		indices of each input array and their corresponding index in the output array, in the order
+		:code:`in1, in2, ... , out`.
+		The indices are given as tuples of ints that can directly be used to address the elements of the arrays as in
+		:code:`arr1[in1]`.
+	:rtype: tuple(tuple(int))
+	"""
+	output_shape = broadcast_shape(*shapes)
+	base_iter = np.ndindex(output_shape)
+
+	def broadcast_shape_iterator():
+		for out_ix in base_iter:
+			in_ixs = tuple(tuple(0 if s[i] == 1 else ix for i, ix in enumerate(out_ix[-len(s):])) for s in shapes)
+			yield in_ixs + (out_ix,)
+
+	return broadcast_shape_iterator()
