@@ -565,6 +565,8 @@ class Terra_maxmap(object):
 					step_starttime = time.time()
 
 				bigger_cache_array = np.empty(shape=sliced_shape(chunkslice, oldda.shape), dtype=np.float32)
+				oldda_chunk = snomtools.data.datasets.Data_Handler_np(oldda.data.ds_data[chunkslice],oldda.get_unit())
+
 				yslice = chunkslice[self.dyAxisID]
 				assert isinstance(yslice, slice)
 				if yslice.stop is None:
@@ -597,19 +599,19 @@ class Terra_maxmap(object):
 
 						if self.subpixel:
 							# Get the shifted data from the Data_Handler method:
-							self.data.get_datafield(0).data.shift_slice(subset_slice, shift, output=cache_array,
-																		order=self.interpolation_order)
+							oldda_chunk.shift_slice(subset_slice_relative, shift, output=cache_array,
+												   order=self.interpolation_order)
 
 							# Write shifted data to corresponding place in dh:
 							bigger_cache_array[subset_slice_relative] = cache_array
 						else:
 							shift = np.rint(shift[self.deAxisID]).astype(int)
 							if shift == 0:
-								bigger_cache_array[subset_slice_relative] = oldda.data.ds_data[subset_slice]
+								bigger_cache_array[subset_slice_relative] = oldda_chunk.magnitude[subset_slice_relative]
 							else:
-								oldslice = list(subset_slice)
-								newslice = list(subset_slice)
-								restslice = list(subset_slice)
+								oldslice = list(subset_slice_relative)
+								newslice = list(subset_slice_relative)
+								restslice = list(subset_slice_relative)
 								if shift < 0:
 									s = abs(shift)
 									oldslice[self.deAxisID] = np.s_[s:]
@@ -624,7 +626,7 @@ class Terra_maxmap(object):
 									newslice.pop(dimension)
 									restslice.pop(dimension)
 								cache_array[tuple(restslice)] = np.nan
-								cache_array[tuple(newslice)] = oldda.data.ds_data[tuple(oldslice)]
+								cache_array[tuple(newslice)] = oldda_chunk.magnitude[tuple(oldslice)]
 								bigger_cache_array[subset_slice_relative] = cache_array
 				dh[chunkslice] = bigger_cache_array
 				if verbose:
@@ -669,7 +671,7 @@ if __name__ == '__main__':  # Testing...
 
 		data.saveh5()
 
-		drift = Terra_maxmap(data, precal_map, subpixel=False, binning=16)
+		drift = Terra_maxmap(data, precal_map, subpixel=True, binning=16)
 		# Calculate corrected data:
 		correcteddata = drift.corrected_data(h5target='Maximamap/' + run)
 
