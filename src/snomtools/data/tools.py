@@ -9,6 +9,7 @@ from __future__ import division
 from __future__ import print_function
 from six import string_types
 import numpy as np
+from numpy.lib.stride_tricks import as_strided
 
 __author__ = 'Michael Hartelt'
 
@@ -201,3 +202,23 @@ def find_next_prime(N):
 		if is_prime(n):
 			return n
 	raise AssertionError("Failed to find a prime number between {0} and {1}...".format(N, 2 * N))
+
+
+def broadcast_shapes(shp1, shp2):
+	"""
+	This (hopefully will) provides a memory-efficient way of creating a numpy broadcast of arbitrary shape when not
+	caring about the data. Because only the shape is given and the arrays which are worked on are just references to
+	the same :code:`1` in memory, the data that comes out of the generated broadcast will just always be (1,1). The
+	shape and index attributes however should be usable.
+
+	:param tuple shp1: The shape of the first array as tuple of ints.
+
+	:param tuple shp2: The shape of the second array as tuple of ints.
+
+	:return: The broadcast object. See :class:numpy.broadcast.
+	:rtype: numpy.broadcast
+	"""
+	x = np.array([1])
+	a = as_strided(x, shape=shp1, strides=[0] * len(shp1), writeable=False)
+	b = as_strided(x, shape=shp2, strides=[0] * len(shp2), writeable=False)
+	return np.broadcast(a, b)
