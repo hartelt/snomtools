@@ -11,7 +11,7 @@ import cv2 as cv
 import numpy as np
 import snomtools.data.datasets
 import snomtools.data.h5tools
-from snomtools.data.tools import iterfy, full_slice
+from snomtools.data.tools import iterfy, full_slice, sliced_shape
 
 __author__ = 'Benjamin Frisch'
 
@@ -563,6 +563,8 @@ class Terra_maxmap(object):
 			for chunkslice in oldda.data.iterchunkslices(dims=(self.dyAxisID, self.dxAxisID)):
 				if verbose:
 					step_starttime = time.time()
+
+				bigger_cache_array = np.empty(shape=sliced_shape(chunkslice, oldda.shape), dtype=np.float32)
 				yslice = chunkslice[self.dyAxisID]
 				assert isinstance(yslice, slice)
 				if yslice.stop is None:
@@ -573,8 +575,10 @@ class Terra_maxmap(object):
 				for i in range(yslice.start, upper_lim):
 					# Iterate over all elements along dyAxis, therefore inserting i as iterator to slicebase:
 					intermediate_slice = np.insert(slicebase_wo_yaxis, self.dyAxisID, i)
+					intermediate_slice_relative = np.insert(slicebase_wo_yaxis, self.dyAxisID, i - yslice.start)
 					# Delete x Axis
 					slicebase_wo_xyaxis = np.delete(intermediate_slice, self.dxAxisID)
+					slicebase_wo_xyaxis_relative = np.delete(intermediate_slice_relative, self.dxAxisID)
 
 					xslice = chunkslice[self.dxAxisID]
 					assert isinstance(xslice, slice)
@@ -586,6 +590,8 @@ class Terra_maxmap(object):
 					for j in range(xslice.start, upper_lim):
 						# Iterate over all elements along dxAxis:
 						subset_slice = tuple(np.insert(slicebase_wo_xyaxis, self.dxAxisID, j))
+						subset_slice_relative = tuple(
+							np.insert(slicebase_wo_xyaxis_relative, self.dxAxisID, j - xslice.start))
 						# Get shiftvector for the stack element at y,x coordinates i,j:
 						shift = self.generate_shiftvector((i, j))
 
@@ -595,11 +601,11 @@ class Terra_maxmap(object):
 																		order=self.interpolation_order)
 
 							# Write shifted data to corresponding place in dh:
-							dh[subset_slice] = cache_array
+							bigger_cache_array[subset_slice_relative] = cache_array
 						else:
 							shift = np.rint(shift[self.deAxisID]).astype(int)
 							if shift == 0:
-								dh[subset_slice] = oldda.data.ds_data[subset_slice]
+								bigger_cache_array[subset_slice_relative] = oldda.data.ds_data[subset_slice]
 							else:
 								oldslice = list(subset_slice)
 								newslice = list(subset_slice)
@@ -619,7 +625,8 @@ class Terra_maxmap(object):
 									restslice.pop(dimension)
 								cache_array[tuple(restslice)] = np.nan
 								cache_array[tuple(newslice)] = oldda.data.ds_data[tuple(oldslice)]
-								dh[subset_slice] = cache_array
+								bigger_cache_array[subset_slice_relative] = cache_array
+				dh[chunkslice] = bigger_cache_array
 				if verbose:
 					chunks_done += 1
 					print('data interpolated and written in {0:.2f} s'.format(time.time() - step_starttime))
