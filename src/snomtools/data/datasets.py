@@ -18,7 +18,7 @@ import itertools
 import snomtools.calcs.units as u
 from snomtools.data import h5tools
 from snomtools import __package__, __version__
-from snomtools.data.tools import full_slice
+from snomtools.data.tools import full_slice, broadcast_shape, broadcast_indices
 
 __author__ = 'Michael Hartelt'
 
@@ -532,7 +532,7 @@ class Data_Handler_H5(u.Quantity):
 				scipy.ndimage.interpolation.shift(self.ds_data[expanded_slice], shift_dimensioncorrected, output, order,
 												  mode, cval, prefilter)[recover_slice], self.units, h5target=h5target)
 
-	# TODO: Rewrite operator magic methods below to work with arbitrary large data.
+	# FIXME: Iterators for scalar data seems to freeze system.
 
 	def iterchunkslices(self, dim=None):
 		"""
@@ -585,7 +585,8 @@ class Data_Handler_H5(u.Quantity):
 		:return: Slice tuple.
 		"""
 		iterlist = [range(i) for i in self.shape]
-		iterlist.pop()
+		if iterlist:
+			iterlist.pop()
 		iterlist.append([numpy.s_[:]])
 		return itertools.product(*iterlist)
 
@@ -663,9 +664,13 @@ class Data_Handler_H5(u.Quantity):
 			return newdh
 		else:
 			# Else we need the numpy broadcasting magic to an array of different shape.
-			# TODO: Implement this memory-efficiently with broadcasting.
-			# The following line is a fallback which will break for big data due to using magnitudes.
-			return super(Data_Handler_H5, self).__add__(other)
+			newshape = broadcast_shape(self.shape,other.shape)
+			newdh = self.__class__(shape=newshape, unit=self.get_unit())
+			# Because we have different shapes and potentially different chunking, we need to iterate element-wise:
+			for ind_self, ind_other, ind_out in broadcast_indices(self.shape,other.shape):
+				# FIXME: Dont kill the machine here. Use quantities directly.
+				newdh[ind_out] = self[ind_self] + other[ind_other]
+			return newdh
 
 	def __sub__(self, other):
 		other = u.to_ureg(other, self.get_unit())
@@ -3162,6 +3167,10 @@ if __name__ == "__main__":  # just for testing
 		import time
 
 		start_time = time.time()
+		bigplusline = bigfuckindata + numpy.ones(1000)
+		print("Plus line of ones took {0:.2f} seconds".format(time.time() - start_time))
+
+		start_time = time.time()
 		bigplus = bigfuckindata + 1
 		print("Plus 1 took {0:.2f} seconds".format(time.time() - start_time))
 		start_time = time.time()
@@ -3179,6 +3188,12 @@ if __name__ == "__main__":  # just for testing
 		start_time = time.time()
 		bigfloordiv = bigtimes // 2
 		print("Truediv by 2 took {0:.2f} seconds".format(time.time() - start_time))
+
+		if False:
+			bignumpy = numpy.zeros(shape=(1000,1000,1000), dtype=numpy.float32)
+			start_time = time.time()
+			bignumpyplus = bignumpy + 1
+			print("Numpy plus 1 took {0:.2f} seconds".format(time.time() - start_time))
 
 	test_manyfiles = False
 	if test_manyfiles:
