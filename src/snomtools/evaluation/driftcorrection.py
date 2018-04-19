@@ -466,7 +466,7 @@ class Terra_maxmap(object):
 		self.data = data
 		# check for external drift vectors
 		if precalculated_map is not None:
-			# ToDO: "Insert testing for: Number of energy shiftvectors unequal to xy dimension of data"
+			# ToDO: Insert testing for: "Number of energy shiftvectors unequal to xy dimension of data"
 			self.drift = precalculated_map
 		else:
 			self.method = method
@@ -501,7 +501,7 @@ class Terra_maxmap(object):
 
 	def generate_shiftvector(self, stack_index):
 		"""
-		Generates the full shift vector according to the shape of self.data (minus the stackAxis) out of the 2d drift
+		Generates the full shift vector according to the shape of self.data (minus the stackAxis) out of the drift
 			vectors at a given index along the stackAxis.
 
 		:param int stack_index: An index along the stackAxis
@@ -513,7 +513,7 @@ class Terra_maxmap(object):
 		arr = np.zeros(len(self.data.shape))
 		# Get the drift at the index position as a numpy array:
 		drift = np.array(self.relative_vector(self.drift[stack_index[0], stack_index[1]]))
-		# Put the negated drift in the corresponding shiftvector place for energy:
+		# Put the negated drift in the corresponding shiftvector place for the energy axis:
 		np.put(arr, [self.deAxisID], -drift)
 		return arr
 
@@ -521,12 +521,13 @@ class Terra_maxmap(object):
 		"""Return the full driftcorrected dataset."""
 
 		oldda = self.data.get_datafield(0)
+		assert isinstance(oldda, snomtools.data.datasets.DataArray)
 		if h5target:
 			# Probe HDF5 initialization to optimize buffer size:
 			chunk_size = snomtools.data.h5tools.probe_chunksize(shape=self.data.shape)
 			min_cache_size = np.prod(self.data.shape, dtype=np.int64) // (self.data.shape[self.dxAxisID]) // \
 							 (self.data.shape[self.dyAxisID]) * chunk_size[self.dxAxisID] * \
-							 chunk_size[self.dyAxisID] * 4	# 32bit floats require 4 bytes.
+							 chunk_size[self.dyAxisID] * 4  # 32bit floats require 4 bytes.
 			use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 128 MB just to be sure.
 			# Initialize data handler to write to:
 			dh = snomtools.data.datasets.Data_Handler_H5(unit=str(self.data.datafields[0].units), shape=self.data.shape,
@@ -537,38 +538,49 @@ class Terra_maxmap(object):
 				import time
 				start_time = time.time()
 				print(time.ctime())
-				print("Calculating {0} driftcorrected slices...".format(self.data.shape[self.dxAxisID]**2)) #ToDo: make nice
+				xychunks = self.data.shape[self.dxAxisID] * self.data.shape[self.dyAxisID] // oldda.data.chunks[
+					self.dyAxisID] // oldda.data.chunks[self.dxAxisID]
+				chunks_done = 0
+				print("Calculating {0} driftcorrected slices...".format(xychunks))
 			# Get full slice for all the data:
 			full_selection = full_slice(np.s_[:], len(self.data.shape))
-			# Delete x and y Axis
+			# Delete y Axis
 			slicebase_wo_yaxis = np.delete(full_selection, self.dyAxisID)
-			# Iterate over all elements along dstackAxis:
-			for i in range(self.data.shape[self.dyAxisID]):
-				intermediate_slice = np.insert(slicebase_wo_yaxis, self.dyAxisID, i)
-				slicebase_wo_xyaxis = np.delete(intermediate_slice, self.dxAxisID)
+
+			for chunkslice in oldda.data.iterchunkslices(dims=(self.dyAxisID, self.dxAxisID)):
 				if verbose:
 					step_starttime = time.time()
+				yslice = chunkslice[self.dyAxisID]
+				assert isinstance(yslice, slice)
 
-				for j in range(self.data.shape[self.dxAxisID]):
-					# Generate full slice of data to shift, by inserting i for yAxis and j for xAxis position of the energy pixel into slicebase:
+				for i in range(yslice.start, yslice.stop):
+					# Iterate over all elements along dyAxis, therefore inserting i as iterator to slicebase:
+					intermediate_slice = np.insert(slicebase_wo_yaxis, self.dyAxisID, i)
+					# Delete x Axis
+					slicebase_wo_xyaxis = np.delete(intermediate_slice, self.dxAxisID)
 
-					subset_slice = tuple(np.insert(slicebase_wo_xyaxis, self.dxAxisID, j))
-					# Get shiftvector for the stack element i:
-					shift = self.generate_shiftvector((i, j))
+					xslice = chunkslice[self.dxAxisID]
+					assert isinstance(xslice, slice)
+					# Iterate over all elements along dxAxis, therefore inserting j as iterator to slicebase:
+					for j in range(xslice.start, xslice.stop):
+						# Iterate over all elements along dxAxis:
+						subset_slice = tuple(np.insert(slicebase_wo_xyaxis, self.dxAxisID, j))
+						# Get shiftvector for the stack element at y,x coordinates i,j:
+						shift = self.generate_shiftvector((i, j))
 
-					# Get the shifted data from the Data_Handler method:
-					shifted_data = self.data.get_datafield(0).data.shift_slice(subset_slice, shift,
-																			   order=self.interpolation_order)
+						# Get the shifted data from the Data_Handler method:
+						shifted_data = self.data.get_datafield(0).data.shift_slice(subset_slice, shift,
+																				   order=self.interpolation_order)
 
-					# Write shifted data to corresponding place in dh:
-					dh[subset_slice] = shifted_data
+						# Write shifted data to corresponding place in dh:
+						dh[subset_slice] = shifted_data
 				if verbose:
+					chunks_done += 1
 					print('data interpolated and written in {0:.2f} s'.format(time.time() - step_starttime))
-					tpf = ((time.time() - start_time) / float(i + 1))
-					etr = tpf * (self.data.shape[self.dyAxisID] * (i + 1))	#ToDO: make nice
-					print("Slice {0:d} / {1:d}, Time/slice {3:.2f}s ETR: {2:.1f}s".format(i*self.data.shape[
-						self.dxAxisID], self.data.shape[
-						self.dyAxisID] * self.data.shape[self.dxAxisID], etr, tpf))
+					tpf = ((time.time() - start_time) / float(chunks_done))
+					etr = tpf * (xychunks - chunks_done)
+					print("Slice {0:d} / {1:d}, Time/slice {3:.2f}s ETR: {2:.1f}s".format(chunks_done, xychunks, etr,
+																						  tpf))
 
 			# Initialize DataArray with data from dh:
 			newda = snomtools.data.datasets.DataArray(dh, label=oldda.label, plotlabel=oldda.plotlabel,
