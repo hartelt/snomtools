@@ -474,6 +474,8 @@ class Data_Handler_H5(u.Quantity):
 			easily with	:func:`numpy.s_` or builtin method :func:`slice`.
 		:type slice_: slice **or** tuple(slice) **or** *(tuple of) castable*.
 
+		# TODO: DOCS!!!
+
 		:param output: The array in which to place the output, or the dtype of the returned array.
 			If :code:`False` is given, the slice of the instance data is overwritten.
 		:type output: ndarray *or* dtype *or* :code:`False`, *optional*

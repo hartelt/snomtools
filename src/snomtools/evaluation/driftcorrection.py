@@ -465,7 +465,7 @@ class Terra_maxmap(object):
 
 		self.data = data
 		# check for external drift vectors
-		if np.any(precalculated_map):
+		if precalculated_map is not None:
 			# ToDO: "Insert testing for: Number of energy shiftvectors unequal to xy dimension of data"
 			self.drift = precalculated_map
 		else:
@@ -473,7 +473,6 @@ class Terra_maxmap(object):
 			self.drift = None
 			print('No internal maxima map calculation implemented. Please load precalculated map')
 		if use_meandrift:
-			# ToDo: check if this clutters
 			# calculating the mean Drift for the center half of the image to ignore wrong values at edges
 			lower0 = np.int_(np.shape(self.drift[:][0])[0] / 4)
 			upper0 = np.int_(np.shape(self.drift[:][0])[0] * 3 / 4)
@@ -525,8 +524,9 @@ class Terra_maxmap(object):
 		if h5target:
 			# Probe HDF5 initialization to optimize buffer size:
 			chunk_size = snomtools.data.h5tools.probe_chunksize(shape=self.data.shape)
-			min_cache_size = np.prod(self.data.shape, dtype=np.int64) // (self.data.shape[self.dxAxisID]) * chunk_size[
-				self.dxAxisID] * 4	# 32bit floats require 4 bytes.
+			min_cache_size = np.prod(self.data.shape, dtype=np.int64) // (self.data.shape[self.dxAxisID]) // \
+							 (self.data.shape[self.dyAxisID]) * chunk_size[self.dxAxisID] * \
+							 chunk_size[self.dyAxisID] * 4	# 32bit floats require 4 bytes.
 			use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 128 MB just to be sure.
 			# Initialize data handler to write to:
 			dh = snomtools.data.datasets.Data_Handler_H5(unit=str(self.data.datafields[0].units), shape=self.data.shape,
@@ -565,10 +565,9 @@ class Terra_maxmap(object):
 				if verbose:
 					print('data interpolated and written in {0:.2f} s'.format(time.time() - step_starttime))
 					tpf = ((time.time() - start_time) / float(i + 1))
-					etr = tpf * (
-						self.data.shape[self.dyAxisID] * self.data.shape[self.dxAxisID] - (i + 1) * (j + 1))	#ToDO: make nice
+					etr = tpf * (self.data.shape[self.dyAxisID] * (i + 1))	#ToDO: make nice
 					print("Slice {0:d} / {1:d}, Time/slice {3:.2f}s ETR: {2:.1f}s".format(i*self.data.shape[
-						self.dyAxisID], self.data.shape[
+						self.dxAxisID], self.data.shape[
 						self.dyAxisID] * self.data.shape[self.dxAxisID], etr, tpf))
 
 			# Initialize DataArray with data from dh:
