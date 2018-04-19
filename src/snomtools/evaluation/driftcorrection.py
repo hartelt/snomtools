@@ -463,13 +463,11 @@ class Terra_maxmap(object):
 		else:
 			self.dxAxisID = data.get_axis_index(xAxisID)
 
-		energyAxisID = data.get_axis_index(energyAxisID)
-
+		self.data = data
 		# check for external drift vectors
-		if precalculated_map:
-			assert len(precalculated_drift) == data.shape[
-				(self.dyAxisID, self.dxAxisID)], "Number of energy shiftvectors unequal to xy dimension of data"
-			self.drift = precalculated_drift
+		if np.any(precalculated_map):
+			# ToDO: "Insert testing for: Number of energy shiftvectors unequal to xy dimension of data"
+			self.drift = precalculated_map
 		else:
 			self.method = method
 			self.drift = None
@@ -477,19 +475,15 @@ class Terra_maxmap(object):
 		if use_meandrift:
 			# ToDo: check if this clutters
 			# calculating the mean Drift for the center half of the image to ignore wrong values at edges
-			lower0 = int_(shape(data[:][0])[0] / 4)
-			upper0 = int_(shape(data[:][0])[0] * 3 / 4)
-			lower1 = int_(shape(data[0][:])[0] / 4)
-			upper1 = int_(shape(data[0][:])[0] * 3 / 4)
+			lower0 = np.int_(np.shape(self.drift[:][0])[0] / 4)
+			upper0 = np.int_(np.shape(self.drift[:][0])[0] * 3 / 4)
+			lower1 = np.int_(np.shape(self.drift[0][:])[0] / 4)
+			upper1 = np.int_(np.shape(self.drift[0][:])[0] * 3 / 4)
 
-			self.meanDrift = int_(mean(drift[lower0:upper0][lower1:upper1]))
+			self.meanDrift = np.int_(np.mean(self.drift[lower0:upper0][lower1:upper1]))
 
-		self.data = data
 		if interpolation_order is None:
-			if self.subpixel:
-				self.interpolation_order = 1
-			else:
-				self.interpolation_order = 0
+			self.interpolation_order = 0
 		else:
 			self.interpolation_order = interpolation_order
 
@@ -520,8 +514,8 @@ class Terra_maxmap(object):
 		arr = np.zeros(len(self.data.shape))
 		# Get the drift at the index position as a numpy array:
 		drift = np.array(self.relative_vector(self.drift[stack_index[0], stack_index[1]]))
-		# Put the negated drift in the corresponding shiftvector places:
-		np.put(arr, [self.dyAxisID, self.dxAxisID], -drift)
+		# Put the negated drift in the corresponding shiftvector place for energy:
+		np.put(arr, [self.deAxisID], -drift)
 		return arr
 
 	def corrected_data(self, h5target=None):
@@ -531,7 +525,8 @@ class Terra_maxmap(object):
 		if h5target:
 			# Probe HDF5 initialization to optimize buffer size:
 			chunk_size = snomtools.data.h5tools.probe_chunksize(shape=self.data.shape)
-			min_cache_size = np.prod(self.data.shape, dtype=np.int64) // self.data.shape[self.dstackAxisID] * chunk_size[self.dstackAxisID] * 4  # 32bit floats require 4 bytes.
+			min_cache_size = np.prod(self.data.shape, dtype=np.int64) // (self.data.shape[self.dxAxisID]) * chunk_size[
+				self.dxAxisID] * 4	# 32bit floats require 4 bytes.
 			use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 128 MB just to be sure.
 			# Initialize data handler to write to:
 			dh = snomtools.data.datasets.Data_Handler_H5(unit=str(self.data.datafields[0].units), shape=self.data.shape,
@@ -541,20 +536,22 @@ class Terra_maxmap(object):
 			if verbose:
 				import time
 				start_time = time.time()
-				print(str(start_time))
-				print("Calculating {0} driftcorrected slices...".format(self.data.shape[self.dstackAxisID]))
+				print(time.ctime())
+				print("Calculating {0} driftcorrected slices...".format(self.data.shape[self.dxAxisID]**2)) #ToDo: make nice
 			# Get full slice for all the data:
 			full_selection = full_slice(np.s_[:], len(self.data.shape))
 			# Delete x and y Axis
-			slicebase_wo_stackaxis = np.delete(np.delete(full_selection, self.dxAxisID), self.dyAxisID)
+			slicebase_wo_yaxis = np.delete(full_selection, self.dyAxisID)
 			# Iterate over all elements along dstackAxis:
 			for i in range(self.data.shape[self.dyAxisID]):
+				intermediate_slice = np.insert(slicebase_wo_yaxis, self.dyAxisID, i)
+				slicebase_wo_xyaxis = np.delete(intermediate_slice, self.dxAxisID)
 				for j in range(self.data.shape[self.dxAxisID]):
 					# Generate full slice of data to shift, by inserting i for yAxis and j for xAxis position of the energy pixel into slicebase:
-					subset_slice = tuple(np.insert(np.insert(slicebase_wo_stackaxis, self.dyAxisID, i)), self.dxAxisID,
-										 j)
+
+					subset_slice = tuple(np.insert(slicebase_wo_xyaxis, self.dxAxisID, j))
 					# Get shiftvector for the stack element i:
-					shift = self.generate_shiftvector(i, j)
+					shift = self.generate_shiftvector((i, j))
 					if verbose:
 						step_starttime = time.time()
 					# Get the shifted data from the Data_Handler method:
@@ -569,8 +566,8 @@ class Terra_maxmap(object):
 						print('data written in {0:.2f} s'.format(time.time() - step_starttime))
 						tpf = ((time.time() - start_time) / float(i + 1))
 						etr = tpf * (
-						self.data.shape[self.dyAxisID] * self.data.shape[self.dxAxisID] - (i + 1) * (j + 1))
-						print("Slice {0:d} / {1:d}, Time/slice {3:.2f}s ETR: {2:.1f}s".format(i, self.data.shape[
+							self.data.shape[self.dyAxisID] * self.data.shape[self.dxAxisID] - (i + 1) * (j + 1))
+						print("Slice {0:d} / {1:d}, Time/slice {3:.2f}s ETR: {2:.1f}s".format(i*j, self.data.shape[
 							self.dyAxisID] * self.data.shape[self.dxAxisID], etr, tpf))
 
 			# Initialize DataArray with data from dh:
@@ -587,12 +584,11 @@ class Terra_maxmap(object):
 if __name__ == '__main__':  # Testing...
 	# testfolder = "test/Drifttest/new"
 
-	import snomtools.data.imports.tiff as imp
 	import snomtools.data.datasets
 	import os
 
-	templatefile = "template.tif"
-	template = imp.peem_camera_read_camware(templatefile)
+	driftfile = ('fit_maximum2.maxima.min1040max1184.matrix')
+	precal_map = np.loadtxt(driftfile)
 
 	objects = os.listdir('rawdata/')
 	rawdatalist = []
@@ -608,16 +604,9 @@ if __name__ == '__main__':  # Testing...
 
 		data.saveh5()
 
-		driftfile = ('Summenbilder/' + run.replace('.hdf5', '.txt'))
-
-		precal_drift = np.loadtxt(driftfile)
-		precal_drift = [tuple(row) for row in precal_drift]
-
-		drift = Drift(data, precalculated_drift=precal_drift, stackAxisID="delay", template=template, subpixel=True,
-					  template_origin=(123, 347))
-
+		drift = Terra_maxmap(data, precal_map)
 		# Calculate corrected data:
-		correcteddata = drift.corrected_data(h5target='Driftcorrected_external/' + run)
+		correcteddata = drift.corrected_data(h5target='Maximamap/' + run)
 
 		correcteddata.saveh5()
 
