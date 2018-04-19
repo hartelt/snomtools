@@ -1038,12 +1038,12 @@ class Data_Handler_np(u.Quantity):
 
 		if output is False:
 			self.magnitude[slice_] = \
-				scipy.ndimage.interpolation.shift(self.ds_data[expanded_slice], shift_dimensioncorrected, None, order,
+				scipy.ndimage.interpolation.shift(self.magnitude[expanded_slice], shift_dimensioncorrected, None, order,
 												  mode, cval, prefilter)[recover_slice]
 			return None
 		elif isinstance(output, numpy.ndarray):
 			output[:] = \
-				scipy.ndimage.interpolation.shift(self.ds_data[expanded_slice], shift_dimensioncorrected, None, order,
+				scipy.ndimage.interpolation.shift(self.magnitude[expanded_slice], shift_dimensioncorrected, None, order,
 												  mode, cval, prefilter)[recover_slice]
 			return None
 		else:
