@@ -534,7 +534,7 @@ class Data_Handler_H5(u.Quantity):
 
 	# FIXME: Iterators for scalar data seems to freeze system.
 
-	def iterchunkslices(self, dim=None):
+	def iterchunkslices(self, dim=None, dims=None):
 		"""
 		Iterator, which returns slice objects which address the data chunk-wise. This can be used wo very efficiently
 		perform operations on the data since chunk-wise is the fastest way to access the data in the HDF5 file.
@@ -542,40 +542,55 @@ class Data_Handler_H5(u.Quantity):
 		:param int dim: Do this only for the first :code:`dim` dimensions. Used for recursively calling the generator.
 			If not given, all dimensions are used, so this defaults to :code:`dim = len(self.shape)-1`
 
+		:param dims: Iterate chunk-wise only for the dimension in dims. Full-slices [:] are given for all others.
+		:type dims: sequence of ints
+
 		:return: A tuple of slice objects of length :code:`dim`
 		"""
 		if dim is None:
 			dim = len(self.shape) - 1
+		if dims is None:
+			dims = list(range(len(self.shape)))
 
 		if dim == 0:  # Break condition
-			csize_dim = self.chunks[dim]
-			start = 0
-			while start < self.shape[dim]:
-				stop = start + csize_dim
-				if stop >= self.shape[dim]:
-					stop = None
-				yield (slice(start, stop),)
-				start = start + csize_dim
+			if 0 in dims:
+				csize_dim = self.chunks[dim]
+				start = 0
+				while start < self.shape[dim]:
+					stop = start + csize_dim
+					if stop >= self.shape[dim]:
+						stop = None
+					yield (slice(start, stop),)
+					start = start + csize_dim
+			else:
+				yield (numpy.s_[:],)
 		else:  # Generate slices for dim and attach them to all slices for dim-1 recursively
-			csize_dim = self.chunks[dim]
-			start = 0
-			while start < self.shape[dim]:
-				stop = start + csize_dim
-				if stop >= self.shape[dim]:
-					stop = None
-				for slicetuple_before in self.iterchunkslices(dim - 1):
-					yield slicetuple_before + (slice(start, stop),)
-				start = start + csize_dim
+			if dim in dims:
+				csize_dim = self.chunks[dim]
+				start = 0
+				while start < self.shape[dim]:
+					stop = start + csize_dim
+					if stop >= self.shape[dim]:
+						stop = None
+					for slicetuple_before in self.iterchunkslices(dim - 1, dims):
+						yield slicetuple_before + (slice(start, stop),)
+					start = start + csize_dim
+			else:
+				for slicetuple_before in self.iterchunkslices(dim - 1, dims):
+					yield slicetuple_before + (numpy.s_[:],)
 
-	def iterchunks(self):
+	def iterchunks(self, dims=None):
 		"""
 		Iterator, which returns the data of the chunks, chunk-wise. It returns the data as Quantities, because they are
 		small, so it will be much faster to keep them in RAM.
 
+		:param dims: Iterate chunk-wise only for the dimension in dims. Full-slices [:] are given for all others.
+		:type dims: sequence of ints
+
 		:return: The data in the chunk.
 		:rtype: pint.Quantity
 		"""
-		for chunkslice in self.iterchunkslices():
+		for chunkslice in self.iterchunkslices(dims=dims):
 			yield u.to_ureg(self.ds_data[chunkslice], self._units)
 
 	def iterlineslices(self):
@@ -3161,7 +3176,7 @@ if __name__ == "__main__":  # just for testing
 		sum7 = mediumfuckindata.sum((0, 2), h5target=h5)
 		sum8 = mediumfuckindata.sum()
 
-	test_bigdata_operations = True
+	test_bigdata_operations = False
 	if test_bigdata_operations:
 		bigfuckindata = Data_Handler_H5(unit='km', shape=(1000, 1000, 1000))
 		import time
