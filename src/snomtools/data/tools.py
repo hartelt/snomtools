@@ -69,16 +69,8 @@ def sliced_shape(slice_, shape_):
 	:return: The resulting shape.
 	:rtype: tuple
 	"""
-	full_slice_ = full_slice(slice_, len(shape_))
-	sizes = []
-	for i in range(len(shape_)):
-		arr = np.empty(shape_[i])
-		subarr = arr[full_slice_[i]]
-		try:
-			sizes.append(len(subarr))
-		except TypeError:
-			pass
-	return tuple(sizes)
+	dummy = dummy_array(shape_)
+	return dummy[slice_].shape
 
 
 def slice_expansion(inslice, expansion, dimensions=None):
