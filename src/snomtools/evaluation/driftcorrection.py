@@ -448,7 +448,7 @@ class Drift(object):
 
 class Terra_maxmap(object):
 	def __init__(self, data=None, precalculated_map=None, energyAxisID=None, yAxisID=None, xAxisID=None,
-				 method=None, interpolation_order=None, use_meandrift=True, binning=None):
+				 subpixel=True, method=None, interpolation_order=None, use_meandrift=True, binning=None):
 
 		if energyAxisID is None:
 			self.deAxisID = data.get_axis_index('energy')
@@ -466,6 +466,7 @@ class Terra_maxmap(object):
 			self.binning = 1
 		else:
 			self.binning = binning
+		self.subpixel = subpixel
 
 		self.data = data
 		# check for external drift vectors
@@ -518,7 +519,7 @@ class Terra_maxmap(object):
 		# Get the drift at the index position as a numpy array:
 		drift = np.array(self.relative_vector(self.drift[stack_index[0], stack_index[1]]))
 		# Put the negated drift in the corresponding shiftvector place for the energy axis:
-		np.put(arr, [self.deAxisID], -drift/self.binning)
+		np.put(arr, [self.deAxisID], -drift / self.binning)
 		return arr
 
 	def corrected_data(self, h5target=None):
@@ -588,12 +589,37 @@ class Terra_maxmap(object):
 						# Get shiftvector for the stack element at y,x coordinates i,j:
 						shift = self.generate_shiftvector((i, j))
 
-						# Get the shifted data from the Data_Handler method:
-						self.data.get_datafield(0).data.shift_slice(subset_slice, shift, output=cache_array,
-																	order=self.interpolation_order)
+						if self.subpixel:
+							# Get the shifted data from the Data_Handler method:
+							self.data.get_datafield(0).data.shift_slice(subset_slice, shift, output=cache_array,
+																		order=self.interpolation_order)
 
-						# Write shifted data to corresponding place in dh:
-						dh[subset_slice] = cache_array
+							# Write shifted data to corresponding place in dh:
+							dh[subset_slice] = cache_array
+						else:
+							shift = np.rint(shift[self.deAxisID]).astype(int)
+							if shift == 0:
+								dh[subset_slice] = oldda.data.ds_data[subset_slice]
+							else:
+								oldslice = list(subset_slice)
+								newslice = list(subset_slice)
+								restslice = list(subset_slice)
+								if shift < 0:
+									s = abs(shift)
+									oldslice[self.deAxisID] = np.s_[s:]
+									newslice[self.deAxisID] = np.s_[:-s]
+									restslice[self.deAxisID] = np.s_[-s:]
+								else:
+									s = abs(shift)
+									oldslice[self.deAxisID] = np.s_[:-s]
+									newslice[self.deAxisID] = np.s_[s:]
+									restslice[self.deAxisID] = np.s_[:s]
+								for dimension in xy_indexes:
+									newslice.pop(dimension)
+									restslice.pop(dimension)
+								cache_array[tuple(restslice)] = np.nan
+								cache_array[tuple(newslice)] = oldda.data.ds_data[tuple(oldslice)]
+								dh[subset_slice] = cache_array
 				if verbose:
 					chunks_done += 1
 					print('data interpolated and written in {0:.2f} s'.format(time.time() - step_starttime))
@@ -636,7 +662,7 @@ if __name__ == '__main__':  # Testing...
 
 		data.saveh5()
 
-		drift = Terra_maxmap(data, precal_map, binning=16)
+		drift = Terra_maxmap(data, precal_map, subpixel=False, binning=16)
 		# Calculate corrected data:
 		correcteddata = drift.corrected_data(h5target='Maximamap/' + run)
 
