@@ -3185,7 +3185,7 @@ if __name__ == "__main__":  # just for testing
 
 	test_bigdata_operations = True
 	if test_bigdata_operations:
-		bigfuckindata = Data_Handler_H5(unit='km', shape=(1000, 1000, 1000), chunk_cache_mem_size=500*1024**2)
+		bigfuckindata = Data_Handler_H5(unit='km', shape=(1000, 1000), chunk_cache_mem_size=500*1024**2)
 		import time
 
 		start_time = time.time()
@@ -3208,7 +3208,7 @@ if __name__ == "__main__":  # just for testing
 		bigdiv = bigtimes / 2
 		print("Divided by 2 took {0:.2f} seconds".format(time.time() - start_time))
 		start_time = time.time()
-		bigfloordiv = bigtimes // 2
+		bigfloordiv = bigtimes // u.to_ureg("2 km")
 		print("Truediv by 2 took {0:.2f} seconds".format(time.time() - start_time))
 
 		if False:
