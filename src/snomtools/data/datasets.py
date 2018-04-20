@@ -690,6 +690,7 @@ class Data_Handler_H5(u.Quantity):
 			else:
 				newdh = self.__class__(shape=newshape, unit=self.get_unit(), chunks=False)
 			# Because we have different shapes and potentially different chunking, we need to iterate element-wise:
+			# TODO: This is still extremely unefficient due to loads of read-write on H5. Needs better iteration order.
 			for ind_self, ind_other, ind_out in broadcast_indices(self.shape,other.shape):
 				newdh[ind_out] = u.to_ureg(self.ds_data[ind_self], self._units) + other[ind_other]
 			return newdh
@@ -3233,7 +3234,5 @@ if __name__ == "__main__":  # just for testing
 		print("closing...")
 		for f in h5files:
 			f.close()
-
-	# TEST.
 
 	print("OK")
