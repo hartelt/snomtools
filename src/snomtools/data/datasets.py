@@ -681,19 +681,19 @@ class Data_Handler_H5(u.Quantity):
 			return newdh
 		else:
 			# Else we need the numpy broadcasting magic to an array of different shape.
-			newshape = broadcast_shape(self.shape,other.shape)
+			newshape = broadcast_shape(self.shape, other.shape)
 			if self.chunks:
 				newchunks = h5tools.probe_chunksize(newshape)
 				# Use at least one line worth of chunks as buffer for performance:
 				min_cache_size = numpy.prod(newchunks, dtype=numpy.int64) // newchunks[-1] * newshape[-1] \
-								 * 4 # 32bit floats require 4 bytes.
+								 * 4  # 32bit floats require 4 bytes.
 				use_cache_size = min_cache_size + 16 * 1024 ** 2  # Add 16 MB just to be sure.
 				newdh = self.__class__(shape=newshape, unit=self.get_unit(), chunk_cache_mem_size=use_cache_size)
 			else:
 				newdh = self.__class__(shape=newshape, unit=self.get_unit(), chunks=False)
 			# Because we have different shapes and potentially different chunking, we need to iterate element-wise:
 			# TODO: This is still extremely unefficient due to loads of read-write on H5. Needs better iteration order.
-			for ind_self, ind_other, ind_out in broadcast_indices(self.shape,other.shape):
+			for ind_self, ind_other, ind_out in broadcast_indices(self.shape, other.shape):
 				newdh[ind_out] = u.to_ureg(self.ds_data[ind_self], self._units) + other[ind_other]
 			return newdh
 
@@ -1594,14 +1594,20 @@ class DataArray(object):
 		return self.__class__(abs(self.data), label=self.label, plotlabel=self.plotlabel)
 
 	def __add__(self, other):
+		if isinstance(other, self.__class__):
+			other = other.data
 		other = u.to_ureg(other, self.get_unit())
 		return self.__class__(self.data + other, label=self.label, plotlabel=self.plotlabel)
 
 	def __sub__(self, other):
+		if isinstance(other, self.__class__):
+			other = other.data
 		other = u.to_ureg(other, self.get_unit())
 		return self.__class__(self.data - other, label=self.label, plotlabel=self.plotlabel)
 
 	def __mul__(self, other):
+		if isinstance(other, self.__class__):
+			other = other.data
 		other = u.to_ureg(other)
 		return self.__class__(self.data * other, label=self.label, plotlabel=self.plotlabel)
 
@@ -1610,10 +1616,14 @@ class DataArray(object):
 		This replaces __div__ in Python 3. All divisions are true divisions per default with '/' operator.
 		In python 2, this new function is called anyway due to :code:`from __future__ import division`.
 		"""
+		if isinstance(other, self.__class__):
+			other = other.data
 		other = u.to_ureg(other)
 		return self.__class__(self.data / other, label=self.label, plotlabel=self.plotlabel)
 
 	def __floordiv__(self, other):
+		if isinstance(other, self.__class__):
+			other = other.data
 		other = u.to_ureg(other)
 		return self.__class__(self.data // other, label=self.label, plotlabel=self.plotlabel)
 
@@ -3139,7 +3149,8 @@ if __name__ == "__main__":  # just for testing
 		moep2 = moep - moep
 		moep2 = moep * moep
 		moep2 = moep / moep
-		# moep2 = moep // moep # FIXME: to_ureg(DataArray) for newer versions of pint.
+		# moep2 = moep // moep
+		# FIXME: For newer versions of pint, truediv seems to only work with dimensionless quantities as denominator.
 		moep2 = moep ** 2.
 		moep.absmax()
 		moep.absmin()
@@ -3173,7 +3184,7 @@ if __name__ == "__main__":  # just for testing
 		# stackh5.close()
 		del stacktest
 
-	test_sum = True
+	test_sum = False
 	if test_sum:
 		h5 = h5tools.File("test4.hdf5")
 		mediumfuckindata = Data_Handler_H5(numpy.ones((100, 100, 20)), unit="m/s")
@@ -3186,13 +3197,13 @@ if __name__ == "__main__":  # just for testing
 		sum7 = mediumfuckindata.sum((0, 2), h5target=h5)
 		sum8 = mediumfuckindata.sum()
 
-	test_bigdata_operations = True
+	test_bigdata_operations = False
 	if test_bigdata_operations:
-		bigfuckindata = Data_Handler_H5(unit='km', shape=(1000, 1000), chunk_cache_mem_size=500*1024**2)
+		bigfuckindata = Data_Handler_H5(unit='km', shape=(1000, 10), chunk_cache_mem_size=500 * 1024 ** 2)
 		import time
 
 		start_time = time.time()
-		bigplusline = bigfuckindata + numpy.ones(1000)
+		bigplusline = bigfuckindata + numpy.ones(10)
 		print("Plus line of ones took {0:.2f} seconds".format(time.time() - start_time))
 
 		start_time = time.time()
@@ -3215,7 +3226,7 @@ if __name__ == "__main__":  # just for testing
 		print("Truediv by 2 took {0:.2f} seconds".format(time.time() - start_time))
 
 		if False:
-			bignumpy = numpy.zeros(shape=(1000,1000,1000), dtype=numpy.float32)
+			bignumpy = numpy.zeros(shape=(1000, 1000, 1000), dtype=numpy.float32)
 			start_time = time.time()
 			bignumpyplus = bignumpy + 1
 			print("Numpy plus 1 took {0:.2f} seconds".format(time.time() - start_time))
