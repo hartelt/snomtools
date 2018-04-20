@@ -526,7 +526,7 @@ class Terra_maxmap(object):
 		return arr
 
 	def corrected_data(self, h5target=None):
-		"""Return the full driftcorrected dataset."""
+		"""Return the full dataset with maxima-map corrected data. Therefore in each xy pixel the data gets shifted along the energy axis"""
 
 		# Adress the DataArray with all the data
 		fulldata = self.data.get_datafield(0)
@@ -566,7 +566,7 @@ class Terra_maxmap(object):
 			xy_indexes.reverse()
 			for dimension in xy_indexes:
 				datasize.pop(dimension)
-			# Cache array is later used for every xy to cache the shifted data of each xy pixel
+			# Cache array is later used for every xy to cache the shifted data of each xy pixel's stack
 			cache_array = np.empty(shape=tuple(datasize), dtype=np.float32)
 
 			# Work on the slices that are contained in the same chunk for xy -> fast
@@ -643,6 +643,8 @@ class Terra_maxmap(object):
 								targetslice = list(subset_slice_relative)
 								restslice = list(subset_slice_relative)
 
+								#Since energy axis is shifted, the slices are changed in the deAxisID axis
+
 								if shift < 0:
 									#shift <0 -> data has to be shifted down
 									s = abs(shift)
@@ -666,7 +668,7 @@ class Terra_maxmap(object):
 
 								#Write cache_array to it's subset_slice_relative position in the bigger_cache_array
 								bigger_cache_array[subset_slice_relative] = cache_array
-								
+
 				#After the whole chunkslice is shifted, pass it to the h5 data handler
 				dh[chunkslice] = bigger_cache_array
 				if verbose:
@@ -684,6 +686,7 @@ class Terra_maxmap(object):
 		# if no h5target is given:
 		else:
 			newda = snomtools.data.datasets.DataArray(self[:], label=fulldata.label, plotlabel=fulldata.plotlabel)
+
 		# Put all the shifted data and old axes together to new DataSet:
 		newds = snomtools.data.datasets.DataSet(self.data.label + " maximacorrected", (newda,), self.data.axes,
 												self.data.plotconf, h5target=h5target)
