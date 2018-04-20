@@ -452,7 +452,7 @@ class Data_Handler_H5(u.Quantity):
 			else:
 				prefilter = False
 
-		if output == False:
+		if output is False:
 			self._magnitude = scipy.ndimage.interpolation.shift(self.magnitude, shift, None, order, mode, cval,
 																prefilter)
 			return None
@@ -518,7 +518,7 @@ class Data_Handler_H5(u.Quantity):
 			recover_slice = tuple(recover_slice)  # Part of the shifted data we wanted to address.
 			shift_dimensioncorrected = tuple(shift_dimensioncorrected)
 
-		if output == False:
+		if output is False:
 			self.ds_data[slice_] = \
 				scipy.ndimage.interpolation.shift(self.ds_data[expanded_slice], shift_dimensioncorrected, None, order,
 												  mode, cval, prefilter)[recover_slice]
@@ -975,7 +975,7 @@ class Data_Handler_np(u.Quantity):
 			else:
 				prefilter = False
 
-		if output == False:
+		if output is False:
 			self.magnitude = scipy.ndimage.interpolation.shift(self.magnitude, shift, None, order, mode, cval,
 															   prefilter)
 			return None
@@ -1037,14 +1037,14 @@ class Data_Handler_np(u.Quantity):
 			recover_slice = tuple(recover_slice)  # Part of the shifted data we wanted to address.
 			shift_dimensioncorrected = tuple(shift_dimensioncorrected)
 
-		if output == False:
+		if output is False:
 			self.magnitude[slice_] = \
-				scipy.ndimage.interpolation.shift(self.ds_data[expanded_slice], shift_dimensioncorrected, None, order,
+				scipy.ndimage.interpolation.shift(self.magnitude[expanded_slice], shift_dimensioncorrected, None, order,
 												  mode, cval, prefilter)[recover_slice]
 			return None
 		elif isinstance(output, numpy.ndarray):
 			output[:] = \
-				scipy.ndimage.interpolation.shift(self.ds_data[expanded_slice], shift_dimensioncorrected, None, order,
+				scipy.ndimage.interpolation.shift(self.magnitude[expanded_slice], shift_dimensioncorrected, None, order,
 												  mode, cval, prefilter)[recover_slice]
 			return None
 		else:
