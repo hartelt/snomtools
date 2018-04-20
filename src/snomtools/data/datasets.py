@@ -3234,4 +3234,6 @@ if __name__ == "__main__":  # just for testing
 		for f in h5files:
 			f.close()
 
+	# TEST.
+
 	print("OK")
