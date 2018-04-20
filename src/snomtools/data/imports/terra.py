@@ -74,3 +74,18 @@ def hist_asc(source, T_start=None, T_bin=1, tif_probe=None):
 
 	# Return DataSet:
 	return ds.DataSet(label=filebase, datafields=[dataarray], axes=[taxis])
+
+
+def convert_comma(s):
+	# The function that converts the string with comma as decimal seperator to float
+	s = s.strip().replace(',', '.')
+	return float(s)
+
+
+def load_maxima_map(file):
+	data = []
+	with open(file, 'r') as f:
+		for l in f:
+			numberstr = l.split('\t')
+			data.append([convert_comma(s) for s in numberstr if s != ''])
+	return data
