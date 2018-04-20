@@ -1,13 +1,17 @@
-__author__ = 'hartelt'
-'''
+"""
 This script provides tools for conversion between types of representations.
 As long as it's not specified otherwise, it should be kept in SI!
 All functions must be programed to work with float variables, as well as numpy arrays and pint quantities.
-'''
 
+"""
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import numpy
-import constants
-import units as u
+from . import constants
+from . import units as u
+
+__author__ = 'hartelt'
 
 
 def deg2rad(angle, return_numeric=None):
@@ -315,4 +319,4 @@ def time2length(time, n=1., outunit="m", return_numeric=None):
 # Just for testing purposes:
 if __name__ == "__main__":
 	test = numpy.linspace(0, 10, 100) * u.ureg('um')
-	print (lambda2omega(test))
+	print((lambda2omega(test)))

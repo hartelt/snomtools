@@ -1,23 +1,26 @@
-__author__ = 'hartelt'
-'''
+"""
 This file provides data evaluation scripts for PEEM data.
 For furter info about data structures, see:
 data.imports.tiff.py
 data.datasets.py
-'''
 
+"""
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import snomtools.calcs.units as u
 import snomtools.data.datasets
 import snomtools.data.imports.tiff
 import numpy
 import scipy.optimize
 
+__author__ = 'hartelt'
+
 
 class Powerlaw_loglinear:
 	"""
 	A powerlaw.
 	"""
-
 	def __init__(self, data=None, keepdata=True, normalize=True):
 		if data:
 			if normalize:
@@ -70,7 +73,7 @@ class Powerlaw_loglinear:
 		:param data_id: Identifier of the DataField to use.
 
 		:param axis_id: optional, Identifier of the power axis to use. If not given, the first axis that corresponds
-		to a Power in its physical dimension is taken.
+			to a Power in its physical dimension is taken.
 
 		:return: powers, intensities: tuple of quantities with the projected data.
 		"""
@@ -96,7 +99,7 @@ class Powerlaw_loglinear:
 		:param data_id: Identifier of the DataField to use.
 
 		:param axis_id: optional, Identifier of the power axis to use. If not given, the first axis that corresponds
-		to a Power in its physical dimension is taken.
+			to a Power in its physical dimension is taken.
 
 		:param label: string: label for the produced DataSet
 
@@ -157,9 +160,6 @@ class Powerlaw:
 	"""
 	A powerlaw.
 	"""
-
-	# TODO: Implement exponential fit. Debug strange behaviour.
-
 	def __init__(self, data=None, guess=None, keepdata=True, normalize=False):
 		if data:
 			if normalize:
@@ -235,7 +235,7 @@ class Powerlaw:
 		:param data_id: Identifier of the DataField to use.
 
 		:param axis_id: optional, Identifier of the power axis to use. If not given, the first axis that corresponds
-		to a Power in its physical dimension is taken.
+			to a Power in its physical dimension is taken.
 
 		:return: powers, intensities: tuple of quantities with the projected data.
 		"""
@@ -261,7 +261,7 @@ class Powerlaw:
 		:param data_id: Identifier of the DataField to use.
 
 		:param axis_id: optional, Identifier of the power axis to use. If not given, the first axis that corresponds
-		to a Power in its physical dimension is taken.
+			to a Power in its physical dimension is taken.
 
 		:param label: string: label for the produced DataSet
 

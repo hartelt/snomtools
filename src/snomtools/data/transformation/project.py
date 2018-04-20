@@ -1,9 +1,14 @@
-__author__ = 'hartelt'
 """
 This script holds transformation functions for datasets, that project data onto given axes.
-"""
 
+"""
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+import warnings
 import snomtools.data.datasets as datasets
+
+__author__ = 'hartelt'
 
 
 def project_1d(data, axis_id=0, data_id=None, outlabel=None, normalization=None):
@@ -15,19 +20,19 @@ def project_1d(data, axis_id=0, data_id=None, outlabel=None, normalization=None)
 	:param axis_id: An identifier of the axis to project onto.
 
 	:param data_id: Optional: An identifier of the dataarray to take data from. If not given, all DataArrays of the
-	Set are projected.
+		Set are projected.
 
 	:param outlabel: String, optional: A label to assign to the projected DataSet. Default: Label of the original
-	DataSet.
+		DataSet.
 
 	:param normalization: Method for a normalization to apply to the data. Valid options:
-	* None, "None" (default): No normalization.
-	* "maximum", "max": divide every value by the maximum value in the set
-	* "mean": divide every value by the average value in the set
-	* "minimum", "min": divide every value by the minimum value in the set
-	* "absolute maximum", "absmax": divide every value by the maximum absolute value in the set
-	* "absolute minimum", "absmin": divide every value by the minimum absolute value in the set
-	* "size": divide every value by the number of pixels that have been summed in the projection (ROI size)
+		* None, "None" (default): No normalization.
+		* "maximum", "max": divide every value by the maximum value in the set
+		* "mean": divide every value by the average value in the set
+		* "minimum", "min": divide every value by the minimum value in the set
+		* "absolute maximum", "absmax": divide every value by the maximum absolute value in the set
+		* "absolute minimum", "absmin": divide every value by the minimum absolute value in the set
+		* "size": divide every value by the number of pixels that have been summed in the projection (ROI size)
 
 	:return: A dataset instance with the projected data.
 	"""
@@ -40,7 +45,7 @@ def project_1d(data, axis_id=0, data_id=None, outlabel=None, normalization=None)
 	ax_index = data.get_axis_index(axis_id)
 	ax = data.get_axis(ax_index)
 
-	sumlist = range(data.dimensions)
+	sumlist = list(range(data.dimensions))
 	sumlist.remove(ax_index)
 	sumtup = tuple(sumlist)
 
@@ -77,7 +82,7 @@ def project_1d(data, axis_id=0, data_id=None, outlabel=None, normalization=None)
 				try:
 					normdat = sumdat / normalization
 				except TypeError:
-					print "WARNING: Normalization normalization not valid. Returning unnormalized data."
+					warnings.warn("Normalization mode not valid. Returning unnormalized data.")
 					normdat = sumdat
 		else:
 			normdat = sumdat
@@ -98,19 +103,19 @@ def project_2d(data, axis1_id=0, axis2_id=0, data_id=None, outlabel=None, normal
 	:param axis2_id: An identifier of the second axis to project onto.
 
 	:param data_id: Optional: An identifier of the dataarray to take data from. If not given, all DataArrays of the
-	Set are projected.
+		Set are projected.
 
 	:param outlabel: String, optional: A label to assign to the projected DataSet. Default: Label of the original
-	DataSet.
+		DataSet.
 
 	:param normalization: Method for a normalization to apply to the data. Valid options:
-	* None, "None" (default): No normalization.
-	* "maximum", "max": divide every value by the maximum value in the set
-	* "mean": divide every value by the average value in the set
-	* "minimum", "min": divide every value by the minimum value in the set
-	* "absolute maximum", "absmax": divide every value by the maximum absolute value in the set
-	* "absolute minimum", "absmin": divide every value by the minimum absolute value in the set
-	* "size": divide every value by the number of pixels that have been summed in the projection (ROI size)
+		* None, "None" (default): No normalization.
+		* "maximum", "max": divide every value by the maximum value in the set
+		* "mean": divide every value by the average value in the set
+		* "minimum", "min": divide every value by the minimum value in the set
+		* "absolute maximum", "absmax": divide every value by the maximum absolute value in the set
+		* "absolute minimum", "absmin": divide every value by the minimum absolute value in the set
+		* "size": divide every value by the number of pixels that have been summed in the projection (ROI size)
 
 	:return: A dataset instance with the projected data.
 	"""
@@ -131,7 +136,7 @@ def project_2d(data, axis1_id=0, axis2_id=0, data_id=None, outlabel=None, normal
 	else:
 		raise IndexError("Attempted 2D projection over the same axis given twice.")
 
-	sumlist = range(data.dimensions)
+	sumlist = list(range(data.dimensions))
 	sumlist.remove(ax1_index)
 	sumlist.remove(ax2_index)
 	sumtup = tuple(sumlist)
@@ -169,7 +174,7 @@ def project_2d(data, axis1_id=0, axis2_id=0, data_id=None, outlabel=None, normal
 				try:
 					normdat = sumdat / normalization
 				except TypeError:
-					print "WARNING: Normalization normalization not valid. Returning unnormalized data."
+					warnings.warn("Normalization mode not valid. Returning unnormalized data.")
 					normdat = sumdat
 		else:
 			normdat = sumdat

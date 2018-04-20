@@ -1,16 +1,20 @@
-__author__ = 'hartelt'
-'''
+"""
 This file provides data evaluation scripts for microscopy data measured e.g. with PEEM, SNOM or any microscope.
 Explicitly, methods for image calibration are provided.
 The methods work on DataSets obtained by importing images with the snomtools.data.imports package.
 For furter info about data structures, see:
 data.imports
 data.datasets.py
-'''
 
+"""
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import snomtools.data.datasets
 import snomtools.calcs.units as u
 import numpy
+
+__author__ = 'hartelt'
 
 
 def fov_scale_absolute(pixel_axis, fov, unit='m'):
@@ -20,7 +24,7 @@ def fov_scale_absolute(pixel_axis, fov, unit='m'):
 	:param pixel_axis: The Axis to transform.
 
 	:param fov: Quantity: The absolute size of the FoV. If a number instead of a quantity is given, m is assumed as
-	unit.
+		unit.
 
 	:param unit: String: Specifies the output unit for the Axis, Must evaluate to a length unit.
 
@@ -29,7 +33,7 @@ def fov_scale_absolute(pixel_axis, fov, unit='m'):
 	assert isinstance(pixel_axis, snomtools.data.datasets.Axis), "No Axis instance given to scale function."
 	length_per_pixel = fov / len(pixel_axis)
 	length_per_pixel = u.to_ureg(length_per_pixel, 'meters/pixel')
-	return pixel_axis.scale_linear(length_per_pixel,unit=unit)
+	return pixel_axis.scale_linear(length_per_pixel, unit=unit)
 
 
 def fov_scale_relative(pixel_axis, length_per_pixel, unit='m'):
@@ -39,15 +43,15 @@ def fov_scale_relative(pixel_axis, length_per_pixel, unit='m'):
 	:param pixel_axis: The Axis to transform.
 
 	:param length_per_pixel: Quantity: The relative scale in length per pixel. If a number instead of a quantity is
-	given, m/pixel is assumed as unit.
+		given, m/pixel is assumed as unit.
 
 	:param unit: String: Specifies the output unit for the Axis, Must evaluate to a length unit.
 
 	:return: The converted Axis.
 	"""
 	assert isinstance(pixel_axis, snomtools.data.datasets.Axis), "No Axis instance given to scale function."
-	length_per_pixel = u.to_ureg(length_per_pixel, 'meters/pixel',convert_quantities=False)
-	return pixel_axis.scale_linear(length_per_pixel,unit=unit)
+	length_per_pixel = u.to_ureg(length_per_pixel, 'meters/pixel', convert_quantities=False)
+	return pixel_axis.scale_linear(length_per_pixel, unit=unit)
 
 
 def normalize_by_flatfield_sum(data, flatfield_data, data_id=0, flat_id=0, newlabel='norm_int',
@@ -59,16 +63,16 @@ def normalize_by_flatfield_sum(data, flatfield_data, data_id=0, flat_id=0, newla
 	The normalized data is written into a new DataArray in the given DataSet.
 
 	:param data: The DataSet instance of the data to normalize or a string with the filepath of the hdf5 file
-	containing the data.
+		containing the data.
 
 	:param flatfield_data: The DataSet instance of the flatfield correction to apply or a string with the filepath of
-	the hdf5 file containing the data.
+		the hdf5 file containing the data.
 
 	:param data_id: A valid identifier of the DataArray in the DataSet instance to apply normalization to. Per
-	default, the first DataArray is taken.
+		default, the first DataArray is taken.
 
 	:param flat_id: A valid identifier of the DataArray in the flatfield DataSet instance to take as reference. Per
-	default, the first DataArray is taken.
+		default, the first DataArray is taken.
 
 	:param newlabel: The label to set for the created DataArray.
 
@@ -94,7 +98,7 @@ def normalize_by_flatfield_sum(data, flatfield_data, data_id=0, flat_id=0, newla
 	axis1_id, axis2_id = "x", "y"
 	ax1_index = flatfield_data.get_axis_index(axis1_id)
 	ax2_index = flatfield_data.get_axis_index(axis2_id)
-	sumlist = range(flatfield_data.dimensions)
+	sumlist = list(range(flatfield_data.dimensions))
 	sumlist.remove(ax1_index)
 	sumlist.remove(ax2_index)
 	sumtup = tuple(sumlist)

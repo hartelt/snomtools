@@ -1,18 +1,22 @@
-__author__ = 'hartelt'
-'''
+"""
 This file provides data evaluation scripts for photoemission spectroscopy (PES) data. This includes anything that is
 not experiment-specific, but can be applied for all photoemission spectra.
 For furter info about data structures, see:
 data.imports.tiff.py
 data.datasets.py
-'''
 
+"""
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import snomtools.calcs.units as u
 import numpy as np
 import snomtools.data.datasets
 from scipy.optimize import curve_fit
 import scipy.special
 import snomtools.calcs.constants as const
+
+__author__ = 'hartelt'
 
 k_B = const.k_B  # The Boltzmann constant
 Temp = u.to_ureg(300, "K")  # The Temperature, for now hardcoded as room temperature.
@@ -29,7 +33,7 @@ def fermi_edge(E, E_f, dE, c, d):
 	:param E_f: The Fermi energy in eV.
 
 	:param dE: Energy Resolution. The broadening of the Fermi edge on top of the thermal broadening,
-	which is introduced by all experimental errors, in eV.
+		which is introduced by all experimental errors, in eV.
 
 	:param c: The height of the Fermi edge, in whichever units the data is given, e.g. "counts".
 
@@ -113,7 +117,7 @@ class FermiEdge:
 		:param E: Electron Energy (Quantity or numerical in eV).
 
 		:return: The value of the Fermi distribution at the energy E. Returned as Quantity in whichever unit the fit
-		data was given.
+			data was given.
 		"""
 		E = u.to_ureg(E, "eV")
 		return 0.5 * (1 + scipy.special.erf(
@@ -130,7 +134,7 @@ class FermiEdge:
 		:param data_id: Identifier of the DataField to use.
 
 		:param axis_id: optional, Identifier of the power axis to use. If not given, the first axis that corresponds
-		to a Power in its physical dimension is taken.
+			to a Power in its physical dimension is taken.
 
 		:return: energies, intensities: tuple of quantities with the projected data.
 		"""
@@ -155,7 +159,7 @@ class FermiEdge:
 		:param data_id: Identifier of the DataField to use.
 
 		:param axis_id: optional, Identifier of the power axis to use. If not given, the first axis that corresponds
-		to a Power in its physical dimension is taken.
+			to a Power in its physical dimension is taken.
 
 		:param label: string: label for the produced DataSet
 
@@ -189,7 +193,7 @@ class FermiEdge:
 		:param guess: optional: A tuple of start parameters (E_f, dE, c, d) as defined in fermi_edge method.
 
 		:return: The coefficients and uncertainties of the fitted fermi edge E_f, dE, c, d, as defined in fermi_edge
-		method.
+			method.
 		"""
 		if u.is_quantity(energies):
 			assert u.same_dimension(energies, "eV")
@@ -213,10 +217,15 @@ class FermiEdge:
 def fermi_fit(data, energy_axis=None, range=None, guess=None):
 	"""
 	Fit a Fermi Distribution to the given data.
+
 	:param data:
+
 	:param energy_axis:
+
 	:param range:
+
 	:param guess:
+
 	:return:
 	"""
 	raise NotImplementedError()

@@ -1,0 +1,10 @@
+numpy>=1.10.0
+pint
+h5py
+scipy
+tifffile
+six
+psutil
+opencv-python
+future
+matplotlib

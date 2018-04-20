@@ -1,12 +1,17 @@
-__author__ = 'hartelt'
-'''
+"""
 This script provides a class for calculating the properties of metals, as well as instances for metals we know.
-Functions take pint quantities of the right dimension or floats in SI and give pint quantities in SI! Use conversion tools in snomtools/calcs/conversions or pint quantity methods for different formats.
-'''
+Functions take pint quantities of the right dimension or floats in SI and give pint quantities in SI! Use conversion
+tools in snomtools/calcs/conversions or pint quantity methods for different formats.
 
+"""
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import numpy
 import snomtools.calcs.prefixes as pref
 import snomtools.calcs.units as units
+
+__author__ = 'hartelt'
 
 
 class InterbandTransition:
@@ -72,7 +77,7 @@ class Metal:
 		:param damping_freq: the damping frequency of the free electrons in (rad/s)
 
 		:param interband_transitions: a list of interband transitions, given either as instance of the
-		InterbandTransition class or as list or tuple of 3 elements containing the frequencies to initialize one.
+			InterbandTransition class or as list or tuple of 3 elements containing the frequencies to initialize one.
 
 		:return: nothing
 		"""
@@ -160,5 +165,5 @@ if __name__ == "__main__":
 	# import snomtools.calcs.prefixes as pref
 	test = numpy.linspace(2000, 4000, 20)
 	hz = test * pref.tera
-	print(Au_Schneider.epsilon(hz))
-	print(Au_Schneider.epsilon_plasma(hz))
+	print((Au_Schneider.epsilon(hz)))
+	print((Au_Schneider.epsilon_plasma(hz)))

@@ -1,10 +1,14 @@
 """
 This file provides scripts for common evaluated data as defined in the classes in the evaluation package.
 They use matplotlib.
-"""
 
+"""
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import numpy
 
+__author__ = "Michael Hartelt"
 
 def plot_powerlaw(powerlaw, plot_dest, resolution=1000, legend_loc='upper left', log=False):
 	"""
@@ -17,7 +21,7 @@ def plot_powerlaw(powerlaw, plot_dest, resolution=1000, legend_loc='upper left',
 	:param resolution: int: The number of points to be calculated for plotting the line representing the fit.
 
 	:param legend_loc: The parameter to be forwarded to the matplotlib.legend method. If set to 'None' or anything
-	that evaluates to False, no legend is drawn.
+		that evaluates to False, no legend is drawn.
 
 	:return:
 	"""

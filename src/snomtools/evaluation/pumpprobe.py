@@ -1,15 +1,19 @@
-__author__ = 'hartelt'
-'''
+"""
 This file provides data evaluation scripts for time-resolved pump-probe data.
 For furter info about data structures, see:
 data.imports.tiff.py
 data.datasets.py
-'''
 
+"""
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import snomtools.calcs.conversions
 import snomtools.data.datasets
 import snomtools.data.imports.tiff
 import snomtools.calcs.units as u
+
+__author__ = 'hartelt'
 
 
 def time_scale_axis(delay_axis, unit='fs', unitplotlabel=None):
@@ -21,10 +25,10 @@ def time_scale_axis(delay_axis, unit='fs', unitplotlabel=None):
 	:param unit: A valid time unit string. The unit to convert the axis to.
 
 	:param unitplotlabel: The plotlabel corresponding to the specified unit. Will be tried to cast in LaTeX siunitx
-	notation if not specified.
+		notation if not specified.
 
 	:return: A new Axis instance with time scaling in the specified unit, that can replace the delay axis in the
-	DataSet.
+		DataSet.
 	"""
 	assert isinstance(delay_axis, snomtools.data.datasets.Axis), "ERROR: no Axis instance given to time_scale_axis()"
 	delaydata = delay_axis.get_data()

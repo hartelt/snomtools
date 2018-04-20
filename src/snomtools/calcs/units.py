@@ -1,15 +1,19 @@
-__author__ = 'hartelt'
 """
 This file provides the central unit registry that should be used in all scripts that use snomtools.
 This avoids errors between quantities of different unit registries that occur when using multiple imports.
 Custom units and prefixes that we use frequently should be defined here to get consistency.
-"""
 
-# Import pint and initialize a standard unit registry:
+"""
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import pint
 import pint.quantity
 import numpy
 
+__author__ = 'hartelt'
+
+# Initialize Standard UnitRegistry:
 ureg = pint.UnitRegistry()
 Quantity = ureg.Quantity
 
@@ -117,19 +121,22 @@ def is_quantity(tocheck):
 def to_ureg(input_, unit=None, convert_quantities=True):
 	"""
 	This method is an import function to import alien quantities (of different unit registries) or numeric formats into
-	the ureg.
+		the ureg.
 
 	:param input_: The input quantity or numeric format (e.g. float, int, numpy array) or string (e.g. "5 nm")
 
 	:param unit: Given as a valid unit string. If a numeric format is used, this specifies the unit of it. If a quantity
-	is used, the output quantity will be converted to it.
+		is used, the output quantity will be converted to it.
 
 	:param convert_quantities: Boolean: Specifies what should be done if input_ is a quantity.
-	True: convert the quantity to the unit if specified by unit parameter. (The default)
-	False: only assure the dimension is correct and import to ureg, but leave unit of input as is is.
+		True: convert the quantity to the unit if specified by unit parameter. (The default)
+		False: only assure the dimension is correct and import to ureg, but leave unit of input_ as is is.
 
 	:return: The imported quantity.
 	"""
+	# Python2/3 compatibility: If unit is a byte string, decode it for usage in pint.Quantity.
+	if isinstance(unit, bytes):
+		unit = unit.decode()
 
 	# Check if input is quantity:
 	if is_quantity(input_):
@@ -149,7 +156,7 @@ def to_ureg(input_, unit=None, convert_quantities=True):
 				return Quantity(input_.magnitude, str(input_.units)).to(unit)
 			else:
 				return Quantity(input_.magnitude, str(input_.units))
-	elif (isinstance(input_, str) or isinstance(input_, unicode)):
+	elif (isinstance(input_, str) or isinstance(input_, str)):
 		if unit:
 			return ureg(input_).to(unit)
 		else:
@@ -162,19 +169,20 @@ def as_ureg_quantities(stream, unit=None):
 	for e in stream:
 		yield to_ureg(e, unit)
 
+
 def magnitudes(stream):
 	for e in stream:
 		yield e.magnitude
+
 
 def units(stream):
 	for e in stream:
 		yield e.units
 
+
 def meshgrid(*args):
 	"""
 	Does the same as numpy.meshgrid, but preserves units.
-
-	:param *xi:
 
 	:return:
 	"""
