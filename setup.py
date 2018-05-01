@@ -19,17 +19,10 @@ Regarding tifffile on Windows x64-systems:
 In case of problems while installing the package for x64 Python, use Anaconda Distribution
 """
 from setuptools import setup, find_packages
-from pip.req import parse_requirements
 
 # Default version information
 source_path = 'src'
 __version__ = '1.0'
-# install_requirements = ['numpy>=1.10.0', 'pint', 'h5py', 'scipy',
-# 						'tifffile', 'h5py_cache', 'six', 'psutil', 'opencv-python']
-
-# Parse requirements from requirements.txt
-install_reqs = parse_requirements('requirements.txt', session=False)
-reqs = [str(ir.req) for ir in install_reqs]
 
 packages = find_packages(source_path)
 
@@ -59,5 +52,7 @@ setup(name='snomtools',
 	  version=get_version_from_git(),
 	  packages=packages,
 	  package_dir={'': source_path},
-	  install_requires=reqs
+	  install_requires=('numpy>=1.10.0', 'pint', 'h5py', 'scipy',
+						'tifffile', 'six', 'psutil', 'opencv-python', 'future',
+						'matplotlib')
 	  )
