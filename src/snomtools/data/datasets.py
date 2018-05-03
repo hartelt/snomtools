@@ -233,6 +233,9 @@ class Data_Handler_H5(u.Quantity):
 	def __getitem__(self, key):
 		return self.__class__(self.ds_data[key], self._units)
 
+	def get_slice_q(self, key):
+		return u.to_ureg(self.ds_data[key], self._units)
+
 	def __setitem__(self, key, value):
 		"""
 		This method provides write access to indexed elements of the data. It directly writes to the h5 dataset
@@ -674,10 +677,13 @@ class Data_Handler_H5(u.Quantity):
 			return newdh
 		elif other.shape == self.shape:
 			# If other has the same shape, the shape doesn't change and we can do everything chunk-wise with better
-			# performance and memory use.
+			# performance and memory use. For this, we need a Data_Handler to use get_slice_q instead of potentially
+			# slower getitem.
+			if not isinstance(other, (self.__class__, Data_Handler_np)):
+				other = self.__class__(other)
 			newdh = self.__class__(shape=self.shape, unit=self.get_unit())
 			for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
-				newdh[slice_] = owndata + other[slice_]
+				newdh[slice_] = owndata + other.get_slice_q(slice_)
 			return newdh
 		else:
 			# Else we need the numpy broadcasting magic to an array of different shape.
@@ -709,10 +715,13 @@ class Data_Handler_H5(u.Quantity):
 			return newdh
 		elif other.shape == self.shape:
 			# If other has the same shape, the shape doesn't change and we can do everything chunk-wise with better
-			# performance and memory use.
+			# performance and memory use. For this, we need a Data_Handler to use get_slice_q instead of potentially
+			# slower getitem.
+			if not isinstance(other, (self.__class__, Data_Handler_np)):
+				other = self.__class__(other)
 			newdh = self.__class__(shape=self.shape, unit=self.get_unit())
 			for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
-				newdh[slice_] = owndata - other[slice_]
+				newdh[slice_] = owndata - other.get_slice_q(slice_)
 			return newdh
 		else:
 			# Else we need the numpy broadcasting magic to an array of different shape.
@@ -733,11 +742,14 @@ class Data_Handler_H5(u.Quantity):
 			return newdh
 		elif other.shape == self.shape:
 			# If other has the same shape, the shape doesn't change and we can do everything chunk-wise with better
-			# performance and memory use.
+			# performance and memory use. For this, we need a Data_Handler to use get_slice_q instead of potentially
+			# slower getitem.
+			if not isinstance(other, (self.__class__, Data_Handler_np)):
+				other = self.__class__(other)
 			newunit = str((u.to_ureg(1., str(other.units)) * u.to_ureg(1., self.get_unit())).units)
 			newdh = self.__class__(shape=self.shape, unit=newunit)
 			for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
-				newdh[slice_] = owndata * other[slice_]
+				newdh[slice_] = owndata * other.get_slice_q(slice_)
 			return newdh
 		else:
 			# Else we need the numpy broadcasting magic to an array of different shape.
@@ -762,11 +774,14 @@ class Data_Handler_H5(u.Quantity):
 			return newdh
 		elif other.shape == self.shape:
 			# If other has the same shape, the shape doesn't change and we can do everything chunk-wise with better
-			# performance and memory use.
+			# performance and memory use. For this, we need a Data_Handler to use get_slice_q instead of potentially
+			# slower getitem.
+			if not isinstance(other, (self.__class__, Data_Handler_np)):
+				other = self.__class__(other)
 			newunit = str((u.to_ureg(1., str(other.units)) / u.to_ureg(1., self.get_unit())).units)
 			newdh = self.__class__(shape=self.shape, unit=newunit)
 			for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
-				newdh[slice_] = owndata / other[slice_]
+				newdh[slice_] = owndata / other.get_slice_q(slice_)
 			return newdh
 		else:
 			# Else we need the numpy broadcasting magic to an array of different shape.
@@ -787,11 +802,14 @@ class Data_Handler_H5(u.Quantity):
 			return newdh
 		elif other.shape == self.shape:
 			# If other has the same shape, the shape doesn't change and we can do everything chunk-wise with better
-			# performance and memory use.
+			# performance and memory use. For this, we need a Data_Handler to use get_slice_q instead of potentially
+			# slower getitem.
+			if not isinstance(other, (self.__class__, Data_Handler_np)):
+				other = self.__class__(other)
 			newunit = str((u.to_ureg(1., str(other.units)) // u.to_ureg(1., self.get_unit())).units)
 			newdh = self.__class__(shape=self.shape, unit=newunit)
 			for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
-				newdh[slice_] = owndata // other[slice_]
+				newdh[slice_] = owndata // other.get_slice_q(slice_)
 			return newdh
 		else:
 			# Else we need the numpy broadcasting magic to an array of different shape.
@@ -812,11 +830,14 @@ class Data_Handler_H5(u.Quantity):
 			return newdh
 		elif other.shape == self.shape:
 			# If other has the same shape, the shape doesn't change and we can do everything chunk-wise with better
-			# performance and memory use.
+			# performance and memory use. For this, we need a Data_Handler to use get_slice_q instead of potentially
+			# slower getitem.
+			if not isinstance(other, (self.__class__, Data_Handler_np)):
+				other = self.__class__(other)
 			assert self.dimensionless(), "Quantity array exponents are only allowed if the base is dimensionless"
 			newdh = self.__class__(shape=self.shape, unit="dimensionless")
 			for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
-				newdh[slice_] = owndata ** other[slice_]
+				newdh[slice_] = owndata ** other.get_slice_q(slice_)
 			return newdh
 		else:
 			# Else we need the numpy broadcasting magic to an array of different shape.
@@ -833,6 +854,39 @@ class Data_Handler_H5(u.Quantity):
 	def __del__(self):
 		if not (self.temp_file is None):
 			del self.temp_file
+
+	@classmethod
+	def add_multiple(cls, *toadd, **kwargs):
+		"""
+		Adds two or more arrays (Quantities, Data_Handlers, ...) of the same shape up and return the result as a new
+		Data_Handler_H5.
+
+		:param toadd: The elements to add. All must have the same shape.
+
+		:param kwargs: kwargs for the new Data_Handler, see :func:`~Data_Handler_H5.__new__`.
+
+		:return: The summed up data.
+		:rtype: Data_Handler_H5
+		"""
+		toadd = list(toadd)
+		importunit = kwargs.pop('unit', None)
+		if importunit is None:
+			toadd[0] = u.to_ureg(toadd[0])
+			importunit = str(toadd[0].units)
+		for i, element in enumerate(toadd):
+			if isinstance(toadd[i], cls):
+				toadd[i] = u.to_ureg(element, importunit)
+			else:
+				toadd[i] = cls(element, importunit)
+			assert toadd[i].shape == toadd[0].shape, "Elements of different shape given."
+		# Initialize new Data_Handler:
+		newdh = cls(shape=toadd[0].shape, unit=importunit, **kwargs)
+		for slice_ in newdh.iterfastslices():
+			slicedata = toadd[0].get_slice_q(slice_)
+			for element in toadd[1:]:
+				slicedata += element.get_slice_q(slice_)
+			newdh[slice_] = slicedata
+		return newdh
 
 	@classmethod
 	def stack(cls, tostack, axis=0, unit=None, h5target=None):
@@ -893,6 +947,9 @@ class Data_Handler_np(u.Quantity):
 		if not isinstance(value, self.__class__):
 			value = self.__class__(value)
 		super(Data_Handler_np, self).__setitem__(key, value)
+
+	def get_slice_q(self, key):
+		return u.to_ureg(self.magnitude[key], str(self.units))
 
 	def get_unit(self):
 		return str(self.units)
@@ -1147,6 +1204,32 @@ class Data_Handler_np(u.Quantity):
 
 	def __del__(self):
 		pass
+
+	@classmethod
+	def add_multiple(cls, *toadd, **kwargs):
+		"""
+		Adds two or more arrays (Quantities, Data_Handlers, ...) and return the result as a new Data_Handler_np.
+
+		:param toadd: The elements to add.
+
+		:param kwargs: kwargs for the new Data_Handler, see :func:`~Data_Handler_np.__new__`. Only :code:`unit` makes
+			sense here.
+
+		:return: The summed up data.
+		:rtype: Data_Handler_np
+		"""
+		toadd = list(toadd)
+		importunit = kwargs.pop('unit', None)
+		if kwargs:
+			raise TypeError('Unexpected **kwargs: %r' % kwargs)
+		if importunit is None:
+			toadd[0] = u.to_ureg(toadd[0])
+			importunit = str(toadd[0].units)
+
+		newdh = cls(shape=toadd[0].shape, unit=importunit)
+		for element in toadd:
+			newdh += element
+		return newdh
 
 	@classmethod
 	def stack(cls, tostack, axis=0, unit=None):
@@ -1741,6 +1824,40 @@ class DataArray(object):
 		else:
 			stacked_data = Data_Handler_np.stack(onlydata, axis)
 		return cls(stacked_data, unit=unit, label=label, plotlabel=plotlabel, h5target=h5target)
+
+	@classmethod
+	def add(cls, to_add, unit=None, label=None, plotlabel=None, h5target=None):
+		"""
+		Adds a sequence of two or more DataArrays up to a new DataArray. All of them must have the same shape.
+
+		:param to_add: sequence of DataArrays: The Data to be stacked.
+
+		:param unit: string, optional: The unit for the stacked DataArray. All data must be convertible to that unit. If
+			not given, the unit of the first DataArray in the input stack is used.
+
+		:param label: string, optional: The label for the new DataSet. If not given, the label of the first DataArray in
+			the input stack is used.
+
+		:param plotlabel: string, optional: The plotlabel for the new DataArray. If not given, the label of the first
+			DataArray in the input stack is used.
+
+		:return: The stacked DataArray.
+		"""
+		for da in to_add:
+			assert (isinstance(da, DataArray)), "ERROR: Non-DataArray object given to stack_DataArrays"
+			assert da.shape == to_add[0].shape, "Tried to add DataArrays of different shape."
+		if unit is None:
+			unit = to_add[0].get_unit()
+		if label is None:
+			label = to_add[0].get_label()
+		if plotlabel is None:
+			plotlabel = to_add[0].get_plotlabel()
+		onlydata = [da.get_data() for da in to_add]
+		if h5target:
+			sum_data = Data_Handler_H5.add_multiple(onlydata, unit=unit, h5target=h5target)
+		else:
+			sum_data = Data_Handler_np.add_multiple(onlydata, unit=unit)
+		return cls(sum_data, label=label, plotlabel=plotlabel, h5target=h5target)
 
 
 class Axis(DataArray):
@@ -3197,14 +3314,14 @@ if __name__ == "__main__":  # just for testing
 		sum7 = mediumfuckindata.sum((0, 2), h5target=h5)
 		sum8 = mediumfuckindata.sum()
 
-	test_bigdata_operations = False
+	test_bigdata_operations = True
 	if test_bigdata_operations:
-		bigfuckindata = Data_Handler_H5(unit='km', shape=(1000, 10), chunk_cache_mem_size=500 * 1024 ** 2)
+		bigfuckindata = Data_Handler_H5(unit='km', shape=(1000, 1000, 50), chunk_cache_mem_size=500 * 1024 ** 2)
 		import time
 
-		start_time = time.time()
-		bigplusline = bigfuckindata + numpy.ones(10)
-		print("Plus line of ones took {0:.2f} seconds".format(time.time() - start_time))
+		# start_time = time.time()
+		# bigplusline = bigfuckindata + numpy.ones(10)
+		# print("Plus line of ones took {0:.2f} seconds".format(time.time() - start_time))
 
 		start_time = time.time()
 		bigplus = bigfuckindata + 1
@@ -3224,6 +3341,15 @@ if __name__ == "__main__":  # just for testing
 		start_time = time.time()
 		bigfloordiv = bigtimes // u.to_ureg("2 km")
 		print("Truediv by 2 took {0:.2f} seconds".format(time.time() - start_time))
+
+		datalist = [bigplus, bigplusplus, bigminus, bigtimes, bigdiv]
+
+		start_time = time.time()
+		bigmultipleadd = Data_Handler_H5.add_multiple(*datalist)
+		print("Adding 5 arrays took {0:.2f} seconds".format(time.time() - start_time))
+		start_time = time.time()
+		bigmultipleadd_trivial = bigplus + bigplusplus + bigminus + bigtimes + bigdiv
+		print("Adding 5 arrays trivially took {0:.2f} seconds".format(time.time() - start_time))
 
 		if False:
 			bignumpy = numpy.zeros(shape=(1000, 1000, 1000), dtype=numpy.float32)
