@@ -3207,6 +3207,57 @@ class DataSet(object):
 		stack.check_data_consistency()
 		return stack
 
+	@classmethod
+	def add(cls, to_add, label=None, plotconf=None, h5target=None):
+		"""
+		Adds up a sequence of two or more DataSets to a new DataSet. All of them must have the same shape and axes.
+
+		:param to_add: sequence of DataSets: The Data to be stacked.
+
+		:param label: string, optional: The label for the new DataSet. If not given, the label of the first DataArray in
+			the input stack is used.
+
+		:param plotconf: The plot configuration to be used for the new DataSet. If not given, the configuration of the
+			first DataSet in the input stack is used.
+
+		:return: The stacked DataSet.
+		"""
+		# TODO: Test me!
+		# Check if input data types are ok and cast defaults if necessary:
+		for ds in to_add:
+			assert (isinstance(ds, DataSet)), "ERROR: Non-DataSet object given to stack_DataSets"
+		if label is None:
+			label = to_add[0].get_label()
+		if plotconf is None:
+			plotconf = to_add[0].get_plotconf()
+
+		# Check if data is compatible: All DataSets must have same dimensions and number of datafields and axes:
+		for ds in to_add:
+			assert (ds.shape == to_add[0].shape), \
+				"ERROR: DataSets of inconsistent dimensions given to stack_DataSets"
+			assert (len(ds.datafields) == len(to_add[0].datafields)), "ERROR: DataSets with different number of " \
+																	  "datafields given to stack_DataSets"
+			for i, axis in enumerate(ds.axes):
+				# Test at least if all corresponding axes have the same units. Testing every single value of each axis
+				# would be a bit overkill.
+				assert axis.units == to_add[0].axes[i].units, "DataSets have axes with different units."
+				assert axis.label == to_add[0].axes[i].label, "DataSets have axes with different labels."
+
+		# Initialize new DataSet:
+		sum_dataset = DataSet(label=label, plotconf=plotconf, h5target=h5target)
+		sum_dataset.axes = to_add[0].axes
+
+		# Stack the datafields all the DataSets and add them to the stacked Set:
+		for i in range(len(to_add[0].datafields)):
+			dflist = [ds.get_datafield(i) for ds in to_add]
+			if h5target:
+				sum_dataset.add_datafield(DataArray.add(dflist, h5target=True))
+			else:
+				sum_dataset.add_datafield(DataArray.add(dflist))
+
+		sum_dataset.check_data_consistency()
+		return sum_dataset
+
 
 def stack_DataArrays(datastack, axis=0, unit=None, label=None, plotlabel=None, h5target=None):
 	"""
