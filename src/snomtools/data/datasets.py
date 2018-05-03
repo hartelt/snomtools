@@ -1854,9 +1854,9 @@ class DataArray(object):
 			plotlabel = to_add[0].get_plotlabel()
 		onlydata = [da.get_data() for da in to_add]
 		if h5target:
-			sum_data = Data_Handler_H5.add_multiple(onlydata, unit=unit, h5target=h5target)
+			sum_data = Data_Handler_H5.add_multiple(*onlydata, unit=unit, h5target=h5target)
 		else:
-			sum_data = Data_Handler_np.add_multiple(onlydata, unit=unit)
+			sum_data = Data_Handler_np.add_multiple(*onlydata, unit=unit)
 		return cls(sum_data, label=label, plotlabel=plotlabel, h5target=h5target)
 
 
@@ -3234,9 +3234,9 @@ class DataSet(object):
 		# Check if data is compatible: All DataSets must have same dimensions and number of datafields and axes:
 		for ds in to_add:
 			assert (ds.shape == to_add[0].shape), \
-				"ERROR: DataSets of inconsistent dimensions given to stack_DataSets"
+				"ERROR: DataSets of inconsistent dimensions given to add"
 			assert (len(ds.datafields) == len(to_add[0].datafields)), "ERROR: DataSets with different number of " \
-																	  "datafields given to stack_DataSets"
+																	  "datafields to add up."
 			for i, axis in enumerate(ds.axes):
 				# Test at least if all corresponding axes have the same units. Testing every single value of each axis
 				# would be a bit overkill.
@@ -3307,6 +3307,9 @@ if __name__ == "__main__":  # just for testing
 	testdataset3 = DataSet.from_textfile('test2.txt', unitsline=1, h5target="test3.hdf5")
 	testdataset3.saveh5("test3.hdf5")
 
+	testdataset4 = DataSet.add([testdataset3, testdataset3], h5target="test4.hdf5")
+	testdataset4.saveh5()
+
 	testh5 = h5tools.File('test.hdf5')
 
 	test_dataarray = False
@@ -3365,7 +3368,7 @@ if __name__ == "__main__":  # just for testing
 		sum7 = mediumfuckindata.sum((0, 2), h5target=h5)
 		sum8 = mediumfuckindata.sum()
 
-	test_bigdata_operations = True
+	test_bigdata_operations = False
 	if test_bigdata_operations:
 		bigfuckindata = Data_Handler_H5(unit='km', shape=(1000, 1000, 50), chunk_cache_mem_size=500 * 1024 ** 2)
 		import time
@@ -3398,9 +3401,6 @@ if __name__ == "__main__":  # just for testing
 		start_time = time.time()
 		bigmultipleadd = Data_Handler_H5.add_multiple(*datalist)
 		print("Adding 5 arrays took {0:.2f} seconds".format(time.time() - start_time))
-		start_time = time.time()
-		bigmultipleadd_trivial = bigplus + bigplusplus + bigminus + bigtimes + bigdiv
-		print("Adding 5 arrays trivially took {0:.2f} seconds".format(time.time() - start_time))
 
 		if False:
 			bignumpy = numpy.zeros(shape=(1000, 1000, 1000), dtype=numpy.float32)
