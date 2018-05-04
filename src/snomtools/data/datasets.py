@@ -3214,13 +3214,14 @@ class DataSet(object):
 
 		:param to_add: sequence of DataSets: The Data to be stacked.
 
-		:param label: string, optional: The label for the new DataSet. If not given, the label of the first DataArray in
+		:param string label: *optional* The label for the new DataSet. If not given, the label of the first DataArray in
 			the input stack is used.
 
 		:param plotconf: The plot configuration to be used for the new DataSet. If not given, the configuration of the
 			first DataSet in the input stack is used.
 
 		:return: The stacked DataSet.
+		:rtype: DataSet
 		"""
 		# TODO: Test me!
 		# Check if input data types are ok and cast defaults if necessary:
