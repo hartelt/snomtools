@@ -223,6 +223,10 @@ class Data_Handler_H5(u.Quantity):
 		return self.ds_data.shape
 
 	@property
+	def dims(self):
+		return len(self.shape)
+
+	@property
 	def dtype(self):
 		return self.ds_data.dtype
 
@@ -650,7 +654,26 @@ class Data_Handler_H5(u.Quantity):
 		:return: An iterator of slices.
 		"""
 		if self.chunks:
-			return self.iterchunkslices()
+			# Get the fastest possible iteration, by choosing for which axis to iterate chunk-wise or take the full
+			# dimension. The optimal selection will be the fastest one fitting into the chunk_cache of the hdf5 file.
+			if isinstance(self.h5target, h5tools.File):
+				cachesize = self.h5target.get_chunk_cache_mem_size()
+			else:
+				cachesize = 1 * 1024 ** 2  # Default h5py files have 1 MB cache size.
+			# optimal number of elements to select at once is the cache size divided by the byte size of the elements:
+			select_elements = cachesize // self.ds_data.dtype.itemsize
+			# Try every combination, select the best:
+			best_elements = 0
+			best_selection = 0
+			for selection in itertools.product([False, True], repeat=self.dims):
+				elements = numpy.where(selection, self.shape, self.chunks).prod()
+				if elements <=select_elements:
+					if elements > best_elements:
+						best_elements = elements
+						best_selection = selection
+			# Return the optimal iterator, dims being the dimensions to iterate over chunk-wise:
+			dims = [i for i in range(self.dims) if not best_selection[i]]
+			return self.iterchunkslices(dims=dims)
 		else:
 			return self.iterlineslices()
 
@@ -1405,6 +1428,10 @@ class DataArray(object):
 	@property
 	def shape(self):
 		return self._data.shape
+
+	@property
+	def dims(self):
+		return len(self.shape)
 
 	@property
 	def units(self):
@@ -3369,7 +3396,7 @@ if __name__ == "__main__":  # just for testing
 		sum7 = mediumfuckindata.sum((0, 2), h5target=h5)
 		sum8 = mediumfuckindata.sum()
 
-	test_bigdata_operations = False
+	test_bigdata_operations = True
 	if test_bigdata_operations:
 		bigfuckindata = Data_Handler_H5(unit='km', shape=(1000, 1000, 50), chunk_cache_mem_size=500 * 1024 ** 2)
 		import time
