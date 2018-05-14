@@ -541,6 +541,8 @@ class Data_Handler_H5(u.Quantity):
 				scipy.ndimage.interpolation.shift(self.ds_data[expanded_slice], shift_dimensioncorrected, output, order,
 												  mode, cval, prefilter)[recover_slice], self.units, h5target=h5target)
 
+	# TODO: Implement rotate_slice similar to shift_slice by using scipy.ndimage.interpolation.rotate
+
 	# FIXME: Iterators for scalar data seems to freeze system.
 
 	def iterchunkslices(self, dim=None, dims=None):
