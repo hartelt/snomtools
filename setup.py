@@ -19,7 +19,6 @@ Regarding tifffile on Windows x64-systems:
 In case of problems while installing the package for x64 Python, use Anaconda Distribution
 """
 from setuptools import setup, find_packages
-from pip.req import parse_requirements
 
 
 # from pip.req import parse_requirements #obsolete since pip version x
@@ -38,7 +37,6 @@ __version__ = '1.0'
 install_reqs = parse_requirements('requirements.txt')
 reqs = install_reqs
 
-
 packages = find_packages(source_path)
 
 
@@ -46,9 +44,9 @@ packages = find_packages(source_path)
 # version should be considered using git's short or better the full hash
 def get_version_from_git():
 	"""
-    Get the short version string of a git repository
-    :return: (str) version information
-    """
+	Get the short version string of a git repository
+	:return: (str) version information
+	"""
 	import subprocess
 	try:
 		v = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'])
