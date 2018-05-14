@@ -82,7 +82,8 @@ class Drift(object):
 					txAxisID = template.get_axis_index(xAxisID)
 				self.template = self.extract_templatedata(template, tyAxisID, txAxisID)
 			else:
-				self.template = self.guess_templatedata(data, self.dyAxisID, self.dxAxisID)
+				if precalculated_drift is None:
+					self.template = self.guess_templatedata(data, self.dyAxisID, self.dxAxisID)
 
 			stackAxisID = data.get_axis_index(stackAxisID)
 
@@ -189,6 +190,7 @@ class Drift(object):
 
 		oldda = self.data.get_datafield(0)
 		if h5target:
+			# ToDO:implement chunkwise iteration. e.g. t,E,y,x resolved has chunks (12,6,41,41) with dim (383,81,650,650) = 1.6 GB
 			# Probe HDF5 initialization to optimize buffer size:
 			chunk_size = snomtools.data.h5tools.probe_chunksize(shape=self.data.shape)
 			min_cache_size = np.prod(self.data.shape, dtype=np.int64) // self.data.shape[self.dstackAxisID] * \
@@ -203,7 +205,7 @@ class Drift(object):
 			if verbose:
 				import time
 				start_time = time.time()
-				print(str(start_time))
+				print(time.ctime())
 				print("Calculating {0} driftcorrected slices...".format(self.data.shape[self.dstackAxisID]))
 			# Get full slice for all the data:
 			full_selection = full_slice(np.s_[:], len(self.data.shape))
@@ -576,19 +578,19 @@ class Terra_maxmap(object):
 
 				# Create big cache array in which the calculated cache arrays will be buffered so only one write process per chunk occurs ->fast
 				bigger_cache_array = np.empty(shape=sliced_shape(chunkslice, fulldata.shape), dtype=np.float32)
-				#Adress the full data of the chunkslice as numpy array
+				# Adress the full data of the chunkslice as numpy array
 				fulldata_chunk = snomtools.data.datasets.Data_Handler_np(fulldata.data.ds_data[chunkslice],
 																		 fulldata.get_unit())
-				#define yslice as y axis in chunkslice
+				# define yslice as y axis in chunkslice
 				yslice = chunkslice[self.dyAxisID]
 				assert isinstance(yslice, slice)
-				#find end of y-data: either end of slice or end of y-axis, if yslice.stop is not defined
+				# find end of y-data: either end of slice or end of y-axis, if yslice.stop is not defined
 				if yslice.stop is None:
 					upper_lim = fulldata.shape[self.dyAxisID]
 				else:
 					upper_lim = yslice.stop
 
-				#Iterate over all elements along dyAxis in the chunkslice
+				# Iterate over all elements along dyAxis in the chunkslice
 				for i in range(yslice.start, upper_lim):
 					# Inserting i as iterator to slicebase without yaxis:
 					intermediate_slice = np.insert(slicebase_wo_yaxis, self.dyAxisID, i)
@@ -610,9 +612,9 @@ class Terra_maxmap(object):
 
 					# Iterate over all elements along dxAxisin the chunkslice:
 					for j in range(xslice.start, upper_lim):
-						#subset_slice = tuple(np.insert(slicebase_wo_xyaxis, self.dxAxisID, j))
+						# subset_slice = tuple(np.insert(slicebase_wo_xyaxis, self.dxAxisID, j))
 
-						#Insert "j-xslice.start" as relative iteration variable at the x-Axis position in the slice
+						# Insert "j-xslice.start" as relative iteration variable at the x-Axis position in the slice
 						subset_slice_relative = tuple(
 							np.insert(slicebase_wo_xyaxis_relative, self.dxAxisID, j - xslice.start))
 
@@ -620,7 +622,7 @@ class Terra_maxmap(object):
 						shift = self.generate_shiftvector((i, j))
 
 						if self.subpixel:
-							#-- calculate shifted data via .shift_slice --
+							# -- calculate shifted data via .shift_slice --
 							# Get the shifted data from the Data_Handler method and put it to cache array:
 							fulldata_chunk.shift_slice(subset_slice_relative, shift, output=cache_array,
 													   order=self.interpolation_order)
@@ -628,48 +630,50 @@ class Terra_maxmap(object):
 							# Write shifted data to corresponding place in the bigger cache array:
 							bigger_cache_array[subset_slice_relative] = cache_array
 						else:
-							#-- calculate shifted data via shifted numpy arrays. Only int shift --
+							# -- calculate shifted data via shifted numpy arrays. Only int shift --
 
-							#cast shift in the coordinate of the energy axis to int
+							# cast shift in the coordinate of the energy axis to int
 							shift = np.rint(shift[self.deAxisID]).astype(int)
 
 							if shift == 0:
-								#if shift=0 write data in the subset_slice_relative to bigger cache array
+								# if shift=0 write data in the subset_slice_relative to bigger cache array
 								bigger_cache_array[subset_slice_relative] = fulldata_chunk.magnitude[
 									subset_slice_relative]
 							else:
-								#create slices to cut out the kept data, adress it's target position and fill the rest with Nan
+								# create slices to cut out the kept data, adress it's target position and fill the rest with Nan
 								sourceslice = list(subset_slice_relative)
 								targetslice = list(subset_slice_relative)
 								restslice = list(subset_slice_relative)
 
-								#Since energy axis is shifted, the slices are changed in the deAxisID axis
+								# Since energy axis is shifted, the slices are changed in the deAxisID axis
 
 								if shift < 0:
-									#shift <0 -> data has to be shifted down
+									# shift <0 -> data has to be shifted down
 									s = abs(shift)
-									sourceslice[self.deAxisID] = np.s_[s:]	#data starting from shift to end is kept
-									targetslice[self.deAxisID] = np.s_[:-s]	#data should be in the slice starting at 0 ending at end-s
-									restslice[self.deAxisID] = np.s_[-s:]	#positions end-s until end should be Nan
+									sourceslice[self.deAxisID] = np.s_[s:]  # data starting from shift to end is kept
+									targetslice[self.deAxisID] = np.s_[
+																 :-s]  # data should be in the slice starting at 0 ending at end-s
+									restslice[self.deAxisID] = np.s_[-s:]  # positions end-s until end should be Nan
 								else:
 									s = abs(shift)
 									# shift >0 -> data has to be shifted up
-									sourceslice[self.deAxisID] = np.s_[:-s]	#data starting from 0 to end-s is kept
-									targetslice[self.deAxisID] = np.s_[s:]	#data should start at s
-									restslice[self.deAxisID] = np.s_[:s]	#empty space from 0 to s should be Nan
+									sourceslice[self.deAxisID] = np.s_[:-s]  # data starting from 0 to end-s is kept
+									targetslice[self.deAxisID] = np.s_[s:]  # data should start at s
+									restslice[self.deAxisID] = np.s_[:s]  # empty space from 0 to s should be Nan
 
-								#Remove x and y dimension so the size fits
+								# Remove x and y dimension so the size fits
 								for dimension in xy_indexes:
 									targetslice.pop(dimension)
 									restslice.pop(dimension)
 								# Write the data using the generated slices for adressing the source in fulldata and the target in cache_array
-								cache_array[tuple(restslice)] = np.nan	#write Nan to restslice positions
-								cache_array[tuple(targetslice)] = fulldata_chunk.magnitude[tuple(sourceslice)]	#write data from sourceslice to positions of targetslice
+								cache_array[tuple(restslice)] = np.nan  # write Nan to restslice positions
+								cache_array[tuple(targetslice)] = fulldata_chunk.magnitude[
+									tuple(sourceslice)]  # write data from sourceslice to positions of targetslice
 
-								#Write cache_array to it's subset_slice_relative position in the bigger_cache_array
+								# Write cache_array to it's subset_slice_relative position in the bigger_cache_array
 								bigger_cache_array[subset_slice_relative] = cache_array
 
-				#After the whole chunkslice is shifted, pass it to the h5 data handler
+				# After the whole chunkslice is shifted, pass it to the h5 data handler
 				dh[chunkslice] = bigger_cache_array
 				if verbose:
 					chunks_done += 1
@@ -710,16 +714,39 @@ if __name__ == '__main__':  # Testing...
 
 	for run in rawdatalist:
 		data = snomtools.data.datasets.DataSet.from_h5file('rawdata/' + run, h5target=run + '_testdata.hdf5',
-														   chunk_cache_mem_size=2048 * 1024 ** 2)
+															   chunk_cache_mem_size=2048 * 1024 ** 2)
 
-		# data = snomtools.data.datasets.stack_DataSets(data, snomtools.data.datasets.Axis([1, 2, 3], 's', 'faketime'))
+			# data = snomtools.data.datasets.stack_DataSets(data, snomtools.data.datasets.Axis([1, 2, 3], 's', 'faketime'))
 
 		data.saveh5()
 
 		drift = Terra_maxmap(data, precal_map, subpixel=True, binning=16)
 		# Calculate corrected data:
 		correcteddata = drift.corrected_data(h5target='Maximamap/' + run)
-
 		correcteddata.saveh5()
-
 		print("done.")
+
+
+
+	#		data = snomtools.data.datasets.DataSet.from_h5file('Maximamap/' + run, h5target=run + '_testdata.hdf5',
+	#														   chunk_cache_mem_size=2048 * 1024 ** 2)
+	#
+	#		# data = snomtools.data.datasets.stack_DataSets(data, snomtools.data.datasets.Axis([1, 2, 3], 's', 'faketime'))
+	#
+	#		data.saveh5()
+	#
+	#		driftfile = ('Summenbilder/' + run.replace('.hdf5', '.txt'))
+	#
+	#		precal_drift = np.loadtxt(driftfile)
+	#		precal_drift = [tuple(row) for row in precal_drift]
+	#
+	#		drift = Drift(data, precalculated_drift=precal_drift, stackAxisID="delay", template=None, subpixel=True,
+	#					  template_origin=(123, 347))
+	#
+	#		# Calculate corrected data:
+	#		correcteddata = drift.corrected_data(h5target='Maximamap/Driftcorrected/' + run)
+	#
+	#		correcteddata.saveh5()
+
+	print("done.")
+	print("the end.")
