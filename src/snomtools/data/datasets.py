@@ -664,7 +664,7 @@ class Data_Handler_H5(u.Quantity):
 			select_elements = cachesize // self.ds_data.dtype.itemsize
 			# Try every combination, select the best:
 			best_elements = 0
-			best_selection = 0
+			best_selection = None
 			for selection in itertools.product([False, True], repeat=self.dims):
 				elements = numpy.where(selection, self.shape, self.chunks).prod()
 				if elements <=select_elements:
@@ -672,7 +672,10 @@ class Data_Handler_H5(u.Quantity):
 						best_elements = elements
 						best_selection = selection
 			# Return the optimal iterator, dims being the dimensions to iterate over chunk-wise:
-			dims = [i for i in range(self.dims) if not best_selection[i]]
+			if best_selection is not None:
+				dims = [i for i in range(self.dims) if not best_selection[i]]
+			else:
+				dims = None
 			return self.iterchunkslices(dims=dims)
 		else:
 			return self.iterlineslices()
