@@ -21,15 +21,23 @@ In case of problems while installing the package for x64 Python, use Anaconda Di
 from setuptools import setup, find_packages
 from pip.req import parse_requirements
 
+
+# from pip.req import parse_requirements #obsolete since pip version x
+
+def parse_requirements(filename):
+	""" load requirements from a pip requirements file """
+	lineiter = (line.strip() for line in open(filename))
+	return [line for line in lineiter if line and not line.startswith("#")]
+
+
 # Default version information
 source_path = 'src'
 __version__ = '1.0'
-# install_requirements = ['numpy>=1.10.0', 'pint', 'h5py', 'scipy',
-# 						'tifffile', 'h5py_cache', 'six', 'psutil', 'opencv-python']
 
 # Parse requirements from requirements.txt
-install_reqs = parse_requirements('requirements.txt', session=False)
-reqs = [str(ir.req) for ir in install_reqs]
+install_reqs = parse_requirements('requirements.txt')
+reqs = install_reqs
+
 
 packages = find_packages(source_path)
 
