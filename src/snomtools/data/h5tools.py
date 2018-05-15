@@ -252,6 +252,22 @@ def write_dataset(h5dest, name, data, **kwargs):
 	h5dest.create_dataset(name, data=data, **kwargs)
 
 
+def read_dataset(h5source):
+	"""
+	Reads a full dataset, which can be scalar or array-like.
+
+	:param h5source: The dataset to read.
+	:type h5source: h5py.Dataset
+
+	:return: The data read from the dataset. The type depends on what was stored there.
+	"""
+	assert isinstance(h5source, h5py.Dataset), "No h5py dataset given."
+	if h5source.shape == ():
+		return h5source[()]
+	else:
+		return h5source[:]
+
+
 def read_as_str(h5source):
 	"""
 	Reads data from a h5 dataset and returns it as string. This is helpful for python2/3 support, to guarantee reading
