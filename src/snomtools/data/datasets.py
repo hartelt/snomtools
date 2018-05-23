@@ -235,6 +235,7 @@ class Data_Handler_H5(u.Quantity):
 		return self.ds_data.chunks
 
 	def __getitem__(self, key):
+		# FIXME: This behaves differently, as in throws exception, than numpy with negative step (reverse array).
 		return self.__class__(self.ds_data[key], self._units)
 
 	def get_slice_q(self, key):
@@ -256,6 +257,8 @@ class Data_Handler_H5(u.Quantity):
 
 		:return: Nothing.
 		"""
+		# FIXME: This behaves differently, as in throws exception, than numpy with negative step (reverse array).
+
 		# The following line could be replaced with
 		# value = u.to_ureg(value).to(self.units)
 		# without changing any functionality. But calling to_ureg twice is more efficient because unneccesary calling
