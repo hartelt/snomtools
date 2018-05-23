@@ -669,7 +669,7 @@ class Data_Handler_H5(u.Quantity):
 			best_selection = None
 			for selection in itertools.product([False, True], repeat=self.dims):
 				elements = numpy.where(selection, self.shape, self.chunks).prod()
-				if elements <=select_elements:
+				if elements <= select_elements:
 					if elements > best_elements:
 						best_elements = elements
 						best_selection = selection
@@ -695,7 +695,7 @@ class Data_Handler_H5(u.Quantity):
 
 	def __add__(self, other):
 		other = u.to_ureg(other, self.get_unit())
-		if not hasattr(other, 'shape'):
+		if not hasattr(other, 'shape') or other.shape == ():
 			# If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
 			# performance and memory use.
 			assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
@@ -733,7 +733,7 @@ class Data_Handler_H5(u.Quantity):
 
 	def __sub__(self, other):
 		other = u.to_ureg(other, self.get_unit())
-		if not hasattr(other, 'shape'):
+		if not hasattr(other, 'shape') or other.shape == ():
 			# If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
 			# performance and memory use.
 			assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
@@ -759,7 +759,7 @@ class Data_Handler_H5(u.Quantity):
 
 	def __mul__(self, other):
 		other = u.to_ureg(other)
-		if not hasattr(other, 'shape'):
+		if not hasattr(other, 'shape') or other.shape == ():
 			# If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
 			# performance and memory use.
 			assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
@@ -791,7 +791,7 @@ class Data_Handler_H5(u.Quantity):
 		In python 2, this new function is called anyway due to :code:`from __future__ import division`.
 		"""
 		other = u.to_ureg(other)
-		if not hasattr(other, 'shape'):
+		if not hasattr(other, 'shape') or other.shape == ():
 			# If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
 			# performance and memory use.
 			assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
@@ -819,7 +819,7 @@ class Data_Handler_H5(u.Quantity):
 
 	def __floordiv__(self, other):
 		other = u.to_ureg(other)
-		if not hasattr(other, 'shape'):
+		if not hasattr(other, 'shape') or other.shape == ():
 			# If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
 			# performance and memory use.
 			assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
@@ -847,7 +847,7 @@ class Data_Handler_H5(u.Quantity):
 
 	def __pow__(self, other):
 		other = u.to_ureg(other, 'dimensionless')
-		if not hasattr(other, 'shape'):
+		if not hasattr(other, 'shape') or other.shape == ():
 			# If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
 			# performance and memory use.
 			assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
@@ -3401,7 +3401,7 @@ if __name__ == "__main__":  # just for testing
 		sum7 = mediumfuckindata.sum((0, 2), h5target=h5)
 		sum8 = mediumfuckindata.sum()
 
-	test_bigdata_operations = True
+	test_bigdata_operations = False
 	if test_bigdata_operations:
 		bigfuckindata = Data_Handler_H5(unit='km', shape=(1000, 1000, 50), chunk_cache_mem_size=500 * 1024 ** 2)
 		import time
