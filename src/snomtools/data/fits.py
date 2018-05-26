@@ -129,7 +129,15 @@ class Gauss_Fit(object):
 	@classmethod
 	def from_xy(cls, xdata, ydata, guess=None):
 		new_instance = cls()
+		xdata = u.to_ureg(xdata)
+		xunit = str(xdata.units)
+		ydata = u.to_ureg(ydata)
+		yunit = str(ydata.units)
 		new_instance.coeffs, new_instance.accuracy = cls.fit_gaussian(xdata, ydata, guess)
+		new_instance.x_0_unit = xunit
+		new_instance.sigma_unit = xunit
+		new_instance.A_unit = yunit
+		new_instance.C_unit = yunit
 		return new_instance
 
 	def gaussian(self, x):
@@ -305,7 +313,15 @@ class Lorentz_Fit(object):
 	@classmethod
 	def from_xy(cls, xdata, ydata, guess=None):
 		new_instance = cls()
+		xdata = u.to_ureg(xdata)
+		xunit = str(xdata.units)
+		ydata = u.to_ureg(ydata)
+		yunit = str(ydata.units)
 		new_instance.coeffs, new_instance.accuracy = cls.fit_lorentzian(xdata, ydata, guess)
+		new_instance.x_0_unit = xunit
+		new_instance.gamma_unit = xunit
+		new_instance.A_unit = yunit
+		new_instance.C_unit = yunit
 		return new_instance
 
 	def lorentzian(self, x):
@@ -397,3 +413,5 @@ class Lorentz_Fit(object):
 			guesslist.append(u.to_ureg(guesselement, guessunit).magnitude)
 		guess = tuple(guesslist)
 		return curve_fit(lorentzian, xdata.magnitude, ydata.magnitude, guess)
+
+# TODO: Implement multidimensional fit classes: data is fitted along one axis, for all points on other axes seperately.
