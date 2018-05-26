@@ -138,6 +138,10 @@ class Gauss_Fit(object):
 	def C(self):
 		return u.to_ureg(self.coeffs[3], self.C_unit)
 
+	@property
+	def FWHM(self):
+		return 2 * np.sqrt(2 * np.log(2)) * self.sigma
+
 	@classmethod
 	def from_coeffs(cls, coeffs):
 		new_instance = cls()
@@ -230,12 +234,12 @@ class Gauss_Fit(object):
 		ydata = u.to_ureg(ydata)
 		if guess is None:
 			guess = (np.mean(xdata), (np.max(xdata) - np.min(xdata)) / 4, np.max(ydata), np.min(ydata))
-		else:  # to assure the guess is represented in the correct units:
-			xunit = xdata.units
-			yunit = ydata.units
-			unitslist = [xunit, xunit, yunit, yunit]
-			guesslist = []
-			for guesselement, guessunit in zip(guess, unitslist):
-				guesslist.append(u.to_ureg(guesselement, guessunit).magnitude)
-			guess = tuple(guess)
+		# to assure the guess is represented in the correct units:
+		xunit = xdata.units
+		yunit = ydata.units
+		unitslist = [xunit, xunit, yunit, yunit]
+		guesslist = []
+		for guesselement, guessunit in zip(guess, unitslist):
+			guesslist.append(u.to_ureg(guesselement, guessunit).magnitude)
+		guess = tuple(guesslist)
 		return curve_fit(gaussian, xdata.magnitude, ydata.magnitude, guess)
