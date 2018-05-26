@@ -10,7 +10,7 @@ from __future__ import print_function
 import snomtools.data.datasets
 import snomtools.calcs.units as u
 import snomtools.data.tools
-import numpy
+import numpy as np
 
 __author__ = 'hartelt'
 
@@ -37,7 +37,7 @@ def fit_xy_linear(xdata, ydata):
 	xdata = snomtools.data.tools.assure_1D(xdata)
 	ydata = snomtools.data.tools.assure_1D(ydata)
 
-	m, c = numpy.polyfit(xdata.magnitude, ydata.magnitude, deg=1, full=False)
+	m, c = np.polyfit(xdata.magnitude, ydata.magnitude, deg=1, full=False)
 
 	one_xunit = u.to_ureg(str(xdata.units))
 	one_yunit = u.to_ureg(str(ydata.units))
@@ -48,7 +48,7 @@ def fit_xy_linear(xdata, ydata):
 
 def gaussian(x, x_0, sigma, A, C):
 	"""
-	A Gauss function of the form gaussian(x) = A * exp(-(x-x_0)^2 / 2 sigma^2) + C
+	A Gauss function of the form gaussian(x) = A * exp(-(x-x_0)**2 / 2 sigma**2) + C
 	All parameters can be given as quantities, if so, unit checks are done automatically. If not, correct units are
 	assumed.
 
@@ -65,7 +65,29 @@ def gaussian(x, x_0, sigma, A, C):
 
 	:return: (Same unit as A and C.) The result of the gaussian function.
 	"""
-	return A * numpy.exp(-(x - x_0) ** 2 / (2 * sigma ** 2)) + C
+	return A * np.exp(-(x - x_0) ** 2 / (2 * sigma ** 2)) + C
+
+
+def lorentzian(x, x_0, gamma, A, C):
+	"""
+	A Lorentz function of the form lorentzian(x) = A * ( gamma**2 / ( (x - x_0)**2 + gamma**2 ) ) + C
+	All parameters can be given as quantities, if so, unit checks are done automatically. If not, correct units are
+	assumed.
+
+	:param x: (Same unit as x.) The variable x.
+
+	:param x_0: The center (peak position) of the distribution.
+
+	:param gamma: (Same unit as x.) The scale parameter. Relates to FWHM by:
+		FWHM = 2 * gamma
+
+	:param A: (Same unit as C.) The amplitude of the peak relative to background.
+
+	:param C: (Same unit as A.) The constant offset (background) of the curve relative to zero.
+
+	:return: (Same unit as A and C.) The result of the gaussian function.
+	"""
+	return A * (gamma ** 2 / ((x - x_0) ** 2 + gamma ** 2)) + C
 
 
 # TODO: Implement this similarly to Powerlaw class in evaluation.peem:
