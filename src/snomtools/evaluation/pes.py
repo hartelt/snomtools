@@ -85,6 +85,10 @@ class FermiEdge:
 	@property
 	def E_f(self):
 		return u.to_ureg(self.coeffs[0], self.E_f_unit)
+	@E_f.setter
+	def E_f(self, newvalue):
+		newvalue = u.to_ureg(newvalue,self.E_f_unit)
+		self.coeffs[0] = newvalue.magnitude
 
 	@property
 	def dE(self):
