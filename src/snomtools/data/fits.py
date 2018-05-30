@@ -12,8 +12,17 @@ import snomtools.calcs.units as u
 import snomtools.data.tools
 import numpy as np
 from scipy.optimize import curve_fit
+import sys
 
 __author__ = 'hartelt'
+
+# For verbose mode with progress printouts:
+if '-v' in sys.argv:
+	verbose = True
+	import time
+else:
+	verbose = False
+print_interval = 50
 
 
 def fit_xy_linear(xdata, ydata):
@@ -85,9 +94,10 @@ class Gauss_Fit(object):
 			else:
 				take_data = 1
 
-			self.coeffs, self.accuracy = self.fit_gaussian(self.data.get_axis(0).get_data(),
-														   self.data.get_datafield(take_data).get_data(),
-														   guess)
+			self.coeffs, pcov = self.fit_gaussian(self.data.get_axis(0).get_data(),
+												  self.data.get_datafield(take_data).get_data(),
+												  guess)
+			self.accuracy = np.sqrt(np.diag(pcov))
 			self.x_0_unit = xunit
 			self.sigma_unit = xunit
 			self.A_unit = yunit
@@ -231,6 +241,116 @@ class Gauss_Fit(object):
 		return curve_fit(gaussian, xdata.magnitude, ydata.magnitude, guess)
 
 
+class Gauss_Fit_nD(object):
+	"""
+	A moredimensional Gauss Fit of given data, in the sense of fitting a Gauss function along a specified axis for
+	all points on all other axes. This can be used to generate "peak maps" of given data, for example an
+	autocorrelation width map of a time-resolved measurement.
+	"""
+
+	def __init__(self, data=None, guess=None, data_id=0, axis_id=0, keepdata=True):
+		global print_counter, start_time
+		if data:
+			data_id = data.get_datafield_index(data_id)
+			axis_id = data.get_axis_index(axis_id)
+			xaxis = data.get_axis(axis_id)
+			ydata = data.get_datafield(data_id)
+			xunit = data.get_axis(axis_id).get_unit()
+			yunit = data.get_datafield(data_id).get_unit()
+
+			map_shape_list = list(data.shape)
+			del map_shape_list[axis_id]
+			map_shape = tuple(map_shape_list)
+			coeff_shape = tuple([4] + map_shape_list)
+			self.coeffs = np.empty(coeff_shape)
+			self.accuracy = np.empty(coeff_shape)
+
+			# to assure the guess is represented in the correct units:
+			if guess is not None:
+				unitslist = [xunit, xunit, yunit, yunit]
+				guesslist = []
+				for guesselement, guessunit in zip(guess, unitslist):
+					guesslist.append(u.to_ureg(guesselement, guessunit).magnitude)
+				guess = tuple(guesslist)
+
+			if verbose:
+				print("Fitting {0} gaussian functions".format(np.prod(map_shape)))
+				start_time = time.time()
+				print_counter = 0
+
+			xvals = xaxis.get_data_raw()
+			for index in np.ndindex(map_shape):
+				indexlist = list(index)
+				indexlist.insert(axis_id, np.s_[:])
+				slicetup = tuple(indexlist)
+				yvals = ydata.get_data()[slicetup].magnitude
+
+				if guess is None:
+					pointguess = (np.mean(xvals), (np.max(xvals) - np.min(xvals)) / 4, np.max(yvals), np.min(yvals))
+					coeffs, pcov = curve_fit(gaussian, xvals, yvals, pointguess)
+				else:
+					coeffs, pcov = curve_fit(gaussian, xvals, yvals, guess)
+				# Take absolute value for sigma, because negative widths don't make sense and curve is identical:
+				coeffs[1] = abs(coeffs[1])
+				self.coeffs[(np.s_[:],) + index] = coeffs
+				try:
+					self.accuracy[(np.s_[:],) + index] = np.sqrt(np.diag(pcov))
+				except ValueError as e:  # Fit failed. pcov = inf, diag(inf) throws exception:
+					self.accuracy[(np.s_[:],) + index] = np.inf
+
+				if verbose:
+					print_counter += 1
+					if print_counter % print_interval == 0:
+						tpf = ((time.time() - start_time) / float(print_counter))
+						etr = tpf * (np.prod(map_shape) - print_counter)
+						print("tiff {0:d} / {1:d}, Time/Fit {3:.4f}s ETR: {2:.1f}s".format(print_counter,
+																						   np.prod(map_shape),
+																						   etr, tpf))
+
+			self.x_0_unit = xunit
+			self.sigma_unit = xunit
+			self.A_unit = yunit
+			self.C_unit = yunit
+			if keepdata:
+				self.data = data
+
+	@property
+	def x_0(self):
+		return u.to_ureg(self.coeffs[0], self.x_0_unit)
+
+	@property
+	def sigma(self):
+		return u.to_ureg(self.coeffs[1], self.sigma_unit)
+
+	@property
+	def A(self):
+		return u.to_ureg(self.coeffs[2], self.A_unit)
+
+	@property
+	def C(self):
+		return u.to_ureg(self.coeffs[3], self.C_unit)
+
+	@property
+	def FWHM(self):
+		return 2 * np.sqrt(2 * np.log(2)) * self.sigma
+
+	def gaussian(self, x, sel):
+		"""
+		The Gauss function corresponding to the fit values of the Gauss_Fit instance at a given position of the
+		data.
+
+		:param x: The value for which to evaluate the gaussian. (Quantity or numerical in correct unit).
+
+		:param sel: An index tuple addressing the selected point.
+		:type sel: tuple of int
+
+		:return: The value of the gaussian function at the value x. Returned as Quantity in whichever unit the fit
+			data was given.
+		"""
+		x = u.to_ureg(x, self.x_0_unit)
+		return gaussian(x, self.x_0[sel], self.sigma[sel], self.A[sel], self.C[sel])
+
+
 def lorentzian(x, x_0, gamma, A, C):
 	"""
 	A Lorentz function of the form lorentzian(x) = A * ( gamma**2 / ( (x - x_0)**2 + gamma**2 ) ) + C
@@ -269,9 +389,13 @@ class Lorentz_Fit(object):
 			else:
 				take_data = 1
 
-			self.coeffs, self.accuracy = self.fit_lorentzian(self.data.get_axis(0).get_data(),
-															 self.data.get_datafield(take_data).get_data(),
-															 guess)
+			self.coeffs, pcov = self.fit_lorentzian(self.data.get_axis(0).get_data(),
+													self.data.get_datafield(take_data).get_data(),
+													guess)
+			# Take absolute value for gamma, because negative widths don't make sense and curve is identical:
+			self.coeffs[1] = abs(self.coeffs[1])
+			self.accuracy = np.sqrt(np.diag(pcov))
+
 			self.x_0_unit = xunit
 			self.gamma_unit = xunit
 			self.A_unit = yunit
@@ -414,4 +538,112 @@ class Lorentz_Fit(object):
 		guess = tuple(guesslist)
 		return curve_fit(lorentzian, xdata.magnitude, ydata.magnitude, guess)
 
-# TODO: Implement multidimensional fit classes: data is fitted along one axis, for all points on other axes seperately.
+
+class Lorentz_Fit_nD(object):
+	"""
+	A moredimensional Lorentz Fit of given data, in the sense of fitting a Lorentz function along a specified axis for
+	all points on all other axes. This can be used to generate "peak maps" of given data, for example an
+	autocorrelation width map of a time-resolved measurement.
+	"""
+
+	def __init__(self, data=None, guess=None, data_id=0, axis_id=0, keepdata=True):
+		global print_counter, start_time
+		if data:
+			data_id = data.get_datafield_index(data_id)
+			axis_id = data.get_axis_index(axis_id)
+			xaxis = data.get_axis(axis_id)
+			ydata = data.get_datafield(data_id)
+			xunit = data.get_axis(axis_id).get_unit()
+			yunit = data.get_datafield(data_id).get_unit()
+
+			map_shape_list = list(data.shape)
+			del map_shape_list[axis_id]
+			map_shape = tuple(map_shape_list)
+			coeff_shape = tuple([4] + map_shape_list)
+			self.coeffs = np.empty(coeff_shape)
+			self.accuracy = np.empty(coeff_shape)
+
+			# to assure the guess is represented in the correct units:
+			if guess is not None:
+				unitslist = [xunit, xunit, yunit, yunit]
+				guesslist = []
+				for guesselement, guessunit in zip(guess, unitslist):
+					guesslist.append(u.to_ureg(guesselement, guessunit).magnitude)
+				guess = tuple(guesslist)
+
+			if verbose:
+				print("Fitting {0} lorentzian functions".format(np.prod(map_shape)))
+				start_time = time.time()
+				print_counter = 0
+
+			xvals = xaxis.get_data_raw()
+			for index in np.ndindex(map_shape):
+				indexlist = list(index)
+				indexlist.insert(axis_id, np.s_[:])
+				slicetup = tuple(indexlist)
+				yvals = ydata.get_data()[slicetup].magnitude
+
+				if guess is None:
+					pointguess = (np.mean(xvals), (np.max(xvals) - np.min(xvals)) / 4, np.max(yvals), np.min(yvals))
+					coeffs, pcov = curve_fit(lorentzian, xvals, yvals, pointguess)
+				else:
+					coeffs, pcov = curve_fit(lorentzian, xvals, yvals, guess)
+				# Take absolute value for gamma, because negative widths don't make sense and curve is identical:
+				coeffs[1] = abs(coeffs[1])
+				self.coeffs[(np.s_[:],) + index] = coeffs
+				try:
+					self.accuracy[(np.s_[:],) + index] = np.sqrt(np.diag(pcov))
+				except ValueError as e:  # Fit failed. pcov = inf, diag(inf) throws exception:
+					self.accuracy[(np.s_[:],) + index] = np.inf
+
+				if verbose:
+					print_counter += 1
+					if print_counter % print_interval == 0:
+						tpf = ((time.time() - start_time) / float(print_counter))
+						etr = tpf * (np.prod(map_shape) - print_counter)
+						print("tiff {0:d} / {1:d}, Time/Fit {3:.4f}s ETR: {2:.1f}s".format(print_counter,
+																						   np.prod(map_shape),
+																						   etr, tpf))
+
+			self.x_0_unit = xunit
+			self.gamma_unit = xunit
+			self.A_unit = yunit
+			self.C_unit = yunit
+			if keepdata:
+				self.data = data
+
+	@property
+	def x_0(self):
+		return u.to_ureg(self.coeffs[0], self.x_0_unit)
+
+	@property
+	def gamma(self):
+		return u.to_ureg(self.coeffs[1], self.gamma_unit)
+
+	@property
+	def A(self):
+		return u.to_ureg(self.coeffs[2], self.A_unit)
+
+	@property
+	def C(self):
+		return u.to_ureg(self.coeffs[3], self.C_unit)
+
+	@property
+	def FWHM(self):
+		return 2 * self.gamma
+
+	def lorentzian(self, x, sel):
+		"""
+		The Lorentz function corresponding to the fit values of the Lorentz_Fit instance at a given position of the
+		data.
+
+		:param x: The value for which to evaluate the lorentzian. (Quantity or numerical in correct unit).
+
+		:param sel: An index tuple addressing the selected point.
+		:type sel: tuple of int
+
+		:return: The value of the lorentzian function at the value x. Returned as Quantity in whichever unit the fit
+			data was given.
+		"""
+		x = u.to_ureg(x, self.x_0_unit)
+		return lorentzian(x, self.x_0[sel], self.gamma[sel], self.A[sel], self.C[sel])
