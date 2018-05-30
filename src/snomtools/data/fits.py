@@ -143,7 +143,11 @@ class Gauss_Fit(object):
 		xunit = str(xdata.units)
 		ydata = u.to_ureg(ydata)
 		yunit = str(ydata.units)
-		new_instance.coeffs, new_instance.accuracy = cls.fit_gaussian(xdata, ydata, guess)
+		new_instance.coeffs, pcov = cls.fit_gaussian(xdata, ydata, guess)
+		try:
+			new_instance.accuracy = np.sqrt(np.diag(pcov))
+		except ValueError as e:  # Fit failed. pcov = inf, diag(inf) throws exception:
+			new_instance.accuracy = np.full(4, np.inf)
 		new_instance.x_0_unit = xunit
 		new_instance.sigma_unit = xunit
 		new_instance.A_unit = yunit
@@ -441,7 +445,11 @@ class Lorentz_Fit(object):
 		xunit = str(xdata.units)
 		ydata = u.to_ureg(ydata)
 		yunit = str(ydata.units)
-		new_instance.coeffs, new_instance.accuracy = cls.fit_lorentzian(xdata, ydata, guess)
+		new_instance.coeffs, pcov = cls.fit_lorentzian(xdata, ydata, guess)
+		try:
+			new_instance.accuracy = np.sqrt(np.diag(pcov))
+		except ValueError as e:  # Fit failed. pcov = inf, diag(inf) throws exception:
+			new_instance.accuracy = np.full(4, np.inf)
 		new_instance.x_0_unit = xunit
 		new_instance.gamma_unit = xunit
 		new_instance.A_unit = yunit
