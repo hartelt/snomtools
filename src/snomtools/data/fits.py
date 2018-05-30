@@ -388,7 +388,10 @@ class Gauss_Fit(object):
 			self.coeffs, pcov = self.fit_gaussian(self.data.get_axis(0).get_data(),
 												  self.data.get_datafield(take_data).get_data(),
 												  guess)
-			self.accuracy = np.sqrt(np.diag(pcov))
+			try:
+				self.accuracy = np.sqrt(np.diag(pcov))
+			except ValueError as e:  # Fit failed. pcov = inf, diag(inf) throws exception:
+				self.accuracy = np.full(4, np.inf)
 			self.x_0_unit = xunit
 			self.sigma_unit = xunit
 			self.A_unit = yunit
@@ -689,7 +692,10 @@ class Lorentz_Fit(object):
 													guess)
 			# Take absolute value for gamma, because negative widths don't make sense and curve is identical:
 			self.coeffs[1] = abs(self.coeffs[1])
-			self.accuracy = np.sqrt(np.diag(pcov))
+			try:
+				self.accuracy = np.sqrt(np.diag(pcov))
+			except ValueError as e:  # Fit failed. pcov = inf, diag(inf) throws exception:
+				self.accuracy = np.full(4, np.inf)
 
 			self.x_0_unit = xunit
 			self.gamma_unit = xunit
