@@ -56,6 +56,297 @@ def fit_xy_linear(xdata, ydata):
 	return m, c
 
 
+class Bell_Fit(object):
+	"""
+	Base class for fits of a bell function to given data. A Bell function in this context is defined as a symmetric
+	function that has parameters x_0 (peak position), width, A (Amplitude) and C (Constant background).
+	"""
+
+	def __init__(self, data=None, guess=None, data_id=0, axis_id=0, keepdata=True, normalize=False):
+		if data:
+			self.data = self.extract_data(data, data_id=data_id, axis_id=axis_id)
+			xunit = self.data.get_axis(0).get_unit()
+			yunit = self.data.get_datafield(0).get_unit()
+
+			if normalize:
+				take_data = 0
+			else:
+				take_data = 1
+
+			self.x_0_unit = xunit
+			self.width_unit = xunit
+			self.A_unit = yunit
+			self.C_unit = yunit
+
+			self.coeffs, pcov = self.fit_function(self.data.get_axis(0).get_data(),
+												  self.data.get_datafield(take_data).get_data(),
+												  guess)
+			# Take absolute value for width, because negative widths don't make sense and curve is identical:
+			self.coeffs[1] = abs(self.coeffs[1])
+			try:
+				self.accuracy = np.sqrt(np.diag(pcov))
+			except ValueError as e:  # Fit failed. pcov = inf, diag(inf) throws exception:
+				self.accuracy = np.full(4, np.inf)
+
+			if not keepdata:
+				self.data = None
+
+	func = None
+
+	@property
+	def x_0(self):
+		return u.to_ureg(self.coeffs[0], self.x_0_unit)
+
+	@x_0.setter
+	def x_0(self, newvalue):
+		newvalue = u.to_ureg(newvalue, self.x_0_unit)
+		self.coeffs[0] = newvalue.magnitude
+
+	@property
+	def width(self):
+		return u.to_ureg(self.coeffs[1], self.width_unit)
+
+	@property
+	def A(self):
+		return u.to_ureg(self.coeffs[2], self.A_unit)
+
+	@property
+	def C(self):
+		return u.to_ureg(self.coeffs[3], self.C_unit)
+
+	@property
+	def FWHM(self):
+		raise NotImplementedError("FWHM not implemented for baseclass Bell_Fit.")
+
+	@classmethod
+	def from_coeffs(cls, coeffs):
+		new_instance = cls()
+		new_instance.coeffs = coeffs
+		return new_instance
+
+	@classmethod
+	def from_xy(cls, xdata, ydata, guess=None):
+		new_instance = cls()
+		xdata = u.to_ureg(xdata)
+		xunit = str(xdata.units)
+		ydata = u.to_ureg(ydata)
+		yunit = str(ydata.units)
+		new_instance.coeffs, pcov = cls.fit_function(xdata, ydata, guess)
+		try:
+			new_instance.accuracy = np.sqrt(np.diag(pcov))
+		except ValueError as e:  # Fit failed. pcov = inf, diag(inf) throws exception:
+			new_instance.accuracy = np.full(4, np.inf)
+		new_instance.x_0_unit = xunit
+		new_instance.sigma_unit = xunit
+		new_instance.A_unit = yunit
+		new_instance.C_unit = yunit
+		return new_instance
+
+	def eval_function(self, x):
+		"""
+		The fit function corresponding to the fit values of the Gauss_Fit instance.
+
+		:param x: The value for which to evaluate. (Quantity or numerical in correct unit).
+
+		:return: The value of the function at the value x. Returned as Quantity in whichever unit the fit
+			data was given
+		"""
+		x = u.to_ureg(x, self.x_0_unit)
+		return self.func(x, self.x_0, self.width, self.A, self.C)
+
+	@staticmethod
+	def extract_data(data, data_id=0, axis_id=0, label="fitdata"):
+		"""
+		Extracts the datapoints to be fitted out of a dataset. Therefore, it takes the chosen axis of the input data,
+		and projects the chosen datafield onto that axis by summing over all the other axes.
+
+		:param data: Dataset containing the data.
+
+		:param data_id: Identifier of the DataField to use. By default, the first DataField is used.
+
+		:param axis_id: Identifier of the axis to use. By default, the first Axis is used.
+
+		:param label: string: label for the produced DataSet
+
+		:return: 1D-DataSet with projected Y Data and X Axis.
+		"""
+		assert isinstance(data, ds.DataSet) or isinstance(data, ds.ROI), \
+			"ERROR: No dataset or ROI instance given to fit data extraction."
+		xaxis = data.get_axis(axis_id)
+		data_full = data.get_datafield(data_id)
+		xaxis_index = data.get_axis_index(axis_id)
+		data_projected = data_full.project_nd(xaxis_index)
+		data_projected = ds.DataArray(data_projected, label='projected data')
+		# Normalize by scaling to 1:
+		data_projected_norm = data_projected / data_projected.max()
+		data_projected_norm.set_label("projected data normalized")
+		# Initialize the DataSet containing only the projected powerlaw data;
+		return ds.DataSet(label, [data_projected_norm, data_projected], [xaxis])
+
+	@staticmethod
+	def extract_data_raw(data, data_id=0, axis_id=0):
+		"""
+		Extracts the datapoints to be fitted out of a dataset. Therefore, it takes the chosen axis of the input data,
+		and projects the chosen datafield onto that axis by summing over all the other axes.
+
+		:param data: Dataset containing the data.
+
+		:param data_id: Identifier of the DataField to use. By default, the first DataField is used.
+
+		:param axis_id: Identifier of the axis to use. By default, the first Axis is used.
+
+		:return: xdata, ydata: tuple of quantities with the projected data.
+		"""
+		assert isinstance(data, ds.DataSet) or isinstance(data, ds.ROI), \
+			"ERROR: No dataset or ROI instance given to fit data extraction."
+		xaxis = data.get_axis(axis_id)
+		data_full = data.get_datafield(data_id)
+		xaxis_index = data.get_axis_index(axis_id)
+		return xaxis.get_data(), data_full.project_nd(xaxis_index)
+
+	@classmethod
+	def fit_function(cls, xdata, ydata, guess=None):
+		"""
+		This function fits a gauss function to data. Uses numpy.optimize.curve_fit under the hood.
+
+		:param xdata: A quantity or array. If no quantity, dimensionless data are assumed.
+
+		:param ydata: Quantity or array: The corresponding y values. If no quantity, dimensionless data are assumed.
+
+		:param guess: optional: A tuple of start parameters (x_0, sigma, A, C) as defined in gaussian method.
+
+		:return: The coefficients and uncertainties of the fitted gaussian (x_0, sigma, A, C), as defined in gaussian
+			method.
+		"""
+		xdata = u.to_ureg(xdata)
+		ydata = u.to_ureg(ydata)
+		if guess is None:
+			guess = (np.mean(xdata), (np.max(xdata) - np.min(xdata)) / 4, np.max(ydata), np.min(ydata))
+		# to assure the guess is represented in the correct units:
+		xunit = xdata.units
+		yunit = ydata.units
+		unitslist = [xunit, xunit, yunit, yunit]
+		guesslist = []
+		for guesselement, guessunit in zip(guess, unitslist):
+			guesslist.append(u.to_ureg(guesselement, guessunit).magnitude)
+		guess = tuple(guesslist)
+		return curve_fit(cls.func, xdata.magnitude, ydata.magnitude, guess)
+
+
+class Bell_Fit_nD(object):
+	"""
+	Base class for a moredimensional Fit of given data, in the sense of fitting a Bell function along a specified axis for
+	all points on all other axes. This can be used to generate "peak maps" of given data, for example an
+	autocorrelation width map of a time-resolved measurement.
+	A Bell function in this context is defined as a symmetric
+	function that has parameters x_0 (peak position), width, A (Amplitude) and C (Constant background).
+	"""
+
+	def __init__(self, data=None, guess=None, data_id=0, axis_id=0, keepdata=True):
+		global print_counter, start_time
+		if data:
+			data_id = data.get_datafield_index(data_id)
+			axis_id = data.get_axis_index(axis_id)
+			xaxis = data.get_axis(axis_id)
+			ydata = data.get_datafield(data_id)
+			xunit = data.get_axis(axis_id).get_unit()
+			yunit = data.get_datafield(data_id).get_unit()
+
+			map_shape_list = list(data.shape)
+			del map_shape_list[axis_id]
+			map_shape = tuple(map_shape_list)
+			coeff_shape = tuple([4] + map_shape_list)
+			self.coeffs = np.empty(coeff_shape)
+			self.accuracy = np.empty(coeff_shape)
+
+			# to assure the guess is represented in the correct units:
+			if guess is not None:
+				unitslist = [xunit, xunit, yunit, yunit]
+				guesslist = []
+				for guesselement, guessunit in zip(guess, unitslist):
+					guesslist.append(u.to_ureg(guesselement, guessunit).magnitude)
+				guess = tuple(guesslist)
+
+			if verbose:
+				print("Fitting {0} Bell functions".format(np.prod(map_shape)))
+				start_time = time.time()
+				print_counter = 0
+
+			xvals = xaxis.get_data_raw()
+			for index in np.ndindex(map_shape):
+				indexlist = list(index)
+				indexlist.insert(axis_id, np.s_[:])
+				slicetup = tuple(indexlist)
+				yvals = ydata.get_data()[slicetup].magnitude
+
+				if guess is None:
+					pointguess = (np.mean(xvals), (np.max(xvals) - np.min(xvals)) / 4, np.max(yvals), np.min(yvals))
+					coeffs, pcov = curve_fit(self.func, xvals, yvals, pointguess)
+				else:
+					coeffs, pcov = curve_fit(self.func, xvals, yvals, guess)
+				# Take absolute value for width, because negative widths don't make sense and curve is identical:
+				coeffs[1] = abs(coeffs[1])
+				self.coeffs[(np.s_[:],) + index] = coeffs
+				try:
+					self.accuracy[(np.s_[:],) + index] = np.sqrt(np.diag(pcov))
+				except ValueError as e:  # Fit failed. pcov = inf, diag(inf) throws exception:
+					self.accuracy[(np.s_[:],) + index] = np.inf
+
+				if verbose:
+					print_counter += 1
+					if print_counter % print_interval == 0:
+						tpf = ((time.time() - start_time) / float(print_counter))
+						etr = tpf * (np.prod(map_shape) - print_counter)
+						print("Fit {0:d} / {1:d}, Time/Fit {3:.4f}s ETR: {2:.1f}s".format(print_counter,
+																						  np.prod(map_shape),
+																						  etr, tpf))
+
+			self.x_0_unit = xunit
+			self.width_unit = xunit
+			self.A_unit = yunit
+			self.C_unit = yunit
+			if keepdata:
+				self.data = data
+
+	func = None
+
+	@property
+	def x_0(self):
+		return u.to_ureg(self.coeffs[0], self.x_0_unit)
+
+	@property
+	def width(self):
+		return u.to_ureg(self.coeffs[1], self.width)
+
+	@property
+	def A(self):
+		return u.to_ureg(self.coeffs[2], self.A_unit)
+
+	@property
+	def C(self):
+		return u.to_ureg(self.coeffs[3], self.C_unit)
+
+	@property
+	def FWHM(self):
+		raise NotImplementedError("FWHM not implemented for baseclass Bell_Fit.")
+
+	def eval_function(self, x, sel):
+		"""
+		The Bell function corresponding to the fit values of the Bell_Fit instance at a given position of the
+		data.
+
+		:param x: The value for which to evaluate. (Quantity or numerical in correct unit).
+
+		:param sel: An index tuple addressing the selected point.
+		:type sel: tuple of int
+
+		:return: The value of the function at the value x. Returned as Quantity in whichever unit the fit
+			data was given.
+		"""
+		x = u.to_ureg(x, self.x_0_unit)
+		return self.func(x, self.x_0[sel], self.width[sel], self.A[sel], self.C[sel])
+
+
 def gaussian(x, x_0, sigma, A, C):
 	"""
 	A Gauss function of the form gaussian(x) = A * exp(-(x-x_0)**2 / 2 sigma**2) + C
