@@ -7,6 +7,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 import sys
+import h5py
 import cv2 as cv
 import numpy as np
 import snomtools.data.datasets
@@ -56,43 +57,59 @@ class Drift(object):
 		:param int interpolation_order: An order for the interpolation for the calculation of driftcorrected data.
 			See: :func:`scipy.ndimage.interpolation.shift` for details.
 		"""
-		if data:
+		if data is None:
+			if precalculated_drift is None:
+				self.drift = None
+			else:
+				assert len(precalculated_drift[0]) == 2, "Driftvector has not dimension 2"
+				self.drift = precalculated_drift
+
+		else:
 			if stackAxisID is None:
 				self.dstackAxisID = data.get_axis_index('delay')
 			else:
-				self.dstackAxisID = data.get_axis_index(stackAxisID)
+				if type(stackAxisID) is int:
+					self.dstackAxisID = stackAxisID
+				else:
+					self.dstackAxisID = data.get_axis_index(stackAxisID)
 			if yAxisID is None:
 				self.dyAxisID = data.get_axis_index('y')
 			else:
-				self.dyAxisID = data.get_axis_index(yAxisID)
+				if type(yAxisID) is int:
+					self.dyAxisID = yAxisID
+				else:
+					self.dyAxisID = data.get_axis_index(yAxisID)
 			if xAxisID is None:
 				self.dxAxisID = data.get_axis_index('x')
 			else:
-				self.dxAxisID = data.get_axis_index(xAxisID)
+				if type(xAxisID) is int:
+					self.dxAxisID = xAxisID
+				else:
+					self.dxAxisID = data.get_axis_index(xAxisID)
 
 			# read or guess template
-			if template:
+			if template is None:
+				self.template = self.guess_templatedata(data, self.dyAxisID, self.dxAxisID)
+
+			else:
 				if yAxisID is None:
 					tyAxisID = template.get_axis_index('y')
 				else:
-					tyAxisID = template.get_axis_index(yAxisID)
+					if type(yAxisID) is int:
+						tyAxisID = yAxisID
+					else:
+						tyAxisID = template.get_axis_index(yAxisID)
 				if xAxisID is None:
 					txAxisID = template.get_axis_index('x')
 				else:
-					txAxisID = template.get_axis_index(xAxisID)
+					if type(xAxisID) is int:
+						txAxisID = xAxisID
+					else:
+						txAxisID = template.get_axis_index(xAxisID)
 				self.template = self.extract_templatedata(template, tyAxisID, txAxisID)
-			else:
-				self.template = self.guess_templatedata(data, self.dyAxisID, self.dxAxisID)
-
-			stackAxisID = data.get_axis_index(stackAxisID)
 
 			# check for external drift vectors
-			if precalculated_drift:
-				assert len(precalculated_drift) == data.shape[
-					self.dstackAxisID], "Number of driftvectors unequal to stack dimension of data"
-				assert len(precalculated_drift[0]) == 2, "Driftvector has not dimension 2"
-				self.drift = precalculated_drift
-			else:
+			if precalculated_drift is None:
 				# process data towards 3d array
 				if verbose:
 					print("Projecting 3D data...", end=None)
@@ -103,12 +120,12 @@ class Drift(object):
 				# for layers along stackAxisID find drift:
 				self.drift = self.template_matching_stack(self.data3D.get_datafield(0), self.template, stackAxisID,
 														  method=method, subpixel=subpixel)
-		else:
-			if precalculated_drift:
+
+			else:
+				assert len(precalculated_drift) == data.shape[
+					self.dstackAxisID], "Number of driftvectors unequal to stack dimension of data"
 				assert len(precalculated_drift[0]) == 2, "Driftvector has not dimension 2"
 				self.drift = precalculated_drift
-			else:
-				self.drift = None
 
 		if template_origin is None:
 			if self.drift is not None:
@@ -258,6 +275,8 @@ class Drift(object):
 
 		:param subpixel: Generate subpixel accurate drift vectors
 
+		:param threshold: Threshold of calculated xCorr-values at detected positions that are deemed trustworthy
+
 		:return: List of tuples containing the coordinates of best correlation corrected for values below threshold
 		"""
 		driftlist = []
@@ -392,9 +411,10 @@ class Drift(object):
 		"""
 		assert isinstance(data, snomtools.data.datasets.DataSet) or isinstance(data, snomtools.data.datasets.ROI), \
 			"ERROR: No dataset or ROI instance given to extract_templatedata."
-
-		yAxisID = data.get_axis_index(yAxisID)
-		xAxisID = data.get_axis_index(xAxisID)
+		if type(yAxisID) is not int:
+			yAxisID = data.get_axis_index(yAxisID)
+		if type(xAxisID) is not int:
+			xAxisID = data.get_axis_index(xAxisID)
 
 		return data.project_nd(yAxisID, xAxisID).get_datafield(0)
 
@@ -565,7 +585,7 @@ class Terra_maxmap(object):
 					step_starttime = time.time()
 
 				bigger_cache_array = np.empty(shape=sliced_shape(chunkslice, oldda.shape), dtype=np.float32)
-				oldda_chunk = snomtools.data.datasets.Data_Handler_np(oldda.data.ds_data[chunkslice],oldda.get_unit())
+				oldda_chunk = snomtools.data.datasets.Data_Handler_np(oldda.data.ds_data[chunkslice], oldda.get_unit())
 
 				yslice = chunkslice[self.dyAxisID]
 				assert isinstance(yslice, slice)
@@ -600,7 +620,7 @@ class Terra_maxmap(object):
 						if self.subpixel:
 							# Get the shifted data from the Data_Handler method:
 							oldda_chunk.shift_slice(subset_slice_relative, shift, output=cache_array,
-												   order=self.interpolation_order)
+													order=self.interpolation_order)
 
 							# Write shifted data to corresponding place in dh:
 							bigger_cache_array[subset_slice_relative] = cache_array
