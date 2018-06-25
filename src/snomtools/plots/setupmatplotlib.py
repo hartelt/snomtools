@@ -43,7 +43,8 @@ def usepackage(package, options=None):
 preamble = "\n".join([
 	usepackage('siunitx'),  # A comprehensive (SI) units package        https://www.ctan.org/pkg/siunitx
 	usepackage('icomma'),  # Intelligent commas for decimal numbers    https://www.ctan.org/pkg/icomma
-	usepackage('fixltx2e')  # for using \textsubscript                  https://www.ctan.org/pkg/fixltx2e
+	usepackage('fixltx2e'),  # for using \textsubscript                  https://www.ctan.org/pkg/fixltx2e
+	usepackage('mhchem')  # for chemistry
 	#	r'\sisetup{detect-all}'
 ])
 
@@ -235,6 +236,7 @@ cmap_evolution = ListedColormap([
 	cmap_BuOrRd(0)
 ])
 
+cmap_whitefancy = LinearSegmentedColormap.from_list('whitefancy', ['white', 'blue', 'cyan', 'yellow','red','darkred'])
 
 def get_cmap(N=3, Offset=.00):
 	cmap = cmap_BuOrRd
