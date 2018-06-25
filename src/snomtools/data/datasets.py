@@ -1371,6 +1371,7 @@ class DataArray(object):
 		"""
 		assert isinstance(h5source, h5py.Group), "DataArray.from_h5 requires h5py group as source."
 		if h5target:
+			# FIXME: Temp file mode not supported, but used for example in DataSet.loadh5
 			assert isinstance(h5target, h5py.Group), "DataArray.from_h5 requires h5py group as target."
 		out = cls(None, h5target=h5target)
 		out.load_from_h5(h5source)
@@ -1572,6 +1573,7 @@ class DataArray(object):
 				h5tools.clear_name(self.h5target, h5set)
 				h5source.copy(h5set, self.h5target)
 			self._data = Data_Handler_H5(h5target=self.h5target)
+		# TODO: Implement performant HDF5-level copying in temp file mode.
 		else:
 			self.set_data(numpy.array(h5source["data"]), h5tools.read_as_str(h5source["unit"]))
 		self.set_label(h5tools.read_as_str(h5source["label"]))
