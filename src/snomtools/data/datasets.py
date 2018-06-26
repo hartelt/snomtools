@@ -103,6 +103,23 @@ class Data_Handler_H5(u.Quantity):
 			inst.temp_file = temp_file
 			inst.temp_dir = temp_dir
 			return inst
+		elif isinstance(data, h5py.Dataset):
+			inst = object.__new__(cls)
+			inst.__used = False
+			inst.__handling = None
+			inst.compression = compression
+			inst.compression_opts = compression_opts
+			unit = u.to_ureg(1, unit).units
+			h5tools.clear_name(h5target, "data")
+			# h5target.copy(data, h5target) # breaks in h5py 2.2.1, propably because of bug therein.
+			data.file.copy(data.name, h5target)
+			inst.ds_data = h5target["data"]
+			h5tools.clear_name(h5target, "unit")
+			inst.ds_unit = h5target.create_dataset("unit", data=str(unit))
+			inst.h5target = h5target
+			inst.temp_file = temp_file
+			inst.temp_dir = temp_dir
+			return inst
 		elif data is not None:
 			inst = object.__new__(cls)
 			inst.__used = False
@@ -1365,14 +1382,15 @@ class DataArray(object):
 
 		:param h5source: The HDF5 source to read from. This is generally the subgroup for the DataArray.
 
-		:param h5target: Optional. The HDF5 target to work on, if on-disk h5 mode is desired.
+		:param h5target: Optional. The HDF5 target to work on, if on-disk h5 mode is desired. :code:`True` can be given
+			to enable temp file mode.
 
 		:return: The initialized DataArray.
 		"""
 		assert isinstance(h5source, h5py.Group), "DataArray.from_h5 requires h5py group as source."
 		if h5target:
-			# FIXME: Temp file mode not supported, but used for example in DataSet.loadh5
-			assert isinstance(h5target, h5py.Group), "DataArray.from_h5 requires h5py group as target."
+			assert isinstance(h5target, h5py.Group) or h5target is True, \
+				"DataArray.from_h5 requires h5py group as target, or True to use temp file."
 		out = cls(None, h5target=h5target)
 		out.load_from_h5(h5source)
 		return out
@@ -1573,7 +1591,11 @@ class DataArray(object):
 				h5tools.clear_name(self.h5target, h5set)
 				h5source.copy(h5set, self.h5target)
 			self._data = Data_Handler_H5(h5target=self.h5target)
-		# TODO: Implement performant HDF5-level copying in temp file mode.
+		# TODO: Implement performant HDF5-level copying in temp file mode: Test this:
+		elif self.h5target is True:
+			self._data = Data_Handler_H5(h5source["data"], unit=h5tools.read_as_str(h5source["unit"]), h5target=True)
+			self.label = h5tools.read_as_str(h5source["label"])
+			self.plotlabel = h5tools.read_as_str(h5source["plotlabel"])
 		else:
 			self.set_data(numpy.array(h5source["data"]), h5tools.read_as_str(h5source["unit"]))
 		self.set_label(h5tools.read_as_str(h5source["label"]))
@@ -2993,7 +3015,7 @@ class DataSet(object):
 			h5dest = self.h5target
 		if isinstance(h5dest, string_types):
 			path = os.path.abspath(h5dest)
-			if self.h5target and (path == os.path.abspath(self.h5target.filename)):
+			if isinstance(self.h5target, h5py.File) and (path == os.path.abspath(self.h5target.filename)):
 				# own h5target was explicitly (redundantly) requested, so just take it instead of making a new file.
 				h5dest = self.h5target
 				path = False
@@ -3335,11 +3357,13 @@ if __name__ == "__main__":  # just for testing
 	testdataset.saveh5()
 
 	testdataset.replace_axis('xaxis', Axis(testarray, 'second', label="newaxis"))
+
 	testdataset.saveh5()
 
 	del testdataset
 
-	testdataset2 = DataSet.from_h5file('test.hdf5')
+	# FIXME: This breaks on Ben's System when opening Dataset with in_h5:
+	testdataset2 = DataSet.from_h5file('test.hdf5', h5target=True)
 	testdataset2.saveh5("exampledata.hdf5")
 
 	testdataset3 = DataSet.from_textfile('test2.txt', unitsline=1, h5target="test3.hdf5")
