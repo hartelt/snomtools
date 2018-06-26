@@ -1591,7 +1591,6 @@ class DataArray(object):
 				h5tools.clear_name(self.h5target, h5set)
 				h5source.copy(h5set, self.h5target)
 			self._data = Data_Handler_H5(h5target=self.h5target)
-		# TODO: Implement performant HDF5-level copying in temp file mode: Test this:
 		elif self.h5target is True:
 			self._data = Data_Handler_H5(h5source["data"], unit=h5tools.read_as_str(h5source["unit"]), h5target=True)
 			self.label = h5tools.read_as_str(h5source["label"])
@@ -3363,7 +3362,7 @@ if __name__ == "__main__":  # just for testing
 	del testdataset
 
 	# FIXME: This breaks on Ben's System when opening Dataset with in_h5:
-	testdataset2 = DataSet.from_h5file('test.hdf5', h5target=True)
+	testdataset2 = DataSet.in_h5('test.hdf5')
 	testdataset2.saveh5("exampledata.hdf5")
 
 	testdataset3 = DataSet.from_textfile('test2.txt', unitsline=1, h5target="test3.hdf5")
