@@ -103,6 +103,23 @@ class Data_Handler_H5(u.Quantity):
 			inst.temp_file = temp_file
 			inst.temp_dir = temp_dir
 			return inst
+		elif isinstance(data, h5py.Dataset):
+			inst = object.__new__(cls)
+			inst.__used = False
+			inst.__handling = None
+			inst.compression = compression
+			inst.compression_opts = compression_opts
+			unit = u.to_ureg(1, unit).units
+			h5tools.clear_name(h5target, "data")
+			# h5target.copy(data, h5target) # breaks in h5py 2.2.1, propably because of bug therein.
+			data.file.copy(data.name, h5target)
+			inst.ds_data = h5target["data"]
+			h5tools.clear_name(h5target, "unit")
+			inst.ds_unit = h5target.create_dataset("unit", data=str(unit))
+			inst.h5target = h5target
+			inst.temp_file = temp_file
+			inst.temp_dir = temp_dir
+			return inst
 		elif data is not None:
 			inst = object.__new__(cls)
 			inst.__used = False
@@ -235,6 +252,7 @@ class Data_Handler_H5(u.Quantity):
 		return self.ds_data.chunks
 
 	def __getitem__(self, key):
+		# FIXME: This behaves differently, as in throws exception, than numpy with negative step (reverse array).
 		return self.__class__(self.ds_data[key], self._units)
 
 	def get_slice_q(self, key):
@@ -256,6 +274,8 @@ class Data_Handler_H5(u.Quantity):
 
 		:return: Nothing.
 		"""
+		# FIXME: This behaves differently, as in throws exception, than numpy with negative step (reverse array).
+
 		# The following line could be replaced with
 		# value = u.to_ureg(value).to(self.units)
 		# without changing any functionality. But calling to_ureg twice is more efficient because unneccesary calling
@@ -541,6 +561,8 @@ class Data_Handler_H5(u.Quantity):
 				scipy.ndimage.interpolation.shift(self.ds_data[expanded_slice], shift_dimensioncorrected, output, order,
 												  mode, cval, prefilter)[recover_slice], self.units, h5target=h5target)
 
+	# TODO: Implement rotate_slice similar to shift_slice by using scipy.ndimage.interpolation.rotate
+
 	# FIXME: Iterators for scalar data seems to freeze system.
 
 	def iterchunkslices(self, dim=None, dims=None):
@@ -664,15 +686,18 @@ class Data_Handler_H5(u.Quantity):
 			select_elements = cachesize // self.ds_data.dtype.itemsize
 			# Try every combination, select the best:
 			best_elements = 0
-			best_selection = 0
+			best_selection = None
 			for selection in itertools.product([False, True], repeat=self.dims):
 				elements = numpy.where(selection, self.shape, self.chunks).prod()
-				if elements <=select_elements:
+				if elements <= select_elements:
 					if elements > best_elements:
 						best_elements = elements
 						best_selection = selection
 			# Return the optimal iterator, dims being the dimensions to iterate over chunk-wise:
-			dims = [i for i in range(self.dims) if not best_selection[i]]
+			if best_selection is not None:
+				dims = [i for i in range(self.dims) if not best_selection[i]]
+			else:
+				dims = None
 			return self.iterchunkslices(dims=dims)
 		else:
 			return self.iterlineslices()
@@ -690,7 +715,7 @@ class Data_Handler_H5(u.Quantity):
 
 	def __add__(self, other):
 		other = u.to_ureg(other, self.get_unit())
-		if not hasattr(other, 'shape'):
+		if not hasattr(other, 'shape') or other.shape == ():
 			# If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
 			# performance and memory use.
 			assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
@@ -728,7 +753,7 @@ class Data_Handler_H5(u.Quantity):
 
 	def __sub__(self, other):
 		other = u.to_ureg(other, self.get_unit())
-		if not hasattr(other, 'shape'):
+		if not hasattr(other, 'shape') or other.shape == ():
 			# If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
 			# performance and memory use.
 			assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
@@ -754,7 +779,7 @@ class Data_Handler_H5(u.Quantity):
 
 	def __mul__(self, other):
 		other = u.to_ureg(other)
-		if not hasattr(other, 'shape'):
+		if not hasattr(other, 'shape') or other.shape == ():
 			# If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
 			# performance and memory use.
 			assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
@@ -786,7 +811,7 @@ class Data_Handler_H5(u.Quantity):
 		In python 2, this new function is called anyway due to :code:`from __future__ import division`.
 		"""
 		other = u.to_ureg(other)
-		if not hasattr(other, 'shape'):
+		if not hasattr(other, 'shape') or other.shape == ():
 			# If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
 			# performance and memory use.
 			assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
@@ -814,7 +839,7 @@ class Data_Handler_H5(u.Quantity):
 
 	def __floordiv__(self, other):
 		other = u.to_ureg(other)
-		if not hasattr(other, 'shape'):
+		if not hasattr(other, 'shape') or other.shape == ():
 			# If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
 			# performance and memory use.
 			assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
@@ -842,7 +867,7 @@ class Data_Handler_H5(u.Quantity):
 
 	def __pow__(self, other):
 		other = u.to_ureg(other, 'dimensionless')
-		if not hasattr(other, 'shape'):
+		if not hasattr(other, 'shape') or other.shape == ():
 			# If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
 			# performance and memory use.
 			assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
@@ -1357,13 +1382,15 @@ class DataArray(object):
 
 		:param h5source: The HDF5 source to read from. This is generally the subgroup for the DataArray.
 
-		:param h5target: Optional. The HDF5 target to work on, if on-disk h5 mode is desired.
+		:param h5target: Optional. The HDF5 target to work on, if on-disk h5 mode is desired. :code:`True` can be given
+			to enable temp file mode.
 
 		:return: The initialized DataArray.
 		"""
 		assert isinstance(h5source, h5py.Group), "DataArray.from_h5 requires h5py group as source."
 		if h5target:
-			assert isinstance(h5target, h5py.Group), "DataArray.from_h5 requires h5py group as target."
+			assert isinstance(h5target, h5py.Group) or h5target is True, \
+				"DataArray.from_h5 requires h5py group as target, or True to use temp file."
 		out = cls(None, h5target=h5target)
 		out.load_from_h5(h5source)
 		return out
@@ -1564,6 +1591,10 @@ class DataArray(object):
 				h5tools.clear_name(self.h5target, h5set)
 				h5source.copy(h5set, self.h5target)
 			self._data = Data_Handler_H5(h5target=self.h5target)
+		elif self.h5target is True:
+			self._data = Data_Handler_H5(h5source["data"], unit=h5tools.read_as_str(h5source["unit"]), h5target=True)
+			self.label = h5tools.read_as_str(h5source["label"])
+			self.plotlabel = h5tools.read_as_str(h5source["plotlabel"])
 		else:
 			self.set_data(numpy.array(h5source["data"]), h5tools.read_as_str(h5source["unit"]))
 		self.set_label(h5tools.read_as_str(h5source["label"]))
@@ -2570,10 +2601,17 @@ class DataSet(object):
 		"""
 		dataset = cls(repr(h5source), h5target=h5target, chunk_cache_mem_size=chunk_cache_mem_size)
 		if isinstance(h5source, string_types):
-			path = os.path.abspath(h5source)
-			h5source = h5tools.File(path, chunk_cache_mem_size=chunk_cache_mem_size)
-		# Load data:
-		dataset.loadh5(h5source)
+			sourcepath = os.path.normcase(os.path.abspath(h5source))
+			if sourcepath == os.path.normcase(os.path.abspath(dataset.h5target.filename)):
+				# The source file was already opened and is used as the h5target of the new dataset. This happens for
+				# example when using in_h5. So avoid opening the file twice and just use the one we have.
+				dataset.loadh5(dataset.h5target)
+			else: # We need to open the source file, read from it, and close it afterwards.
+				h5source = h5tools.File(sourcepath, chunk_cache_mem_size=chunk_cache_mem_size)
+				dataset.loadh5(h5source)
+				h5source.close()
+		else: # We have a h5py Group to read, so just do it:
+			dataset.loadh5(h5source)
 		return dataset
 
 	@classmethod
@@ -2983,7 +3021,7 @@ class DataSet(object):
 			h5dest = self.h5target
 		if isinstance(h5dest, string_types):
 			path = os.path.abspath(h5dest)
-			if self.h5target and (path == os.path.abspath(self.h5target.filename)):
+			if isinstance(self.h5target, h5py.File) and (path == os.path.abspath(self.h5target.filename)):
 				# own h5target was explicitly (redundantly) requested, so just take it instead of making a new file.
 				h5dest = self.h5target
 				path = False
@@ -3325,11 +3363,12 @@ if __name__ == "__main__":  # just for testing
 	testdataset.saveh5()
 
 	testdataset.replace_axis('xaxis', Axis(testarray, 'second', label="newaxis"))
+
 	testdataset.saveh5()
 
 	del testdataset
 
-	testdataset2 = DataSet.from_h5file('test.hdf5')
+	testdataset2 = DataSet.in_h5('test.hdf5')
 	testdataset2.saveh5("exampledata.hdf5")
 
 	testdataset3 = DataSet.from_textfile('test2.txt', unitsline=1, h5target="test3.hdf5")
@@ -3396,7 +3435,7 @@ if __name__ == "__main__":  # just for testing
 		sum7 = mediumfuckindata.sum((0, 2), h5target=h5)
 		sum8 = mediumfuckindata.sum()
 
-	test_bigdata_operations = True
+	test_bigdata_operations = False
 	if test_bigdata_operations:
 		bigfuckindata = Data_Handler_H5(unit='km', shape=(1000, 1000, 50), chunk_cache_mem_size=500 * 1024 ** 2)
 		import time
