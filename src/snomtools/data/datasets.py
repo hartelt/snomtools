@@ -2601,10 +2601,17 @@ class DataSet(object):
 		"""
 		dataset = cls(repr(h5source), h5target=h5target, chunk_cache_mem_size=chunk_cache_mem_size)
 		if isinstance(h5source, string_types):
-			path = os.path.abspath(h5source)
-			h5source = h5tools.File(path, chunk_cache_mem_size=chunk_cache_mem_size)
-		# Load data:
-		dataset.loadh5(h5source)
+			sourcepath = os.path.normcase(os.path.abspath(h5source))
+			if sourcepath == os.path.normcase(os.path.abspath(dataset.h5target.filename)):
+				# The source file was already opened and is used as the h5target of the new dataset. This happens for
+				# example when using in_h5. So avoid opening the file twice and just use the one we have.
+				dataset.loadh5(dataset.h5target)
+			else: # We need to open the source file, read from it, and close it afterwards.
+				h5source = h5tools.File(sourcepath, chunk_cache_mem_size=chunk_cache_mem_size)
+				dataset.loadh5(h5source)
+				h5source.close()
+		else: # We have a h5py Group to read, so just do it:
+			dataset.loadh5(h5source)
 		return dataset
 
 	@classmethod
@@ -3361,7 +3368,6 @@ if __name__ == "__main__":  # just for testing
 
 	del testdataset
 
-	# FIXME: This breaks on Ben's System when opening Dataset with in_h5:
 	testdataset2 = DataSet.in_h5('test.hdf5')
 	testdataset2.saveh5("exampledata.hdf5")
 
