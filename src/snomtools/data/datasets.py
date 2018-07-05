@@ -2602,7 +2602,7 @@ class DataSet(object):
 		dataset = cls(repr(h5source), h5target=h5target, chunk_cache_mem_size=chunk_cache_mem_size)
 		if isinstance(h5source, string_types):
 			sourcepath = os.path.normcase(os.path.abspath(h5source))
-			if sourcepath == os.path.normcase(os.path.abspath(dataset.h5target.filename)):
+			if h5target and sourcepath == os.path.normcase(os.path.abspath(dataset.h5target.filename)):
 				# The source file was already opened and is used as the h5target of the new dataset. This happens for
 				# example when using in_h5. So avoid opening the file twice and just use the one we have.
 				dataset.loadh5(dataset.h5target)
