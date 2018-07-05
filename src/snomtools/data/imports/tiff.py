@@ -243,7 +243,7 @@ def peem_camera_read_terra(filepath):
 	return peem_camera_read_camware(filepath)
 
 
-def powerlaw_folder_peem_camera(folderpath, pattern="mW", powerunit=None, powerunitlabel=None):
+def powerlaw_folder_peem_camera(folderpath, pattern="mW", powerunit=None, powerunitlabel=None, decimal=None):
 	"""
 
 	:param folderpath: The (relative or absolute) path of the folders containing the powerlaw measurement series.
@@ -264,7 +264,10 @@ def powerlaw_folder_peem_camera(folderpath, pattern="mW", powerunit=None, poweru
 		powerunit = pattern
 	if powerunitlabel is None:
 		powerunitlabel = powerunit
-	pat = re.compile('(\d*[,|.]?\d+)\s?' + pattern)
+	if decimal is None:
+		pat = re.compile('(\d*[,|.]?\d+)\s?' + pattern)
+	else:
+		pat = re.compile('(\d*[{0:s}]?\d+)\s?'.format(decimal) + pattern)
 
 	# Translate input path to absolute path:
 	folderpath = os.path.abspath(folderpath)
@@ -274,7 +277,10 @@ def powerlaw_folder_peem_camera(folderpath, pattern="mW", powerunit=None, poweru
 	for filename in filter(is_tif, os.listdir(folderpath)):
 		found = re.search(pat, filename)
 		if found:
-			power = float(found.group(1).replace(',', '.'))
+			if decimal is None:
+				power = float(found.group(1).replace(',', '.'))
+			else:
+				power = float(found.group(1).replace(decimal, '.'))
 			powerfiles[power] = filename
 
 	axlist = []
