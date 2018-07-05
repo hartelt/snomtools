@@ -24,18 +24,42 @@ class Powerlaw_loglinear:
 	def __init__(self, data=None, keepdata=True, normalize=True):
 		if data:
 			if normalize:
-				takedata = 0
+				self.takedata = 0
 			else:
-				takedata = 1
+				self.takedata = 1
+			self.powerunit = data.get_axis(0).get_unit()
+			self.countsunit = data.get_datafield(self.takedata).get_unit()
 			if keepdata:
 				self.data = self.extract_data(data)
 				self.coeffs = self.fit_powerlaw(self.data.get_axis(0).get_data(),
-												self.data.get_datafield(takedata).get_data())
+												self.data.get_datafield(self.takedata).get_data())
 			else:
 				self.data = None
 				powers, intensities = self.extract_data_raw(data)
 				self.coeffs = self.fit_powerlaw(powers, intensities)
 			self.poly = numpy.poly1d(self.coeffs)
+
+	@property
+	def exponent(self):
+		return u.to_ureg(self.coeffs[0])
+
+	@property
+	def offset(self):
+		return u.to_ureg(self.coeffs[1], self.countsunit)
+
+	@property
+	def powers(self):
+		if self.data:
+			return self.data.get_axis(0).data
+		else:
+			raise ValueError("No data present.")
+
+	@property
+	def counts(self):
+		if self.data:
+			return self.data.get_datafield(self.takedata).get_data()
+		else:
+			raise ValueError("No data present.")
 
 	@classmethod
 	def from_coeffs(cls, coeffs):
@@ -154,6 +178,10 @@ class Powerlaw_loglinear:
 			return self.poly(x)
 		else:
 			return self.poly(numpy.log(x))
+
+	def texlabel(self):
+		# return r"%\\prop P^{{{0:.2f}}}% Offset %{1}%".format(self.exponent.magnitude, self.offset.magnitude)
+		return "Powerlaw {0:.2f}".format(self.exponent.magnitude)
 
 
 class Powerlaw:
