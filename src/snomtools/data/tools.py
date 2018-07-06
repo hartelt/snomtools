@@ -56,17 +56,32 @@ def full_slice(slice_, len_=None):
 	return slice_
 
 
-def reversed_slice(s):
+def reversed_slice(s, len_):
 	"""
-	Reverses a slice
+	Reverses a slice selection on a sequence of length len_, addressing the same elements in reverse order.
+
+	:param slice s: The slice object to reverse.
+
+	:param int len_: The length of the sequence on which the reverse selection should apply.
+
+	:returns: A slice object, addressing the same elements in reverse order.
+	:rtype: slice
 	"""
-	# FIXME: This still breaks for example with numpy.s_[-2:10:-2]
-	m = (s.stop-s.start) % s.step or s.step
-	# if s.step>0 and s.start-m==0:
-	# 	newstop = None
-	# else:
-	# 	newstop = s.start - m
-	return slice(s.stop-m, s.start-m, -s.step)
+	assert isinstance(s, slice)
+	instart, instop, instep = s.indices(len_)
+
+	m = (instop - instart) % instep or instep
+
+	if instep > 0 and instart - m < 0:
+		outstop = None
+	else:
+		outstop = instart - m
+	if instep < 0 and instop - m > len_:
+		outstart = None
+	else:
+		outstart = instop - m
+
+	return slice(outstart, outstop, -instep)
 
 
 def sliced_shape(slice_, shape_):
@@ -270,6 +285,9 @@ if __name__ == '__main__':
 	import numpy
 
 	a = numpy.arange(30)
-	s = numpy.s_[-2:10:-2]
-	print(reversed_slice(s))
+	s = numpy.s_[::-1]
+	print(s)
+	print(reversed_slice(s, len(a)))
+	print(a[s])
+	print(a[reversed_slice(s, len(a))])
 	print("done")
