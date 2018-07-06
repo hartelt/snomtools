@@ -18,7 +18,7 @@ import itertools
 import snomtools.calcs.units as u
 from snomtools.data import h5tools
 from snomtools import __package__, __version__
-from snomtools.data.tools import full_slice, broadcast_shape, broadcast_indices
+from snomtools.data.tools import full_slice, broadcast_shape, broadcast_indices, reversed_slice
 
 __author__ = 'Michael Hartelt'
 
@@ -2076,31 +2076,36 @@ class ROI(object):
 
 		:return: The attribute corresponding to the given name.
 		"""
-		if item == "alldata":
-			return self.dataset.datafields + self.dataset.axes
-		elif item == "axlabels":
-			labels = []
-			for e in self.dataset.axes:
-				labels.append(e.get_label())
-			return labels
-		elif item == "dlabels":
-			labels = []
-			for e in self.dataset.datafields:
-				labels.append(e.get_label())
-			return labels
-		elif item == "labels":
-			return self.dlabels + self.axlabels
-		elif item == "dimensions":
-			return len(self.dataset.axes)
-		elif item == "shape":
-			return self.get_datafield(0).shape
-		elif item in self.labels:
+		if item in self.labels:
 			for darray in self.alldata:
 				if item == darray.get_label():
 					lim = self.get_slice(item)
 					return darray[lim]
-		# TODO: address xyz.
 		raise AttributeError("Name \'{0}\' in ROI object cannot be resolved!".format(item))
+
+	@property
+	def axlabels(self):
+		return self.dataset.axlabels
+
+	@property
+	def dlabels(self):
+		return self.dataset.dlabels
+
+	@property
+	def labels(self):
+		return self.dataset.labels
+
+	@property
+	def alldata(self):
+		return self.dataset.alldata
+
+	@property
+	def dimensions(self):
+		return self.dataset.dimensions
+
+	@property
+	def shape(self):
+		return self.get_datafield(0).shape
 
 	def set_limits_all(self, limitlist, by_index=False):
 		"""
@@ -2506,8 +2511,41 @@ class ROI(object):
 							  limitlist=[self.get_limits(by_index=True)[i] for i in indexlist],
 							  by_index=True)
 
+	def get_DataSet(self, label=None, plotconf=None, h5target=None, chunk_cache_mem_size=None):
+		"""
+		Initialize a new DataSet containing the data of the RoI.
 
-# TODO: ROI.saveh5
+		:param label: A label for the new DataSet. Default: The label of the ROI, or if that is empty a generated label.
+
+		:param plotconf: A plotconf for the new DataSet. Default: The plotconf of the DataSet the RoI was defined on.
+
+		:param h5target: Optional. A h5target of the new DataSet, if h5 mode is desired.
+
+		:param chunk_cache_mem_size: If a h5target is given, a chunk cache size can be specified.
+
+		:return: The DataSet of the RoI Region.
+		:rtype: DataSet
+		"""
+		if label is None:
+			if self.label:
+				label = self.label
+			else:
+				label = "RoI of DataSet '{0:s}'".format(self.dataset.label)
+		if plotconf is None:
+			plotconf = self.dataset.plotconf
+		newds = DataSet(label,plotconf=plotconf, h5target=h5target,chunk_cache_mem_size=chunk_cache_mem_size)
+		for i in range(len(self.dataset.datafields)):
+			newds.add_datafield(self.get_datafield(i))
+		for i in range(len(self.dataset.axes)):
+			newds.add_axis(self.get_axis(i))
+		newds.check_data_consistency()
+		return newds
+		# TODO: Test me!
+
+	def saveh5(self,h5dest):
+		newds = self.get_DataSet(h5target=h5dest)
+		newds.saveh5()
+		# TODO: Test me!
 
 
 class DataSet(object):
