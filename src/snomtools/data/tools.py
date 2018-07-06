@@ -56,6 +56,19 @@ def full_slice(slice_, len_=None):
 	return slice_
 
 
+def reversed_slice(s):
+	"""
+	Reverses a slice
+	"""
+	# FIXME: This still breaks for example with numpy.s_[-2:10:-2]
+	m = (s.stop-s.start) % s.step or s.step
+	# if s.step>0 and s.start-m==0:
+	# 	newstop = None
+	# else:
+	# 	newstop = s.start - m
+	return slice(s.stop-m, s.start-m, -s.step)
+
+
 def sliced_shape(slice_, shape_):
 	"""
 	Calculate the shape one would get by slicing an array of shape :code:`shape_` with a slice :code:`slice_`.
@@ -251,3 +264,12 @@ def broadcast_indices(*shapes):
 			yield in_ixs + (out_ix,)
 
 	return broadcast_shape_iterator()
+
+
+if __name__ == '__main__':
+	import numpy
+
+	a = numpy.arange(30)
+	s = numpy.s_[-2:10:-2]
+	print(reversed_slice(s))
+	print("done")
