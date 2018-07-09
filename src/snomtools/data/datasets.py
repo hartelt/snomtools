@@ -253,7 +253,22 @@ class Data_Handler_H5(u.Quantity):
 
 	def __getitem__(self, key):
 		# FIXME: This behaves differently, as in throws exception, than numpy with negative step (reverse array).
-		return self.__class__(self.ds_data[key], self._units)
+		# Find out if there is backwards addressed elements in the selection:
+		to_reverse = self.find_backwards_slices(key)
+		# If not, just read the data and return it as a new instance:
+		if not any(to_reverse):
+			return self.__class__(self.ds_data[key], self._units)
+		# If there is, we need to address the corresponding elements in forward direction, read it, and flip the result:
+		key = full_slice(key, self.dims)
+		readkeylist = []
+		for i, key_element in enumerate(key):
+			if to_reverse[i]:
+				readkeylist.append(reversed_slice(key_element,self.shape[i]))
+			else:
+				readkeylist.append(key_element)
+		read_data = self.ds_data[tuple(readkeylist)]
+		ordered_data = read_data[tuple([numpy.s_[::-1] if flip else numpy.s_[:] for flip in to_reverse])]
+		return self.__class__(ordered_data, self._units)
 
 	def get_slice_q(self, key):
 		return u.to_ureg(self.ds_data[key], self._units)
@@ -282,6 +297,24 @@ class Data_Handler_H5(u.Quantity):
 		#  of value.to(self.units), which always generates a copy is avoided if possible.
 		value = u.to_ureg(u.to_ureg(value), self.units)
 		self.ds_data[key] = value.magnitude
+
+	def find_backwards_slices(self, s):
+		"""
+		Analyzes a selection on the data for backwards (step < 0) slices.
+
+		:param s: The selection slice or tuple of slices and ints to analize.
+
+		:return: A list of bools of `len == self.dims` with `True` for every backwards element, else `False`.
+		:rtype: list(bool)
+		"""
+		s = full_slice(s, self.dims)
+		l = []
+		for element in s:
+			if isinstance(element, slice) and element.step <0:
+				l.append(True)
+			else:
+				l.append(False)
+		return l
 
 	def flush(self):
 		"""
