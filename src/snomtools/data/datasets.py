@@ -252,7 +252,6 @@ class Data_Handler_H5(u.Quantity):
 		return self.ds_data.chunks
 
 	def __getitem__(self, key):
-		# FIXME: This behaves differently, as in throws exception, than numpy with negative step (reverse array).
 		# Find out if there is backwards addressed elements in the selection:
 		to_reverse = self.find_backwards_slices(key)
 		# If not, just read the data and return it as a new instance:
@@ -263,7 +262,7 @@ class Data_Handler_H5(u.Quantity):
 		readkeylist = []
 		for i, key_element in enumerate(key):
 			if to_reverse[i]:
-				readkeylist.append(reversed_slice(key_element,self.shape[i]))
+				readkeylist.append(reversed_slice(key_element, self.shape[i]))
 			else:
 				readkeylist.append(key_element)
 		read_data = self.ds_data[tuple(readkeylist)]
@@ -310,7 +309,7 @@ class Data_Handler_H5(u.Quantity):
 		s = full_slice(s, self.dims)
 		l = []
 		for element in s:
-			if isinstance(element, slice) and element.step <0:
+			if isinstance(element, slice) and element.step is not None and element.step < 0:
 				l.append(True)
 			else:
 				l.append(False)
@@ -2559,6 +2558,7 @@ class ROI(object):
 		:return: The DataSet of the RoI Region.
 		:rtype: DataSet
 		"""
+		# TODO: Test me!
 		if label is None:
 			if self.label:
 				label = self.label
@@ -2566,19 +2566,18 @@ class ROI(object):
 				label = "RoI of DataSet '{0:s}'".format(self.dataset.label)
 		if plotconf is None:
 			plotconf = self.dataset.plotconf
-		newds = DataSet(label,plotconf=plotconf, h5target=h5target,chunk_cache_mem_size=chunk_cache_mem_size)
+		newds = DataSet(label, plotconf=plotconf, h5target=h5target, chunk_cache_mem_size=chunk_cache_mem_size)
 		for i in range(len(self.dataset.datafields)):
 			newds.add_datafield(self.get_datafield(i))
 		for i in range(len(self.dataset.axes)):
 			newds.add_axis(self.get_axis(i))
 		newds.check_data_consistency()
 		return newds
-		# TODO: Test me!
 
-	def saveh5(self,h5dest):
+	def saveh5(self, h5dest):
+		# TODO: Test me!
 		newds = self.get_DataSet(h5target=h5dest)
 		newds.saveh5()
-		# TODO: Test me!
 
 
 class DataSet(object):
@@ -2677,11 +2676,11 @@ class DataSet(object):
 				# The source file was already opened and is used as the h5target of the new dataset. This happens for
 				# example when using in_h5. So avoid opening the file twice and just use the one we have.
 				dataset.loadh5(dataset.h5target)
-			else: # We need to open the source file, read from it, and close it afterwards.
+			else:  # We need to open the source file, read from it, and close it afterwards.
 				h5source = h5tools.File(sourcepath, chunk_cache_mem_size=chunk_cache_mem_size)
 				dataset.loadh5(h5source)
 				h5source.close()
-		else: # We have a h5py Group to read, so just do it:
+		else:  # We have a h5py Group to read, so just do it:
 			dataset.loadh5(h5source)
 		return dataset
 
