@@ -270,7 +270,22 @@ class Data_Handler_H5(u.Quantity):
 		return self.__class__(ordered_data, self._units)
 
 	def get_slice_q(self, key):
-		return u.to_ureg(self.ds_data[key], self._units)
+		# Find out if there is backwards addressed elements in the selection:
+		to_reverse = self.find_backwards_slices(key)
+		# If not, just read the data and return it as a new instance:
+		if not any(to_reverse):
+			return u.to_ureg(self.ds_data[key], self._units)
+		# If there is, we need to address the corresponding elements in forward direction, read it, and flip the result:
+		key = full_slice(key, self.dims)
+		readkeylist = []
+		for i, key_element in enumerate(key):
+			if to_reverse[i]:
+				readkeylist.append(reversed_slice(key_element, self.shape[i]))
+			else:
+				readkeylist.append(key_element)
+		read_data = self.ds_data[tuple(readkeylist)]
+		ordered_data = read_data[tuple([numpy.s_[::-1] if flip else numpy.s_[:] for flip in to_reverse])]
+		return u.to_ureg(ordered_data, self._units)
 
 	def __setitem__(self, key, value):
 		"""
@@ -293,9 +308,24 @@ class Data_Handler_H5(u.Quantity):
 		# The following line could be replaced with
 		# value = u.to_ureg(value).to(self.units)
 		# without changing any functionality. But calling to_ureg twice is more efficient because unneccesary calling
-		#  of value.to(self.units), which always generates a copy is avoided if possible.
+		#  of value.to(self.units), which always generates a copy, is avoided if possible.
 		value = u.to_ureg(u.to_ureg(value), self.units)
-		self.ds_data[key] = value.magnitude
+
+		# Find out if there is backwards addressed elements in the selection:
+		to_reverse = self.find_backwards_slices(key)
+		# If not, just read the data and return it as a new instance:
+		if not any(to_reverse):
+			self.ds_data[key] = value.magnitude
+		# If there is, we need to address the corresponding elements in forward direction, read it, and flip the result:
+		key = full_slice(key, self.dims)
+		writekeylist = []
+		for i, key_element in enumerate(key):
+			if to_reverse[i]:
+				writekeylist.append(reversed_slice(key_element, self.shape[i]))
+			else:
+				writekeylist.append(key_element)
+		write_key = tuple(writekeylist)
+		raise NotImplementedError("This functionality is not finished yet!")
 
 	def find_backwards_slices(self, s):
 		"""
