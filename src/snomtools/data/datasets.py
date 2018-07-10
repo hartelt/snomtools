@@ -316,6 +316,7 @@ class Data_Handler_H5(u.Quantity):
 		# If not, just read the data and return it as a new instance:
 		if not any(to_reverse):
 			self.ds_data[key] = value.magnitude
+			return
 		# If there is, we need to address the corresponding elements in forward direction, read it, and flip the result:
 		key = full_slice(key, self.dims)
 		writekeylist = []
