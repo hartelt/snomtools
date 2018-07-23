@@ -348,8 +348,8 @@ class Drift(object):
 		try:
 			y_sub = y \
 					+ (np.log(results[y - 1, x]) - np.log(results[y + 1, x])) \
-					  / \
-					  (2 * np.log(results[y - 1, x]) + 2 * np.log(results[y + 1, x]) - 4 * np.log(results[y, x]))
+					/ \
+					(2 * np.log(results[y - 1, x]) + 2 * np.log(results[y + 1, x]) - 4 * np.log(results[y, x]))
 			x_sub = x + \
 					(np.log(results[y, x - 1]) - np.log(results[y, x + 1])) \
 					/ \
@@ -487,8 +487,7 @@ class Terra_maxmap(object):
 			upper0 = np.int_(np.shape(self.drift[:][0])[0] * 3 / 4)
 			lower1 = np.int_(np.shape(self.drift[0][:])[0] / 4)
 			upper1 = np.int_(np.shape(self.drift[0][:])[0] * 3 / 4)
-
-			self.meanDrift = np.rint(np.mean(self.drift[lower0:upper0][lower1:upper1])).astype(int)
+			self.meanDrift = np.rint(np.mean(self.drift[lower0:upper0, lower1:upper1])).astype(int)
 
 		if interpolation_order is None:
 			self.interpolation_order = 0
@@ -714,9 +713,9 @@ if __name__ == '__main__':  # Testing...
 
 	for run in rawdatalist:
 		data = snomtools.data.datasets.DataSet.from_h5file('rawdata/' + run, h5target=run + '_testdata.hdf5',
-															   chunk_cache_mem_size=2048 * 1024 ** 2)
+														   chunk_cache_mem_size=2048 * 1024 ** 2)
 
-			# data = snomtools.data.datasets.stack_DataSets(data, snomtools.data.datasets.Axis([1, 2, 3], 's', 'faketime'))
+		# data = snomtools.data.datasets.stack_DataSets(data, snomtools.data.datasets.Axis([1, 2, 3], 's', 'faketime'))
 
 		data.saveh5()
 
@@ -726,27 +725,25 @@ if __name__ == '__main__':  # Testing...
 		correcteddata.saveh5()
 		print("done.")
 
-
-
-	#		data = snomtools.data.datasets.DataSet.from_h5file('Maximamap/' + run, h5target=run + '_testdata.hdf5',
-	#														   chunk_cache_mem_size=2048 * 1024 ** 2)
+	# data = snomtools.data.datasets.DataSet.from_h5file('Maximamap/' + run, h5target=run + '_testdata.hdf5',
+	# 												   chunk_cache_mem_size=2048 * 1024 ** 2)
 	#
-	#		# data = snomtools.data.datasets.stack_DataSets(data, snomtools.data.datasets.Axis([1, 2, 3], 's', 'faketime'))
+	# # data = snomtools.data.datasets.stack_DataSets(data, snomtools.data.datasets.Axis([1, 2, 3], 's', 'faketime'))
 	#
-	#		data.saveh5()
+	# data.saveh5()
 	#
-	#		driftfile = ('Summenbilder/' + run.replace('.hdf5', '.txt'))
+	# driftfile = ('Summenbilder/' + run.replace('.hdf5', '.txt'))
 	#
-	#		precal_drift = np.loadtxt(driftfile)
-	#		precal_drift = [tuple(row) for row in precal_drift]
+	# precal_drift = np.loadtxt(driftfile)
+	# precal_drift = [tuple(row) for row in precal_drift]
 	#
-	#		drift = Drift(data, precalculated_drift=precal_drift, stackAxisID="delay", template=None, subpixel=True,
-	#					  template_origin=(123, 347))
+	# drift = Drift(data, precalculated_drift=precal_drift, stackAxisID="delay", template=None, subpixel=True,
+	# 			  template_origin=(123, 347))
 	#
-	#		# Calculate corrected data:
-	#		correcteddata = drift.corrected_data(h5target='Maximamap/Driftcorrected/' + run)
+	# # Calculate corrected data:
+	# correcteddata = drift.corrected_data(h5target='Maximamap/Driftcorrected/' + run)
 	#
-	#		correcteddata.saveh5()
+	# correcteddata.saveh5()
 
 	print("done.")
 	print("the end.")
