@@ -447,6 +447,128 @@ class Drift(object):
 
 		return inputlist
 
+	# --- Functions for rotation and scale matching ---
+	@staticmethod
+	def twoD_Gaussian(xydata_tuple, amplitude, xo, yo, sigma_x, sigma_y, theta, offset):
+		'''
+		:param xydata_tuple
+		:param amplitude:
+		:param xo:  x center of gaussian
+		:param yo: y center of gaussian
+		:param sigma_x: gauss size
+		:param sigma_y: gauss size
+		:param theta: rotation of the 2D gauss 'potato'
+		:param offset: offset
+		:return:
+		This code is based on https://stackoverflow.com/a/21566831/8654672
+		Working example:
+
+		# Create x and y indices
+		x = np.linspace(0, 200, 201)
+		y = np.linspace(0, 200, 201)
+		x, y = np.meshgrid(x, y)
+
+		#create data
+		data = twoD_Gaussian((x, y), 3, 100, 100, 20, 40, 0, 10)
+
+		# plot twoD_Gaussian data generated above
+		plt.figure()
+		plt.imshow(data.reshape(201, 201))
+		plt.colorbar()
+		'''
+		(x, y) = xydata_tuple
+		xo = float(xo)
+		yo = float(yo)
+		a = (np.cos(theta) ** 2) / (2 * sigma_x ** 2) + (np.sin(theta) ** 2) / (2 * sigma_y ** 2)
+		b = -(np.sin(2 * theta)) / (4 * sigma_x ** 2) + (np.sin(2 * theta)) / (4 * sigma_y ** 2)
+		c = (np.sin(theta) ** 2) / (2 * sigma_x ** 2) + (np.cos(theta) ** 2) / (2 * sigma_y ** 2)
+		g = offset + amplitude * np.exp(- (a * ((x - xo) ** 2) + 2 * b * (x - xo) * (y - yo)
+										   + c * ((y - yo) ** 2)))
+		return g.ravel()
+
+
+	@staticmethod
+	def rotated_cropped(data, angle):
+		'''
+		Takes data and calls rotate, calculates center square with actual data, crops it
+		:param data: raw data array
+		:param angle: rotaton angle in deg
+		:return: Rotated and cropped image
+		'''
+
+		cache = scipy.ndimage.interpolation.rotate(data, angle=angle, reshape=False, output=None,
+												   order=2,
+												   mode='constant', cval=0.0, prefilter=False)
+		w, h = rotatedRectWithMaxArea(afmraw.shape[0], afmraw.shape[1], math.radians(angle))
+		return crop_around_center(cache, w, h)
+
+
+	@staticmethod
+	def crop_around_center(image, width, height):
+		"""
+		Given a NumPy / OpenCV 2 image, crops it to the given width and height,
+		around it's centre point
+		"""
+
+		image_size = (image.shape[1], image.shape[0])
+		image_center = (int(image_size[0] * 0.5), int(image_size[1] * 0.5))
+
+		if (width > image_size[0]):
+			width = image_size[0]
+
+		if (height > image_size[1]):
+			height = image_size[1]
+
+		x1 = int(image_center[0] - width * 0.5) + 1
+		x2 = int(image_center[0] + width * 0.5) - 1
+		y1 = int(image_center[1] - height * 0.5) + 1
+		y2 = int(image_center[1] + height * 0.5) - 1
+
+		return image[y1:y2, x1:x2]
+
+
+	@staticmethod
+	def rotatedRectWithMaxArea(w, h, angle):
+		"""
+		Given a rectangle of size wxh that has been rotated by 'angle' (in
+		radians), computes the width and height of the largest possible
+		axis-aligned rectangle (maximal area) within the rotated rectangle.
+		math.radians(angle) for deg->rad as input
+		Based on Coproc Stackoverflow https://stackoverflow.com/a/16778797/8654672
+		"""
+		if w <= 0 or h <= 0:
+			return 0, 0
+
+		width_is_longer = w >= h
+		# side_long, side_short = (w,h) if width_is_longer else (h,w)
+		side_long, side_short = (w, h)
+
+		# since the solutions for angle, -angle and 180-angle are all the same,
+		# if suffices to look at the first quadrant and the absolute values of sin,cos:
+
+		sin_a, cos_a = abs(math.sin(angle)), abs(math.cos(angle))
+
+		if side_short <= 2. * sin_a * cos_a * side_long or abs(sin_a - cos_a) < 1e-10:
+
+			# half constrained case: two crop corners touch the longer side,
+			#   the other two corners are on the mid-line parallel to the longer line
+
+			x = 0.5 * side_short
+			wr, hr = (x / sin_a, x / cos_a) if width_is_longer else (x / cos_a, x / sin_a)
+
+		else:
+			# fully constrained case: crop touches all 4 sides
+			cos_2a = cos_a * cos_a - sin_a * sin_a
+			wr, hr = (w * cos_a - h * sin_a) / cos_2a, (h * cos_a - w * sin_a) / cos_2a
+
+		return wr, hr
+
+
+	@staticmethod
+	def scale_data(data, zoomfactor):
+		return scipy.ndimage.zoom(data, zoomfactor, output=None, order=2,
+								  mode='constant', cval=0.0, prefilter=False)
+	# ---
 
 class Terra_maxmap(object):
 	def __init__(self, data=None, precalculated_map=None, energyAxisID=None, yAxisID=None, xAxisID=None,
