@@ -11,7 +11,7 @@ import snomtools.data.datasets as datasets
 __author__ = 'hartelt'
 
 
-def project_1d(data, axis_id=0, data_id=None, outlabel=None, normalization=None):
+def project_1d(data, axis_id=0, data_id=None, outlabel=None, normalization=None, h5target=None):
 	"""
 	Plots a projection of the data onto one axis. Therefore, it sums the values over all the other axes.
 
@@ -87,12 +87,16 @@ def project_1d(data, axis_id=0, data_id=None, outlabel=None, normalization=None)
 		else:
 			normdat = sumdat
 			pl = "projected " + df.get_plotlabel()
-		outfield = datasets.DataArray(normdat, label=df.get_label(), plotlabel=pl)
+		if h5target:
+			outfield = datasets.DataArray(normdat, label=df.get_label(), plotlabel=pl, h5target=True)
+		else:
+			outfield = datasets.DataArray(normdat, label=df.get_label(), plotlabel=pl)
+
 		dfields.append(outfield)
 
-	return datasets.DataSet(outlabel, dfields, [ax])
+	return datasets.DataSet(outlabel, dfields, [ax], h5target=h5target)
 
-def project_2d(data, axis1_id=0, axis2_id=0, data_id=None, outlabel=None, normalization=None):
+def project_2d(data, axis1_id=0, axis2_id=0, data_id=None, outlabel=None, normalization=None, h5target=None):
 	"""
 	Plots a projection of the data onto one axis. Therefore, it sums the values over all the other axes.
 
@@ -179,7 +183,10 @@ def project_2d(data, axis1_id=0, axis2_id=0, data_id=None, outlabel=None, normal
 		else:
 			normdat = sumdat
 			pl = "projected " + df.get_plotlabel()
-		outfield = datasets.DataArray(normdat, label=df.get_label(), plotlabel=pl)
+		if h5target:
+			outfield = datasets.DataArray(normdat, label=df.get_label(), plotlabel=pl, h5target=True)
+		else:
+			outfield = datasets.DataArray(normdat, label=df.get_label(), plotlabel=pl)
 		dfields.append(outfield)
 
-	return datasets.DataSet(outlabel, dfields, axes)
+	return datasets.DataSet(outlabel, dfields, axes, h5target=h5target)
