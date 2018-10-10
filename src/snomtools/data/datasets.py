@@ -814,6 +814,33 @@ class Data_Handler_H5(u.Quantity):
 				newdh[ind_out] = u.to_ureg(self.ds_data[ind_self], self._units) + other[ind_other]
 			return newdh
 
+	def __iadd__(self, other):
+		other = u.to_ureg(other, self.get_unit())
+		if not hasattr(other, 'shape') or other.shape == ():
+			# If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use.
+			assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+			for slice_ in self.iterfastslices():
+				self.ds_data[slice_] += other.magnitude
+			return self
+		elif other.shape == self.shape:
+			# If other has the same shape, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use. For this, we need a Data_Handler to use get_slice_q instead of potentially
+			# slower getitem.
+			if not isinstance(other, (self.__class__, Data_Handler_np)):
+				other = self.__class__(other)
+			for slice_ in self.iterfastslices():
+				self.ds_data[slice_] += other.get_slice_q(slice_).magnitude
+			return self
+		else:
+			# Else we need the numpy broadcasting magic to an array of different shape.
+			newshape = broadcast_shape(self.shape, other.shape)
+			# Because we have different shapes and potentially different chunking, we need to iterate element-wise:
+			# TODO: This is still extremely unefficient due to loads of read-write on H5. Needs better iteration order.
+			for ind_self, ind_other, ind_out in broadcast_indices(self.shape, other.shape):
+				self.ds_data[ind_out] += other[ind_other].magnitude
+			return self
+
 	def __sub__(self, other):
 		other = u.to_ureg(other, self.get_unit())
 		if not hasattr(other, 'shape') or other.shape == ():
@@ -839,6 +866,30 @@ class Data_Handler_H5(u.Quantity):
 			# TODO: Implement this memory-efficiently with broadcasting.
 			# The following line is a fallback which will break for big data due to using magnitudes.
 			return super(Data_Handler_H5, self).__sub__(other)
+
+	def __isub__(self, other):
+		other = u.to_ureg(other, self.get_unit())
+		if not hasattr(other, 'shape') or other.shape == ():
+			# If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use.
+			assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+			for slice_ in self.iterfastslices():
+				self.ds_data[slice_] -= other.magnitude
+			return self
+		elif other.shape == self.shape:
+			# If other has the same shape, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use. For this, we need a Data_Handler to use get_slice_q instead of potentially
+			# slower getitem.
+			if not isinstance(other, (self.__class__, Data_Handler_np)):
+				other = self.__class__(other)
+			for slice_ in self.iterfastslices():
+				self.ds_data[slice_] -= other.get_slice_q(slice_).magnitude
+			return self
+		else:
+			# Else we need the numpy broadcasting magic to an array of different shape.
+			# TODO: Implement this memory-efficiently with broadcasting.
+			# The following line is a fallback which will break for big data due to using magnitudes.
+			return super(Data_Handler_H5, self).__isub__(other)
 
 	def __mul__(self, other):
 		other = u.to_ureg(other)
@@ -867,6 +918,32 @@ class Data_Handler_H5(u.Quantity):
 			# TODO: Implement this memory-efficiently with broadcasting.
 			# The following line is a fallback which will break for big data due to using magnitudes.
 			return super(Data_Handler_H5, self).__mul__(other)
+
+	def __imul__(self, other):
+		other = u.to_ureg(other)
+		if not hasattr(other, 'shape') or other.shape == ():
+			# If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use.
+			assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+			self._units = str((other * u.to_ureg(1., self.get_unit())).units)
+			for slice_ in self.iterfastslices():
+				self.ds_data[slice_] *= other.magnitude
+			return self
+		elif other.shape == self.shape:
+			# If other has the same shape, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use. For this, we need a Data_Handler to use get_slice_q instead of potentially
+			# slower getitem.
+			if not isinstance(other, (self.__class__, Data_Handler_np)):
+				other = self.__class__(other)
+			self._units = str((u.to_ureg(1., str(other.units)) * u.to_ureg(1., self.get_unit())).units)
+			for slice_ in self.iterfastslices():
+				self.ds_data[slice_] *= other.get_slice_q(slice_).magnitude
+			return self
+		else:
+			# Else we need the numpy broadcasting magic to an array of different shape.
+			# TODO: Implement this memory-efficiently with broadcasting.
+			# The following line is a fallback which will break for big data due to using magnitudes.
+			return super(Data_Handler_H5, self).__imul__(other)
 
 	def __truediv__(self, other):
 		"""
@@ -900,6 +977,36 @@ class Data_Handler_H5(u.Quantity):
 			# The following line is a fallback which will break for big data due to using magnitudes.
 			return super(Data_Handler_H5, self).__truediv__(other)
 
+	def __itruediv__(self, other):
+		"""
+		This replaces __div__ in Python 3. All divisions are true divisions per default with '/' operator.
+		In python 2, this new function is called anyway due to :code:`from __future__ import division`.
+		"""
+		other = u.to_ureg(other)
+		if not hasattr(other, 'shape') or other.shape == ():
+			# If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use.
+			assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+			self._units = str((u.to_ureg(1., self.get_unit()) / other).units)
+			for slice_ in self.iterfastslices():
+				self.ds_data[slice_] /= other.magnitude
+			return self
+		elif other.shape == self.shape:
+			# If other has the same shape, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use. For this, we need a Data_Handler to use get_slice_q instead of potentially
+			# slower getitem.
+			if not isinstance(other, (self.__class__, Data_Handler_np)):
+				other = self.__class__(other)
+			self._units = str((u.to_ureg(1., str(other.units)) / u.to_ureg(1., self.get_unit())).units)
+			for slice_ in self.iterfastslices():
+				self.ds_data[slice_] /= other.get_slice_q(slice_).magnitude
+			return self
+		else:
+			# Else we need the numpy broadcasting magic to an array of different shape.
+			# TODO: Implement this memory-efficiently with broadcasting.
+			# The following line is a fallback which will break for big data due to using magnitudes.
+			return super(Data_Handler_H5, self).__itruediv__(other)
+
 	def __floordiv__(self, other):
 		other = u.to_ureg(other)
 		if not hasattr(other, 'shape') or other.shape == ():
@@ -928,6 +1035,36 @@ class Data_Handler_H5(u.Quantity):
 			# The following line is a fallback which will break for big data due to using magnitudes.
 			return super(Data_Handler_H5, self).__floordiv__(other)
 
+	def __ifloordiv__(self, other):
+		"""
+		This replaces __div__ in Python 3. All divisions are true divisions per default with '/' operator.
+		In python 2, this new function is called anyway due to :code:`from __future__ import division`.
+		"""
+		other = u.to_ureg(other)
+		if not hasattr(other, 'shape') or other.shape == ():
+			# If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use.
+			assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+			self._units = str((u.to_ureg(1., self.get_unit()) // other).units)
+			for slice_ in self.iterfastslices():
+				self.ds_data[slice_] //= other.magnitude
+			return self
+		elif other.shape == self.shape:
+			# If other has the same shape, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use. For this, we need a Data_Handler to use get_slice_q instead of potentially
+			# slower getitem.
+			if not isinstance(other, (self.__class__, Data_Handler_np)):
+				other = self.__class__(other)
+			self._units = str((u.to_ureg(1., str(other.units)) // u.to_ureg(1., self.get_unit())).units)
+			for slice_ in self.iterfastslices():
+				self.ds_data[slice_] //= other.get_slice_q(slice_).magnitude
+			return self
+		else:
+			# Else we need the numpy broadcasting magic to an array of different shape.
+			# TODO: Implement this memory-efficiently with broadcasting.
+			# The following line is a fallback which will break for big data due to using magnitudes.
+			return super(Data_Handler_H5, self).__ifloordiv__(other)
+
 	def __pow__(self, other):
 		other = u.to_ureg(other, 'dimensionless')
 		if not hasattr(other, 'shape') or other.shape == ():
@@ -955,6 +1092,32 @@ class Data_Handler_H5(u.Quantity):
 			# TODO: Implement this memory-efficiently with broadcasting.
 			# The following line is a fallback which will break for big data due to using magnitudes.
 			return super(Data_Handler_H5, self).__pow__(other)
+
+	def __ipow__(self, other):
+		other = u.to_ureg(other, 'dimensionless')
+		if not hasattr(other, 'shape') or other.shape == ():
+			# If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use.
+			assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+			self._units = str((u.to_ureg(1., self.get_unit()) ** other).units)
+			for slice_ in self.iterfastslices():
+				self.ds_data[slice_] **= other.magnitude
+			return self
+		elif other.shape == self.shape:
+			# If other has the same shape, the shape doesn't change and we can do everything chunk-wise with better
+			# performance and memory use. For this, we need a Data_Handler to use get_slice_q instead of potentially
+			# slower getitem.
+			if not isinstance(other, (self.__class__, Data_Handler_np)):
+				other = self.__class__(other)
+			assert self.dimensionless(), "Quantity array exponents are only allowed if the base is dimensionless"
+			for slice_ in self.iterfastslices():
+				self.ds_data[slice_] **= other.get_slice_q(slice_).magnitude
+			return self
+		else:
+			# Else we need the numpy broadcasting magic to an array of different shape.
+			# TODO: Implement this memory-efficiently with broadcasting.
+			# The following line is a fallback which will break for big data due to using magnitudes.
+			return super(Data_Handler_H5, self).__ipow__(other)
 
 	def __array__(self):
 		return self.magnitude
@@ -1286,13 +1449,25 @@ class Data_Handler_np(u.Quantity):
 		other = u.to_ureg(other, self.get_unit())
 		return super(Data_Handler_np, self).__add__(other)
 
+	def __iadd__(self, other):
+		other = u.to_ureg(other, self.get_unit())
+		return super(Data_Handler_np, self).__iadd__(other)
+
 	def __sub__(self, other):
 		other = u.to_ureg(other, self.units)
 		return super(Data_Handler_np, self).__sub__(other)
 
+	def __isub__(self, other):
+		other = u.to_ureg(other, self.units)
+		return super(Data_Handler_np, self).__isub__(other)
+
 	def __mul__(self, other):
 		other = u.to_ureg(other)
 		return super(Data_Handler_np, self).__mul__(other)
+
+	def __imul__(self, other):
+		other = u.to_ureg(other)
+		return super(Data_Handler_np, self).__imul__(other)
 
 	def __truediv__(self, other):
 		"""
@@ -1302,13 +1477,29 @@ class Data_Handler_np(u.Quantity):
 		other = u.to_ureg(other)
 		return super(Data_Handler_np, self).__truediv__(other)
 
+	def __itruediv__(self, other):
+		"""
+		This replaces __idiv__ in Python 3. All divisions are true divisions per default with '/' operator.
+		In python 2, this new function is called anyway due to :code:`from __future__ import division`.
+		"""
+		other = u.to_ureg(other)
+		return super(Data_Handler_np, self).__itruediv__(other)
+
 	def __floordiv__(self, other):
 		other = u.to_ureg(other)
 		return super(Data_Handler_np, self).__floordiv__(other)
 
+	def __ifloordiv__(self, other):
+		other = u.to_ureg(other)
+		return super(Data_Handler_np, self).__ifloordiv__(other)
+
 	def __pow__(self, other):
 		other = u.to_ureg(other, 'dimensionless')
 		return super(Data_Handler_np, self).__pow__(other)
+
+	def __ipow__(self, other):
+		other = u.to_ureg(other, 'dimensionless')
+		return super(Data_Handler_np, self).__ipow__(other)
 
 	def __repr__(self):
 		return "<Data_Handler_np(" + super(Data_Handler_np, self).__repr__() + ")>"
@@ -1803,17 +1994,35 @@ class DataArray(object):
 		other = u.to_ureg(other, self.get_unit())
 		return self.__class__(self.data + other, label=self.label, plotlabel=self.plotlabel)
 
+	def __iadd__(self, other):
+		if isinstance(other, self.__class__):
+			other = other.data
+		self._data += other
+		return self
+
 	def __sub__(self, other):
 		if isinstance(other, self.__class__):
 			other = other.data
 		other = u.to_ureg(other, self.get_unit())
 		return self.__class__(self.data - other, label=self.label, plotlabel=self.plotlabel)
 
+	def __isub__(self, other):
+		if isinstance(other, self.__class__):
+			other = other.data
+		self._data -= other
+		return self
+
 	def __mul__(self, other):
 		if isinstance(other, self.__class__):
 			other = other.data
 		other = u.to_ureg(other)
 		return self.__class__(self.data * other, label=self.label, plotlabel=self.plotlabel)
+
+	def __imul__(self, other):
+		if isinstance(other, self.__class__):
+			other = other.data
+		self._data *= other
+		return self
 
 	def __truediv__(self, other):
 		"""
@@ -1825,15 +2034,35 @@ class DataArray(object):
 		other = u.to_ureg(other)
 		return self.__class__(self.data / other, label=self.label, plotlabel=self.plotlabel)
 
+	def __itruediv__(self, other):
+		"""
+		This replaces __div__ in Python 3. All divisions are true divisions per default with '/' operator.
+		In python 2, this new function is called anyway due to :code:`from __future__ import division`.
+		"""
+		if isinstance(other, self.__class__):
+			other = other.data
+		self._data /= other
+		return self
+
 	def __floordiv__(self, other):
 		if isinstance(other, self.__class__):
 			other = other.data
 		other = u.to_ureg(other)
 		return self.__class__(self.data // other, label=self.label, plotlabel=self.plotlabel)
 
+	def __ifloordiv__(self, other):
+		if isinstance(other, self.__class__):
+			other = other.data
+		self._data //= other
+		return self
+
 	def __pow__(self, other):
 		other = u.to_ureg(other, 'dimensionless')
 		return self.__class__(self.data ** other, label=self.label, plotlabel=self.plotlabel)
+
+	def __ipow__(self, other):
+		self._data **= other
+		return self
 
 	def __array__(self):  # to numpy array
 		return self.data.magnitude
