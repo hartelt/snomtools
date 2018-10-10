@@ -527,7 +527,7 @@ class Gauss_Fit(object):
 		xdata = u.to_ureg(xdata)
 		ydata = u.to_ureg(ydata)
 		if guess is None:
-			guess = (np.mean(xdata), (np.max(xdata) - np.min(xdata)) / 4, np.max(ydata), np.min(ydata))
+			guess = (xdata[np.argmax(ydata)], (np.max(xdata) - np.min(xdata)) / 4, np.max(ydata), np.min(ydata))
 		# to assure the guess is represented in the correct units:
 		xunit = xdata.units
 		yunit = ydata.units
@@ -832,7 +832,7 @@ class Lorentz_Fit(object):
 		xdata = u.to_ureg(xdata)
 		ydata = u.to_ureg(ydata)
 		if guess is None:
-			guess = (np.mean(xdata), (np.max(xdata) - np.min(xdata)) / 4, np.max(ydata), np.min(ydata))
+			guess = (xdata[np.argmax(ydata)], (np.max(xdata) - np.min(xdata)) / 4, np.max(ydata), np.min(ydata))
 		# to assure the guess is represented in the correct units:
 		xunit = xdata.units
 		yunit = ydata.units
