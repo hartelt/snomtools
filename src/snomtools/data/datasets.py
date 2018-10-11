@@ -474,6 +474,17 @@ class Data_Handler_H5(u.Quantity):
 			if len(axis) == 1:  # If we have a sequence of len 1, we sum over only 1 axis.
 				axis = axis[0]
 				single_axis_flag = True
+			elif len(axis) == 0:
+				# An empty tuple... so we have nothing to do and return a copy of self or write own data to out.
+				if out is None:
+					return self.__class__(self, h5target=h5target)
+				else:
+					assert out.shape == self.shape, "Wrong shape of given destination."
+					if out.shape == ():  # Scalar
+						out.ds_data[()] = self.ds_data[()]
+					else:
+						out.ds_data[:] = self.ds_data[:]
+					return out
 			else:
 				single_axis_flag = False
 		except TypeError:
@@ -2945,7 +2956,7 @@ class DataSet(object):
 		return dataset
 
 	@classmethod
-	def in_h5(cls, h5group):
+	def in_h5(cls, h5group, chunk_cache_mem_size=None):
 		"""
 		Opens a DataSet from a h5 source, which then works on the source (in-place). This is forwards to
 		 from_h5(h5group, h5group).
@@ -2955,7 +2966,7 @@ class DataSet(object):
 
 		:return: The generated instance.
 		"""
-		return cls.from_h5(h5group, h5group)
+		return cls.from_h5(h5group, h5group, chunk_cache_mem_size=chunk_cache_mem_size)
 
 	@classmethod
 	def from_textfile(cls, path, h5target=None, **kwargs):
