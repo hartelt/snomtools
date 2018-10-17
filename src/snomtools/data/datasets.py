@@ -521,11 +521,29 @@ class Data_Handler_H5(u.Quantity):
 			# Perform summation over axisnow and recursively sum over rest:
 			return self.sum(axisnow, dtype, out, keepdims, h5target=None).sum(axisrest, dtype, out, keepdims, h5target)
 
-	def absmax(self):
-		return abs(self).max()
+	# TODO: Overwrite max, min, mean to avoid working on magnitude and breaking memory.
+	# TODO: Improve nanmax, nanmin, nanmean, absmax, nanabsmax, absmin, nanabsmin to avoid working on magnitude and breaking memory.
 
-	def absmin(self):
-		return abs(self).min()
+	def nanmax(self, axis=None, keepdims=None):
+		return u.to_ureg(numpy.nanmax(self.magnitude, axis=axis, keepdims=keepdims), unit=self.get_unit())
+
+	def nanmin(self, axis=None, keepdims=None):
+		return u.to_ureg(numpy.nanmin(self.magnitude, axis=axis, keepdims=keepdims), unit=self.get_unit())
+
+	def nanmean(self, axis=None, keepdims=None):
+		return u.to_ureg(numpy.nanmean(self.magnitude, axis=axis, keepdims=keepdims), unit=self.get_unit())
+
+	def absmax(self, axis=None, keepdims=None):
+		return abs(self).max(axis=axis, keepdims=keepdims)
+
+	def nanabsmax(self, axis=None, keepdims=None):
+		return u.to_ureg(numpy.nanmax(abs(self), axis=axis, keepdims=keepdims), unit=self.get_unit())
+
+	def absmin(self, axis=None, keepdims=None):
+		return abs(self).min(axis=axis, keepdims=keepdims)
+
+	def nanabsmin(self, axis=None, keepdims=None):
+		return u.to_ureg(numpy.nanmin(abs(self), axis=axis, keepdims=keepdims), unit=self.get_unit())
 
 	def shift(self, shift, output=None, order=0, mode='constant', cval=numpy.nan, prefilter=None, h5target=None):
 		"""
@@ -1290,11 +1308,26 @@ class Data_Handler_np(u.Quantity):
 		"""
 		return self.magnitude.sum(axis=axis, dtype=dtype, out=out, keepdims=keepdims)
 
-	def absmax(self):
-		return abs(self).max()
+	def nanmax(self, axis=None, keepdims=None):
+		return u.to_ureg(numpy.nanmax(self.magnitude, axis=axis, keepdims=keepdims), unit=self.get_unit())
 
-	def absmin(self):
-		return abs(self).min()
+	def nanmin(self, axis=None, keepdims=None):
+		return u.to_ureg(numpy.nanmin(self.magnitude, axis=axis, keepdims=keepdims), unit=self.get_unit())
+
+	def nanmean(self, axis=None, keepdims=None):
+		return u.to_ureg(numpy.nanmean(self.magnitude, axis=axis, keepdims=keepdims), unit=self.get_unit())
+
+	def absmax(self, axis=None, keepdims=None):
+		return abs(self).max(axis=axis, keepdims=keepdims)
+
+	def nanabsmax(self, axis=None, keepdims=None):
+		return u.to_ureg(numpy.nanmax(abs(self), axis=axis, keepdims=keepdims), unit=self.get_unit())
+
+	def absmin(self, axis=None, keepdims=None):
+		return abs(self).min(axis=axis, keepdims=keepdims)
+
+	def nanabsmin(self, axis=None, keepdims=None):
+		return u.to_ureg(numpy.nanmin(abs(self), axis=axis, keepdims=keepdims), unit=self.get_unit())
 
 	def shift(self, shift, output=None, order=0, mode='constant', cval=numpy.nan, prefilter=None):
 		"""
@@ -1975,20 +2008,35 @@ class DataArray(object):
 		return self.data.shift_slice(slice_, shift, output=output, order=order, mode=mode, cval=cval,
 									 prefilter=prefilter)
 
-	def max(self):
-		return self.data.max()
+	def max(self, axis=None, keepdims=False, ignorenan=False):
+		if ignorenan:
+			return self.data.nanmax(axis=axis, keepdims=keepdims)
+		else:
+			return self.data.max(axis=axis, keepdims=keepdims)
 
-	def min(self):
-		return self.data.min()
+	def min(self, axis=None, keepdims=False, ignorenan=False):
+		if ignorenan:
+			return self.data.nanmin(axis=axis, keepdims=keepdims)
+		else:
+			return self.data.min(axis=axis, keepdims=keepdims)
 
-	def absmax(self):
-		return self.data.absmax()
+	def absmax(self, axis=None, keepdims=False, ignorenan=False):
+		if ignorenan:
+			return self.data.nanabsmax(axis=axis, keepdims=keepdims)
+		else:
+			return self.data.absmax(axis=axis, keepdims=keepdims)
 
-	def absmin(self):
-		return self.data.absmin()
+	def absmin(self, axis=None, keepdims=False, ignorenan=False):
+		if ignorenan:
+			return self.data.nanabsmin(axis=axis, keepdims=keepdims)
+		else:
+			return self.data.absmin(axis=axis, keepdims=keepdims)
 
-	def mean(self):
-		return self.data.mean()
+	def mean(self, axis=None, keepdims=False, ignorenan=False):
+		if ignorenan:
+			return self.data.nanmean(axis=axis, keepdims=keepdims)
+		else:
+			return self.data.mean(axis=axis, keepdims=keepdims)
 
 	def __pos__(self):
 		return self.__class__(self.data, label=self.label, plotlabel=self.plotlabel)
