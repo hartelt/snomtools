@@ -177,7 +177,7 @@ class FermiEdge:
 			energy_axis = data.get_axis(axis_id)
 		count_data = data.get_datafield(data_id)
 		energy_axis_index = data.get_axis_index(energy_axis.get_label())
-		count_data_projected = count_data.project_nd(energy_axis_index)
+		count_data_projected = count_data.project_nd(energy_axis_index, ignorenan=True)
 		count_data_projected = snomtools.data.datasets.DataArray(count_data_projected, label='intensity')
 		# Normalize by scaling to 1:
 		count_data_projected_norm = count_data_projected / count_data_projected.max()

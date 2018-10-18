@@ -434,7 +434,7 @@ class Data_Handler_H5(u.Quantity):
 		"""
 		return self.magnitude.sum(axis=axis, dtype=dtype, out=out, keepdims=keepdims)
 
-	def sum(self, axis=None, dtype=None, out=None, keepdims=False, h5target=None):
+	def sum(self, axis=None, dtype=None, out=None, keepdims=False, h5target=None, ignorenan=False):
 		"""
 		Behaves as the sum() function of a numpy array.
 		See: http://docs.scipy.org/doc/numpy-1.10.1/reference/generated/numpy.sum.html
@@ -459,6 +459,9 @@ class Data_Handler_H5(u.Quantity):
 		:param keepdims: bool, optional
 			If this is set to True, the axes which are reduced are left in the result as dimensions with size one. With this
 			option, the result will broadcast correctly against the original arr.
+
+		:param ignorenan: bool, optional
+			If this is set to True, nans in the array will be ignored and set to zero when summing them up.
 
 		:return: ndarray Quantity
 			An array with the same shape as a, with the specified axis removed. If a is a 0-d array, or if axis is None, a
@@ -507,9 +510,15 @@ class Data_Handler_H5(u.Quantity):
 				slicebase = [numpy.s_[:] for j in range(len(inshape) - 1)]
 				slicebase.insert(axis, i)
 				if outdata.shape == ():  # Scalar
-					outdata.ds_data[()] += self.ds_data[tuple(slicebase)]
+					if ignorenan:
+						outdata.ds_data[()] += numpy.ma.fix_invalid(self.ds_data[tuple(slicebase)], fill_value=0.)
+					else:
+						outdata.ds_data[()] += self.ds_data[tuple(slicebase)]
 				else:
-					outdata.ds_data[:] += self.ds_data[tuple(slicebase)]
+					if ignorenan:
+						outdata.ds_data[:] += numpy.ma.fix_invalid(self.ds_data[tuple(slicebase)], fill_value=0.)
+					else:
+						outdata.ds_data[:] += self.ds_data[tuple(slicebase)]
 			return outdata
 		else:  # We still have a list or tuple of several axes to sum over.
 			axis = numpy.array(sorted(axis))
@@ -519,7 +528,9 @@ class Data_Handler_H5(u.Quantity):
 			else:  # Sum erases axis number axis[0], rest of axis ids to sum over is shifted by -1
 				axisrest = tuple(axis[1:] - 1)
 			# Perform summation over axisnow and recursively sum over rest:
-			return self.sum(axisnow, dtype, out, keepdims, h5target=None).sum(axisrest, dtype, out, keepdims, h5target)
+			return self.sum(axisnow, dtype, out, keepdims, h5target=None, ignorenan=ignorenan).sum(axisrest, dtype, out,
+																								   keepdims, h5target,
+																								   ignorenan=ignorenan)
 
 	# TODO: Overwrite max, min, mean to avoid working on magnitude and breaking memory.
 	# TODO: Improve nanmax, nanmin, nanmean, absmax, nanabsmax, absmin, nanabsmin to avoid working on magnitude and breaking memory.
@@ -1308,6 +1319,47 @@ class Data_Handler_np(u.Quantity):
 		"""
 		return self.magnitude.sum(axis=axis, dtype=dtype, out=out, keepdims=keepdims)
 
+	def sum(self, axis=None, dtype=None, out=None, keepdims=False, h5target=None, ignorenan=False):
+		"""
+		Behaves as the sum() function of a numpy array.
+		See: http://docs.scipy.org/doc/numpy-1.10.1/reference/generated/numpy.sum.html
+
+		:param axis: None or int or tuple of ints, optional
+			Axis or axes along which a sum is performed. The default (axis = None) is perform a sum over all the dimensions
+			of the input array. axis may be negative, in which case it counts from the last to the first axis.
+			New in version 1.7.0.:
+			If this is a tuple of ints, a sum is performed on multiple axes, instead of a single axis or all the axes as
+			before.
+
+		:param dtype: dtype, optional
+			The type of the returned array and of the accumulator in which the elements are summed. By default, the dtype
+			of a is used. An exception is when a has an integer type with less precision than the default platform integer.
+			In that case, the default platform integer is used instead.
+
+		:param out: ndarray, optional
+			Array into which the output is placed. By default, a new array is created. If out is given, it must be of the
+			appropriate shape (the shape of a with axis removed, i.e., numpy.delete(a.shape, axis)). Its type is preserved.
+			See doc.ufuncs (Section Output arguments) for more details.
+
+		:param keepdims: bool, optional
+			If this is set to True, the axes which are reduced are left in the result as dimensions with size one. With this
+			option, the result will broadcast correctly against the original arr.
+
+		:param ignorenan: bool, optional
+			If this is set to True, nans in the array will be ignored and set to zero when summing them up.
+
+		:return: ndarray Quantity
+			An array with the same shape as a, with the specified axis removed. If a is a 0-d array, or if axis is None, a
+			scalar is returned. If an output array is specified, a reference to out is returned.
+		"""
+		if ignorenan:
+			return self.__class__(
+				numpy.ma.fix_invalid(self.magnitude, fill_value=0.).sum(axis=axis, dtype=dtype, out=out,
+																		keepdims=keepdims), unit=self.get_unit())
+		else:
+			return self.__class__(self.magnitude.sum(axis=axis, dtype=dtype, out=out, keepdims=keepdims),
+								  unit=self.get_unit())
+
 	def nanmax(self, axis=None, keepdims=None):
 		return u.to_ureg(numpy.nanmax(self.magnitude, axis=axis, keepdims=keepdims), unit=self.get_unit())
 
@@ -1929,7 +1981,7 @@ class DataArray(object):
 		"""
 		return self.data.get_nearest_value(value)
 
-	def sum(self, axis=None, dtype=None, out=None, keepdims=False):
+	def sum(self, axis=None, dtype=None, out=None, keepdims=False, ignorenan=False):
 		"""
 		Behaves as the sum() function of a numpy array.
 		See: http://docs.scipy.org/doc/numpy-1.10.1/reference/generated/numpy.sum.html
@@ -1959,7 +2011,7 @@ class DataArray(object):
 			An array with the same shape as a, with the specified axis removed. If a is a 0-d array, or if axis is None, a
 			scalar is returned. If an output array is specified, a reference to out is returned.
 		"""
-		return self.data.sum(axis=axis, dtype=dtype, out=out, keepdims=keepdims)
+		return self.data.sum(axis=axis, dtype=dtype, out=out, keepdims=keepdims, ignorenan=ignorenan)
 
 	def sum_raw(self, axis=None, dtype=None, out=None, keepdims=False):
 		"""
@@ -1970,7 +2022,7 @@ class DataArray(object):
 		"""
 		return self.data.sum_raw(axis=axis, dtype=dtype, out=out, keepdims=keepdims)
 
-	def project_nd(self, *args):
+	def project_nd(self, *args, **kwargs):
 		"""
 		Projects the datafield onto the given axes. Uses sum() method, but adresses axes to keep instead of axes to
 		sum over.
@@ -1985,7 +2037,7 @@ class DataArray(object):
 			sumlist.remove(arg)
 		sumtup = tuple(sumlist)
 		if len(sumtup):
-			return self.sum(sumtup)
+			return self.sum(sumtup, **kwargs)
 		else:
 			return self
 

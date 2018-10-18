@@ -50,7 +50,7 @@ def project_1d(data, plot_dest, axis_id=0, data_id=0, normalization=None, offset
 	sumlist = list(range(data.dimensions))
 	sumlist.remove(ax_index)
 	sumtup = tuple(sumlist)
-	sumdat = data.get_datafield(data_id).sum(sumtup)
+	sumdat = data.get_datafield(data_id).sum(sumtup, ignorenan=True)
 
 	if normalization:
 		if normalization == "None":
@@ -129,7 +129,7 @@ def project_2d(data, plot_dest, axis_vert=0, axis_hori=1, data_id=0, normalizati
 	sumlist.remove(axv_index)
 	sumlist.remove(axh_index)
 	sumtup = tuple(sumlist)
-	dat = data.get_datafield(data_id).sum(sumtup)
+	dat = data.get_datafield(data_id).sum(sumtup, ignorenan=True)
 	if axv_index > axh_index:  # transpose if axes are not in array-like order
 		sumdat = dat.T
 	else:
