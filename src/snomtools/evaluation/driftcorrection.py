@@ -88,12 +88,7 @@ class Drift(object):
 			stackAxisID = data.get_axis_index(stackAxisID)
 
 			# check for external drift vectors
-			if precalculated_drift:
-				assert len(precalculated_drift) == data.shape[
-					self.dstackAxisID], "Number of driftvectors unequal to stack dimension of data"
-				assert len(precalculated_drift[0]) == 2, "Driftvector has not dimension 2"
-				self.drift = precalculated_drift
-			else:
+			if precalculated_drift is  None:
 				# process data towards 3d array
 				if verbose:
 					print("Projecting 3D data...", end=None)
@@ -103,7 +98,12 @@ class Drift(object):
 
 				# for layers along stackAxisID find drift:
 				self.drift = self.template_matching_stack(self.data3D.get_datafield(0), self.template, stackAxisID,
-														  method=method, subpixel=subpixel)
+													  method=method, subpixel=subpixel)
+			else:
+				assert len(precalculated_drift) == data.shape[
+					self.dstackAxisID], "Number of driftvectors unequal to stack dimension of data"
+				assert len(precalculated_drift[0]) == 2, "Driftvector has not dimension 2"
+				self.drift = precalculated_drift
 		else:
 			if precalculated_drift:
 				assert len(precalculated_drift[0]) == 2, "Driftvector has not dimension 2"
