@@ -51,7 +51,7 @@ def normalize_by_reference(data, refdata, data_id=0, refdata_id=0, exclude_axes=
 	if exclude_axes:
 		sumlist = []
 		for exclude_axis in exclude_axes:
-			sumlist.append(refdata.get_axis(exclude_axis))
+			sumlist.append(refdata.get_axis_index(exclude_axis))
 		sumtup = tuple(sumlist)
 		refquantity = refdata.get_datafield(refdata_id).sum(sumtup)
 	else:
