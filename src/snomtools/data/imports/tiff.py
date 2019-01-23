@@ -323,7 +323,7 @@ def powerlaw_folder_peem_camera(folderpath, pattern="mW", powerunit=None, poweru
 	return snomtools.data.datasets.stack_DataSets(datastack, poweraxis, axis=-1, label="Powerlaw " + folderpath)
 
 
-def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunitlabel=None):
+def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunitlabel=None, sum_only=False):
 	"""
 
 	:param folderpath: The (relative or absolute) path of the folders containing the powerlaw measurement series.
@@ -337,6 +337,9 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 
 	:param powerunitlabel: string: Will be used as the unit for the power axis plotlabel. Can be for example a LaTeX
 		siunitx command. If not given, the powerunit parameter will be used.
+
+	:param sum_only: If True, only sum images will be read instead of full energy resolved data. *default: False*
+	:type sum_only: bool, *optional*
 
 	:return: The dataset containing the images stacked along a power axis.
 	"""
@@ -360,7 +363,10 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 	axlist = []
 	datastack = []
 	for power in iter(sorted(powerfiles.keys())):
-		datastack.append(peem_dld_read_terra(os.path.join(folderpath, powerfiles[power])))
+		if sum_only:
+			datastack.append(peem_dld_read_terra_sumimage(os.path.join(folderpath, powerfiles[power])))
+		else:
+			datastack.append(peem_dld_read_terra(os.path.join(folderpath, powerfiles[power])))
 		axlist.append(power)
 	powers = u.to_ureg(axlist, powerunit)
 
@@ -424,7 +430,7 @@ def tr_normal_folder_peem_camera_terra(folderpath, h5target=True):
 
 
 def tr_folder_peem_dld_terra(folderpath, delayunit="um", delayfactor=0.2, delayunitlabel=None,
-							 h5target=True, **kwargs):
+							 h5target=True, sum_only = False, **kwargs):
 	"""
 	Imports a Terra time scan folder that was measured by scanning the time steps in an interferometer while using
 	the Delaylinedetector (DLD).
@@ -446,6 +452,9 @@ def tr_folder_peem_dld_terra(folderpath, delayunit="um", delayfactor=0.2, delayu
 	:param h5target: The HDF5 target to write to.
 	:type h5target: str **or** h5py.Group **or** True, *optional*
 
+	:param sum_only: If True, only sum images will be read instead of full energy resolved data. *default: False*
+	:type sum_only: bool, *optional*
+
 	:return: Imported DataSet.
 	:rtype: DataSet
 	"""
@@ -456,24 +465,27 @@ def tr_folder_peem_dld_terra(folderpath, delayunit="um", delayfactor=0.2, delayu
 	if delayunitlabel is None:
 		delayunitlabel = delayunit
 	pl = 'Pulse Delay / ' + delayunitlabel  # Plot label for time axis
-	return measurement_folder_peem_terra(folderpath, "dld", "D", delayunit, delayfactor, "delay", pl, h5target)
+	if sum_only:
+		return measurement_folder_peem_terra(folderpath, "dld-sum", "D", delayunit, delayfactor, "delay", pl, h5target)
+	else:
+		return measurement_folder_peem_terra(folderpath, "dld", "D", delayunit, delayfactor, "delay", pl, h5target)
 
 
-def tr_psi_folder_peem_dld_terra(folderpath, h5target=True):
+def tr_psi_folder_peem_dld_terra(folderpath, h5target=True, sum_only = False):
 	"""
 	Convenience shortcut method for PSI scans with the DLD. Calls tr_folder_peem_camera_terra with correct parameters.
 	See: :func:`tr_folder_peem_dld_terra`
 	"""
-	return tr_folder_peem_dld_terra(folderpath, 'as', 0.2, "\\si{\\atto\\second}", h5target)
+	return tr_folder_peem_dld_terra(folderpath, 'as', 0.2, "\\si{\\atto\\second}", h5target, sum_only=sum_only)
 
 
-def tr_normal_folder_peem_dld_terra(folderpath, h5target=True):
+def tr_normal_folder_peem_dld_terra(folderpath, h5target=True, sum_only = False):
 	"""
 	Convenience shortcut method for normal interferometer scans with DLD. Calls tr_folder_peem_camera_terra with
 	correct parameters.
 	See: :func:`tr_folder_peem_dld_terra`
 	"""
-	return tr_folder_peem_dld_terra(folderpath, 'um', 0.2, "\\si{\\micro\\meter}", h5target)
+	return tr_folder_peem_dld_terra(folderpath, 'um', 0.2, "\\si{\\micro\\meter}", h5target, sum_only=sum_only)
 
 
 def rotationmount_folder_peem_camera_terra(folderpath, h5target=True):
@@ -486,14 +498,17 @@ def rotationmount_folder_peem_camera_terra(folderpath, h5target=True):
 	return measurement_folder_peem_terra(folderpath, "camera", "R", "deg", 0.1, "angle", pl, h5target)
 
 
-def rotationmount_folder_peem_dld_terra(folderpath, h5target=True):
+def rotationmount_folder_peem_dld_terra(folderpath, h5target=True, sum_only=False):
 	"""
 	Convenience shortcut method for rotation mount scans with DLD. Calls measurement_folder_peem_terra with
 	correct parameters.
 	See: :func:`measurement_folder_peem_terra`
 	"""
 	pl = 'Rotation Mount Angle / \\si{\\degree}'  # Plot label for rotation angle axis.
-	return measurement_folder_peem_terra(folderpath, "dld", "R", "deg", 0.1, "angle", pl, h5target)
+	if sum_only:
+		return measurement_folder_peem_terra(folderpath, "dld-sum", "R", "deg", 0.1, "angle", pl, h5target)
+	else:
+		return measurement_folder_peem_terra(folderpath, "dld", "R", "deg", 0.1, "angle", pl, h5target)
 
 
 def dummy_folder_peem_camera_terra(folderpath, h5target=True):
@@ -506,14 +521,17 @@ def dummy_folder_peem_camera_terra(folderpath, h5target=True):
 	return measurement_folder_peem_terra(folderpath, "camera", "N", "", 1, "dummyaxis", pl, h5target)
 
 
-def dummy_folder_peem_dld_terra(folderpath, h5target=True):
+def dummy_folder_peem_dld_terra(folderpath, h5target=True, sum_only=False):
 	"""
 	Convenience shortcut method for dummy device scans with dld. Calls measurement_folder_peem_terra with
 	correct parameters.
 	See: :func:`measurement_folder_peem_terra`
 	"""
 	pl = 'Dummy Index'  # Plot label for time axis
-	return measurement_folder_peem_terra(folderpath, "dld", "N", "", 1, "dummyaxis", pl, h5target)
+	if sum_only:
+		return measurement_folder_peem_terra(folderpath, "dld-sum", "N", "", 1, "dummyaxis", pl, h5target)
+	else:
+		return measurement_folder_peem_terra(folderpath, "dld", "N", "", 1, "dummyaxis", pl, h5target)
 
 
 def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanunit="um", scanfactor=1,
@@ -525,7 +543,8 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
 
 	:param str detector: Read mode corresponding to the used detector.
 		Valid inputs:
-			* :code:`"dld"`
+			* :code:`"dld"` for reading the energy-resolved data out of dld tiffs.
+			* :code:`"dld-sum"` for reading the sum image out of dld tiffs.
 			* :code:`"camera"`
 
 	:param str pattern: The pattern in the filenames that indicates the scan enumeration and is followed by the number
@@ -554,7 +573,7 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
 	:return: Imported DataSet.
 	:rtype: DataSet
 	"""
-	assert detector in ["dld", "camera"], "Invalid detector mode."
+	assert detector in ["dld", "dld-sum", "camera"], "Invalid detector mode."
 	if scanaxispl is None:
 		scanaxispl = 'Scan / ' + scanunit
 
@@ -582,6 +601,8 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
 	# Test data size:
 	if detector == "dld":
 		sample_data = peem_dld_read_terra(os.path.join(folderpath, scanfiles[list(scanfiles.keys())[0]]))
+	elif detector == "dld-sum":
+		sample_data = peem_dld_read_terra_sumimage(os.path.join(folderpath, scanfiles[list(scanfiles.keys())[0]]))
 	else:
 		sample_data = peem_camera_read_terra(os.path.join(folderpath, scanfiles[list(scanfiles.keys())[0]]))
 	axlist = [scanaxis] + sample_data.axes
@@ -643,6 +664,8 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
 		# Import tiff:
 		if detector == "dld":
 			idata = peem_dld_read_terra(os.path.join(folderpath, scanfiles[scanstep]))
+		elif detector == "dld-sum":
+			idata = peem_dld_read_terra_sumimage(os.path.join(folderpath, scanfiles[scanstep]))
 		else:
 			idata = peem_camera_read_terra(os.path.join(folderpath, scanfiles[scanstep]))
 		# Check data consistency:
@@ -714,8 +737,8 @@ if __name__ == "__main__":
 		trdata = tr_normal_folder_peem_dld_terra(trfolder, h5target=trfolder + '.hdf5')
 		trdata.saveh5()
 
-	test_sumimage = True
-	if test_sumimage:
-		sumimage = peem_dld_read_terra_sumimage("terra-tr-normal-dld/D0000000.tif")
+		trfolder = "terra-tr-normal-dld"
+		trdata = tr_normal_folder_peem_dld_terra(trfolder, h5target=trfolder + '_sum.hdf5', sum_only=True)
+		trdata.saveh5()
 
 	print('done.')
