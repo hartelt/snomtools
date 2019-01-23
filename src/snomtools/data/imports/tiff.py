@@ -465,7 +465,7 @@ def rotationmount_folder_peem_dld_terra(folderpath, h5target=True):
 	correct parameters.
 	See: :func:`measurement_folder_peem_terra`
 	"""
-	pl = 'Rotation Mount Angle / \\si{\\degree}'  # Plot label for time axis
+	pl = 'Rotation Mount Angle / \\si{\\degree}'  # Plot label for rotation angle axis.
 	return measurement_folder_peem_terra(folderpath, "dld", "R", "deg", 0.1, "angle", pl, h5target)
 
 
@@ -560,32 +560,42 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
 	axlist = [scanaxis] + sample_data.axes
 	newshape = scanaxis.shape + sample_data.shape
 
-	chunks = True
-	compression = 'gzip'
-	compression_opts = 4
+	if h5target:
+		chunks = True
+		compression = 'gzip'
+		compression_opts = 4
 
-	# Probe HDF5 initialization to optimize buffer size:
-	if chunks is True:  # Default is auto chunk alignment, so we need to probe.
-		chunk_size = probe_chunksize(shape=newshape, compression=compression, compression_opts=compression_opts)
-	else:
-		chunk_size = chunks
-	min_cache_size = chunk_size[0] * numpy.prod(sample_data.shape) * 4  # 32bit floats require 4 bytes.
-	use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 64 MB just to be sure.
+		# Probe HDF5 initialization to optimize buffer size:
+		if chunks is True:  # Default is auto chunk alignment, so we need to probe.
+			chunk_size = probe_chunksize(shape=newshape, compression=compression, compression_opts=compression_opts)
+		else:
+			chunk_size = chunks
+		min_cache_size = chunk_size[0] * numpy.prod(sample_data.shape) * 4  # 32bit floats require 4 bytes.
+		use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 64 MB just to be sure.
 
-	# Initialize full DataSet with zeroes:
-	dataspace = snomtools.data.datasets.Data_Handler_H5(unit=sample_data.get_datafield(0).get_unit(),
-														shape=newshape, chunks=chunks,
-														compression=compression, compression_opts=compression_opts,
-														chunk_cache_mem_size=use_cache_size)
-	dataarray = snomtools.data.datasets.DataArray(dataspace,
-												  label=sample_data.get_datafield(0).get_label(),
-												  plotlabel=sample_data.get_datafield(0).get_plotlabel(),
-												  h5target=dataspace.h5target,
-												  chunks=chunks,
-												  compression=compression, compression_opts=compression_opts,
+		# Initialize full DataSet with zeroes:
+		dataspace = snomtools.data.datasets.Data_Handler_H5(unit=sample_data.get_datafield(0).get_unit(),
+															shape=newshape, chunks=chunks,
+															compression=compression, compression_opts=compression_opts,
+															chunk_cache_mem_size=use_cache_size)
+		dataarray = snomtools.data.datasets.DataArray(dataspace,
+													  label=sample_data.get_datafield(0).get_label(),
+													  plotlabel=sample_data.get_datafield(0).get_plotlabel(),
+													  h5target=dataspace.h5target,
+													  chunks=chunks,
+													  compression=compression, compression_opts=compression_opts,
+													  chunk_cache_mem_size=use_cache_size)
+		dataset = snomtools.data.datasets.DataSet("Terra Scan " + folderpath, [dataarray], axlist, h5target=h5target,
 												  chunk_cache_mem_size=use_cache_size)
-	dataset = snomtools.data.datasets.DataSet("Terra Scan " + folderpath, [dataarray], axlist, h5target=h5target,
-											  chunk_cache_mem_size=use_cache_size)
+	else:
+		# In-memory data processing without h5 files.
+		dataspace = numpy.zeros(newshape)
+		dataarray = snomtools.data.datasets.DataArray(dataspace,
+													  label=sample_data.get_datafield(0).get_label(),
+													  plotlabel=sample_data.get_datafield(0).get_plotlabel(),
+													  h5target=None)
+		dataset = snomtools.data.datasets.DataSet("Terra Scan " + folderpath, [dataarray], axlist, h5target=h5target)
+
 	dataarray = dataset.get_datafield(0)
 
 	# Fill in data from imported tiffs:
@@ -594,8 +604,11 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
 	if verbose:
 		import time
 		print("Reading Terra Scan Folder of shape: ", dataset.shape)
-		print("... generating chunks of shape: ", dataset.get_datafield(0).data.ds_data.chunks)
-		print("... using cache size {0:d} MB".format(use_cache_size // 1024 ** 2))
+		if h5target:
+			print("... generating chunks of shape: ", dataset.get_datafield(0).data.ds_data.chunks)
+			print("... using cache size {0:d} MB".format(use_cache_size // 1024 ** 2))
+		else:
+			print("... in memory")
 		start_time = time.time()
 
 	for i, scanstep in zip(list(range(len(scanfiles))), iter(sorted(scanfiles.keys()))):
