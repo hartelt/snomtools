@@ -166,9 +166,10 @@ def project_2d(data, plot_dest, axis_vert=0, axis_hori=1, data_id=0, normalizati
 
 	assert (V.shape == plotdat.shape), "2D plot data doesn't fit to axis mesh..."
 
-	plot_dest.pcolormesh(numpy.array(H), numpy.array(V), numpy.array(plotdat), **kwargs)
+	result = plot_dest.pcolormesh(numpy.array(H), numpy.array(V), numpy.array(plotdat), **kwargs)
 	# Flip axis to have correct origin (array-index-like): upper left instead of lower left:
 	plot_dest.invert_yaxis()
+	return result
 
 
 def mark_roi_1d(roi, plot_dest, axis_id=0, **kwargs):
