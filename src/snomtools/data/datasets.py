@@ -2896,8 +2896,8 @@ class ROI(object):
 
 	def project_nd(self, *args, **kwargs):
 		"""
-		Projects the ROI onto the given axes. Uses the DataSet.project_nd() method for every datset and returns a
-		new ROI with the projected DataFields and the chosen axes.
+		Projects the ROI onto the given axes. Uses the DataSet.project_nd() method for the addressed region and returns
+		a new DataSet with the projected DataFields and the chosen axes sections.
 
 		:param args: Valid identifiers for the axes to project onto.
 
@@ -2908,11 +2908,10 @@ class ROI(object):
 		else:
 			h5target = None
 		indexlist = sorted([self.get_axis_index(arg) for arg in args])
-		newdataset = DataSet(datafields=[self.dataset.datafields[i].project_nd(*indexlist) for i in indexlist],
-							 axes=[self.dataset.axes[i] for i in indexlist], h5target=h5target)
-		return self.__class__(newdataset,
-							  limitlist=[self.get_limits(by_index=True)[i] for i in indexlist],
-							  by_index=True)
+		newdataset = DataSet(datafields=[self.get_datafield(i).project_nd(*indexlist)
+										 for i in range(len(self.dataset.datafields))],
+							 axes=[self.get_axis(i) for i in indexlist], h5target=h5target)
+		return newdataset
 
 	def get_DataSet(self, label=None, plotconf=None, h5target=None, chunk_cache_mem_size=None):
 		"""
