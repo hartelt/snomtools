@@ -269,6 +269,52 @@ def peem_camera_read_terra(filepath):
 	"""
 	return peem_camera_read_camware(filepath)
 
+def opo_folder_peem_camera(folderpath, pattern="", waveunit='nm', waveunitlabel='nm'):
+	"""
+
+	:param folderpath: The (relative or absolute) path of the folders containing the OPO wavelength measurement series.
+
+	:param pattern: string: A pattern the wavelengths in the filenames are named with. For example in the default case
+		"nm", the filename containing '500nm' or '500 nm' would accord to a wavelength of 500nm. The
+		OPO wavelength units for the axis quantities are also cast from this pattern if not explicitly given with waveunit.
+
+	:param waveunit: A valid unit string that will be cast as the unit for the OPO wavelength axis values. If not given,
+		the pattern parameter will be cast as unit.
+
+	:param waveunitlabel: string: Will be used as the unit for the power axis plotlabel. Can be for example a LaTeX
+		siunitx command. If not given, the waveunit parameter will be used.
+
+	:return: The dataset containing the images stacked along a power axis.
+	"""
+	if waveunit is None:
+		waveunit = pattern
+	if waveunitlabel is None:
+		waveunitlabel = waveunit
+	pat = re.compile('(\d*[,|.]?\d+)\s?' + pattern)
+
+	# Translate input path to absolute path:
+	folderpath = os.path.abspath(folderpath)
+
+	# Inspect the given folder for the tif files of the OPO series:
+	wavefiles = {}
+	for filename in filter(is_tif, os.listdir(folderpath)):
+		found = re.search(pat, filename)
+		if found:
+			wave = float(found.group(1).replace(',', '.'))
+			wavefiles[wave] = filename
+
+	axlist = []
+	datastack = []
+	for wave in iter(sorted(wavefiles.keys())):
+		datastack.append(peem_camera_read(os.path.join(folderpath, wavefiles[wave])))
+		axlist.append(wave)
+	waves = u.to_ureg(axlist, waveunit)
+
+	pl = 'Wavelength / ' + waveunitlabel  # Plot label for wavelength axis.
+	waveaxis = snomtools.data.datasets.Axis(waves, label='wave', plotlabel=pl)
+
+	return snomtools.data.datasets.stack_DataSets(datastack, waveaxis, axis=-1, label="OPO Wavelength scan " + folderpath)
+
 
 def powerlaw_folder_peem_camera(folderpath, pattern="mW", powerunit=None, powerunitlabel=None, decimal=None):
 	"""
@@ -715,7 +761,7 @@ if __name__ == "__main__":
 		plfolder = "Powerlaw"
 		pldata = powerlaw_folder_peem_camera(plfolder, powerunitlabel='\\SI{\\milli\\watt}')
 
-	test_timeresolved = True
+	test_timeresolved = False
 	if test_timeresolved:
 		trfolder = "terra-dummy-dld"
 		trdata = dummy_folder_peem_dld_terra(trfolder, h5target=trfolder + '.hdf5')
@@ -740,5 +786,10 @@ if __name__ == "__main__":
 		trfolder = "terra-tr-normal-dld"
 		trdata = tr_normal_folder_peem_dld_terra(trfolder, h5target=trfolder + '_sum.hdf5', sum_only=True)
 		trdata.saveh5()
+
+	test_opo_measurement = True
+	if test_opo_measurement:
+		trfolder = "D:/Messdaten/2018/20181205 a-SiH on ZnO/01 OPO NI"
+		trdata = opo_folder_peem_camera(trfolder)
 
 	print('done.')

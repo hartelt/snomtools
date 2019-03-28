@@ -11,6 +11,7 @@ import cv2 as cv
 import numpy as np
 import snomtools.data.datasets
 import snomtools.data.h5tools
+import snomtools.data.transformation.rotate as rot
 from snomtools.data.tools import iterfy, full_slice, sliced_shape
 
 __author__ = 'Benjamin Frisch'
@@ -56,44 +57,59 @@ class Drift(object):
 		:param int interpolation_order: An order for the interpolation for the calculation of driftcorrected data.
 			See: :func:`scipy.ndimage.interpolation.shift` for details.
 		"""
-		if data:
+		if data is None:
+			if precalculated_drift is None:
+				self.drift = None
+			else:
+				assert len(precalculated_drift[0]) == 2, "Driftvector has not dimension 2"
+				self.drift = precalculated_drift
+
+		else:
 			if stackAxisID is None:
 				self.dstackAxisID = data.get_axis_index('delay')
 			else:
-				self.dstackAxisID = data.get_axis_index(stackAxisID)
+				if type(stackAxisID) is int:
+					self.dstackAxisID = stackAxisID
+				else:
+					self.dstackAxisID = data.get_axis_index(stackAxisID)
 			if yAxisID is None:
 				self.dyAxisID = data.get_axis_index('y')
 			else:
-				self.dyAxisID = data.get_axis_index(yAxisID)
+				if type(yAxisID) is int:
+					self.dyAxisID = yAxisID
+				else:
+					self.dyAxisID = data.get_axis_index(yAxisID)
 			if xAxisID is None:
 				self.dxAxisID = data.get_axis_index('x')
 			else:
-				self.dxAxisID = data.get_axis_index(xAxisID)
+				if type(xAxisID) is int:
+					self.dxAxisID = xAxisID
+				else:
+					self.dxAxisID = data.get_axis_index(xAxisID)
 
 			# read or guess template
-			if template:
+			if template is None:
+				self.template = self.guess_templatedata(data, self.dyAxisID, self.dxAxisID)
+
+			else:
 				if yAxisID is None:
 					tyAxisID = template.get_axis_index('y')
 				else:
-					tyAxisID = template.get_axis_index(yAxisID)
+					if type(yAxisID) is int:
+						tyAxisID = yAxisID
+					else:
+						tyAxisID = template.get_axis_index(yAxisID)
 				if xAxisID is None:
 					txAxisID = template.get_axis_index('x')
 				else:
-					txAxisID = template.get_axis_index(xAxisID)
+					if type(xAxisID) is int:
+						txAxisID = xAxisID
+					else:
+						txAxisID = template.get_axis_index(xAxisID)
 				self.template = self.extract_templatedata(template, tyAxisID, txAxisID)
-			else:
-				if precalculated_drift is None:
-					self.template = self.guess_templatedata(data, self.dyAxisID, self.dxAxisID)
-
-			stackAxisID = data.get_axis_index(stackAxisID)
 
 			# check for external drift vectors
-			if precalculated_drift:
-				assert len(precalculated_drift) == data.shape[
-					self.dstackAxisID], "Number of driftvectors unequal to stack dimension of data"
-				assert len(precalculated_drift[0]) == 2, "Driftvector has not dimension 2"
-				self.drift = precalculated_drift
-			else:
+			if precalculated_drift is None:
 				# process data towards 3d array
 				if verbose:
 					print("Projecting 3D data...", end=None)
@@ -104,12 +120,12 @@ class Drift(object):
 				# for layers along stackAxisID find drift:
 				self.drift = self.template_matching_stack(self.data3D.get_datafield(0), self.template, stackAxisID,
 														  method=method, subpixel=subpixel)
-		else:
-			if precalculated_drift:
+
+			else:
+				assert len(precalculated_drift) == data.shape[
+					self.dstackAxisID], "Number of driftvectors unequal to stack dimension of data"
 				assert len(precalculated_drift[0]) == 2, "Driftvector has not dimension 2"
 				self.drift = precalculated_drift
-			else:
-				self.drift = None
 
 		if template_origin is None:
 			if self.drift is not None:
@@ -243,6 +259,44 @@ class Drift(object):
 												self.data.plotconf, h5target=h5target)
 		return newds
 
+	def match_rotation_scale(self,reference_data, tomatch_data, angle_settings=(0, 0, 0), scale_settings=(1, 0, 0), digits=5,
+							 output_dir=None, saveImg=False,
+							 saveRes=False):
+		'''
+		Calculates the correlation of different scales and rotations of tomatch_data against some reference_data
+		:param reference_data: 2D dataset
+		:param tomatch_data: 2D dataset
+		:param angle_settings:	tuple (center, resolution, number of variations)
+		:param scale_settings:	tuple (center, resolution, number of variations)
+		:param digits: number of digits to round the variations to
+		:param output_dir: save target
+		:param saveImg:	save all rotated and scaled images
+		:param saveRes:	save results as TXT with titles
+		:return: 	Results array with (angle, scale, ypos, xpos, correlation).
+
+		Example:
+			reference_data = ds.DataArray(np.float32(reference_data))
+			tomatch_data_cropped = ds.DataArray(crop_around_center(np.float32(tomatch_data), 100, 100))
+
+			match_rotation_scale(reference_data, tomatch_data_cropped, angle_settings=(3, 0.1, 300), output_dir=output_dir, saveRes=True)
+		'''
+		rot_crop_data = rot.rot_scale_data(data=tomatch_data, angle_settings=angle_settings,
+									   scale_settings=scale_settings, digits=digits, output_dir=output_dir,
+									   saveImg=saveImg)
+		results = []
+		for variations in rot_crop_data:
+			print('Matching: angle ' + str(variations[0]) + ' scale ' + str(variations[1]))
+			template = np.float32(rot_crop_data[variations])
+			drift_res = Drift.template_matching(reference_data, template, method='cv.TM_CCOEFF_NORMED', subpixel=False)
+			results.append((variations[0], variations[1], drift_res[0][0], drift_res[0][1], drift_res[1]))
+
+		results = np.asarray(results)
+
+		if saveRes == True:
+			np.savetxt(output_dir + 'rot_scale_max' + str(results[:, 4].max()) + '.txt', np.asarray(results))
+
+		return results
+
 	@classmethod
 	def template_matching_stack(cls, data, template, stackAxisID, method='cv.TM_CCOEFF_NORMED', subpixel=True,
 								threshold=(0, 0.1)):
@@ -259,6 +313,8 @@ class Drift(object):
 			'cv.TM_CCOEFF_NORMED' (default), 'cv.TM_CCORR', 'cv.TM_CCORR_NORMED', 'cv.TM_SQDIFF', 'cv.TM_SQDIFF_NORMED'
 
 		:param subpixel: Generate subpixel accurate drift vectors
+
+		:param threshold: Threshold of calculated xCorr-values at detected positions that are deemed trustworthy
 
 		:return: List of tuples containing the coordinates of best correlation corrected for values below threshold
 		"""
