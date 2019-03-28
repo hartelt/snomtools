@@ -70,6 +70,10 @@ def reversed_slice(s, len_):
 	assert isinstance(s, slice)
 	instart, instop, instep = s.indices(len_)
 
+	if (instop < instart and instep > 0) or (instop > instart and instep < 0) \
+			or (instop == 0 and instart == 0):
+		return slice(0, 0, None)
+
 	m = (instop - instart) % instep or instep
 
 	if instep > 0 and instart - m < 0:
@@ -284,10 +288,12 @@ def broadcast_indices(*shapes):
 if __name__ == '__main__':
 	import numpy
 
-	a = numpy.arange(30)
-	s = numpy.s_[::-1]
+	a = [x for x in range(0, 10, 1)]
+	s = numpy.s_[0:0:1]
+
 	print(s)
 	print(reversed_slice(s, len(a)))
 	print(a[s])
 	print(a[reversed_slice(s, len(a))])
+
 	print("done")
