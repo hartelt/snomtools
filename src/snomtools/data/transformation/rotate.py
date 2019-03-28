@@ -82,7 +82,15 @@ def rotatedRectWithMaxArea(w, h, angle):
 
 
 def scale_data(data, zoomfactor):
-	return scipy.ndimage.zoom(data, zoomfactor, output=None, order=2,
+	"""
+	Scales data with scipy.ndimage.zoom. Keep in mind that this 'interpolates' data onto a new grid, which introduces
+	'blurring'.
+
+	:param data: The input array.
+	:param zoomfactor: Factor of new vs old data size.
+	:return: The scaled array.
+	"""
+	return scipy.ndimage.zoom(data, zoomfactor, output=None, order=1,
 							  mode='constant', cval=0.0, prefilter=False)
 
 
@@ -119,7 +127,7 @@ def rot_scale_data(data, angle_settings=(0, 0, 0), scale_settings=(1, 0, 0), dig
 	return rot_crop_data
 
 
-def scale_rotated(data, zoomfactor, angle, debug_dir = None, saveImg=False):
+def scale_rotated(data, zoomfactor, angle, debug_dir=None, saveImg=False):
 	zoomed_data = scipy.ndimage.zoom(data, zoomfactor, output=None, order=2,
 									 mode='constant', cval=0.0, prefilter=False)
 
@@ -128,15 +136,16 @@ def scale_rotated(data, zoomfactor, angle, debug_dir = None, saveImg=False):
 		cv.imwrite(debug_dir + 'angle' + str(angle) + 'scale' + str(zoomfactor) + '.tif', np.uint16(zoomed_data))
 	return zoomed_data
 
+
 if __name__ == '__main__':  # Just for testing:
-	raw_data = np.zeros((10,10))
+	raw_data = np.zeros((10, 10))
 	raw_data[3] = 10
 
 	output_dir = 'None'
 
-	angle_variations = 0 # How many values besides centerpoint (even for centerpoint in variation)
+	angle_variations = 0  # How many values besides centerpoint (even for centerpoint in variation)
 	angle_res = 90
-	angle_centervalue = 90
+	angle_centervalue = 45
 
 	scale_variations = 2
 	scale_res = 0.5
@@ -147,25 +156,35 @@ if __name__ == '__main__':  # Just for testing:
 	zeroangle = angle_centervalue - angle_variations / 2 * angle_res
 	zeroscale = scale_centervalue - scale_variations / 2 * scale_res
 
-
 	# Rotate, crop then scale for all variations
-	rot_crop_data = {(round(zeroangle + i * angle_res, rf), round(zeroscale + j * scale_res, rf)): scale_rotated(
-		rotate_cropped(raw_data, round(zeroangle + i * angle_res, rf)), round(zeroscale + j * scale_res, rf),
-		round(zeroangle + i * angle_res, rf), saveImg = False)
+	rot_crop_data = {(round(zeroangle + i * angle_res, rf), round(zeroscale + j * scale_res, rf)):
+		scale_rotated(
+			rotate_cropped(raw_data, round(zeroangle + i * angle_res, rf)), round(zeroscale + j * scale_res, rf),
+			round(zeroangle + i * angle_res, rf), saveImg=False)
 		for i in range(angle_variations + 1) for j in range(scale_variations + 1)}
 
-	#Results
+	# Results
 	print('Raw Data')
-	print(np.int8(raw_data))
-	#print(raw_data)
+	print(np.round(raw_data))
+	# print(raw_data)
 	print('Raw-Data has shape: ' + str(raw_data.shape) + '\n')
+
+	print('Only Rotation:')
+	print(np.round(scipy.ndimage.interpolation.rotate(raw_data, angle=angle_centervalue, reshape=False, output=None,
+													  order=1, mode='constant', cval=np.nan, prefilter=False)))
+	print('\n')
+
+	print('Only Scale:')
+	data = np.round(scale_data(raw_data, 1.2))
+	print(data)
+	print('Data has shape: ' + str(data.shape) + '\n')
 
 	print('Altered Data')
 	for variations in rot_crop_data:
 		print('Angle,Scale')
 		print(variations)
-		#print(rot_crop_data[variations])
-		print(np.int8(rot_crop_data[variations]))
+		# print(rot_crop_data[variations])
+		print(np.round(rot_crop_data[variations]))
 		print('Data has shape: ' + str(rot_crop_data[variations].shape) + '\n')
 
 	print('Done')
