@@ -369,6 +369,46 @@ def gaussian(x, x_0, sigma, A, C):
 	return A * np.exp(-(x - x_0) ** 2 / (2 * sigma ** 2)) + C
 
 
+def gaussian_2D(xydata_tuple, amplitude, xo, yo, sigma_x, sigma_y, theta, offset):
+	'''
+	#TODO: This function was moved here from Ben's code and still needs to be integrated in fitting routines.
+
+	:param xydata_tuple
+	:param amplitude:
+	:param xo:  x center of gaussian
+	:param yo: y center of gaussian
+	:param sigma_x: gauss size
+	:param sigma_y: gauss size
+	:param theta: rotation of the 2D gauss 'potato'
+	:param offset: offset
+	:return:
+	This code is based on https://stackoverflow.com/a/21566831/8654672
+	Working example:
+
+	# Create x and y indices
+	x = np.linspace(0, 200, 201)
+	y = np.linspace(0, 200, 201)
+	x, y = np.meshgrid(x, y)
+
+	#create data
+	data = twoD_Gaussian((x, y), 3, 100, 100, 20, 40, 0, 10)
+
+	# plot twoD_Gaussian data generated above
+	plt.figure()
+	plt.imshow(data.reshape(201, 201))
+	plt.colorbar()
+	'''
+	(x, y) = xydata_tuple
+	xo = float(xo)
+	yo = float(yo)
+	a = (np.cos(theta) ** 2) / (2 * sigma_x ** 2) + (np.sin(theta) ** 2) / (2 * sigma_y ** 2)
+	b = -(np.sin(2 * theta)) / (4 * sigma_x ** 2) + (np.sin(2 * theta)) / (4 * sigma_y ** 2)
+	c = (np.sin(theta) ** 2) / (2 * sigma_x ** 2) + (np.cos(theta) ** 2) / (2 * sigma_y ** 2)
+	g = offset + amplitude * np.exp(- (a * ((x - xo) ** 2) + 2 * b * (x - xo) * (y - yo)
+									   + c * ((y - yo) ** 2)))
+	return g.ravel()
+
+
 class Gauss_Fit(object):
 	"""
 	A Gauss Fit of given data with benefits.
