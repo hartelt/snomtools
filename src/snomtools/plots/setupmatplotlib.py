@@ -6,7 +6,7 @@ import os
 # Locale settings
 import locale
 
-locale.setlocale(locale.LC_ALL, "")
+# locale.setlocale(locale.LC_ALL, "")
 
 from matplotlib import rc, cm
 from matplotlib.colors import LinearSegmentedColormap, ListedColormap
@@ -29,7 +29,7 @@ rc('xtick', **{'labelsize': fontsize_ticks})
 rc('ytick', **{'labelsize': fontsize_ticks})
 # rc('axes', **{'labelweight': 'normal'})
 rc('axes', **{'linewidth': 1.5})
-rc('axes.formatter', use_locale=True)
+rc('axes.formatter', use_locale=False) # use_locale=True for German style numbers.
 
 
 # tex using six units and icomma
