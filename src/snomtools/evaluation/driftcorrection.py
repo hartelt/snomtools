@@ -11,6 +11,7 @@ import cv2 as cv
 import numpy as np
 import snomtools.data.datasets
 import snomtools.data.h5tools
+import snomtools.data.transformation.rotate as rot
 from snomtools.data.tools import iterfy, full_slice, sliced_shape
 
 __author__ = 'Benjamin Frisch'
@@ -243,6 +244,44 @@ class Drift(object):
 												self.data.plotconf, h5target=h5target)
 		return newds
 
+	def match_rotation_scale(self,reference_data, tomatch_data, angle_settings=(0, 0, 0), scale_settings=(1, 0, 0), digits=5,
+							 output_dir=None, saveImg=False,
+							 saveRes=False):
+		'''
+		Calculates the correlation of different scales and rotations of tomatch_data against some reference_data
+		:param reference_data: 2D dataset
+		:param tomatch_data: 2D dataset
+		:param angle_settings:	tuple (center, resolution, number of variations)
+		:param scale_settings:	tuple (center, resolution, number of variations)
+		:param digits: number of digits to round the variations to
+		:param output_dir: save target
+		:param saveImg:	save all rotated and scaled images
+		:param saveRes:	save results as TXT with titles
+		:return: 	Results array with (angle, scale, ypos, xpos, correlation).
+
+		Example:
+			reference_data = ds.DataArray(np.float32(reference_data))
+			tomatch_data_cropped = ds.DataArray(crop_around_center(np.float32(tomatch_data), 100, 100))
+
+			match_rotation_scale(reference_data, tomatch_data_cropped, angle_settings=(3, 0.1, 300), output_dir=output_dir, saveRes=True)
+		'''
+		rot_crop_data = rot.rot_scale_data(data=tomatch_data, angle_settings=angle_settings,
+									   scale_settings=scale_settings, digits=digits, output_dir=output_dir,
+									   saveImg=saveImg)
+		results = []
+		for variations in rot_crop_data:
+			print('Matching: angle ' + str(variations[0]) + ' scale ' + str(variations[1]))
+			template = np.float32(rot_crop_data[variations])
+			drift_res = Drift.template_matching(reference_data, template, method='cv.TM_CCOEFF_NORMED', subpixel=False)
+			results.append((variations[0], variations[1], drift_res[0][0], drift_res[0][1], drift_res[1]))
+
+		results = np.asarray(results)
+
+		if saveRes == True:
+			np.savetxt(output_dir + 'rot_scale_max' + str(results[:, 4].max()) + '.txt', np.asarray(results))
+
+		return results
+
 	@classmethod
 	def template_matching_stack(cls, data, template, stackAxisID, method='cv.TM_CCOEFF_NORMED', subpixel=True,
 								threshold=(0, 0.1)):
@@ -447,202 +486,6 @@ class Drift(object):
 
 		return inputlist
 
-	# --- Functions for rotation and scale matching ---
-	@staticmethod
-	def twoD_Gaussian(xydata_tuple, amplitude, xo, yo, sigma_x, sigma_y, theta, offset):
-		'''
-		:param xydata_tuple
-		:param amplitude:
-		:param xo:  x center of gaussian
-		:param yo: y center of gaussian
-		:param sigma_x: gauss size
-		:param sigma_y: gauss size
-		:param theta: rotation of the 2D gauss 'potato'
-		:param offset: offset
-		:return:
-		This code is based on https://stackoverflow.com/a/21566831/8654672
-		Working example:
-
-		# Create x and y indices
-		x = np.linspace(0, 200, 201)
-		y = np.linspace(0, 200, 201)
-		x, y = np.meshgrid(x, y)
-
-		#create data
-		data = twoD_Gaussian((x, y), 3, 100, 100, 20, 40, 0, 10)
-
-		# plot twoD_Gaussian data generated above
-		plt.figure()
-		plt.imshow(data.reshape(201, 201))
-		plt.colorbar()
-		'''
-		(x, y) = xydata_tuple
-		xo = float(xo)
-		yo = float(yo)
-		a = (np.cos(theta) ** 2) / (2 * sigma_x ** 2) + (np.sin(theta) ** 2) / (2 * sigma_y ** 2)
-		b = -(np.sin(2 * theta)) / (4 * sigma_x ** 2) + (np.sin(2 * theta)) / (4 * sigma_y ** 2)
-		c = (np.sin(theta) ** 2) / (2 * sigma_x ** 2) + (np.cos(theta) ** 2) / (2 * sigma_y ** 2)
-		g = offset + amplitude * np.exp(- (a * ((x - xo) ** 2) + 2 * b * (x - xo) * (y - yo)
-										   + c * ((y - yo) ** 2)))
-		return g.ravel()
-
-
-	@staticmethod
-	def rotate_cropped(data, angle):
-		'''
-		Takes data and calls rotate, calculates center square with actual data, crops it
-		:param data: raw data array
-		:param angle: rotaton angle in deg
-		:return: Rotated and cropped image
-		'''
-
-		cache = scipy.ndimage.interpolation.rotate(data, angle=angle, reshape=False, output=None,
-												   order=2,
-												   mode='constant', cval=0.0, prefilter=False)
-		w, h = rotatedRectWithMaxArea(afmraw.shape[0], afmraw.shape[1], math.radians(angle))
-		return crop_around_center(cache, w, h)
-
-
-	@staticmethod
-	def crop_around_center(image, width, height):
-		"""
-		Given a NumPy / OpenCV 2 image, crops it to the given width and height,
-		around it's centre point
-		"""
-
-		image_size = (image.shape[1], image.shape[0])
-		image_center = (int(image_size[0] * 0.5), int(image_size[1] * 0.5))
-
-		if (width > image_size[0]):
-			width = image_size[0]
-
-		if (height > image_size[1]):
-			height = image_size[1]
-
-		x1 = int(image_center[0] - width * 0.5) + 1
-		x2 = int(image_center[0] + width * 0.5) - 1
-		y1 = int(image_center[1] - height * 0.5) + 1
-		y2 = int(image_center[1] + height * 0.5) - 1
-
-		return image[y1:y2, x1:x2]
-
-
-	@staticmethod
-	def rotatedRectWithMaxArea(w, h, angle):
-		"""
-		Given a rectangle of size wxh that has been rotated by 'angle' (in
-		radians), computes the width and height of the largest possible
-		axis-aligned rectangle (maximal area) within the rotated rectangle.
-		math.radians(angle) for deg->rad as input
-		Based on Coproc Stackoverflow https://stackoverflow.com/a/16778797/8654672
-		"""
-		if w <= 0 or h <= 0:
-			return 0, 0
-
-		width_is_longer = w >= h
-		# side_long, side_short = (w,h) if width_is_longer else (h,w)
-		side_long, side_short = (w, h)
-
-		# since the solutions for angle, -angle and 180-angle are all the same,
-		# if suffices to look at the first quadrant and the absolute values of sin,cos:
-
-		sin_a, cos_a = abs(math.sin(angle)), abs(math.cos(angle))
-
-		if side_short <= 2. * sin_a * cos_a * side_long or abs(sin_a - cos_a) < 1e-10:
-
-			# half constrained case: two crop corners touch the longer side,
-			#   the other two corners are on the mid-line parallel to the longer line
-
-			x = 0.5 * side_short
-			wr, hr = (x / sin_a, x / cos_a) if width_is_longer else (x / cos_a, x / sin_a)
-
-		else:
-			# fully constrained case: crop touches all 4 sides
-			cos_2a = cos_a * cos_a - sin_a * sin_a
-			wr, hr = (w * cos_a - h * sin_a) / cos_2a, (h * cos_a - w * sin_a) / cos_2a
-
-		return wr, hr
-
-
-	@staticmethod
-	def scale_data(data, zoomfactor):
-		return scipy.ndimage.zoom(data, zoomfactor, output=None, order=2,
-								  mode='constant', cval=0.0, prefilter=False)
-
-
-	@staticmethod
-	def rot_scale_data(data, angle_settings=(0, 0, 0), scale_settings=(1, 0, 0), digits=5, output_dir=None,
-					   saveImg=False):
-		'''
-		Rotate and scale data, save resulting data in array
-		:param data:
-		:param angle_settings:	tuple (center, resolution, number of variations)
-		:param scale_settings:	tuple (center, resolution, number of variations)
-		:param digits: number of digits to round the variations to
-		:param output_dir: save target
-		:param saveImg: save all rotated and scaled images
-		:return:
-		'''
-
-		angle_centervalue = angle_settings[0]
-		angle_res = angle_settings[1]
-		angle_variations = angle_settings[2]
-
-		scale_centervalue = scale_settings[0]
-		scale_res = scale_settings[1]
-		scale_variations = scale_settings[2]
-
-		zeroangle = angle_centervalue - angle_variations / 2 * angle_res
-		zeroscale = scale_centervalue - scale_variations / 2 * scale_res
-
-		rot_crop_data = {
-			(round(zeroangle + i * angle_res, digits), round(zeroscale + j * scale_res, digits)): scale_data(
-				rotate_cropped(data, round(zeroangle + i * angle_res, digits)),
-				round(zeroscale + j * scale_res, digits),
-				round(zeroangle + i * angle_res, digits), output_dir, saveImg=saveImg)
-			for i in range(angle_variations + 1) for j in range(scale_variations + 1)}
-		return rot_crop_data
-
-	@staticmethod
-	def match_rotation_scale(reference_data, tomatch_data, angle_settings=(0, 0, 0), scale_settings=(1, 0, 0), digits=5,
-							 output_dir=None, saveImg=False,
-							 saveRes=False):
-		'''
-		Calculates the correlation of different scales and rotations of tomatch_data against some reference_data
-		:param reference_data: 2D dataset
-		:param tomatch_data: 2D dataset
-		:param angle_settings:	tuple (center, resolution, number of variations)
-		:param scale_settings:	tuple (center, resolution, number of variations)
-		:param digits: number of digits to round the variations to
-		:param output_dir: save target
-		:param saveImg:	save all rotated and scaled images
-		:param saveRes:	save results as TXT with titles
-		:return: 	Results array with (angle, scale, ypos, xpos, correlation).
-
-		Example:
-			reference_data = ds.DataArray(np.float32(reference_data))
-			tomatch_data_cropped = ds.DataArray(crop_around_center(np.float32(tomatch_data), 100, 100))
-
-			match_rotation_scale(reference_data, tomatch_data_cropped, angle_settings=(3, 0.1, 300), output_dir=output_dir, saveRes=True)
-		'''
-		rot_crop_data = rot_scale_data(data=tomatch_data, angle_settings=angle_settings,
-									   scale_settings=scale_settings, digits=digits, output_dir=output_dir,
-									   saveImg=saveImg)
-		results = []
-		for variations in rot_crop_data:
-			print('Matching: angle ' + str(variations[0]) + ' scale ' + str(variations[1]))
-			template = np.float32(rot_crop_data[variations])
-			drift = dm.Drift.template_matching(reference_data, template, method='cv.TM_CCOEFF_NORMED', subpixel=False)
-			results.append((variations[0], variations[1], drift[0][0], drift[0][1], drift[1]))
-
-		results = np.asarray(results)
-
-		if saveRes == True:
-			np.savetxt(output_dir + 'rot_scale_max' + str(results[:, 4].max()) + '.txt', np.asarray(results))
-
-		return results
-
-	# ---
 
 class Terra_maxmap(object):
 	def __init__(self, data=None, precalculated_map=None, energyAxisID=None, yAxisID=None, xAxisID=None,
