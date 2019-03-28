@@ -50,7 +50,7 @@ def project_1d(data, plot_dest, axis_id=0, data_id=0, normalization=None, offset
 	sumlist = list(range(data.dimensions))
 	sumlist.remove(ax_index)
 	sumtup = tuple(sumlist)
-	sumdat = data.get_datafield(data_id).sum(sumtup)
+	sumdat = data.get_datafield(data_id).sum(sumtup, ignorenan=True)
 
 	if normalization:
 		if normalization == "None":
@@ -129,7 +129,7 @@ def project_2d(data, plot_dest, axis_vert=0, axis_hori=1, data_id=0, normalizati
 	sumlist.remove(axv_index)
 	sumlist.remove(axh_index)
 	sumtup = tuple(sumlist)
-	dat = data.get_datafield(data_id).sum(sumtup)
+	dat = data.get_datafield(data_id).sum(sumtup, ignorenan=True)
 	if axv_index > axh_index:  # transpose if axes are not in array-like order
 		sumdat = dat.T
 	else:
@@ -166,9 +166,10 @@ def project_2d(data, plot_dest, axis_vert=0, axis_hori=1, data_id=0, normalizati
 
 	assert (V.shape == plotdat.shape), "2D plot data doesn't fit to axis mesh..."
 
-	plot_dest.pcolormesh(numpy.array(H), numpy.array(V), numpy.array(plotdat), **kwargs)
+	result = plot_dest.pcolormesh(numpy.array(H), numpy.array(V), numpy.array(plotdat), **kwargs)
 	# Flip axis to have correct origin (array-index-like): upper left instead of lower left:
 	plot_dest.invert_yaxis()
+	return result
 
 
 def mark_roi_1d(roi, plot_dest, axis_id=0, **kwargs):
@@ -196,6 +197,8 @@ def mark_roi_1d(roi, plot_dest, axis_id=0, **kwargs):
 		kwargs['fill'] = True  # filled (default)
 
 	lims = roi.get_limits(axis_id, raw=True)
+	if lims[1] < lims[0]:
+		lims.reverse()
 
 	plot_dest.axvspan(lims[0], lims[1], **kwargs)
 
@@ -225,6 +228,11 @@ def mark_roi_2d(roi, plot_dest, axis_vert=0, axis_hori=1, **kwargs):
 
 	xlims = roi.get_limits(axis_hori, raw=True)
 	ylims = roi.get_limits(axis_vert, raw=True)
+
+	if xlims[1] < xlims[0]:
+		xlims.reverse()
+	if ylims[1] < ylims[0]:
+		ylims.reverse()
 
 	rectangle = matplotlib.patches.Rectangle((xlims[0], ylims[0]), xlims[1] - xlims[0], ylims[1] - ylims[0], **kwargs)
 	plot_dest.add_patch(rectangle)

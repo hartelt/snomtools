@@ -11,7 +11,7 @@ import snomtools.data.datasets as datasets
 __author__ = 'hartelt'
 
 
-def project_1d(data, axis_id=0, data_id=None, outlabel=None, normalization=None):
+def project_1d(data, axis_id=0, data_id=None, outlabel=None, normalization=None, h5target=None, ignorenan=True):
 	"""
 	Plots a projection of the data onto one axis. Therefore, it sums the values over all the other axes.
 
@@ -57,7 +57,7 @@ def project_1d(data, axis_id=0, data_id=None, outlabel=None, normalization=None)
 
 	for label in dlabels:
 		df = data.get_datafield(label)
-		sumdat = df.sum(sumtup)
+		sumdat = df.sum(sumtup, ignorenan=ignorenan)
 		if normalization:
 			pl = "normalized projected " + df.get_plotlabel()
 			if normalization == "None":
@@ -87,12 +87,18 @@ def project_1d(data, axis_id=0, data_id=None, outlabel=None, normalization=None)
 		else:
 			normdat = sumdat
 			pl = "projected " + df.get_plotlabel()
-		outfield = datasets.DataArray(normdat, label=df.get_label(), plotlabel=pl)
+		if h5target:
+			outfield = datasets.DataArray(normdat, label=df.get_label(), plotlabel=pl, h5target=True)
+		else:
+			outfield = datasets.DataArray(normdat, label=df.get_label(), plotlabel=pl)
+
 		dfields.append(outfield)
 
-	return datasets.DataSet(outlabel, dfields, [ax])
+	return datasets.DataSet(outlabel, dfields, [ax], h5target=h5target)
 
-def project_2d(data, axis1_id=0, axis2_id=0, data_id=None, outlabel=None, normalization=None):
+
+def project_2d(data, axis1_id=0, axis2_id=0, data_id=None, outlabel=None, normalization=None, h5target=None,
+			   ignorenan=True):
 	"""
 	Plots a projection of the data onto one axis. Therefore, it sums the values over all the other axes.
 
@@ -130,9 +136,9 @@ def project_2d(data, axis1_id=0, axis2_id=0, data_id=None, outlabel=None, normal
 	ax2_index = data.get_axis_index(axis2_id)
 	ax2 = data.get_axis(ax2_index)
 	if ax1_index < ax2_index:
-		axes = [ax1,ax2]
+		axes = [ax1, ax2]
 	elif ax1_index > ax2_index:
-		axes = [ax2,ax1]
+		axes = [ax2, ax1]
 	else:
 		raise IndexError("Attempted 2D projection over the same axis given twice.")
 
@@ -149,7 +155,7 @@ def project_2d(data, axis1_id=0, axis2_id=0, data_id=None, outlabel=None, normal
 
 	for label in dlabels:
 		df = data.get_datafield(label)
-		sumdat = df.sum(sumtup)
+		sumdat = df.sum(sumtup, ignorenan=ignorenan)
 		if normalization:
 			pl = "normalized projected " + df.get_plotlabel()
 			if normalization == "None":
@@ -179,7 +185,10 @@ def project_2d(data, axis1_id=0, axis2_id=0, data_id=None, outlabel=None, normal
 		else:
 			normdat = sumdat
 			pl = "projected " + df.get_plotlabel()
-		outfield = datasets.DataArray(normdat, label=df.get_label(), plotlabel=pl)
+		if h5target:
+			outfield = datasets.DataArray(normdat, label=df.get_label(), plotlabel=pl, h5target=True)
+		else:
+			outfield = datasets.DataArray(normdat, label=df.get_label(), plotlabel=pl)
 		dfields.append(outfield)
 
-	return datasets.DataSet(outlabel, dfields, axes)
+	return datasets.DataSet(outlabel, dfields, axes, h5target=h5target)

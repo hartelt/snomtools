@@ -85,6 +85,10 @@ class FermiEdge:
 	@property
 	def E_f(self):
 		return u.to_ureg(self.coeffs[0], self.E_f_unit)
+	@E_f.setter
+	def E_f(self, newvalue):
+		newvalue = u.to_ureg(newvalue,self.E_f_unit)
+		self.coeffs[0] = newvalue.magnitude
 
 	@property
 	def dE(self):
@@ -173,7 +177,7 @@ class FermiEdge:
 			energy_axis = data.get_axis(axis_id)
 		count_data = data.get_datafield(data_id)
 		energy_axis_index = data.get_axis_index(energy_axis.get_label())
-		count_data_projected = count_data.project_nd(energy_axis_index)
+		count_data_projected = count_data.project_nd(energy_axis_index, ignorenan=True)
 		count_data_projected = snomtools.data.datasets.DataArray(count_data_projected, label='intensity')
 		# Normalize by scaling to 1:
 		count_data_projected_norm = count_data_projected / count_data_projected.max()
@@ -210,7 +214,7 @@ class FermiEdge:
 			guesslist = []
 			for guesselement, guessunit in zip(guess, unitslist):
 				guesslist.append(u.to_ureg(guesselement, guessunit).magnitude)
-			guess = tuple(guess)
+			guess = tuple(guesslist)
 		return curve_fit(fermi_edge, energies.magnitude, intensities.magnitude, guess)
 
 
