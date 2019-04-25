@@ -11,6 +11,7 @@ import sys
 import numpy as np
 
 import snomtools.data.datasets as ds
+from snomtools.data.tools import sliced_shape
 
 # For verbose mode with progress printouts:
 if '-v' in sys.argv:
@@ -56,10 +57,12 @@ class Binning(object):
 			print("Start:")
 			start_time = time.time()
 			print(time.ctime())
-		for chunkslice in newdata.iterchunkslices():
+		for chunkslice in newdata.iterfastslices():
+			selection_along_binaxis = sliced_shape(chunkslice,newshape)[self.binAxisID]
+			selection_start = chunkslice[self.binAxisID].start or 0
 			olddataregion = list(chunkslice)
-			olddataregion[self.binAxisID] = slice(chunkslice[self.binAxisID].start * self.binFactor,
-												  (chunkslice[self.binAxisID].start + newdata.chunks[self.binAxisID])
+			olddataregion[self.binAxisID] = slice(selection_start * self.binFactor,
+												  (selection_start + selection_along_binaxis)
 												  * self.binFactor,
 												  None)
 			olddataregion = tuple(olddataregion)
