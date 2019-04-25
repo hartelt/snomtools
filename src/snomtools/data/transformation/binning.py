@@ -10,6 +10,9 @@ from __future__ import print_function
 import sys
 import numpy as np
 
+# CAUTION: Python3 only! Find Python2/3 compatible solution!
+from functools import reduce
+
 import snomtools.data.datasets as ds
 from snomtools.data.tools import sliced_shape
 
@@ -40,16 +43,17 @@ class Binning(object):
 		:return:
 		"""
 		oldaxis = self.data.get_axis(self.binAxisID)
-		ticks = np.zeros(np.int8(oldaxis.shape[0] / self.binFactor))
+		ticks = np.zeros(np.int16(oldaxis.shape[0] / self.binFactor))
 		newaxis = ds.Axis(data=ticks, unit=oldaxis.get_unit(), label=oldaxis.get_label() + ' binned',
 						  plotlabel=oldaxis.get_plotlabel())  # Make more elegant
-		for i in range(np.int8(oldaxis.shape[0] / self.binFactor)):
+		for i in range(np.int16(oldaxis.shape[0] / self.binFactor)):
 			newaxis[i] = np.mean(oldaxis.get_data()[self.binFactor * i:self.binFactor * (i + 1)])
 		return newaxis
 
 	def bin_data(self, h5target=None):
+		# TODO: Docstring!
 		newshape = list(self.data.shape)
-		newshape[self.binAxisID] = np.int8(newshape[self.binAxisID] / self.binFactor)
+		newshape[self.binAxisID] = np.int16(newshape[self.binAxisID] / self.binFactor)
 		newdata = ds.Data_Handler_H5(shape=newshape, unit=self.data.get_datafield(0).get_unit())
 
 		if verbose:
@@ -58,7 +62,7 @@ class Binning(object):
 			start_time = time.time()
 			print(time.ctime())
 		for chunkslice in newdata.iterfastslices():
-			selection_along_binaxis = sliced_shape(chunkslice,newshape)[self.binAxisID]
+			selection_along_binaxis = sliced_shape(chunkslice, newshape)[self.binAxisID]
 			selection_start = chunkslice[self.binAxisID].start or 0
 			olddataregion = list(chunkslice)
 			olddataregion[self.binAxisID] = slice(selection_start * self.binFactor,
@@ -68,10 +72,12 @@ class Binning(object):
 			olddataregion = tuple(olddataregion)
 			olddata = self.data.get_datafield(0).data[olddataregion]
 
-			for i in range(self.binFactor):
-				poslist = [np.s_[:] for j in range(self.data.dimensions)]
-				poslist[self.binAxisID] = np.s_[i::self.binFactor]
-				newdata[chunkslice] += olddata[tuple(poslist)]
+			shapelist = list(olddata.shape)
+			shapelist[self.binAxisID] = shapelist[self.binAxisID] // self.binFactor
+			shapelist.insert(self.binAxisID, self.binFactor)
+			olddata.shape = tuple(shapelist) # reshape inplace (split binning axis and remaining axis)
+			newdata[chunkslice] = np.sum(olddata, axis=self.binAxisID) # sum along binning axis
+
 		newdata = ds.DataArray(newdata,
 							   label="binned_" + self.data.get_datafield(0).label,
 							   plotlabel=self.data.get_datafield(0).plotlabel,
@@ -81,6 +87,9 @@ class Binning(object):
 			print(time.ctime())
 			print("{0:.2f} seconds".format(time.time() - start_time))
 		return newdata
+
+
+# TODO: Return complete DataSet.
 
 
 if __name__ == '__main__':  # Just for testing:
