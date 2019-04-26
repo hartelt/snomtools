@@ -9,10 +9,6 @@ from __future__ import print_function
 
 import sys
 import numpy as np
-
-# CAUTION: Python3 only! Find Python2/3 compatible solution!
-from functools import reduce
-
 import snomtools.data.datasets as ds
 from snomtools.data.tools import sliced_shape
 
@@ -25,7 +21,6 @@ else:
 
 
 class Binning(object):
-
 	def __init__(self, data=None, binAxisID=None, binFactor=None):
 
 		self.data = data
@@ -52,6 +47,8 @@ class Binning(object):
 
 	def bin_data(self, h5target=None):
 		# TODO: Docstring!
+
+		# Building a new Dataset with shape according to binning
 		newshape = list(self.data.shape)
 		newshape[self.binAxisID] = np.int16(newshape[self.binAxisID] / self.binFactor)
 		newdata = ds.Data_Handler_H5(shape=newshape, unit=self.data.get_datafield(0).get_unit())
@@ -61,22 +58,31 @@ class Binning(object):
 			print("Start:")
 			start_time = time.time()
 			print(time.ctime())
+
+		# Calculating the binning chunkwise for performance, therefore slicing the data
 		for chunkslice in newdata.iterfastslices():
-			selection_along_binaxis = sliced_shape(chunkslice, newshape)[self.binAxisID]
+			# start index is 0 in case of fullslice, which yields None at .start and .stop
 			selection_start = chunkslice[self.binAxisID].start or 0
+			# stop of chunkslice is matched to actual data in newshape
+			selection_along_binaxis = sliced_shape(chunkslice, newshape)[self.binAxisID]
+
+			# binned axis region is a binFactor bigger array along the binAxis
 			olddataregion = list(chunkslice)
 			olddataregion[self.binAxisID] = slice(selection_start * self.binFactor,
 												  (selection_start + selection_along_binaxis)
 												  * self.binFactor,
 												  None)
 			olddataregion = tuple(olddataregion)
-			olddata = self.data.get_datafield(0).data[olddataregion]
+			# load olddata from this region
+			olddata = self.data.get_datafield(0).data[
+				olddataregion].q  # .q necessary, otherwise "olddata.shape = tuple(shapelist)" yields: "AttributeError: can't set attribute"
 
+			# split data in packs that need to be summed up by rearranging the data along an additional axis of shape binFactor in the position of the binAxis and reducing binAxis by a binFactor, so that the amount of arrayelements stays the same
 			shapelist = list(olddata.shape)
 			shapelist[self.binAxisID] = shapelist[self.binAxisID] // self.binFactor
 			shapelist.insert(self.binAxisID, self.binFactor)
-			olddata.shape = tuple(shapelist) # reshape inplace (split binning axis and remaining axis)
-			newdata[chunkslice] = np.sum(olddata, axis=self.binAxisID) # sum along binning axis
+			olddata.shape = tuple(shapelist)  # reshape inplace (split binning axis and remaining axis)
+			newdata[chunkslice] = np.sum(olddata, axis=self.binAxisID)  # sum along the newly added binning axis
 
 		newdata = ds.DataArray(newdata,
 							   label="binned_" + self.data.get_datafield(0).label,
@@ -94,13 +100,14 @@ class Binning(object):
 
 if __name__ == '__main__':  # Just for testing:
 	print("Testing...")
-	# path = 'E:\\NFC15\\20171207 ZnO+aSiH\\01 DLD PSI -3 to 150 fs step size 400as\\Maximamap\\Driftcorrected\\summed_runs'
-	# data_dir = 'E:\\NFC15\\20171207 ZnO+aSiH\\01 DLD PSI -3 to 150 fs step size 400as\\Maximamap\\Driftcorrected\\summed_runs\\projected.hdf5'
-	# data = ds.DataSet.from_h5file(data_dir, h5target=path + '\\uselesscache.hdf5')
+	path = 'E:\\NFC15\\20171207 ZnO+aSiH\\01 DLD PSI -3 to 150 fs step size 400as\\Maximamap\\Driftcorrected\\summed_runs'
+	data_dir = path + '\\projected.hdf5'
+	# data_dir = path + '\\summed_data.hdf5'
+	data = ds.DataSet.from_h5file(data_dir, h5target=path + '\\uselesscache.hdf5')
 
-	data = ds.DataSet.from_h5file("terra-tr-psi-dld.hdf5")
+	# data = ds.DataSet.from_h5file("terra-tr-psi-dld.hdf5")
 
-	binSet = Binning(data=data, binAxisID='channel', binFactor=3)
+	binSet = Binning(data=data, binAxisID='energy', binFactor=3)
 	newaxis = binSet.reshape_axis()
 	newdata = binSet.bin_data()
 
