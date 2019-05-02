@@ -32,17 +32,20 @@ class Binning(object):
 
 		self.binFactor = binFactor
 
-	def reshape_axis(self):
+
+	def bin_axis(self):
 		"""
 		Gives the new Axis with ticks via np.mean
 		:return:
 		"""
 		oldaxis = self.data.get_axis(self.binAxisID)
 		ticks = np.zeros(np.int16(oldaxis.shape[0] / self.binFactor))
-		newaxis = ds.Axis(data=ticks, unit=oldaxis.get_unit(), label=oldaxis.get_label() + ' binned',
+		newSubAxis = ds.Axis(data=ticks, unit=oldaxis.get_unit(), label=oldaxis.get_label() + ' binned x'+str(self.binFactor),
 						  plotlabel=oldaxis.get_plotlabel())  # Make more elegant
 		for i in range(np.int16(oldaxis.shape[0] / self.binFactor)):
-			newaxis[i] = np.mean(oldaxis.get_data()[self.binFactor * i:self.binFactor * (i + 1)])
+			newSubAxis[i] = np.mean(oldaxis.get_data()[self.binFactor * i:self.binFactor * (i + 1)])
+		newaxis =self.data.axes
+		newaxis[self.binAxisID]=newSubAxis
 		return newaxis
 
 	def bin_data(self, h5target=None):
@@ -94,8 +97,13 @@ class Binning(object):
 			print("{0:.2f} seconds".format(time.time() - start_time))
 		return newdata
 
+	def bin(self, h5target = None):
+		newaxis = self.bin_axis()
+		newda = self.bin_data(h5target=h5target)
 
-# TODO: Return complete DataSet.
+		newds = ds.DataSet(self.data.label + " binned", (newda,), newaxis,
+												self.data.plotconf, h5target=h5target)
+		return newds
 
 
 if __name__ == '__main__':  # Just for testing:
@@ -103,12 +111,12 @@ if __name__ == '__main__':  # Just for testing:
 	path = 'E:\\NFC15\\20171207 ZnO+aSiH\\01 DLD PSI -3 to 150 fs step size 400as\\Maximamap\\Driftcorrected\\summed_runs'
 	data_dir = path + '\\projected.hdf5'
 	# data_dir = path + '\\summed_data.hdf5'
-	data = ds.DataSet.from_h5file(data_dir, h5target=path + '\\uselesscache.hdf5')
+	h5target = path + '\\binned_data.hdf5'
+	data = ds.DataSet.from_h5file(data_dir, h5target=h5target)
 
 	# data = ds.DataSet.from_h5file("terra-tr-psi-dld.hdf5")
 
 	binSet = Binning(data=data, binAxisID='energy', binFactor=3)
-	newaxis = binSet.reshape_axis()
-	newdata = binSet.bin_data()
+	newds= binSet.bin(h5target=h5target)
 
 	print("done.")
