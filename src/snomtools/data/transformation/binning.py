@@ -38,7 +38,8 @@ class Binning(object):
 				self.binAxisID.append(data.get_axis_index(axis))
 
 		self.binFactor = list(binFactor)
-		#assert shape(self.binFactor)=shape(self.binAxisID)
+
+	# assert shape(self.binFactor)=shape(self.binAxisID)
 
 	def bin_axis(self):
 		"""
@@ -50,11 +51,12 @@ class Binning(object):
 		for ax in range(len(self.binAxisID)):
 			oldaxis = self.data.get_axis(self.binAxisID[ax])
 			ticks = np.zeros(np.int16(oldaxis.shape[0] / self.binFactor[ax]))
-			newSubAxis = ds.Axis(data=ticks, unit=oldaxis.get_unit(), label=oldaxis.get_label() + ' binned x'+str(self.binFactor[ax]),
-							  plotlabel=oldaxis.get_plotlabel())  # Make more elegant
+			newSubAxis = ds.Axis(data=ticks, unit=oldaxis.get_unit(),
+								 label=oldaxis.get_label() + ' binned x' + str(self.binFactor[ax]),
+								 plotlabel=oldaxis.get_plotlabel())  # Make more elegant
 			for i in range(np.int16(oldaxis.shape[0] / self.binFactor[ax])):
 				newSubAxis[i] = np.mean(oldaxis.get_data()[self.binFactor[ax] * i:self.binFactor[ax] * (i + 1)])
-				newaxis[self.binAxisID[ax]]=newSubAxis
+				newaxis[self.binAxisID[ax]] = newSubAxis
 		return newaxis
 
 	def bin_data(self, h5target=None):
@@ -85,9 +87,9 @@ class Binning(object):
 
 				# binned axis region has to be a binFactor bigger array along the binAxis
 				olddataregion[self.binAxisID[ax]] = slice(selection_start * self.binFactor[ax],
-												  (selection_start + selection_along_binaxis)
-												  * self.binFactor[ax],
-												  None)
+														  (selection_start + selection_along_binaxis)
+														  * self.binFactor[ax],
+														  None)
 			olddataregion = tuple(olddataregion)
 			# load olddata from this region
 			olddata = self.data.get_datafield(0).data[
@@ -97,14 +99,17 @@ class Binning(object):
 			shapelist = list(olddata.shape)
 
 			binAxisFactor = list(zip(self.binAxisID, self.binFactor))
-			binAxisFactor.sort(reverse=True) #sort the (binAxisID,binFactor) list declining, so one can add the axis i to the reshape list later and keep track of the new index of the i+1 axis by adding 1
+			binAxisFactor.sort(
+				reverse=True)  # sort the (binAxisID,binFactor) list declining, so one can add the axis i to the reshape list later and keep track of the new index of the i+1 axis by adding 1
 
 			for ax in range(len(binAxisFactor)):
-				shapelist[binAxisFactor[ax][0]] = shapelist[binAxisFactor[ax][0]] // binAxisFactor[ax][1]	#[0]=binAxisID [1]=binFactor
+				shapelist[binAxisFactor[ax][0]] = shapelist[binAxisFactor[ax][0]] // binAxisFactor[ax][
+					1]  # [0]=binAxisID [1]=binFactor
 				shapelist.insert(binAxisFactor[ax][0], binAxisFactor[ax][1])
 
 			olddata.shape = tuple(shapelist)  # reshape inplace (split binning axis and remaining axis)
-			sumaxes = list(range(len(binAxisFactor)))+ np.sort(np.array(binAxisFactor)[:,0])	#shift binAxis Index by number of previously adde dimensions before it
+			sumaxes = list(range(len(binAxisFactor))) + np.sort(
+				np.array(binAxisFactor)[:, 0])  # shift binAxis Index by number of previously adde dimensions before it
 			newdata[chunkslice] = np.sum(olddata, axis=tuple(sumaxes))  # sum along the newly added binning axis
 
 		newdata = ds.DataArray(newdata,
@@ -117,12 +122,15 @@ class Binning(object):
 			print("{0:.2f} seconds".format(time.time() - start_time))
 		return newdata
 
-	def bin(self, h5target = None):
+	def bin(self, h5target=None):
 		newaxis = self.bin_axis()
-		newda = self.bin_data(h5target=h5target)
+		if h5target is not None:
+			newda = self.bin_data(h5target=True)
+		else:
+			newda = self.bin_data(h5target=None)
 
 		newds = ds.DataSet(self.data.label + " binned", (newda,), newaxis,
-												self.data.plotconf, h5target=h5target)
+						   self.data.plotconf, h5target=h5target)
 		return newds
 
 
@@ -136,7 +144,7 @@ if __name__ == '__main__':  # Just for testing:
 
 	# data = ds.DataSet.from_h5file("terra-tr-psi-dld.hdf5")
 
-	binSet = Binning(data=data, binAxisID=('energy','delay'), binFactor=(3,10))
-	newds= binSet.bin(h5target=h5target)
+	binSet = Binning(data=data, binAxisID=('energy', 'delay'), binFactor=(3, 10))
+	newds = binSet.bin(h5target=h5target)
 
 	print("done.")
