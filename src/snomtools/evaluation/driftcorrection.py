@@ -118,7 +118,8 @@ class Drift(object):
 					print("...done")
 
 				# for layers along stackAxisID find drift:
-				self.drift = self.template_matching_stack(self.data3D.get_datafield(0), self.template, stackAxisID,
+				self.drift = self.template_matching_stack(self.data3D.get_datafield(0), self.template,
+														  self.dstackAxisID,
 														  method=method, subpixel=subpixel)
 
 			else:
