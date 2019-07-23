@@ -119,7 +119,7 @@ def rot_scale_data(data, angle_settings=(0, 0, 0), scale_settings=(1, 0, 0), dig
 	zeroscale = scale_centervalue - scale_variations / 2 * scale_res
 
 	rot_crop_data = {
-		(round(zeroangle + i * angle_res, digits), round(zeroscale + j * scale_res, digits)): scale_data(
+		(round(zeroangle + i * angle_res, digits), round(zeroscale + j * scale_res, digits)): scale_rotated(
 			rotate_cropped(data, round(zeroangle + i * angle_res, digits)),
 			round(zeroscale + j * scale_res, digits),
 			round(zeroangle + i * angle_res, digits), output_dir, saveImg=saveImg)
