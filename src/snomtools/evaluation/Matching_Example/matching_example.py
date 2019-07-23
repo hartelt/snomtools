@@ -9,6 +9,7 @@ import re
 import math
 import snomtools.evaluation.driftcorrection as dm
 import snomtools.data.datasets as ds
+import snomtools.data.transformation.rotate as rot
 
 
 ###Windows stuff
@@ -52,130 +53,17 @@ def win_dir(directory):
 
 
 
+### Functions
 
-
-def rotate_cropped(data, angle):
-	'''
-	Take data and calls rotate, calculates center square with actual data, crops it
-	:param data: raw 2D data array
-	:param angle: rotaton angle in deg
-	:return: Rotated and cropped image
-	'''
-
-	cache = scipy.ndimage.interpolation.rotate(data, angle=angle, reshape=False, output=None,
-											   order=1,
-											   mode='constant', cval=np.nan, prefilter=False)
-	w, h = rotatedRectWithMaxArea(data.shape[1], data.shape[0], np.radians(angle))
-	return crop_around_center(cache, w, h)
-
-
-def crop_around_center(image, width, height):
-	"""
-	Given a NumPy / OpenCV 2 image, crops it to the given width and height,
-	around it's centre point
-	"""
-
-	image_center = (np.rint(image.shape[0] * 0.5), np.rint(image.shape[1] * 0.5))
-
-	if (width > image.shape[1]):
-		width = image.shape[1]
-
-	if (height > image.shape[0]):
-		height = image.shape[0]
-
-	y1 = int(np.ceil(image_center[0] - height * 0.5))
-	y2 = int(np.floor(image_center[0] + height * 0.5))
-	x1 = int(np.ceil(image_center[1] - width * 0.5))
-	x2 = int(np.floor(image_center[1] + width * 0.5))
-
-
-	return image[y1:y2, x1:x2]
-
-
-def rotatedRectWithMaxArea(w, h, angle):
-	"""
-	Given a rectangle of size wxh that has been rotated by 'angle' (in
-	radians), computes the width and height of the largest possible
-	axis-aligned rectangle (maximal area) within the rotated rectangle.
-	np.radians(angle) for deg->rad as input
-	Based on Coproc Stackoverflow https://stackoverflow.com/a/16778797/8654672
-	"""
-	if w <= 0 or h <= 0:
-		return 0, 0
-
-	width_is_longer = w >= h
-	# side_long, side_short = (w,h) if width_is_longer else (h,w)
-	side_long, side_short = (w, h)
-
-	# since the solutions for angle, -angle and 180-angle are all the same,
-	# if suffices to look at the first quadrant and the absolute values of sin,cos:
-
-	sin_a, cos_a = abs(np.sin(angle)), abs(np.cos(angle))
-
-	if side_short <= 2. * sin_a * cos_a * side_long or abs(sin_a - cos_a) < 1e-10:
-
-		# half constrained case: two crop corners touch the longer side,
-		#   the other two corners are on the mid-line parallel to the longer line
-
-		x = 0.5 * side_short
-		wr, hr = (x / sin_a, x / cos_a) if width_is_longer else (x / cos_a, x / sin_a)
-
-	else:
-		# fully constrained case: crop touches all 4 sides
-		cos_2a = cos_a * cos_a - sin_a * sin_a
-		wr, hr = (w * cos_a - h * sin_a) / cos_2a, (h * cos_a - w * sin_a) / cos_2a
-
-	return wr, hr
-
-
-
-def rot_scale_data(data, angle_settings=(0, 0, 0), scale_settings=(1, 0, 0), digits=5, output_dir=None,
-				   saveImg=False):
-	'''
-	Rotate and scale data, save resulting data in array
-	:param data:
-	:param angle_settings:	tuple (center, resolution, number of variations)
-	:param scale_settings:	tuple (center, resolution, number of variations)
-	:param digits: number of digits to round the variations to
-	:param output_dir: save target
-	:param saveImg: save all rotated and scaled images
-	:return:
-	'''
-
-	angle_centervalue = angle_settings[0]
-	angle_res = angle_settings[1]
-	angle_variations = angle_settings[2]
-
-	scale_centervalue = scale_settings[0]
-	scale_res = scale_settings[1]
-	scale_variations = scale_settings[2]
-
-	zeroangle = angle_centervalue - angle_variations / 2 * angle_res
-	zeroscale = scale_centervalue - scale_variations / 2 * scale_res
-
-	rot_crop_data = {
-		(round(zeroangle + i * angle_res, digits), round(zeroscale + j * scale_res, digits)): scale_rotated(
-			rotate_cropped(data, round(zeroangle + i * angle_res, digits)),
-			round(zeroscale + j * scale_res, digits),
-			round(zeroangle + i * angle_res, digits), output_dir, saveImg=saveImg)
-		for i in range(angle_variations + 1) for j in range(scale_variations + 1)}
-	return rot_crop_data
-
-
-def scale_rotated(data, zoomfactor, angle, debug_dir=None, saveImg=False):
-	zoomed_data = scipy.ndimage.zoom(data, zoomfactor, output=None, order=2,
-									 mode='constant', cval=0.0, prefilter=False)
-
-	print((angle, zoomfactor))
-	if saveImg == True:
-		cv.imwrite(debug_dir + 'angle' + str(angle) + 'scale' + str(zoomfactor) + '.tif', np.uint16(zoomed_data))
-	return zoomed_data
+#Most of the used funcionts are located in snomtools.data.transformation.rotate.
 
 def match_rotation_scale(reference_data, tomatch_data, angle_settings=(0, 0, 0), scale_settings=(1, 0, 0), digits=5,
 						 output_dir=None, saveImg=False,
 						 saveRes=False):
 	'''
 	Calculates the correlation of different scales and rotations of tomatch_data against some reference_data
+
+	All variations of angles and scales given by the settings are generated as data and written to rot_crop_data
 	:param reference_data: 2D dataset, bigger than tomatch_data
 	:param tomatch_data: 2D dataset
 	:param angle_settings:	tuple (center, resolution, number of variations)
@@ -186,7 +74,7 @@ def match_rotation_scale(reference_data, tomatch_data, angle_settings=(0, 0, 0),
 	:param saveRes:	save results as TXT with titles
 	:return: 	Results array with (angle, scale, ypos, xpos, correlation).
 	'''
-	rot_crop_data = rot_scale_data(data=tomatch_data, angle_settings=angle_settings,
+	rot_crop_data = rot.rot_scale_data(data=tomatch_data, angle_settings=angle_settings,
 								   scale_settings=scale_settings, digits=digits, output_dir=output_dir, saveImg=saveImg)
 	results = []
 	for variations in rot_crop_data:
@@ -209,14 +97,14 @@ def match_rotation_scale(reference_data, tomatch_data, angle_settings=(0, 0, 0),
 working_directory = os.getcwd()
 # reference_file = win_dir(r'C:\Users\Benjamin Frisch\Desktop\Matching Example\data') + 'raw_data.tif'
 reference_file = win_dir(working_directory + '/data') + 'raw_data.tif'
-tomatch_file = win_dir(working_directory + '/data') + 'template_10deg.tif'
+tomatch_file = win_dir(working_directory + '/data') + 'template_10deg_s0.5.tif'
 output_dir = win_dir(working_directory + '/out')
 dircheck(output_dir)  # checks if dir exists
 dircheck(output_dir+'/variations/')
 
-template_size = 400	#make shure it's smaller than the image
+template_size = 300	#make shure it's smaller than the image
 angle_settings = (10,1, 20)  # center, resolution, variations
-scale_settings = (0.8, 0.1, 10)	# center, resolution, variations (cannot zoom <0)
+scale_settings = (1.5, 0.1, 16)	# center, resolution, variations (cannot zoom <0)
 
 
 
@@ -230,7 +118,7 @@ tomatch_data = cv.imread(tomatch_file, -1)
 ### Template match all
 
 reference_data = ds.DataArray(np.float32(reference_data))
-tomatch_data_cropped = ds.DataArray(crop_around_center(np.float32(tomatch_data), template_size, template_size))
+tomatch_data_cropped = ds.DataArray(rot.crop_around_center(np.float32(tomatch_data), template_size, template_size))
 # Here a 'template_size' part of the image can be cropped out of the center automatically.
 # This ensures, that the value of rotation calculated for this template is the same as for the full image.
 # You can also use the full image as template by using:
@@ -263,12 +151,12 @@ print('Correlation=' + str(best_match[4]) + ' for generated template by angle ' 
 shift_to_match = True
 if shift_to_match == True:
 	print('Saving modified tomatch_file by angle ' + str(best_match[0]) + ' and scale ' + str(best_match[1]))
-	tomatch_data_rotated = rotate_cropped(tomatch_data,best_match[0])
+	tomatch_data_rotated = rot.rotate_cropped(tomatch_data,best_match[0])
 	cv.imwrite(output_dir + 'tomatch_rotated_' + str(np.around(best_match[0],decimals=3)) + 'deg.tif', tomatch_data_rotated)
 	tomatch_data_rotated_scaled = scipy.ndimage.zoom(tomatch_data_rotated,best_match[1])
 	cv.imwrite(output_dir + 'tomatch_rotated_' + str(np.around(best_match[0],decimals=3)) + 'deg_s_' + str(np.around(best_match[1],decimals=3)) + '.tif', tomatch_data_rotated_scaled)
 
-	tomatch_data_rotated_scaled_template = ds.DataArray(crop_around_center(np.float32(tomatch_data_rotated_scaled), template_size, template_size))
+	tomatch_data_rotated_scaled_template = ds.DataArray(rot.crop_around_center(np.float32(tomatch_data_rotated_scaled), template_size, template_size))
 
 
 	#template position in reference_data

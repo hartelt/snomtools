@@ -5,6 +5,7 @@ Rotation and scaling is possible with output of biggest possible rectangle of va
 
 import numpy as np
 import scipy.ndimage
+import cv2 as cv
 
 
 def rotate_cropped(data, angle):
@@ -186,9 +187,6 @@ if __name__ == '__main__':  # Just for testing:
 		print('Yes, something is broken')
 	else:
 		print('No, everything is fine')
-
-
-
 
 
 	print_everything = False
