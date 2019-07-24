@@ -4,6 +4,5 @@ out/
 *.hdf5
 *.mat
 test*
-*.tif
 *.png
 *.bak

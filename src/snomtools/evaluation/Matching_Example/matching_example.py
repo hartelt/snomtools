@@ -57,15 +57,25 @@ def win_dir(directory):
 
 #Most of the used funcionts are located in snomtools.data.transformation.rotate.
 
-def match_rotation_scale(reference_data, tomatch_data, angle_settings=(0, 0, 0), scale_settings=(1, 0, 0), digits=5,
+def match_rotation_scale(reference_data, data_tomatch, angle_settings=(0, 0, 0), scale_settings=(1, 0, 0), digits=5,
 						 output_dir=None, saveImg=False,
 						 saveRes=False):
 	'''
-	Calculates the correlation of different scales and rotations of tomatch_data against some reference_data
+	Calculates the correlation of different scales and rotations of data_tomatch against some reference_data
 
-	All variations of angles and scales given by the settings are generated as data and written to rot_crop_data
+	All variations of angles and scales given by the settings are generated as data and written to rot_crop_data.
+
+	It is then iterated over all variations and the maximum correlation for the data_tomatch with the reference_data is calculated.
+
+	The function dm.Drift.template_matching calculates the normalized correlation for all positions of the data_tomatch that fit fully in reference_data.
+	This is why data_tomatch has to be be smaller then reference_data.
+	The maximum correlation and the position of the (0,0) point (upper left corner) of the data_tomatch inside the reference_data is returned.
+
+	This function here returns an array with the correlation values for the respective angles and scales in the format (angle, scale, ypos, xpos, correlation).
+
+
 	:param reference_data: 2D dataset, bigger than tomatch_data
-	:param tomatch_data: 2D dataset
+	:param data_tomatch: 2D dataset
 	:param angle_settings:	tuple (center, resolution, number of variations)
 	:param scale_settings:	tuple (center, resolution, number of variations)
 	:param digits: number of digits to round the variations to
@@ -74,7 +84,7 @@ def match_rotation_scale(reference_data, tomatch_data, angle_settings=(0, 0, 0),
 	:param saveRes:	save results as TXT with titles
 	:return: 	Results array with (angle, scale, ypos, xpos, correlation).
 	'''
-	rot_crop_data = rot.rot_scale_data(data=tomatch_data, angle_settings=angle_settings,
+	rot_crop_data = rot.rot_scale_data(data=data_tomatch, angle_settings=angle_settings,
 								   scale_settings=scale_settings, digits=digits, output_dir=output_dir, saveImg=saveImg)
 	results = []
 	for variations in rot_crop_data:
@@ -102,9 +112,10 @@ output_dir = win_dir(working_directory + '/out')
 dircheck(output_dir)  # checks if dir exists
 dircheck(output_dir+'/variations/')
 
-template_size = 300	#make shure it's smaller than the image
+template_size = 100	#Size of the image used for correlation calculation. Make shure it's smaller then the reference image
 angle_settings = (10,1, 20)  # center, resolution, variations
 scale_settings = (1.5, 0.1, 16)	# center, resolution, variations (cannot zoom <0)
+
 
 
 
@@ -120,11 +131,11 @@ tomatch_data = cv.imread(tomatch_file, -1)
 reference_data = ds.DataArray(np.float32(reference_data))
 tomatch_data_cropped = ds.DataArray(rot.crop_around_center(np.float32(tomatch_data), template_size, template_size))
 # Here a 'template_size' part of the image can be cropped out of the center automatically.
-# This ensures, that the value of rotation calculated for this template is the same as for the full image.
-# You can also use the full image as template by using:
-# tomatch_data_cropped = tomatch_data
+# The center ensures, that the value of rotation calculated for this template is the same as for the full image.
+# You could also use the full image as template by using:
+# tomatch_data_cropped = tomatch_data, but keep in mind, that the template should be smaller than reference_data
 
-#plot a rectangle of the template_size into the tomatch_data for visualization of used template
+#Plot a rectangle of the template_size into the tomatch_data for visualization of used template
 fig0,ax0 = plt.subplots(1)
 ax0.imshow(tomatch_data)
 rect = patches.Rectangle((int(tomatch_data.shape[1]/2-template_size/2),int(tomatch_data.shape[0]/2-template_size/2)),template_size,template_size,linewidth=1,edgecolor='r',facecolor='none')
@@ -154,7 +165,7 @@ if shift_to_match == True:
 	tomatch_data_rotated = rot.rotate_cropped(tomatch_data,best_match[0])
 	cv.imwrite(output_dir + 'tomatch_rotated_' + str(np.around(best_match[0],decimals=3)) + 'deg.tif', tomatch_data_rotated)
 	tomatch_data_rotated_scaled = scipy.ndimage.zoom(tomatch_data_rotated,best_match[1])
-	cv.imwrite(output_dir + 'tomatch_rotated_' + str(np.around(best_match[0],decimals=3)) + 'deg_s_' + str(np.around(best_match[1],decimals=3)) + '.tif', tomatch_data_rotated_scaled)
+	cv.imwrite(output_dir + 'tomatch_rotated_' + str(np.around(best_match[0],decimals=3)) + 'deg_scale_x' + str(np.around(best_match[1],decimals=3)) + '.tif', tomatch_data_rotated_scaled)
 
 	tomatch_data_rotated_scaled_template = ds.DataArray(rot.crop_around_center(np.float32(tomatch_data_rotated_scaled), template_size, template_size))
 
