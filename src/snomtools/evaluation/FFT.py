@@ -1,63 +1,16 @@
 from scipy import fftpack
 import scipy.signal as signal
-from scipy.signal import freqz, butter, lfilter
+# from scipy.signal import freqz, butter, lfilter
 from scipy.optimize import curve_fit
 import os
+import pathlib as pathlib
 import re
 import numpy as np
+import snomtools.data.datasets as ds
+import matplotlib.pyplot as plt
 
 
 # --helper functions
-def loadRoiList(directory, roiId):
-	roiList = []
-	dim3max = 0
-	file = open(directory + "roilog.coda")
-	for line in file.readlines():
-		rid, xpos, ypos, width, height, dim3, etmp = line.split("_", 6)
-		energy, ext = etmp.split(".", 2)
-		if (dim3max < int(dim3[2:])):
-			dim3max = int(dim3[2:])
-		if (rid[3:] == roiId):
-			roiList.append(line.rstrip())
-	file.close()
-	return roiList, dim3max
-
-
-def getData(directory, roiId, dim3Id):
-	roiList = loadRoiList(directory, roiId)
-	dataDPDLD = []
-	for line in roiList[0]:
-		rid, xpos, ypos, width, height, dim3, etmp = line.split("_", 6)
-		energy, ext = etmp.split(".", 2)
-		if (dim3[2:] == dim3Id):
-			file = open(directory + line)
-			dataBuffer = []
-			for counts in file.readlines():
-				dataBuffer.append(float(counts))
-			file.close()
-			dataDPDLD.append(dataBuffer)
-	return np.asarray(dataDPDLD)
-
-
-def getDPdldData(directory, roiId):
-	roiList = loadRoiList(directory, roiId)
-	AllData = []
-	for dim3 in range(roiList[1] + 1):
-		buffer = getData(directory, roiId, str(dim3))
-		AllData.append(buffer)
-	return np.asarray(AllData)
-
-
-def getDProtData(directory, roiId, dim3Id):
-	roiList = loadRoiList(directory, roiId)
-	data = []
-	for filename in roiList[0]:
-		rid, xpos, ypos, width, height, dim3, etmp = filename.split("_", 6)
-		energy, ext = etmp.split(".", 2)
-		if (dim3[2:] == dim3Id):
-			dataBuffer = genfromtxt(directory + filename)
-	return np.asarray(dataBuffer)
-
 
 def getDProtdldData(directory, roiId):
 	roiList = loadRoiList(directory, roiId)
@@ -76,9 +29,9 @@ def setFigure(sizeX, sizeY, **dpi):
 	plt.figure(plt.figsize(sizeX, sizeY), **dpi)
 
 
-def getXTicks(data, deltaX, startValue):
+def generateXTicks(data_x, deltaX, startValue):
 	xTicks = []
-	for i in range(data.shape[2]):
+	for i in range(data_x.shape[0]):
 		xTicks.append(i * deltaX + startValue)
 	return xTicks
 
@@ -114,7 +67,7 @@ def bandpass(data, lowcut, highcut, srate, order):
 	low = lowcut / nyq
 	high = highcut / nyq
 	b, a = signal.butter(order, [low, high], btype='band')
-	w, h = freqz(b, a, worN=5000)
+	w, h = signal.freqz(b, a, worN=5000)
 	res = signal.filtfilt(b, a, data)
 	return [res, w, h]
 
@@ -124,7 +77,7 @@ def lowpass(data, highcut, srate, order):
 	#    nyq = 1.
 	high = highcut / nyq
 	b, a = signal.butter(order, high, btype='low')  # ,analog = True)
-	w, h = freqz(b, a, worN=5000)
+	w, h = signal.freqz(b, a, worN=5000)
 	res = signal.filtfilt(b, a, data)
 	return [res, w, h]
 
@@ -385,68 +338,37 @@ def loadColorMap(filename):
 # -----------------------------------------------------------------------------------------------------
 if __name__ == '__main__':
 
-	# workspace = r'C:\Users\Benjamin Frisch\Desktop\Verwertbare Messungen\5.2 System\2 KP Spec'
-	workspace = r'E:\Auswertungen\20160811\psi\run1'
-	roiId = "0"
-	dim3Id = "0"
+	path = pathlib.Path(
+		r"E:\NFC15\20171207 ZnO+aSiH\01 DLD PSI -3 to 150 fs step size 400as\Maximamap\Driftcorrected\summed_runs")
+	file = "ROI_data.hdf5"
+	data_file = path / file
 
-	# change windows back slashes to forward slashes and add one at the end if necessary
-	if ((workspace[-1] != r'/') and (workspace[-1] != r'\\')):
-		workspace += str(r'/')
-
-	workspace = re.sub(r'\\', r'/', workspace)
-
-	# day the measurement was taken (automatic)
-	date = "20160811"
-
-	# types: DPlab,DProt
-	expType = "DPlab"
-
-	# save images
 	saveData = False
-
 	# dim1 = tau/T, delta in fs
-	deltaDim1 = 0.2  # 0.1
-
-	# dim2 = t/phi, delta in fs
-	deltaDim2 = 0
+	deltaDim1 = 0.4  # 0.1
 
 	# StartTime of measurement / data in fs
-	# FOR DP ROT: Enter REVERSE StartTime
-	StartTime = -150  # 22
+	StartTime = -3  # 22
 
 	# Start and end time to plot in fs
 	Tmin = StartTime
 	Tmax = 150  # 300
 
 	# Plot dpi
-	pltdpi = 300
-
-	# Photodiode measurement
-	PD = False
-
-	# Energy Channel (Eint = 0)
-	EnergyChannel = 0
-
-	# Emin, Emax if plotted vs Ekin in eV
-	Emin = 19.4
-	Emax = 22.8
-
-	# Energy calibration
-	C = 118043.22229
-	dC = -19812.82349
-	startCh = 700
-	chBin = 16
-
-	saveData = True
+	pltdpi = 100
 	fontsize_label = 14  # schriftgröße der Labels
 
+	# -------------------------------------------------------------------------
 
-	#-------------------------------------------------------------------------
+	data3d = ds.DataSet.from_h5file(os.fspath(data_file), h5target= os.fspath(path / 'chache.hdf5'))
 
-	data3d = data
-	#roiList = loadRoiList(workspace, roiId)
-	timedata = normAC(data3d[0, EnergyChannel])
+	#roi0 = data3d.datafields[0][0]
+	roi0_sumpicture = np.sum(data3d.datafields[0][0],axis=1)
+	xTicks = generateXTicks(roi0_sumpicture,deltaDim1,StartTime)
+
+	plt.plot(data3d.get_axis('delay'),roi0_sumpicture.magnitude)
+
+	timedata = normAC(roi0_sumpicture.magnitude)
 
 	# ---------------Fouriertrafo-------------------------------------
 
@@ -457,20 +379,20 @@ if __name__ == '__main__':
 
 	# --------------------
 
-	xAxis = getXTicks(data3d, deltaDim1, StartTime)
+	xAxis = generateXTicks(timedata, deltaDim1, StartTime)  # data3d[0] as represantative of x-Axis
 
 	# ---------------Zeitsignal-------------------------------------
-	figure(figsize=(16, 4), dpi=pltdpi)
+	plt.figure(figsize=(16, 4), dpi=pltdpi)
 	# title(date+' Roi ' + roiId)
-	pyplot.locator_params(axis='x', nbins=20)
-	xlabel(r'Verzögerungszeit $\tau$ (fs)', fontsize=fontsize_label)
-	ylabel('norm. Emissionsintensität', fontsize=fontsize_label)
-	xlim(Tmin, Tmax)
+	plt.locator_params(axis='x', nbins=20)
+	plt.xlabel(r'Verzögerungszeit $\tau$ (fs)', fontsize=fontsize_label)
+	plt.ylabel('norm. Emissionsintensität', fontsize=fontsize_label)
+	plt.xlim(Tmin, Tmax)
 	plt.xticks(fontsize=fontsize_label)
 	plt.yticks(fontsize=fontsize_label)
-	plot(xAxis, timedata, color=tab20[0])
+	plt.plot(xAxis, timedata, color=tab20[0])
 	if (saveData == True):
-		savefig(workspace + date + '-diploma/' + date + roiList[0][int(dim3Id)][:-30] + "timedata.pdf", dpi=pltdpi,
+		plt.savefig(workspace + date + '-diploma/' + date + roiList[0][int(dim3Id)][:-30] + "timedata.pdf", dpi=pltdpi,
 				bbox_inches='tight', pad_inches=0)
 
 	filtdata2, w2, h2 = bandpass(timedata, 0.65, 0.9, deltaDim1, 5)
@@ -478,11 +400,11 @@ if __name__ == '__main__':
 	filtdata0, w0, h0 = lowpass(timedata, 0.1, deltaDim1, 5)
 
 	# ----------------------Phase-------------------------------------
-	fig = figure(figsize=(8, 4), dpi=pltdpi)
+	fig = plt.figure(figsize=(8, 4), dpi=pltdpi)
 
-	xticks(fontsize=fontsize_label)
+	plt.xticks(fontsize=fontsize_label)
 	ax1 = fig.add_subplot(111)
-	yticks(fontsize=fontsize_label)
+	plt.yticks(fontsize=fontsize_label)
 	ax1.set_xlim(-0.1, 1)
 	ax1.set_xlabel('Frequenz (PHz)', fontsize=fontsize_label)
 	ax1.locator_params(nbins=10)
@@ -508,17 +430,17 @@ if __name__ == '__main__':
 	ax3 = ax1.twinx()
 	ax3.set_xlim(-0.1, 1)
 	ax3.set_ylabel('Phase', fontsize=fontsize_label)
-	yticks(fontsize=fontsize_label)
+	plt.yticks(fontsize=fontsize_label)
 	ax3.plot(fticks, phase, c='orange')
 
 	if (saveData == True):
-		savefig(workspace + date + '-diploma/' + date + roiList[0][int(dim3Id)][:-30] + "phase.pdf", dpi=pltdpi,
+		plt.savefig(workspace + date + '-diploma/' + date + roiList[0][int(dim3Id)][:-30] + "phase.pdf", dpi=pltdpi,
 				bbox_inches='tight', pad_inches=0)
 
 	# ----------------------Spektrum-------------------------------------
-	fig = figure(figsize=(8, 4), dpi=pltdpi)
+	fig = plt.figure(figsize=(8, 4), dpi=pltdpi)
 
-	xticks(fontsize=fontsize_label)
+	plt.xticks(fontsize=fontsize_label)
 	ax1 = fig.add_subplot(111)
 
 	ax1.set_xlim(-0.1, 1)
@@ -529,7 +451,7 @@ if __name__ == '__main__':
 	# ax1.set_ylim(bottom=1)
 	ax1.plot(fticks, abs(freqdata), c='black')
 	ax1Xs = ax1.get_xticks()[2:]
-	yticks(fontsize=fontsize_label)
+	plt.yticks(fontsize=fontsize_label)
 
 	ax2 = ax1.twiny()
 	ax2Xs = []
@@ -547,36 +469,37 @@ if __name__ == '__main__':
 	ax3 = ax1.twinx()
 	ax3.set_xlim(-0.1, 1)
 	ax3.set_ylabel('Filter', fontsize=fontsize_label)
-	yticks(fontsize=fontsize_label)
+	plt.yticks(fontsize=fontsize_label)
 	ax3.plot((1 / deltaDim1 * 0.5 / np.pi) * w1, abs(h1), c='green')
 
 	if (saveData == True):
-		savefig(workspace + date + '-diploma/' + date + roiList[0][int(dim3Id)][:-30] + "spectrum.pdf", dpi=pltdpi,
+		plt.savefig(workspace + date + '-diploma/' + date + roiList[0][int(dim3Id)][:-30] + "spectrum.pdf", dpi=pltdpi,
 				bbox_inches='tight', pad_inches=0)
 
 	# ----------------------w0 Komponente-------------------------------------
-	#    figure(figsize=(16,4), dpi=pltdpi)
-	#    title(date+' Roi ' + roiId)
-	#    pyplot.locator_params(axis = 'x', nbins=20)
-	#    xlabel('T (fs)')
-	#    ylabel('Intensität (a.u.)')
-	#    xlim(Tmin,Tmax)
-	#    plot(xAxis,filtdata0,c='blue')
-	#    if (saveData == True):
-	#        savefig(workspace + date+'-diploma/' + date + roiList[0][int(dim3Id)][:-30] + " w0.pdf",dpi=pltdpi, bbox_inches='tight', pad_inches=0)
+	plt.figure(figsize=(16, 4), dpi=pltdpi)
+	plt.title(' Roi ')
+	plt.locator_params(axis='x', nbins=20)
+	plt.xlabel('T (fs)')
+	plt.ylabel('Intensität (a.u.)')
+	plt.xlim(Tmin, Tmax)
+	plt.plot(xAxis, filtdata0, c='blue')
+	if (saveData == True):
+		plt.savefig(workspace + date + '-diploma/' + date + roiList[0][int(dim3Id)][:-30] + " w0.pdf", dpi=pltdpi,
+				bbox_inches='tight', pad_inches=0)
 
 	# ----------------------w1 Komponente-------------------------------------
 
-	figure(figsize=(16, 4), dpi=pltdpi)
-	pyplot.locator_params(axis='x', nbins=20)
-	xlabel(r'Verzögerungszeit $\tau$ (fs)', fontsize=fontsize_label)
-	ylabel('norm. Intensität', fontsize=fontsize_label)
-	xlim(Tmin, Tmax)
+	plt.figure(figsize=(16, 4), dpi=pltdpi)
+	plt.locator_params(axis='x', nbins=20)
+	plt.xlabel(r'Verzögerungszeit $\tau$ (fs)', fontsize=fontsize_label)
+	plt.ylabel('norm. Intensität', fontsize=fontsize_label)
+	plt.xlim(Tmin, Tmax)
 	plt.xticks(fontsize=fontsize_label)
 	plt.yticks(fontsize=fontsize_label)
-	plot(xAxis, normAC(filtdata1), c='green')
+	plt.plot(xAxis, normAC(filtdata1), c='green')
 	if (saveData == True):
-		savefig(workspace + date + '-diploma/' + date + roiList[0][int(dim3Id)][:-30] + "w1.pdf", dpi=pltdpi,
+		plt.savefig(workspace + date + '-diploma/' + date + roiList[0][int(dim3Id)][:-30] + "w1.pdf", dpi=pltdpi,
 				bbox_inches='tight', pad_inches=0)
 
 	if (saveData == True):
