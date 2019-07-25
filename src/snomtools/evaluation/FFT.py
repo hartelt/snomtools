@@ -1,3 +1,8 @@
+"""
+FFT Script based on the work of Philip.
+That is why unused functions e.g. peak_detect are in this file and some notations are strange
+"""
+
 from scipy import fftpack
 import scipy.signal as signal
 # from scipy.signal import freqz, butter, lfilter
@@ -8,39 +13,6 @@ import re
 import numpy as np
 import snomtools.data.datasets as ds
 import matplotlib.pyplot as plt
-
-
-# --helper functions
-
-def getDProtdldData(directory, roiId):
-	roiList = loadRoiList(directory, roiId)
-	AllData = []
-	for dim3 in range(roiList[1] + 1):
-		buffer = getDProtData(directory, roiId, str(dim3))
-		AllData.append(buffer)
-	return np.asarray(AllData)
-
-
-def setFontSize(size):
-	mpl.rcParams.update({'font.size': size})
-
-
-def setFigure(sizeX, sizeY, **dpi):
-	plt.figure(plt.figsize(sizeX, sizeY), **dpi)
-
-
-def generateXTicks(data_x, deltaX, startValue):
-	xTicks = []
-	for i in range(data_x.shape[0]):
-		xTicks.append(i * deltaX + startValue)
-	return xTicks
-
-
-def getXTicksPD(data, deltaX, startValue):
-	xTicks = []
-	for i in range(data.shape[0]):
-		xTicks.append(i * deltaX + startValue)
-	return xTicks
 
 
 # --norm functions
@@ -335,69 +307,57 @@ def loadColorMap(filename):
 	return colorlist
 
 
-# -----------------------------------------------------------------------------------------------------
-if __name__ == '__main__':
+def doFFT_Filter(timedata, deltaT=0.4, w_c=0.375, d0=0.12, d1=0.075, d2=0.05, d3=(0.025, 0.05)):
+	'''
 
+	:param timedata:
+	:param deltaT: in fs for default filter values
+	:param w_c:
+	:param d0:
+	:param d1:
+	:param d2:
+	:param d3:
+	:return: in fs
+	'''
+	freqdata = fftpack.fftshift(fftpack.fft(timedata))
+
+	phase = -np.angle(freqdata)
+	fticks = fftpack.fftshift(fftpack.fftfreq(freqdata.size, deltaT))
+
+	filtdata3, w3, h3 = bandpass(timedata, 3 * w_c - d3[0], 3 * w_c + d3[1], deltaT, 5)  # 1.125
+	filtdata2, w2, h2 = bandpass(timedata, 2 * w_c - d2, 2 * w_c + d2, deltaT, 5)  # 0.75
+	filtdata1, w1, h1 = bandpass(timedata, 1 * w_c - d1, 1 * w_c + d1, deltaT, 5)  # 800nm =0.375
+	filtdata0, w0, h0 = lowpass(timedata, d0, deltaT, 5)
+
+	return (fticks, freqdata, phase), (filtdata0, filtdata1, filtdata2, filtdata3), (w0, w1, w2, w3), (h0, h1, h2, h3), deltaT
+
+
+# -----------------------------------------------------------------------------------------------------
+
+if __name__ == '__main__':
+	#----------------------Load Data-------------------------------------
 	path = pathlib.Path(
 		r"E:\NFC15\20171207 ZnO+aSiH\01 DLD PSI -3 to 150 fs step size 400as\Maximamap\Driftcorrected\summed_runs")
 	file = "ROI_data.hdf5"
 	data_file = path / file
+	data3d = ds.DataSet.from_h5file(os.fspath(data_file), h5target=os.fspath(path / 'chache.hdf5'))
 
-	saveData = False
-	# dim1 = tau/T, delta in fs
-	deltaDim1 = 0.4  # 0.1
+	roi0_sumpicture = np.sum(data3d.datafields[0][0], axis=1)  # TODO: use other stuff than sumpicture
+	xAxis = data3d.get_axis('delay').data.to('femtoseconds').magnitude
+	timedata = roi0_sumpicture.magnitude
 
-	# StartTime of measurement / data in fs
-	StartTime = -3  # 22
 
-	# Start and end time to plot in fs
-	Tmin = StartTime
-	Tmax = 150  # 300
+	#----------------------Apply function to calculate the FFT-------------------------------------
+	(fticks, freqdata, phase), (filtdata0, filtdata1, filtdata2, filtdata3), (w0, w1, w2, w3), (
+	h0, h1, h2, h3), deltaDim1 = doFFT_Filter(timedata)
 
-	# Plot dpi
+
+
+	#----------------------Plotting section starts here-------------------------------------
+	###
 	pltdpi = 100
 	fontsize_label = 14  # schriftgröße der Labels
-
-	# -------------------------------------------------------------------------
-
-	data3d = ds.DataSet.from_h5file(os.fspath(data_file), h5target= os.fspath(path / 'chache.hdf5'))
-
-	#roi0 = data3d.datafields[0][0]
-	roi0_sumpicture = np.sum(data3d.datafields[0][0],axis=1)
-	xTicks = generateXTicks(roi0_sumpicture,deltaDim1,StartTime)
-
-	plt.plot(data3d.get_axis('delay'),roi0_sumpicture.magnitude)
-
-	timedata = normAC(roi0_sumpicture.magnitude)
-
-	# ---------------Fouriertrafo-------------------------------------
-
-	freqdata = fftpack.fftshift(fftpack.fft(timedata))
-
-	phase = -np.angle(freqdata)
-	fticks = fftpack.fftshift(fftpack.fftfreq(freqdata.size, deltaDim1))
-
-	# --------------------
-
-	xAxis = generateXTicks(timedata, deltaDim1, StartTime)  # data3d[0] as represantative of x-Axis
-
-	# ---------------Zeitsignal-------------------------------------
-	plt.figure(figsize=(16, 4), dpi=pltdpi)
-	# title(date+' Roi ' + roiId)
-	plt.locator_params(axis='x', nbins=20)
-	plt.xlabel(r'Verzögerungszeit $\tau$ (fs)', fontsize=fontsize_label)
-	plt.ylabel('norm. Emissionsintensität', fontsize=fontsize_label)
-	plt.xlim(Tmin, Tmax)
-	plt.xticks(fontsize=fontsize_label)
-	plt.yticks(fontsize=fontsize_label)
-	plt.plot(xAxis, timedata, color=tab20[0])
-	if (saveData == True):
-		plt.savefig(workspace + date + '-diploma/' + date + roiList[0][int(dim3Id)][:-30] + "timedata.pdf", dpi=pltdpi,
-				bbox_inches='tight', pad_inches=0)
-
-	filtdata2, w2, h2 = bandpass(timedata, 0.65, 0.9, deltaDim1, 5)
-	filtdata1, w1, h1 = bandpass(timedata, 0.34, 0.42, deltaDim1, 4)
-	filtdata0, w0, h0 = lowpass(timedata, 0.1, deltaDim1, 5)
+	freq_lim = 1.25  # limit of frequency spectrum in plots
 
 	# ----------------------Phase-------------------------------------
 	fig = plt.figure(figsize=(8, 4), dpi=pltdpi)
@@ -405,7 +365,7 @@ if __name__ == '__main__':
 	plt.xticks(fontsize=fontsize_label)
 	ax1 = fig.add_subplot(111)
 	plt.yticks(fontsize=fontsize_label)
-	ax1.set_xlim(-0.1, 1)
+	ax1.set_xlim(-0.1, freq_lim)
 	ax1.set_xlabel('Frequenz (PHz)', fontsize=fontsize_label)
 	ax1.locator_params(nbins=10)
 	#   ax1.set_yscale('log')
@@ -428,14 +388,10 @@ if __name__ == '__main__':
 	ax2.set_xticklabels(ax2Xs, fontsize=fontsize_label)
 
 	ax3 = ax1.twinx()
-	ax3.set_xlim(-0.1, 1)
+	ax3.set_xlim(-0.1, freq_lim)
 	ax3.set_ylabel('Phase', fontsize=fontsize_label)
 	plt.yticks(fontsize=fontsize_label)
 	ax3.plot(fticks, phase, c='orange')
-
-	if (saveData == True):
-		plt.savefig(workspace + date + '-diploma/' + date + roiList[0][int(dim3Id)][:-30] + "phase.pdf", dpi=pltdpi,
-				bbox_inches='tight', pad_inches=0)
 
 	# ----------------------Spektrum-------------------------------------
 	fig = plt.figure(figsize=(8, 4), dpi=pltdpi)
@@ -443,10 +399,11 @@ if __name__ == '__main__':
 	plt.xticks(fontsize=fontsize_label)
 	ax1 = fig.add_subplot(111)
 
-	ax1.set_xlim(-0.1, 1)
+	ax1.set_xlim(-0.1, freq_lim)
 	ax1.set_xlabel('Frequenz (PHz)', fontsize=fontsize_label)
 	ax1.locator_params(nbins=10)
 	ax1.set_yscale('log')
+	ax1.set_ylim(bottom=10, top=max(abs(freqdata)))
 	ax1.set_ylabel('norm. spektrale Intensität', fontsize=fontsize_label)
 	# ax1.set_ylim(bottom=1)
 	ax1.plot(fticks, abs(freqdata), c='black')
@@ -467,18 +424,203 @@ if __name__ == '__main__':
 	ax2.set_xticklabels(ax2Xs, fontsize=fontsize_label)
 
 	ax3 = ax1.twinx()
-	ax3.set_xlim(-0.1, 1)
+	ax3.set_xlim(-0.1, freq_lim)
 	ax3.set_ylabel('Filter', fontsize=fontsize_label)
-	plt.yticks(fontsize=fontsize_label)
-	ax3.plot((1 / deltaDim1 * 0.5 / np.pi) * w1, abs(h1), c='green')
 
-	if (saveData == True):
-		plt.savefig(workspace + date + '-diploma/' + date + roiList[0][int(dim3Id)][:-30] + "spectrum.pdf", dpi=pltdpi,
-				bbox_inches='tight', pad_inches=0)
+	ax3.plot((1 / deltaDim1 * 0.5 / np.pi) * w0, abs(h0), c='blue')
+	ax3.plot((1 / deltaDim1 * 0.5 / np.pi) * w1, abs(h1), c='green')
+	ax3.plot((1 / deltaDim1 * 0.5 / np.pi) * w2, abs(h2), c='green')
+	ax3.plot((1 / deltaDim1 * 0.5 / np.pi) * w3, abs(h3), c='green')
+
 
 	# ----------------------w0 Komponente-------------------------------------
 	plt.figure(figsize=(16, 4), dpi=pltdpi)
-	plt.title(' Roi ')
+	plt.title(' w_0 ')
+	plt.locator_params(axis='x', nbins=20)
+	plt.xlabel('T (fs)')
+	plt.ylabel('Intensität (a.u.)')
+	plt.plot(xAxis, filtdata0, c='blue')
+
+	# ----------------------w1 Komponente-------------------------------------
+
+	plt.figure(figsize=(16, 4), dpi=pltdpi)
+	plt.title(' w_1 ')
+	plt.locator_params(axis='x', nbins=20)
+	plt.xlabel(r'Verzögerungszeit $\tau$ (fs)', fontsize=fontsize_label)
+	plt.ylabel('norm. Intensität', fontsize=fontsize_label)
+	plt.xticks(fontsize=fontsize_label)
+	plt.yticks(fontsize=fontsize_label)
+	plt.plot(xAxis, normAC(filtdata1), c='green')
+	# ----------------------w2 Komponente-------------------------------------
+
+	plt.figure(figsize=(16, 4), dpi=pltdpi)
+	plt.title(' w_2 ')
+	plt.locator_params(axis='x', nbins=20)
+	plt.xlabel(r'Verzögerungszeit $\tau$ (fs)', fontsize=fontsize_label)
+	plt.ylabel('norm. Intensität', fontsize=fontsize_label)
+	plt.plot(xAxis, normAC(filtdata2), c='red')
+
+	# ----------------------w3 Komponente-------------------------------------
+
+	plt.figure(figsize=(16, 4), dpi=pltdpi)
+	plt.title(' w_3 ')
+	plt.locator_params(axis='x', nbins=20)
+	plt.xlabel(r'Verzögerungszeit $\tau$ (fs)', fontsize=fontsize_label)
+	plt.ylabel('norm. Intensität', fontsize=fontsize_label)
+	plt.plot(xAxis, normAC(filtdata3), c='orange')
+
+	print('moep')
+
+if __name__ == 'not__main__':
+	#Analog example to upper one without using the allmighty all in one FFT function but with everything written seperately
+	path = pathlib.Path(
+		r"E:\NFC15\20171207 ZnO+aSiH\01 DLD PSI -3 to 150 fs step size 400as\Maximamap\Driftcorrected\summed_runs")
+	file = "ROI_data.hdf5"
+	data_file = path / file
+
+	saveData = False
+	# dim1 =  delta in fs
+	deltaDim1 = 0.4  # stepsize
+
+	# StartTime of measurement / data in fs
+	StartTime = -3  # 22
+
+	# Start and end time to plot in fs
+	Tmin = StartTime
+	Tmax = 150  # 300
+
+	# Plot dpi
+	pltdpi = 100
+	fontsize_label = 14  # schriftgröße der Labels
+
+	freq_lim = 1.25  # limit of frequency spectrum in plots
+	# -------------------------------------------------------------------------
+
+	data3d = ds.DataSet.from_h5file(os.fspath(data_file), h5target=os.fspath(path / 'chache.hdf5'))
+
+	roi0_sumpicture = np.sum(data3d.datafields[0][0], axis=1)  # TODO: use other stuff than sumpicture
+	xAxis = data3d.get_axis('delay').data.to('femtoseconds').magnitude
+
+	plt.plot(data3d.get_axis('delay'), roi0_sumpicture.magnitude)
+
+	timedata = roi0_sumpicture.magnitude
+
+	# ---------------Fouriertrafo-------------------------------------
+
+	freqdata = fftpack.fftshift(fftpack.fft(timedata))
+
+	phase = -np.angle(freqdata)
+	fticks = fftpack.fftshift(fftpack.fftfreq(freqdata.size, deltaDim1))
+
+	# --------------------
+
+
+	# generateXTicks(timedata, deltaDim1, StartTime)  # data3d[0] as represantative of x-Axis
+
+	# ---------------Zeitsignal-------------------------------------
+	plt.figure(figsize=(16, 4), dpi=pltdpi)
+	plt.title('Time')
+	plt.locator_params(axis='x', nbins=20)
+	plt.xlabel(r'Verzögerungszeit $\tau$ (fs)', fontsize=fontsize_label)
+	plt.ylabel('norm. Emissionsintensität', fontsize=fontsize_label)
+	plt.xlim(Tmin, Tmax)
+	plt.xticks(fontsize=fontsize_label)
+	plt.yticks(fontsize=fontsize_label)
+	plt.plot(xAxis, timedata, color=tab20[0])
+	if (saveData == True):
+		plt.savefig(workspace + date + '-diploma/' + date + roiList[0][int(dim3Id)][:-30] + "timedata.pdf", dpi=pltdpi,
+					bbox_inches='tight', pad_inches=0)
+
+	w_c = 0.375  # center frequency 800nm =0.375
+	filtdata3, w3, h3 = bandpass(timedata, 3 * w_c - 0.025, 3 * w_c + 0.05, deltaDim1, 5)  # 1.125
+	filtdata2, w2, h2 = bandpass(timedata, 2 * w_c - 0.05, 2 * w_c + 0.05, deltaDim1, 5)  # 0.75
+	filtdata1, w1, h1 = bandpass(timedata, 1 * w_c - 0.075, 1 * w_c + 0.075, deltaDim1, 5)  # 800nm =0.375
+	filtdata0, w0, h0 = lowpass(timedata, 0.12, deltaDim1, 5)
+
+	# ----------------------Phase-------------------------------------
+	fig = plt.figure(figsize=(8, 4), dpi=pltdpi)
+
+	plt.xticks(fontsize=fontsize_label)
+	ax1 = fig.add_subplot(111)
+	plt.yticks(fontsize=fontsize_label)
+	ax1.set_xlim(-0.1, freq_lim)
+	ax1.set_xlabel('Frequenz (PHz)', fontsize=fontsize_label)
+	ax1.locator_params(nbins=10)
+	#   ax1.set_yscale('log')
+	ax1.set_ylabel('norm. spektrale Intensität', fontsize=fontsize_label)
+	# ax1.set_ylim(ymin=1)
+	ax1.plot(fticks, abs(freqdata), c='black')
+	ax1Xs = ax1.get_xticks()[2:]
+
+	ax2 = ax1.twiny()
+	ax2Xs = []
+
+	for X in ax1Xs:
+		ax2Xs.append(299792458.0 / X / 10 ** 6)
+
+	for i in range(len(ax2Xs)): ax2Xs[i] = "{:.0f}".format(ax2Xs[i])
+
+	ax2.set_xticks(ax1Xs[0:len(ax1Xs) - 1])
+	ax2.set_xlabel('Wellenlänge (nm)', fontsize=fontsize_label)
+	ax2.set_xbound(ax1.get_xbound())
+	ax2.set_xticklabels(ax2Xs, fontsize=fontsize_label)
+
+	ax3 = ax1.twinx()
+	ax3.set_xlim(-0.1, freq_lim)
+	ax3.set_ylabel('Phase', fontsize=fontsize_label)
+	plt.yticks(fontsize=fontsize_label)
+	ax3.plot(fticks, phase, c='orange')
+
+	if (saveData == True):
+		plt.savefig(workspace + date + '-diploma/' + date + roiList[0][int(dim3Id)][:-30] + "phase.pdf", dpi=pltdpi,
+					bbox_inches='tight', pad_inches=0)
+
+	# ----------------------Spektrum-------------------------------------
+	fig = plt.figure(figsize=(8, 4), dpi=pltdpi)
+
+	plt.xticks(fontsize=fontsize_label)
+	ax1 = fig.add_subplot(111)
+
+	ax1.set_xlim(-0.1, freq_lim)
+	ax1.set_xlabel('Frequenz (PHz)', fontsize=fontsize_label)
+	ax1.locator_params(nbins=10)
+	ax1.set_yscale('log')
+	ax1.set_ylim(bottom=10, top=max(abs(freqdata)))
+	ax1.set_ylabel('norm. spektrale Intensität', fontsize=fontsize_label)
+	# ax1.set_ylim(bottom=1)
+	ax1.plot(fticks, abs(freqdata), c='black')
+	ax1Xs = ax1.get_xticks()[2:]
+	plt.yticks(fontsize=fontsize_label)
+
+	ax2 = ax1.twiny()
+	ax2Xs = []
+
+	for X in ax1Xs:
+		ax2Xs.append(299792458.0 / X / 10 ** 6)
+
+	for i in range(len(ax2Xs)): ax2Xs[i] = "{:.0f}".format(ax2Xs[i])
+
+	ax2.set_xticks(ax1Xs[0:len(ax1Xs) - 1])
+	ax2.set_xlabel('Wellenlänge (nm)', fontsize=fontsize_label)
+	ax2.set_xbound(ax1.get_xbound())
+	ax2.set_xticklabels(ax2Xs, fontsize=fontsize_label)
+
+	ax3 = ax1.twinx()
+	ax3.set_xlim(-0.1, freq_lim)
+	ax3.set_ylabel('Filter', fontsize=fontsize_label)
+	plt.yticks(fontsize=fontsize_label)
+	ax3.plot((1 / deltaDim1 * 0.5 / np.pi) * w0, abs(h0), c='blue')
+	ax3.plot((1 / deltaDim1 * 0.5 / np.pi) * w1, abs(h1), c='green')
+	ax3.plot((1 / deltaDim1 * 0.5 / np.pi) * w2, abs(h2), c='green')
+	ax3.plot((1 / deltaDim1 * 0.5 / np.pi) * w3, abs(h3), c='green')
+
+	if (saveData == True):
+		plt.savefig(workspace + date + '-diploma/' + date + roiList[0][int(dim3Id)][:-30] + "spectrum.pdf", dpi=pltdpi,
+					bbox_inches='tight', pad_inches=0)
+
+	# ----------------------w0 Komponente-------------------------------------
+	plt.figure(figsize=(16, 4), dpi=pltdpi)
+	plt.title(' w_0 ')
 	plt.locator_params(axis='x', nbins=20)
 	plt.xlabel('T (fs)')
 	plt.ylabel('Intensität (a.u.)')
@@ -486,11 +628,12 @@ if __name__ == '__main__':
 	plt.plot(xAxis, filtdata0, c='blue')
 	if (saveData == True):
 		plt.savefig(workspace + date + '-diploma/' + date + roiList[0][int(dim3Id)][:-30] + " w0.pdf", dpi=pltdpi,
-				bbox_inches='tight', pad_inches=0)
+					bbox_inches='tight', pad_inches=0)
 
 	# ----------------------w1 Komponente-------------------------------------
 
 	plt.figure(figsize=(16, 4), dpi=pltdpi)
+	plt.title(' w_1 ')
 	plt.locator_params(axis='x', nbins=20)
 	plt.xlabel(r'Verzögerungszeit $\tau$ (fs)', fontsize=fontsize_label)
 	plt.ylabel('norm. Intensität', fontsize=fontsize_label)
@@ -500,7 +643,37 @@ if __name__ == '__main__':
 	plt.plot(xAxis, normAC(filtdata1), c='green')
 	if (saveData == True):
 		plt.savefig(workspace + date + '-diploma/' + date + roiList[0][int(dim3Id)][:-30] + "w1.pdf", dpi=pltdpi,
-				bbox_inches='tight', pad_inches=0)
+					bbox_inches='tight', pad_inches=0)
+
+	# ----------------------w2 Komponente-------------------------------------
+
+	plt.figure(figsize=(16, 4), dpi=pltdpi)
+	plt.title(' w_2 ')
+	plt.locator_params(axis='x', nbins=20)
+	plt.xlabel(r'Verzögerungszeit $\tau$ (fs)', fontsize=fontsize_label)
+	plt.ylabel('norm. Intensität', fontsize=fontsize_label)
+	plt.xlim(Tmin, Tmax)
+	plt.xticks(fontsize=fontsize_label)
+	plt.yticks(fontsize=fontsize_label)
+	plt.plot(xAxis, normAC(filtdata2), c='red')
+	if (saveData == True):
+		plt.savefig(workspace + date + '-diploma/' + date + roiList[0][int(dim3Id)][:-30] + "w2.pdf", dpi=pltdpi,
+					bbox_inches='tight', pad_inches=0)
+
+	# ----------------------w3 Komponente-------------------------------------
+
+	plt.figure(figsize=(16, 4), dpi=pltdpi)
+	plt.title(' w_3 ')
+	plt.locator_params(axis='x', nbins=20)
+	plt.xlabel(r'Verzögerungszeit $\tau$ (fs)', fontsize=fontsize_label)
+	plt.ylabel('norm. Intensität', fontsize=fontsize_label)
+	plt.xlim(Tmin, Tmax)
+	plt.xticks(fontsize=fontsize_label)
+	plt.yticks(fontsize=fontsize_label)
+	plt.plot(xAxis, normAC(filtdata3), c='orange')
+	if (saveData == True):
+		plt.savefig(workspace + date + '-diploma/' + date + roiList[0][int(dim3Id)][:-30] + "w3.pdf", dpi=pltdpi,
+					bbox_inches='tight', pad_inches=0)
 
 	if (saveData == True):
 		savetxt(workspace + date + '-diploma/' + date + roiList[0][int(dim3Id)][:-30] + "fticks.txt", fticks)
