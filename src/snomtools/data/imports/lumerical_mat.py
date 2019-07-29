@@ -16,7 +16,7 @@ __author__ = 'hartelt'
 
 
 def Efield_3d(filepath, first_coord='l', second_coord='x', third_coord='y', first_unit='m', second_unit='m',
-			  third_unit='m'):
+			  third_unit='m', complex=True):
 	"""
 	Reads a matlab file where the electric field of a frequency domain monitor stored in a grid coordinate system of
 	three coordinates. The components Ex, Ey, Ez and the Intensity E^2 are included.
@@ -64,7 +64,10 @@ def Efield_3d(filepath, first_coord='l', second_coord='x', third_coord='y', firs
 	field_data_list = []
 	field_data_list.append(numpy.array(field_sets[0]))
 	for i in range(1, 4):
-		field_data_list.append(numpy.array(field_sets[i]).view(numpy.complex))
+		if complex:
+			field_data_list.append(numpy.array(field_sets[i]).view(numpy.complex))
+		else:
+			field_data_list.append(numpy.array(field_sets[i]))
 	for i in range(len(field_sets)):
 		dataarrays.append(snomtools.data.datasets.DataArray(field_data_list[i], label=field_list[i],
 															plotlabel=field_label_list[i]))
