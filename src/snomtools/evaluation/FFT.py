@@ -341,135 +341,137 @@ if __name__ == '__main__':
 	file = "ROI_data.hdf5"
 	data_file = path / file
 	data3d = ds.DataSet.from_h5file(os.fspath(data_file), h5target=os.fspath(path / 'chache.hdf5'))
-
-	roi0_sumpicture = np.sum(data3d.datafields[0][0], axis=1)  # TODO: use other stuff than sumpicture
-	xAxis = data3d.get_axis('delay').data.to('femtoseconds').magnitude
-	timedata = roi0_sumpicture.magnitude
-
-
-	#----------------------Apply function to calculate the FFT-------------------------------------
-	(fticks, freqdata, phase), (filtdata0, filtdata1, filtdata2, filtdata3), (w0, w1, w2, w3), (
-	h0, h1, h2, h3), deltaDim1 = doFFT_Filter(timedata)
+	for roi in range(0,10):
+		roi0_sumpicture = np.sum(data3d.datafields[0][roi][:,0:45], axis=1)  # TODO: use other stuff than sumpicture
+		xAxis = data3d.get_axis('delay').data.to('femtoseconds').magnitude
+		timedata = roi0_sumpicture.magnitude
 
 
-
-	#----------------------Plotting section starts here-------------------------------------
-	###
-	pltdpi = 100
-	fontsize_label = 14  # schriftgröße der Labels
-	freq_lim = 1.25  # limit of frequency spectrum in plots
-
-	# ----------------------Phase-------------------------------------
-	fig = plt.figure(figsize=(8, 4), dpi=pltdpi)
-
-	plt.xticks(fontsize=fontsize_label)
-	ax1 = fig.add_subplot(111)
-	plt.yticks(fontsize=fontsize_label)
-	ax1.set_xlim(-0.1, freq_lim)
-	ax1.set_xlabel('Frequenz (PHz)', fontsize=fontsize_label)
-	ax1.locator_params(nbins=10)
-	#   ax1.set_yscale('log')
-	ax1.set_ylabel('norm. spektrale Intensität', fontsize=fontsize_label)
-	# ax1.set_ylim(ymin=1)
-	ax1.plot(fticks, abs(freqdata), c='black')
-	ax1Xs = ax1.get_xticks()[2:]
-
-	ax2 = ax1.twiny()
-	ax2Xs = []
-
-	for X in ax1Xs:
-		ax2Xs.append(299792458.0 / X / 10 ** 6)
-
-	for i in range(len(ax2Xs)): ax2Xs[i] = "{:.0f}".format(ax2Xs[i])
-
-	ax2.set_xticks(ax1Xs[0:len(ax1Xs) - 1])
-	ax2.set_xlabel('Wellenlänge (nm)', fontsize=fontsize_label)
-	ax2.set_xbound(ax1.get_xbound())
-	ax2.set_xticklabels(ax2Xs, fontsize=fontsize_label)
-
-	ax3 = ax1.twinx()
-	ax3.set_xlim(-0.1, freq_lim)
-	ax3.set_ylabel('Phase', fontsize=fontsize_label)
-	plt.yticks(fontsize=fontsize_label)
-	ax3.plot(fticks, phase, c='orange')
-
-	# ----------------------Spektrum-------------------------------------
-	fig = plt.figure(figsize=(8, 4), dpi=pltdpi)
-
-	plt.xticks(fontsize=fontsize_label)
-	ax1 = fig.add_subplot(111)
-
-	ax1.set_xlim(-0.1, freq_lim)
-	ax1.set_xlabel('Frequenz (PHz)', fontsize=fontsize_label)
-	ax1.locator_params(nbins=10)
-	ax1.set_yscale('log')
-	ax1.set_ylim(bottom=10, top=max(abs(freqdata)))
-	ax1.set_ylabel('norm. spektrale Intensität', fontsize=fontsize_label)
-	# ax1.set_ylim(bottom=1)
-	ax1.plot(fticks, abs(freqdata), c='black')
-	ax1Xs = ax1.get_xticks()[2:]
-	plt.yticks(fontsize=fontsize_label)
-
-	ax2 = ax1.twiny()
-	ax2Xs = []
-
-	for X in ax1Xs:
-		ax2Xs.append(299792458.0 / X / 10 ** 6)
-
-	for i in range(len(ax2Xs)): ax2Xs[i] = "{:.0f}".format(ax2Xs[i])
-
-	ax2.set_xticks(ax1Xs[0:len(ax1Xs) - 1])
-	ax2.set_xlabel('Wellenlänge (nm)', fontsize=fontsize_label)
-	ax2.set_xbound(ax1.get_xbound())
-	ax2.set_xticklabels(ax2Xs, fontsize=fontsize_label)
-
-	ax3 = ax1.twinx()
-	ax3.set_xlim(-0.1, freq_lim)
-	ax3.set_ylabel('Filter', fontsize=fontsize_label)
-
-	ax3.plot((1 / deltaDim1 * 0.5 / np.pi) * w0, abs(h0), c='blue')
-	ax3.plot((1 / deltaDim1 * 0.5 / np.pi) * w1, abs(h1), c='green')
-	ax3.plot((1 / deltaDim1 * 0.5 / np.pi) * w2, abs(h2), c='green')
-	ax3.plot((1 / deltaDim1 * 0.5 / np.pi) * w3, abs(h3), c='green')
+		#----------------------Apply function to calculate the FFT-------------------------------------
+		(fticks, freqdata, phase), (filtdata0, filtdata1, filtdata2, filtdata3), (w0, w1, w2, w3), (
+		h0, h1, h2, h3), deltaDim1 = doFFT_Filter(timedata)
 
 
-	# ----------------------w0 Komponente-------------------------------------
-	plt.figure(figsize=(16, 4), dpi=pltdpi)
-	plt.title(' w_0 ')
-	plt.locator_params(axis='x', nbins=20)
-	plt.xlabel('T (fs)')
-	plt.ylabel('Intensität (a.u.)')
-	plt.plot(xAxis, filtdata0, c='blue')
 
-	# ----------------------w1 Komponente-------------------------------------
+		#----------------------Plotting section starts here-------------------------------------
+		###
+		pltdpi = 100
+		fontsize_label = 14  # schriftgröße der Labels
+		freq_lim = 1.25  # limit of frequency spectrum in plots
 
-	plt.figure(figsize=(16, 4), dpi=pltdpi)
-	plt.title(' w_1 ')
-	plt.locator_params(axis='x', nbins=20)
-	plt.xlabel(r'Verzögerungszeit $\tau$ (fs)', fontsize=fontsize_label)
-	plt.ylabel('norm. Intensität', fontsize=fontsize_label)
-	plt.xticks(fontsize=fontsize_label)
-	plt.yticks(fontsize=fontsize_label)
-	plt.plot(xAxis, normAC(filtdata1), c='green')
-	# ----------------------w2 Komponente-------------------------------------
+		# ----------------------Phase-------------------------------------
+		fig = plt.figure(figsize=(8, 4), dpi=pltdpi)
+		plt.title('Roi' + str(roi) + ' phase ')
+		plt.xticks(fontsize=fontsize_label)
+		ax1 = fig.add_subplot(111)
+		plt.yticks(fontsize=fontsize_label)
+		ax1.set_xlim(-0.1, freq_lim)
+		ax1.set_xlabel('Frequenz (PHz)', fontsize=fontsize_label)
+		ax1.locator_params(nbins=10)
+		#   ax1.set_yscale('log')
+		ax1.set_ylabel('norm. spektrale Intensität', fontsize=fontsize_label)
+		# ax1.set_ylim(ymin=1)
+		ax1.plot(fticks, abs(freqdata), c='black')
+		ax1Xs = ax1.get_xticks()[2:]
 
-	plt.figure(figsize=(16, 4), dpi=pltdpi)
-	plt.title(' w_2 ')
-	plt.locator_params(axis='x', nbins=20)
-	plt.xlabel(r'Verzögerungszeit $\tau$ (fs)', fontsize=fontsize_label)
-	plt.ylabel('norm. Intensität', fontsize=fontsize_label)
-	plt.plot(xAxis, normAC(filtdata2), c='red')
+		ax2 = ax1.twiny()
+		ax2Xs = []
 
-	# ----------------------w3 Komponente-------------------------------------
+		for X in ax1Xs:
+			ax2Xs.append(299792458.0 / X / 10 ** 6)
 
-	plt.figure(figsize=(16, 4), dpi=pltdpi)
-	plt.title(' w_3 ')
-	plt.locator_params(axis='x', nbins=20)
-	plt.xlabel(r'Verzögerungszeit $\tau$ (fs)', fontsize=fontsize_label)
-	plt.ylabel('norm. Intensität', fontsize=fontsize_label)
-	plt.plot(xAxis, normAC(filtdata3), c='orange')
+		for i in range(len(ax2Xs)): ax2Xs[i] = "{:.0f}".format(ax2Xs[i])
 
-	print('moep')
+		ax2.set_xticks(ax1Xs[0:len(ax1Xs) - 1])
+		ax2.set_xlabel('Wellenlänge (nm)', fontsize=fontsize_label)
+		ax2.set_xbound(ax1.get_xbound())
+		ax2.set_xticklabels(ax2Xs, fontsize=fontsize_label)
+
+		ax3 = ax1.twinx()
+		ax3.set_xlim(-0.1, freq_lim)
+		ax3.set_ylabel('Phase', fontsize=fontsize_label)
+		plt.yticks(fontsize=fontsize_label)
+		ax3.plot(fticks, phase, c='orange')
+		plt.savefig(os.path.join(path, 'out_high/roi' + str(roi) + '-phase.png'))
+
+		# ----------------------Spektrum-------------------------------------
+		fig = plt.figure(figsize=(8, 4), dpi=pltdpi)
+		plt.title('Roi' + str(roi) + ' spectrum ')
+		plt.xticks(fontsize=fontsize_label)
+		ax1 = fig.add_subplot(111)
+
+		ax1.set_xlim(-0.1, freq_lim)
+		ax1.set_xlabel('Frequenz (PHz)', fontsize=fontsize_label)
+		ax1.locator_params(nbins=10)
+		ax1.set_yscale('log')
+		ax1.set_ylim(bottom=10, top=max(abs(freqdata)))
+		ax1.set_ylabel('norm. spektrale Intensität', fontsize=fontsize_label)
+		# ax1.set_ylim(bottom=1)
+		ax1.plot(fticks, abs(freqdata), c='black')
+		ax1Xs = ax1.get_xticks()[2:]
+		plt.yticks(fontsize=fontsize_label)
+
+		ax2 = ax1.twiny()
+		ax2Xs = []
+
+		for X in ax1Xs:
+			ax2Xs.append(299792458.0 / X / 10 ** 6)
+
+		for i in range(len(ax2Xs)): ax2Xs[i] = "{:.0f}".format(ax2Xs[i])
+
+		ax2.set_xticks(ax1Xs[0:len(ax1Xs) - 1])
+		ax2.set_xlabel('Wellenlänge (nm)', fontsize=fontsize_label)
+		ax2.set_xbound(ax1.get_xbound())
+		ax2.set_xticklabels(ax2Xs, fontsize=fontsize_label)
+
+		ax3 = ax1.twinx()
+		ax3.set_xlim(-0.1, freq_lim)
+		ax3.set_ylabel('Filter', fontsize=fontsize_label)
+
+		ax3.plot((1 / deltaDim1 * 0.5 / np.pi) * w0, abs(h0), c='blue')
+		ax3.plot((1 / deltaDim1 * 0.5 / np.pi) * w1, abs(h1), c='green')
+		ax3.plot((1 / deltaDim1 * 0.5 / np.pi) * w2, abs(h2), c='green')
+		ax3.plot((1 / deltaDim1 * 0.5 / np.pi) * w3, abs(h3), c='green')
+		plt.savefig(os.path.join(path, 'out_high/roi' + str(roi) + '-spec.png'))
+
+		# ----------------------w0 Komponente-------------------------------------
+		plt.figure(figsize=(16, 4), dpi=pltdpi)
+		plt.title('Roi' + str(roi) +' w_0 ')
+		plt.locator_params(axis='x', nbins=20)
+		plt.xlabel('T (fs)')
+		plt.ylabel('Intensität (a.u.)')
+		plt.plot(xAxis, filtdata0, c='blue')
+		plt.savefig(os.path.join(path, 'out_high/roi' + str(roi) + '-w0.png'))
+		# ----------------------w1 Komponente-------------------------------------
+
+		plt.figure(figsize=(16, 4), dpi=pltdpi)
+		plt.title('Roi' + str(roi) +' w_1 ')
+		plt.locator_params(axis='x', nbins=20)
+		plt.xlabel(r'Verzögerungszeit $\tau$ (fs)', fontsize=fontsize_label)
+		plt.ylabel('norm. Intensität', fontsize=fontsize_label)
+		plt.xticks(fontsize=fontsize_label)
+		plt.yticks(fontsize=fontsize_label)
+		plt.plot(xAxis, normAC(filtdata1), c='green')
+		plt.savefig(os.path.join(path, 'out_high/roi' + str(roi) + '-w1.png'))
+		# ----------------------w2 Komponente-------------------------------------
+
+		plt.figure(figsize=(16, 4), dpi=pltdpi)
+		plt.title('Roi' + str(roi) +' w_2 ')
+		plt.locator_params(axis='x', nbins=20)
+		plt.xlabel(r'Verzögerungszeit $\tau$ (fs)', fontsize=fontsize_label)
+		plt.ylabel('norm. Intensität', fontsize=fontsize_label)
+		plt.plot(xAxis, normAC(filtdata2), c='red')
+		plt.savefig(os.path.join(path, 'out_high/roi' + str(roi) + '-w2.png'))
+		# ----------------------w3 Komponente-------------------------------------
+
+		plt.figure(figsize=(16, 4), dpi=pltdpi)
+		plt.title('Roi' + str(roi) + ' w_3 ')
+		plt.locator_params(axis='x', nbins=20)
+		plt.xlabel(r'Verzögerungszeit $\tau$ (fs)', fontsize=fontsize_label)
+		plt.ylabel('norm. Intensität', fontsize=fontsize_label)
+		plt.plot(xAxis, normAC(filtdata3), c='orange')
+		plt.savefig(os.path.join(path, 'out_high/roi' + str(roi) + '-w3.png'))
+		print('moep')
 
 if __name__ == 'not__main__':
 	#Analog example to upper one without using the allmighty all in one FFT function but with everything written seperately
