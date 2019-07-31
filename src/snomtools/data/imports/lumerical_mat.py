@@ -15,21 +15,23 @@ import numpy
 __author__ = 'hartelt'
 
 
-def Efield_3d(filepath, first_coord='l', second_coord='x', third_coord='y', first_unit='m', second_unit='m',
+def Efield_3d(filepath, first_coord='l', second_coord='y', third_coord='x', first_unit='m', second_unit='m',
 			  third_unit='m', complex=True):
 	"""
-	Reads a matlab file where the electric field of a frequency domain monitor stored in a grid coordinate system of
+	Reads a matlab file where the electric field of a frequency or time domain monitor stored in a grid coordinate system of
 	three coordinates. The components Ex, Ey, Ez and the Intensity E^2 are included.
 	CAUTION! The right order of the axes cannot be checked. This means the coordinates have to be given in the same
 	order as the corresponding values are stored in the electric field arrays!
 
 	:param filepath: String: The (absolute or relative) path of input file.
 
-	:param first_coord: String: The label of the first coordinate, by default 'x'.
+	:param first_coord: String: The label of the first coordinate, by default 'l' (for lambda).
 
 	:param second_coord: String: The label of the second coordinate, by default 'y'.
 
-	:param third_coord: String: The label of the third coordinate, by default 'l' (for lambda).
+	:param third_coord: String: The label of the third coordinate, by default 'x'.
+
+	:param complex: Boolean: Set to True for frequency domain monitor (default), set to False for time domain monitor.
 
 	:return: The DataSet instance.
 	"""
@@ -58,6 +60,8 @@ def Efield_3d(filepath, first_coord='l', second_coord='x', third_coord='y', firs
 			coord_label_list.append('lambda')
 		elif s == 'f':
 			coord_label_list.append('frequency')
+		elif s== 't':
+			coord_label_list.append('time')
 		else:
 			coord_label_list.append(s)
 	dataarrays = []
