@@ -408,7 +408,7 @@ if __name__ == '__main__':
 		ax1.set_ylabel('norm. spektrale Intensität', fontsize=fontsize_label)
 		# ax1.set_ylim(bottom=1)
 		ax1.plot(fticks, abs(freqdata), c='black')
-		ax1Xs = ax1.get_xticks()[2:]
+		ax1Xs = ax1.get_xticks()[2:] 
 		plt.yticks(fontsize=fontsize_label)
 
 		ax2 = ax1.twiny()
