@@ -13,6 +13,7 @@ import h5py
 import os
 import numpy
 import sys
+import warnings
 
 __author__ = 'hartelt'
 
@@ -42,54 +43,13 @@ def Efield_3d(filepath, first_coord='l', second_coord='y', third_coord='x', firs
 
 	:return: The DataSet instance.
 	"""
-	# Initialize the input file object:
-	filepath = os.path.abspath(filepath)
-	infile = h5py.File(filepath, 'r')
-
-	# Assemble the axes datasets (thereby checking if they exist by the specified names):
-	coord_list = [first_coord, second_coord, third_coord]
-	axes_sets = []
-	for coord_str in coord_list:
-		axes_sets.append(infile[coord_str])
-
-	# Same for the E-field datasets:
-	field_list = ['E2', 'Ex', 'Ey', 'Ez']
-	field_sets = []
-	for coord_str in field_list:
-		field_sets.append(infile[coord_str])
-
-	# Initialize the dataset. Data consistency (dimension and shape) will be checked by the init of DataSet:
-	unit_list = [first_unit, second_unit, third_unit]
-	field_label_list = ['Intensity / arb. unit', 'E_x / arb. unit', 'E_y / arb. unit', 'E_z / arb. unit']
-	coord_label_list = []
-	for s in coord_list:
-		if s == 'l':
-			coord_label_list.append('lambda')
-		elif s == 'f':
-			coord_label_list.append('frequency')
-		elif s == 't':
-			coord_label_list.append('time')
-		else:
-			coord_label_list.append(s)
-	dataarrays = []
-	field_data_list = []
-	field_data_list.append(numpy.array(field_sets[0]))
-	for i in range(1, 4):
-		if complex_:
-			field_data_list.append(numpy.array(field_sets[i]).view(numpy.complex))
-		else:
-			field_data_list.append(numpy.array(field_sets[i]))
-	for i in range(len(field_sets)):
-		dataarrays.append(snomtools.data.datasets.DataArray(field_data_list[i], label=field_list[i],
-															plotlabel=field_label_list[i]))
-	axes = []
-	for i in range(len(axes_sets)):
-		axes.append(snomtools.data.datasets.Axis(axes_sets[i], unit=unit_list[i], label=coord_list[i],
-												 plotlabel=coord_label_list[i] + " / " + unit_list[i]))
-	return snomtools.data.datasets.DataSet(os.path.basename(filepath), dataarrays, axes)
+	warnings.warn("Efield_3d is depreciated. Use more general EMfield_3d instead!", DeprecationWarning)
+	axes = [first_coord, second_coord, third_coord]
+	keys = ['E2', 'Ex', 'Ey', 'Ez']
+	return EMfield_3d(filepath, axes, first_unit, second_unit, keys)
 
 
-def EMfield_3d(filepath, axes=None, unit_light=None, unit_space="um", h5target=True):
+def EMfield_3d(filepath, axes=None, unit_light=None, unit_space="um", field_keys=None, h5target=True):
 	"""
 	Reads a matlab file where the electric and/or magnetic field of a frequency or time domain monitor stored in a grid
 	coordinate system of three coordinates. The x/y/z-components as well as ||^2 of E-Field, H-Field and Poynting Vector
@@ -115,6 +75,13 @@ def EMfield_3d(filepath, axes=None, unit_light=None, unit_space="um", h5target=T
 	:param unit_space: str, optional: Set the output unit for the second and third axis, concerning the position.
 	Defaults are micrometers.
 	Read data for values of the x/y/z axis is converted to this unit.
+
+	:param field_keys: optional: List or tuple of field keys to be read.
+	If not given, keys are detected automatically by the keys present in the .mat file.
+	For possible keys, see "lookup keys" above. Incompatible or absent keys given are ignored.
+	Example: `field_keys = ['E2','Ex','Ey','Ez']` to read only Electric Field.
+	Warning: If only incompatible keys, or keys not present in the .mat file are given, the DataSet consistency check
+	will fail and and exception will be thrown.
 
 	:param h5target: Optional: HDF5 Group or File to store read data in.
 	Default is :code:`True` for working on a temporary file.
@@ -177,6 +144,10 @@ def EMfield_3d(filepath, axes=None, unit_light=None, unit_space="um", h5target=T
 					 'y': 'y / ' + u.latex_si(ax_outunit('y')),
 					 'z': 'z / ' + u.latex_si(ax_outunit('z'))}
 
+	# List fields to read:
+	if field_keys is None:
+		field_keys = field_label_dict.keys()
+
 	# Detect axes:
 	if axes is None:
 		for ax in possible_axes_first:
@@ -202,7 +173,7 @@ def EMfield_3d(filepath, axes=None, unit_light=None, unit_space="um", h5target=T
 
 	# Initialize the dataset. Data consistency (dimension and shape) will be checked by the init of DataSet:
 	dataarrays = []
-	for component in field_label_dict.keys():
+	for component in field_keys:
 		if component in infile.keys():
 			if verbose:
 				print("Reading data for field component: {0}".format(component))
