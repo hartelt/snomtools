@@ -8,15 +8,22 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 import snomtools.data.datasets
+import snomtools.calcs.units as u
 import h5py
 import os
 import numpy
+import sys
 
 __author__ = 'hartelt'
 
+if '-v' in sys.argv:
+	verbose = True
+else:
+	verbose = False
+
 
 def Efield_3d(filepath, first_coord='l', second_coord='y', third_coord='x', first_unit='m', second_unit='m',
-			  third_unit='m', complex=True):
+			  third_unit='m', complex_=True):
 	"""
 	Reads a matlab file where the electric field of a frequency or time domain monitor stored in a grid coordinate system of
 	three coordinates. The components Ex, Ey, Ez and the Intensity E^2 are included.
@@ -31,7 +38,7 @@ def Efield_3d(filepath, first_coord='l', second_coord='y', third_coord='x', firs
 
 	:param third_coord: String: The label of the third coordinate, by default 'x'.
 
-	:param complex: Boolean: Set to True for frequency domain monitor (default), set to False for time domain monitor.
+	:param complex_: Boolean: Set to True for frequency domain monitor (default), set to False for time domain monitor.
 
 	:return: The DataSet instance.
 	"""
@@ -60,7 +67,7 @@ def Efield_3d(filepath, first_coord='l', second_coord='y', third_coord='x', firs
 			coord_label_list.append('lambda')
 		elif s == 'f':
 			coord_label_list.append('frequency')
-		elif s== 't':
+		elif s == 't':
 			coord_label_list.append('time')
 		else:
 			coord_label_list.append(s)
@@ -68,7 +75,7 @@ def Efield_3d(filepath, first_coord='l', second_coord='y', third_coord='x', firs
 	field_data_list = []
 	field_data_list.append(numpy.array(field_sets[0]))
 	for i in range(1, 4):
-		if complex:
+		if complex_:
 			field_data_list.append(numpy.array(field_sets[i]).view(numpy.complex))
 		else:
 			field_data_list.append(numpy.array(field_sets[i]))
@@ -82,39 +89,79 @@ def Efield_3d(filepath, first_coord='l', second_coord='y', third_coord='x', firs
 	return snomtools.data.datasets.DataSet(os.path.basename(filepath), dataarrays, axes)
 
 
-def EMfield_3d(filepath,
-			   first_coord='l', second_coord='y', third_coord='x',
-			   first_unit='m', second_unit='m', third_unit='m',
-			   complex=True):
+def EMfield_3d(filepath, axes=None, unit_light=None, unit_space="um", h5target=True):
 	"""
-	Reads a matlab file where the electric field of a frequency or time domain monitor stored in a grid coordinate system of
-	three coordinates. The components Ex, Ey, Ez and the Intensity E^2 are included.
-	CAUTION! The right order of the axes cannot be checked. This means the coordinates have to be given in the same
-	order as the corresponding values are stored in the electric field arrays!
+	Reads a matlab file where the electric and/or magnetic field of a frequency or time domain monitor stored in a grid
+	coordinate system of three coordinates. The x/y/z-components as well as ||^2 of E-Field, H-Field and Poynting Vector
+	are read if present and properly named. Lookup keys in the .mat file are
+	:code:`'E2','Ex','Ey','Ez','H2','Hx','Hy','Hz','P2','Px','Py','Pz'`
+	CAUTION! The right order of the spatial axes are not be checked if given.
+	This means the coordinates have to be given in the same order as the corresponding values are stored in the
+	electric field arrays! Lumerical outputs them in order z,y,x.
 
-	:param filepath: String: The (absolute or relative) path of input file.
+	:param filepath: str: The (absolute or relative) path of input file.
 
-	:param first_coord: String: The label of the first coordinate, by default 'l' (for lambda).
+	:param axes: optional: List or tuple of axis keys to be read.
+	If not given, axes are detected automatically by the keys present in the .mat file.
+	For a frequency-domain monitor, wavelength (lambda, :code:`l`) is chosen over frequency frequency (:code:`f`)
+	per default if both are present.
+	Frequency can be chosen by setting this parameter.
+	Example: `axes = ['f','z','x']`
 
-	:param second_coord: String: The label of the second coordinate, by default 'y'.
+	:param unit_light: str, optional: Set the output unit for the first axis, concerning the light.
+	Defaults are femtoseconds for time, nanometers for wavelength and terahertz for frequency.
+	Read data for values of the first axis is converted to this unit.
 
-	:param third_coord: String: The label of the third coordinate, by default 'x'.
+	:param unit_space: str, optional: Set the output unit for the second and third axis, concerning the position.
+	Defaults are micrometers.
+	Read data for values of the x/y/z axis is converted to this unit.
 
-	:param complex: Boolean: Set to True for frequency domain monitor (default), set to False for time domain monitor.
+	:param h5target: Optional: HDF5 Group or File to store read data in.
+	Default is :code:`True` for working on a temporary file.
+	Numpy-operation in RAM can be set by setting this to :code:`False`.
+	:type h5target: h5py Group/File
 
 	:return: The DataSet instance.
 	"""
 	# Initialize the input file object:
 	filepath = os.path.abspath(filepath)
+	if verbose:
+		print("Opening Lumerical matlab export file: {0}".format(filepath))
 	infile = h5py.File(filepath, 'r')
 
 	# Axes to detect:
-	possible_axes = ['l','f','t','z','y','x']
+	possible_axes_first = ['l', 'f', 't']
+	possible_axes_space = ['z', 'y', 'x']
+	possible_axes = possible_axes_first + possible_axes_space
+
+	# Axis units:
+	def ax_inunit(ax):
+		if ax in possible_axes_space:
+			return 'm'
+		elif ax == 't':
+			return "s"
+		elif ax == 'l':
+			return "m"
+		elif ax == 'f':
+			return "Hz"
+
+	def ax_outunit(ax):
+		if ax in possible_axes_space:
+			return unit_space
+		elif ax in possible_axes_first and unit_light is not None:
+			return unit_light
+		elif ax == 't':
+			return "fs"
+		elif ax == 'l':
+			return "nm"
+		elif ax == 'f':
+			return "THz"
+
 	# Define labels:
-	field_label_dict = {'E2':'Electric Field Intensity / arb. unit',
-						'Ex':'E_x / arb. unit',
-						'Ey':'E_y / arb. unit',
-						'Ez':'E_z / arb. unit',
+	field_label_dict = {'E2': 'Electric Field Intensity / arb. unit',
+						'Ex': 'E_x / arb. unit',
+						'Ey': 'E_y / arb. unit',
+						'Ez': 'E_z / arb. unit',
 						'H2': 'Magnetic Field Intensity / arb. unit',
 						'Hx': 'H_x / arb. unit',
 						'Hy': 'H_y / arb. unit',
@@ -122,52 +169,61 @@ def EMfield_3d(filepath,
 						'P2': 'Poynting Vector Absolute Squared / arb. unit',
 						'Px': 'P_x / arb. unit',
 						'Py': 'P_y / arb. unit',
-						'Pz': 'P_z / arb. unit',
-						'l' : 'Wavelength',
-						'f' : 'Light Frequency',
-						't' : 'Time'}
+						'Pz': 'P_z / arb. unit'}
+	ax_label_dict = {'l': 'Wavelength / ' + u.latex_si(ax_outunit('l')),
+					 'f': 'Light Frequency / ' + u.latex_si(ax_outunit('f')),
+					 't': 'Time / ' + u.latex_si(ax_outunit('t')),
+					 'x': 'x / ' + u.latex_si(ax_outunit('x')),
+					 'y': 'y / ' + u.latex_si(ax_outunit('y')),
+					 'z': 'z / ' + u.latex_si(ax_outunit('z'))}
 
-	# Assemble the axes datasets (thereby checking if they exist by the specified names):
-	coord_list = [first_coord, second_coord, third_coord]
-	axes_sets = []
-	for coord_str in coord_list:
-		axes_sets.append(infile[coord_str])
+	# Detect axes:
+	if axes is None:
+		for ax in possible_axes_first:
+			if ax in infile.keys():
+				axes = [ax]
+				break
+		for ax in possible_axes_space:
+			if ax in infile.keys():
+				axes.append(ax)
+	else:
+		assert (axes[0] in possible_axes_first and axes[0] in infile.keys()), "Given first axis not valid."
+		assert (axes[1] in possible_axes_space and axes[1] in infile.keys()), "Given second axis not valid"
+		assert (axes[2] in possible_axes_space and axes[2] in infile.keys()), "Given third axis not valid"
+	assert (len(axes) == 3), "Invalid number of axes given or detected. 3D EMfield needs three axes."
+	# Check if frequency or time monitor data is read, adjust number format of field quantities accordingly:
+	if axes[0] == 't':  # Time monitor means real fields.
+		complex_ = False
+	else:  # Frequency monitor means complex fields.
+		complex_ = True
 
-	# Same for the E-field datasets:
-	field_list = ['E2', 'Ex', 'Ey', 'Ez']
-	field_sets = []
-	for coord_str in field_list:
-		field_sets.append(infile[coord_str])
+	if verbose:
+		print("Given or detected axes keys are: ", axes)
 
 	# Initialize the dataset. Data consistency (dimension and shape) will be checked by the init of DataSet:
-	unit_list = [first_unit, second_unit, third_unit]
-	field_label_list = ['Intensity / arb. unit', 'E_x / arb. unit', 'E_y / arb. unit', 'E_z / arb. unit']
-	coord_label_list = []
-	for s in coord_list:
-		if s == 'l':
-			coord_label_list.append('lambda')
-		elif s == 'f':
-			coord_label_list.append('frequency')
-		elif s== 't':
-			coord_label_list.append('time')
-		else:
-			coord_label_list.append(s)
 	dataarrays = []
-	field_data_list = []
-	field_data_list.append(numpy.array(field_sets[0]))
-	for i in range(1, 4):
-		if complex:
-			field_data_list.append(numpy.array(field_sets[i]).view(numpy.complex))
-		else:
-			field_data_list.append(numpy.array(field_sets[i]))
-	for i in range(len(field_sets)):
-		dataarrays.append(snomtools.data.datasets.DataArray(field_data_list[i], label=field_list[i],
-															plotlabel=field_label_list[i]))
-	axes = []
-	for i in range(len(axes_sets)):
-		axes.append(snomtools.data.datasets.Axis(axes_sets[i], unit=unit_list[i], label=coord_list[i],
-												 plotlabel=coord_label_list[i] + " / " + unit_list[i]))
-	return snomtools.data.datasets.DataSet(os.path.basename(filepath), dataarrays, axes)
+	for component in field_label_dict.keys():
+		if component in infile.keys():
+			if verbose:
+				print("Reading data for field component: {0}".format(component))
+			if complex_ and not component.endswith('2'):  # If field quantity is complex:
+				data = numpy.array(infile[component]).view(numpy.complex)
+			else:
+				data = infile[component]
+			dataarrays.append(snomtools.data.datasets.DataArray(data, label=component,
+																plotlabel=field_label_dict[component],
+																h5target=True))
+	out_axes = []
+	if verbose:
+		print("Reading Axes Data...")
+	for ax in axes:
+		axis = snomtools.data.datasets.Axis(infile[ax], unit=ax_inunit(ax), label=ax)
+		axis.set_unit(ax_outunit(ax))
+		axis.set_plotlabel(ax_label_dict[ax])
+		out_axes.append(axis)
+	if verbose:
+		print("Generating and returning DataSet...")
+	return snomtools.data.datasets.DataSet(os.path.basename(filepath), dataarrays, out_axes, h5target=h5target)
 
 
 if False:  # Just for testing
