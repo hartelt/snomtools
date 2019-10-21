@@ -1,35 +1,54 @@
-from scipy import fftpack, ndimage
+from scipy import fftpack
 import numpy as np
 import matplotlib.pyplot as plt
-import cv2 as cv
-
 
 
 def radial_profile(data, center):
-    y,x = np.indices((data.shape)) 				# determine radii of all pixels in relation to the center
-    r = np.sqrt((x-center[0])**2+(y-center[1])**2)
+	y, x = np.indices((data.shape))
+	r = np.sqrt((x - center[0]) ** 2 + (y - center[1]) ** 2) #determine all radii
+	r = r.astype(np.int)	#here, radiusbinning is 1 because of int sized pixels
 
-    ind = np.argsort(r.flat) 					# get sorted indices
-    sr = r.flat[ind] 							# sorted radii
-    sim = data.flat[ind] 						# image values sorted by radii
-    ri = sr.astype(np.int32) 					# integer part of radii (bin size = 1)
+	tbin = np.bincount(r.ravel(), data.ravel()) #to each radius found in r weight it with it's datapoint
+	nr = np.bincount(r.ravel())					#here to amount of occurences of each radius is recorded
+	radialprofile = tbin / nr					#norm
 
-    # determining distance between changes
-    deltar = ri[1:] - ri[:-1] 					# assume all radii represented
-    rind = np.where(deltar)[0] 					# location of changed radius
-    nr = rind[1:] - rind[:-1] 					# number in radius bin
+	return radialprofile
 
-    csim = np.cumsum(sim, dtype=np.float64) 	# cumulative sum to figure out sums for each radii bin
-    tbin = csim[rind[1:]] - csim[rind[:-1]] 	# sum for image values in radius bins
-    radialprofile = tbin/nr 					# the answer
-    return radialprofile
 
 
 if __name__ == '__main__':
-    path = 'D:/Auswertungen/20181123 a-SiH on ZnO/opo/'
-    image = np.asarray(cv.imread(path+'535.tif',-1))
 
-    fft2 = fftpack.fftshift(fftpack.fft2(image))
-    rad=radial_profile(np.log10(abs(fft2)), (fft2.shape[0]/2,fft2.shape[1]/2))
-    plt.plot(rad)
-    plt.show()
+	# generate example data
+	size = 1001
+	center = np.int((size - 1) / 2)
+	freq = 0.01
+	data = np.zeros((size, size))
+	for x in range(size):
+		for y in range(size):
+			r = np.sqrt((x - center) ** 2 + (y - center) ** 2)
+			data[y, x] = 0.1 + (10 * np.sin(r * 2 * np.pi * 0.5 * freq) + 10 * np.sin(
+				r * 2 * np.pi * 1 * freq) + 10 * np.sin(
+				r * 2 * np.pi * 2 * freq) + 10 * np.sin(r * 2 * np.pi * 3 * freq)) * np.exp(-0.01 * r)
+	plt.figure()
+	plt.imshow(data)
+
+	# 2D FFT
+	fft2 = fftpack.fftshift(fftpack.fft2(data))
+	plt.figure()
+	plt.imshow(abs(fft2))
+
+
+	#Build axes
+	deltaT = 1  # realspace step size
+	fticks_x = fftpack.fftshift(fftpack.fftfreq(fft2.shape[0], deltaT))
+	fticks_y = fftpack.fftshift(fftpack.fftfreq(fft2.shape[1], deltaT))
+	plt.imshow(abs(fft2), extent=(fticks_x.min(), fticks_x.max(), fticks_y.min(), fticks_y.max()))
+
+	# Calculate radial sum
+	profile = radial_profile(np.abs(fft2), (center, center))
+	profile2 = radial_profile2(np.abs(fft2), (center, center))
+	plt.figure()
+	plt.plot(fticks_x[center:], np.abs(fft2[center, center:]), label='linescan')
+	plt.plot(fticks_x[center:], profile[0:center + 1], label='radial sum')
+
+	print('moep')
