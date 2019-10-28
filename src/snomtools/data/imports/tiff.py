@@ -369,7 +369,7 @@ def powerlaw_folder_peem_camera(folderpath, pattern="mW", powerunit=None, poweru
 	return snomtools.data.datasets.stack_DataSets(datastack, poweraxis, axis=-1, label="Powerlaw " + folderpath)
 
 
-def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunitlabel=None, sum_only=False):
+def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunitlabel=None, sum_only=False, norm_to_actime=False):
 	"""
 
 	:param folderpath: The (relative or absolute) path of the folders containing the powerlaw measurement series.
@@ -389,11 +389,18 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 
 	:return: The dataset containing the images stacked along a power axis.
 	"""
+	tunitm = "m"
+	tunits = "s"
+	tunith = "h"
+
 	if powerunit is None:
 		powerunit = pattern
 	if powerunitlabel is None:
 		powerunitlabel = powerunit
 	pat = re.compile('(\d*[,|.]?\d+)\s?' + pattern)
+	tunm = re.compile('(\d*[,|.]?\d+)\s?' + tunitm + '[^a-hj-zA-Z]')
+	tuns = re.compile('(\d*[,|.]?\d+)\s?' + tunits)
+	tunh = re.compile('(\d*[,|.]?\d+)\s?' + tunith)
 
 	# Translate input path to absolute path:
 	folderpath = os.path.abspath(folderpath)
@@ -401,20 +408,55 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 	# Inspect the given folder for the tif files of the powerlaw:
 	powerfiles = {}
 	for filename in filter(is_tif, os.listdir(folderpath)):
-		found = re.search(pat, filename)
-		if found:
-			power = float(found.group(1).replace(',', '.'))
-			powerfiles[power] = filename
+		foundp = re.search(pat, filename)
+		if foundp:
+			power = float(foundp.group(1).replace(',', '.'))
+			foundm = re.search(tunm, filename)
+			founds = re.search(tuns, filename)
+			foundh = re.search(tunh, filename)
+			time = 0
+			if foundh:
+				hour = float(foundh.group(1).replace(',', '.'))
+				time = 60 * 60 * hour
+			if foundm:
+				minute = float(foundm.group(1).replace(',', '.'))
+
+
+				time = time + 60 * minute
+
+
+
+			if founds:
+				second = float(founds.group(1).replace(',', '.'))
+
+				time = time + second
+
+			if time == 0 or not norm_to_actime:
+				time = 1
+			powerfiles[power] = [filename,time]
+
+
 
 	axlist = []
 	datastack = []
+
 	for power in iter(sorted(powerfiles.keys())):
 		if sum_only:
-			datastack.append(peem_dld_read_terra_sumimage(os.path.join(folderpath, powerfiles[power])))
+			dataslice = peem_dld_read_terra_sumimage(os.path.join(folderpath, powerfiles[power][0]))
+			dataslice.datafields[0] = dataslice.datafields[0]/powerfiles[power][1]
+
+			datastack.append(dataslice)
+
 		else:
-			datastack.append(peem_dld_read_terra(os.path.join(folderpath, powerfiles[power])))
+
+			dataslice = peem_dld_read_terra(os.path.join(folderpath, powerfiles[power][0]))
+			dataslice.datafields[0] = dataslice.datafields[0] / powerfiles[power][1]
+			datastack.append(dataslice)
 		axlist.append(power)
 	powers = u.to_ureg(axlist, powerunit)
+
+
+
 
 	pl = 'Power / ' + powerunitlabel  # Plot label for power axis.
 	poweraxis = snomtools.data.datasets.Axis(powers, label='power', plotlabel=pl)
