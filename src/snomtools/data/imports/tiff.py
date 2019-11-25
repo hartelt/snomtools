@@ -369,7 +369,7 @@ def powerlaw_folder_peem_camera(folderpath, pattern="mW", powerunit=None, poweru
 	return snomtools.data.datasets.stack_DataSets(datastack, poweraxis, axis=-1, label="Powerlaw " + folderpath)
 
 
-def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunitlabel=None, sum_only=False, norm_to_actime=False):
+def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunitlabel=None, sum_only=False, norm_to_exptime=False):
 	"""
 
 	:param folderpath: The (relative or absolute) path of the folders containing the powerlaw measurement series.
@@ -385,6 +385,10 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 		siunitx command. If not given, the powerunit parameter will be used.
 
 	:param sum_only: If True, only sum images will be read instead of full energy resolved data. *default: False*
+
+	:param norm_to_exptime: If True, counts will be divided by exposure time in seconds. The exposure time will be
+		taken out of the filename. This helps to make powerlaws with measurements with diffrent exposure times. 
+
 	:type sum_only: bool, *optional*
 
 	:return: The dataset containing the images stacked along a power axis.
@@ -431,9 +435,11 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 
 				exp_time = exp_time + second
 
-			if exp_time == 0 or not norm_to_actime:
+			if exp_time == 0 or not norm_to_exptime:
 				exp_time = 1
-			powerfiles[power] = [filename,u.to_ureg(exp_time,'s')]
+				powerfiles[power] = [filename, u.to_ureg(exp_time)]
+			else:
+				powerfiles[power] = [filename,u.to_ureg(exp_time,'s')]
 
 
 
