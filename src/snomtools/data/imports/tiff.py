@@ -414,26 +414,26 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 			foundm = re.search(tunm, filename)
 			founds = re.search(tuns, filename)
 			foundh = re.search(tunh, filename)
-			time = 0
+			exp_time = 0
 			if foundh:
 				hour = float(foundh.group(1).replace(',', '.'))
-				time = 60 * 60 * hour
+				exp_time = 60 * 60 * hour
 			if foundm:
 				minute = float(foundm.group(1).replace(',', '.'))
 
 
-				time = time + 60 * minute
+				exp_time = exp_time + 60 * minute
 
 
 
 			if founds:
 				second = float(founds.group(1).replace(',', '.'))
 
-				time = time + second
+				exp_time = exp_time + second
 
-			if time == 0 or not norm_to_actime:
-				time = 1
-			powerfiles[power] = [filename,time]
+			if exp_time == 0 or not norm_to_actime:
+				exp_time = 1
+			powerfiles[power] = [filename,u.to_ureg(exp_time,'s')]
 
 
 
