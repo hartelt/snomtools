@@ -623,11 +623,18 @@ class Gauss_Fit_nD(object):
 				slicetup = tuple(indexlist)
 				yvals = ydata.get_data()[slicetup].magnitude
 
-				if guess is None:
-					pointguess = (np.mean(xvals), (np.max(xvals) - np.min(xvals)) / 4, np.max(yvals), np.min(yvals))
-					coeffs, pcov = curve_fit(gaussian, xvals, yvals, pointguess)
-				else:
-					coeffs, pcov = curve_fit(gaussian, xvals, yvals, guess)
+				try:
+					if guess is None:
+						pointguess = (np.mean(xvals), (np.max(xvals) - np.min(xvals)) / 4, np.max(yvals), np.min(yvals))
+						coeffs, pcov = curve_fit(gaussian, xvals, yvals, pointguess)
+					else:
+						coeffs, pcov = curve_fit(gaussian, xvals, yvals, guess)
+				except RuntimeError as e:
+					coeffs = np.zeros(4)
+					pcov = np.full((4,4),np.inf)
+				except ValueError as e:
+					coeffs = np.zeros(4)
+					pcov = np.full((4,4),np.inf)
 				# Take absolute value for sigma, because negative widths don't make sense and curve is identical:
 				coeffs[1] = abs(coeffs[1])
 				self.coeffs[(np.s_[:],) + index] = coeffs
@@ -928,11 +935,19 @@ class Lorentz_Fit_nD(object):
 				slicetup = tuple(indexlist)
 				yvals = ydata.get_data()[slicetup].magnitude
 
-				if guess is None:
-					pointguess = (np.mean(xvals), (np.max(xvals) - np.min(xvals)) / 4, np.max(yvals), np.min(yvals))
-					coeffs, pcov = curve_fit(lorentzian, xvals, yvals, pointguess)
-				else:
-					coeffs, pcov = curve_fit(lorentzian, xvals, yvals, guess)
+				try:
+					if guess is None:
+						pointguess = (np.mean(xvals), (np.max(xvals) - np.min(xvals)) / 4, np.max(yvals), np.min(yvals))
+						coeffs, pcov = curve_fit(lorentzian, xvals, yvals, pointguess)
+					else:
+						coeffs, pcov = curve_fit(lorentzian, xvals, yvals, guess)
+				except RuntimeError as e:
+					coeffs = np.zeros(4)
+					pcov = np.full((4,4),np.inf)
+				except ValueError as e:
+					coeffs = np.zeros(4)
+					pcov = np.full((4,4),np.inf)
+
 				# Take absolute value for gamma, because negative widths don't make sense and curve is identical:
 				coeffs[1] = abs(coeffs[1])
 				self.coeffs[(np.s_[:],) + index] = coeffs
