@@ -91,26 +91,29 @@ class Binning(object):
 														  * self.binFactor[ax],
 														  None)
 			olddataregion = tuple(olddataregion)
-			# load olddata from this region
-			olddata = self.data.get_datafield(0).data[
-				olddataregion].q  # .q necessary, otherwise "olddata.shape = tuple(shapelist)" yields: "AttributeError: can't set attribute"
+			# load olddata from this region into in-memory quantity
+			olddata = self.data.get_datafield(0).data[olddataregion].q
+			# (.q necessary, because we do not want to reshape on the original H5 dataset)
 
-			# split data in packs that need to be summed up by rearranging the data along an additional axis of shape binFactor in the position of the binAxis and reducing binAxis by a binFactor, so that the amount of arrayelements stays the same
+			# split data in packs that need to be summed up by rearranging the data along an additional axis
+			# of shape binFactor in the position of the binAxis+1 and reducing binAxis by a binFactor,
+			# so that the amount of arrayelements stays the same
+			# Example: An axis of len = 50 with binFactor of 2 would be reshaped to (25,2), then summed over the second.
 			shapelist = list(olddata.shape)
+			binAxisFactor = list(zip(self.binAxisID, self.binFactor)) # zip tuples so we can manipulate them together
+			# sort the (binAxisID,binFactor) list declining, so one can add the axis i to the reshape list later and
+			# keep track of the new index of the i+1 axis by adding 1 :
+			binAxisFactor.sort(reverse=True)
 
-			binAxisFactor = list(zip(self.binAxisID, self.binFactor))
-			binAxisFactor.sort(
-				reverse=True)  # sort the (binAxisID,binFactor) list declining, so one can add the axis i to the reshape list later and keep track of the new index of the i+1 axis by adding 1
+			for ax in range(len(binAxisFactor)):  # binAxisFactor contains pair of [0]=binAxisID [1]=binFactor
+				shapelist[binAxisFactor[ax][0]] = shapelist[binAxisFactor[ax][0]] // binAxisFactor[ax][1]
+				shapelist.insert(binAxisFactor[ax][0] + 1, binAxisFactor[ax][1])
 
-			for ax in range(len(binAxisFactor)):
-				shapelist[binAxisFactor[ax][0]] = shapelist[binAxisFactor[ax][0]] // binAxisFactor[ax][
-					1]  # [0]=binAxisID [1]=binFactor
-				shapelist.insert(binAxisFactor[ax][0], binAxisFactor[ax][1])
+			olddata_reshaped = olddata.reshape(shapelist)  # reshaped view on data (split remaining axis, binning axis)
 
-			olddata.shape = tuple(shapelist)  # reshape inplace (split binning axis and remaining axis)
-			sumaxes = list(range(len(binAxisFactor))) + np.sort(
-				np.array(binAxisFactor)[:, 0])  # shift binAxis Index by number of previously adde dimensions before it
-			newdata[chunkslice] = np.sum(olddata, axis=tuple(sumaxes))  # sum along the newly added binning axis
+			# shift binAxis Index by number of previously added dimensions before it:
+			sumaxes = list(range(len(binAxisFactor))) + np.sort(np.array(binAxisFactor)[:, 0]) + 1
+			newdata[chunkslice] = np.sum(olddata_reshaped, axis=tuple(sumaxes))  # sum along the binning axis
 
 		newdata = ds.DataArray(newdata,
 							   label="binned_" + self.data.get_datafield(0).label,
@@ -136,15 +139,31 @@ class Binning(object):
 
 if __name__ == '__main__':  # Just for testing:
 	print("Testing...")
-	path = 'E:\\NFC15\\20171207 ZnO+aSiH\\01 DLD PSI -3 to 150 fs step size 400as\\Maximamap\\Driftcorrected\\summed_runs'
-	data_dir = path + '\\projected.hdf5'
-	# data_dir = path + '\\summed_data.hdf5'
-	h5target = path + '\\binned_data.hdf5'
-	data = ds.DataSet.from_h5file(data_dir, h5target=h5target)
+	test_fakedata = True  # Create and test on a fake dataset that's easier to overview:
+	if test_fakedata:
+		print("Building fake data...")
+		fakearray = np.stack([np.arange(50) for i in range(25)] + [np.arange(50) + 100 for i in range(25)])
+		fakedata = ds.DataArray(fakearray, h5target=True, chunks=(5, 5))
+		fakeds = ds.DataSet("test", [ds.DataArray(fakedata)],
+							[ds.Axis(np.arange(50), label="y"), ds.Axis(np.arange(50), label="x")],
+							h5target=True)
+		fakeds.saveh5("binning_testdata.hdf5")
+		print("Test binning on fake data...")
+		b = Binning(fakeds, binAxisID=('y', 'x'), binFactor=(2, 8))
+		binnedds = b.bin(h5target="binning_outdata.hdf5")
+		binnedds.saveh5()
 
-	# data = ds.DataSet.from_h5file("terra-tr-psi-dld.hdf5")
+	test_realdata = False  # Testing real data from NFC Session on Ben's PC:
+	if test_realdata:
+		path = 'E:\\NFC15\\20171207 ZnO+aSiH\\01 DLD PSI -3 to 150 fs step size 400as\\Maximamap\\Driftcorrected\\summed_runs'
+		data_dir = path + '\\projected.hdf5'
+		# data_dir = path + '\\summed_data.hdf5'
+		h5target = path + '\\binned_data.hdf5'
+		data = ds.DataSet.from_h5file(data_dir, h5target=h5target)
 
-	binSet = Binning(data=data, binAxisID=('energy', 'delay'), binFactor=(3, 10))
-	newds = binSet.bin(h5target=h5target)
+		# data = ds.DataSet.from_h5file("terra-tr-psi-dld.hdf5")
+
+		binSet = Binning(data=data, binAxisID=('energy', 'delay'), binFactor=(3, 10))
+		newds = binSet.bin(h5target=h5target)
 
 	print("done.")
