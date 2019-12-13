@@ -373,7 +373,8 @@ def powerlaw_folder_peem_camera(folderpath, pattern="mW", powerunit=None, poweru
 	return snomtools.data.datasets.stack_DataSets(datastack, poweraxis, axis=-1, label="Powerlaw " + folderpath)
 
 
-def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunitlabel=None, sum_only=False,
+def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunitlabel=None, h5target=False,
+							 sum_only=False,
 							 norm_to_exptime=False):
 	"""
 
@@ -388,6 +389,9 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 
 	:param powerunitlabel: string: Will be used as the unit for the power axis plotlabel. Can be for example a LaTeX
 		siunitx command. If not given, the powerunit parameter will be used.
+
+	:param h5target: The HDF5 target to write to.
+	:type h5target: str **or** h5py.Group **or** True, *optional*
 
 	:param sum_only: If True, only sum images will be read instead of full energy resolved data. *default: False*
 
@@ -425,7 +429,7 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 			power = float(foundp.group(1).replace(',', '.'))
 
 			if norm_to_exptime:
-				#calculate aquisition time in seconds and add it to powerfiles list
+				# calculate aquisition time in seconds and add it to powerfiles list
 				foundm = re.search(tunm, filename)
 				founds = re.search(tuns, filename)
 				foundh = re.search(tunh, filename)
@@ -442,39 +446,75 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 					second = float(founds.group(1).replace(',', '.'))
 
 					exp_time = exp_time + second
-				powerfiles[power] = [filename, u.to_ureg(exp_time,'s')]
+				powerfiles[power] = [filename, u.to_ureg(exp_time, 's')]
 			else:
-				#since no norming is desired, the norming factor is set to 1 [dimensionless]
+				# since no norming is desired, the norming factor is set to 1 [dimensionless]
 				exp_time = 1
 				powerfiles[power] = [filename, u.to_ureg(exp_time)]
 
-
 	axlist = []
 	datastack = []
-
-	for power in iter(sorted(powerfiles.keys())):
+	if h5target:
+		print('Moep')
+		powersize = powerfiles.__len__()
 		if sum_only:
-			dataslice = peem_dld_read_terra_sumimage(os.path.join(folderpath, powerfiles[power][0]))
-			try:
-				dataslice.datafields[0] = dataslice.datafields[0] / powerfiles[power][1]
-			except:
-				print('An error occured in the norming to aquisition time. Aquisition time set from ' + str(
-					powerfiles[power][1]) + ' to 1 [dimensionless] in power' + str(powerfiles[power][0]))
-				dataslice.datafields[0] = dataslice.datafields[0] /  u.to_ureg(1)
-			datastack.append(dataslice)
+			sample_data = peem_dld_read_terra_sumimage(os.path.join(folderpath, powerfiles[list(powerfiles)[0]][
+				0]))  # get object of the dict without knowing the key
+			for power in iter(sorted(powerfiles.keys())):
+				dataslice = peem_dld_read_terra_sumimage(os.path.join(folderpath, powerfiles[power][0]))
+				try:
+					dataslice.datafields[0] = dataslice.datafields[0] / powerfiles[power][1]
+				except:
+					print('An error occured in the norming to aquisition time. Aquisition time set from ' + str(
+						powerfiles[power][1]) + ' to 1 [dimensionless] in power' + str(powerfiles[power][0]))
+					dataslice.datafields[0] = dataslice.datafields[0] / u.to_ureg(1)
+				datastack.append(dataslice)
+				axlist.append(power)
 
 		else:
-			dataslice = peem_dld_read_terra(os.path.join(folderpath, powerfiles[power][0]))
-			try:
-				dataslice.datafields[0] = dataslice.datafields[0] / powerfiles[power][1]
-			except:
-				print('An error occured in the norming to aquisition time. Aquisition time set from ' + str(
-					powerfiles[power][1]) + ' to 1 [dimensionless] in power' + str(powerfiles[power][0]))
-				dataslice.datafields[0] = dataslice.datafields[0] /  u.to_ureg(1)
-			datastack.append(dataslice)
-		axlist.append(power)
-	powers = u.to_ureg(axlist, powerunit)
+			sample_data = peem_dld_read_terra(os.path.join(folderpath, powerfiles[list(powerfiles)[0]][
+				0]))   # get object of the dict without knowing the key
+			for power in iter(sorted(powerfiles.keys())):
+				dataslice = peem_dld_read_terra(os.path.join(folderpath, powerfiles[power][0]))
+				try:
+					dataslice.datafields[0] = dataslice.datafields[0] / powerfiles[power][1]
+				except:
+					print('An error occured in the norming to aquisition time. Aquisition time set from ' + str(
+						powerfiles[power][1]) + ' to 1 [dimensionless] in power' + str(powerfiles[power][0]))
+					dataslice.datafields[0] = dataslice.datafields[0] / u.to_ureg(1)
+				datastack.append(dataslice)
+				axlist.append(power)
 
+
+
+
+
+
+
+	else:
+		for power in iter(sorted(powerfiles.keys())):
+			if sum_only:
+				dataslice = peem_dld_read_terra_sumimage(os.path.join(folderpath, powerfiles[power][0]))
+				try:
+					dataslice.datafields[0] = dataslice.datafields[0] / powerfiles[power][1]
+				except:
+					print('An error occured in the norming to aquisition time. Aquisition time set from ' + str(
+						powerfiles[power][1]) + ' to 1 [dimensionless] in power' + str(powerfiles[power][0]))
+					dataslice.datafields[0] = dataslice.datafields[0] / u.to_ureg(1)
+				datastack.append(dataslice)
+
+			else:
+				dataslice = peem_dld_read_terra(os.path.join(folderpath, powerfiles[power][0]))
+				try:
+					dataslice.datafields[0] = dataslice.datafields[0] / powerfiles[power][1]
+				except:
+					print('An error occured in the norming to aquisition time. Aquisition time set from ' + str(
+						powerfiles[power][1]) + ' to 1 [dimensionless] in power' + str(powerfiles[power][0]))
+					dataslice.datafields[0] = dataslice.datafields[0] / u.to_ureg(1)
+				datastack.append(dataslice)
+			axlist.append(power)
+
+	powers = u.to_ureg(axlist, powerunit)
 	pl = 'Power / ' + powerunitlabel  # Plot label for power axis.
 	poweraxis = snomtools.data.datasets.Axis(powers, label='power', plotlabel=pl)
 
