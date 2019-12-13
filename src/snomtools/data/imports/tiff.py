@@ -425,6 +425,7 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 			power = float(foundp.group(1).replace(',', '.'))
 
 			if norm_to_exptime:
+				#calculate aquisition time in seconds and add it to powerfiles list
 				foundm = re.search(tunm, filename)
 				founds = re.search(tuns, filename)
 				foundh = re.search(tunh, filename)
@@ -443,6 +444,7 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 					exp_time = exp_time + second
 				powerfiles[power] = [filename, u.to_ureg(exp_time,'s')]
 			else:
+				#since no norming is desired, the norming factor is set to 1 [dimensionless]
 				exp_time = 1
 				powerfiles[power] = [filename, u.to_ureg(exp_time)]
 
