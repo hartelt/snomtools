@@ -1143,3 +1143,380 @@ class Lorentz_Fit_nD(object):
     @staticmethod
     def FWHM_from_gamma(gamma):
         return gamma * 2.
+
+
+def sech2(x, x_0, tau, A, C):
+    """
+    A Sech squared function of the form sech2(x) = A * 2 / (np.exp((x - x_0) / tau) + np.exp(-(x - x_0) / tau)) ** 2 + C
+    All parameters can be given as quantities, if so, unit checks are done automatically. If not, correct units are
+    assumed.
+
+    :param x: The variable x.
+
+    :param x_0: (Same unit as x.) The center of the sech^2.
+
+    :param tau: (Same unit as x.) The width of the sech^2. Relates to FWHM by:
+        FWHM = 2 log(1+sqrt(2)) * tau
+
+    :param A: (Same unit as C.) The amplitude of the sech^2 function relative to background.
+
+    :param C: (Same unit as A.) The constant offset (background) of the curve relative to zero.
+
+    :return: (Same unit as A and C.) The result of the sech^2 function.
+    """
+    return A * 4 / (np.exp((x - x_0) / tau) + np.exp(-(x - x_0) / tau)) ** 2 + C
+
+
+class Sech2_Fit(object):
+    """
+    A Gauss Fit of given data with benefits.
+    """
+
+    def __init__(self, data=None, guess=None, data_id=0, axis_id=0, keepdata=True, normalize=False):
+        if data:
+            self.data = self.extract_data(data, data_id=data_id, axis_id=axis_id)
+            xunit = self.data.get_axis(0).get_unit()
+            yunit = self.data.get_datafield(0).get_unit()
+
+            if normalize:
+                take_data = 0
+            else:
+                take_data = 1
+
+            self.coeffs, pcov = self.fit_sech2(self.data.get_axis(0).get_data(),
+                                               self.data.get_datafield(take_data).get_data(),
+                                               guess)
+            try:
+                self.accuracy = np.sqrt(np.diag(pcov))
+            except ValueError as e:  # Fit failed. pcov = inf, diag(inf) throws exception:
+                self.accuracy = np.full(4, np.inf)
+            self.x_0_unit = xunit
+            self.tau_unit = xunit
+            self.A_unit = yunit
+            self.C_unit = yunit
+            if not keepdata:
+                self.data = None
+
+    @property
+    def x_0(self):
+        return u.to_ureg(self.coeffs[0], self.x_0_unit)
+
+    @x_0.setter
+    def x_0(self, newvalue):
+        newvalue = u.to_ureg(newvalue, self.x_0_unit)
+        self.coeffs[0] = newvalue.magnitude
+
+    @property
+    def tau(self):
+        return u.to_ureg(self.coeffs[1], self.tau_unit)
+
+    @property
+    def A(self):
+        return u.to_ureg(self.coeffs[2], self.A_unit)
+
+    @property
+    def C(self):
+        return u.to_ureg(self.coeffs[3], self.C_unit)
+
+    @property
+    def FWHM(self):
+        return 2 * np.log(1 + np.sqrt(2)) * self.tau
+
+    @property
+    def x_0_accuracy(self):
+        return u.to_ureg(self.accuracy[0], self.x_0_unit)
+
+    @property
+    def tau_accuracy(self):
+        return u.to_ureg(self.accuracy[1], self.tau_unit)
+
+    @property
+    def A_accuracy(self):
+        return u.to_ureg(self.accuracy[2], self.A_unit)
+
+    @property
+    def C_accuracy(self):
+        return u.to_ureg(self.accuracy[3], self.C_unit)
+
+    @property
+    def FWHM_accuracy(self):
+        return 2 * np.log(1 + np.sqrt(2)) * self.tau_accuracy
+
+    @classmethod
+    def from_coeffs(cls, coeffs):
+        x_0, tau, A, C = coeffs
+        x_0 = u.to_ureg(x_0)
+        tau = u.to_ureg(tau)
+        A = u.to_ureg(A)
+        C = u.to_ureg(C)
+        xunit = x_0.units
+        yunit = A.units
+
+        new_instance = cls()
+        new_instance.coeffs = coeffs
+        new_instance.x_0_unit = xunit
+        new_instance.tau_unit = xunit
+        new_instance.A_unit = yunit
+        new_instance.C_unit = yunit
+        return new_instance
+
+    @classmethod
+    def from_xy(cls, xdata, ydata, guess=None):
+        new_instance = cls()
+        xdata = u.to_ureg(xdata)
+        xunit = str(xdata.units)
+        ydata = u.to_ureg(ydata)
+        yunit = str(ydata.units)
+        new_instance.coeffs, pcov = cls.fit_sech2(xdata, ydata, guess)
+        try:
+            new_instance.accuracy = np.sqrt(np.diag(pcov))
+        except ValueError as e:  # Fit failed. pcov = inf, diag(inf) throws exception:
+            new_instance.accuracy = np.full(4, np.inf)
+        new_instance.x_0_unit = xunit
+        new_instance.tau_unit = xunit
+        new_instance.A_unit = yunit
+        new_instance.C_unit = yunit
+        return new_instance
+
+    def sech2(self, x):
+        """
+        The Hyperbolic secant squared function corresponding to the fit values of the Sech2_Fit instance.
+
+        :param x: The value for which to evaluate the sech2. (Quantity or numerical in correct unit).
+
+        :return: The value of the sech2 function at the value x. Returned as Quantity in whichever unit the fit
+            data was given.
+        """
+        x = u.to_ureg(x, self.x_0_unit)
+        return sech2(x, self.x_0, self.tau, self.A, self.C)
+
+    @staticmethod
+    def extract_data(data, data_id=0, axis_id=0, label="fitdata"):
+        """
+        Extracts the datapoints to be fitted out of a dataset. Therefore, it takes the chosen axis of the input data,
+        and projects the chosen datafield onto that axis by summing over all the other axes.
+
+        :param data: Dataset containing the data.
+
+        :param data_id: Identifier of the DataField to use. By default, the first DataField is used.
+
+        :param axis_id: Identifier of the axis to use. By default, the first Axis is used.
+
+        :param label: string: label for the produced DataSet
+
+        :return: 1D-DataSet with projected Intensity Data and Power Axis.
+        """
+        assert isinstance(data, ds.DataSet) or isinstance(data, ds.ROI), \
+            "ERROR: No dataset or ROI instance given to fit data extraction."
+        xaxis = data.get_axis(axis_id)
+        data_full = data.get_datafield(data_id)
+        xaxis_index = data.get_axis_index(axis_id)
+        data_projected = data_full.project_nd(xaxis_index)
+        data_projected = ds.DataArray(data_projected, label='projected data')
+        # Normalize by scaling to 1:
+        data_projected_norm = data_projected / data_projected.max()
+        data_projected_norm.set_label("projected data normalized")
+        # Initialize the DataSet containing only the projected powerlaw data;
+        return ds.DataSet(label, [data_projected_norm, data_projected], [xaxis])
+
+    @staticmethod
+    def extract_data_raw(data, data_id=0, axis_id=0):
+        """
+        Extracts the datapoints to be fitted out of a dataset. Therefore, it takes the chosen axis of the input data,
+        and projects the chosen datafield onto that axis by summing over all the other axes.
+
+        :param data: Dataset containing the data.
+
+        :param data_id: Identifier of the DataField to use. By default, the first DataField is used.
+
+        :param axis_id: Identifier of the axis to use. By default, the first Axis is used.
+
+        :return: xdata, ydata: tuple of quantities with the projected data.
+        """
+        assert isinstance(data, ds.DataSet) or isinstance(data, ds.ROI), \
+            "ERROR: No dataset or ROI instance given to fit data extraction."
+        xaxis = data.get_axis(axis_id)
+        data_full = data.get_datafield(data_id)
+        xaxis_index = data.get_axis_index(axis_id)
+        return xaxis.get_data(), data_full.project_nd(xaxis_index)
+
+    @staticmethod
+    def fit_sech2(xdata, ydata, guess=None):
+        """
+        This function fits a sech^2 function to data. Uses numpy.optimize.curve_fit under the hood.
+
+        :param xdata: A quantity or array. If no quantity, dimensionless data are assumed.
+
+        :param ydata: Quantity or array: The corresponding y values. If no quantity, dimensionless data are assumed.
+
+        :param guess: optional: A tuple of start parameters (x_0, tau, A, C) as defined in sech squared method.
+
+        :return: The coefficients and uncertainties of the fitted gaussian (x_0, tau, A, C), as defined in sech2
+            method.
+        """
+        xdata = u.to_ureg(xdata)
+        ydata = u.to_ureg(ydata)
+        if guess is None:
+            guess = (xdata[np.argmax(ydata)], (np.max(xdata) - np.min(xdata)) / 4, np.max(ydata), np.min(ydata))
+        # to assure the guess is represented in the correct units:
+        xunit = xdata.units
+        yunit = ydata.units
+        unitslist = [xunit, xunit, yunit, yunit]
+        guesslist = []
+        for guesselement, guessunit in zip(guess, unitslist):
+            guesslist.append(u.to_ureg(guesselement, guessunit).magnitude)
+        guess = tuple(guesslist)
+        return curve_fit(sech2, xdata.magnitude, ydata.magnitude, guess)
+
+    @staticmethod
+    def tau_from_FWHM(FWHM):
+        return FWHM / (2 * np.log(1 + np.sqrt(2)))
+
+    @staticmethod
+    def FWHM_from_tau(tau):
+        return 2 * np.log(1 + np.sqrt(2)) * tau
+
+
+class Sech2_Fit_nD(object):
+    """
+    A moredimensional Hyperbolic Secant Squared Fit of given data, in the sense of fitting a Sech2 function along a specified axis for
+    all points on all other axes. This can be used to generate "peak maps" of given data, for example an
+    autocorrelation width map of a time-resolved measurement.
+    """
+
+    def __init__(self, data=None, guess=None, data_id=0, axis_id=0, keepdata=True):
+        global print_counter, start_time
+        if data:
+            data_id = data.get_datafield_index(data_id)
+            axis_id = data.get_axis_index(axis_id)
+            xaxis = data.get_axis(axis_id)
+            ydata = data.get_datafield(data_id)
+            xunit = data.get_axis(axis_id).get_unit()
+            yunit = data.get_datafield(data_id).get_unit()
+
+            map_shape_list = list(data.shape)
+            del map_shape_list[axis_id]
+            map_shape = tuple(map_shape_list)
+            coeff_shape = tuple([4] + map_shape_list)
+            self.coeffs = np.empty(coeff_shape)
+            self.accuracy = np.empty(coeff_shape)
+
+            # to assure the guess is represented in the correct units:
+            if guess is not None:
+                unitslist = [xunit, xunit, yunit, yunit]
+                guesslist = []
+                for guesselement, guessunit in zip(guess, unitslist):
+                    guesslist.append(u.to_ureg(guesselement, guessunit).magnitude)
+                guess = tuple(guesslist)
+
+            if verbose:
+                print("Fitting {0} sech2 functions".format(np.prod(map_shape)))
+                start_time = time.time()
+                print_counter = 0
+
+            xvals = xaxis.get_data_raw()
+            for index in np.ndindex(map_shape):
+                indexlist = list(index)
+                indexlist.insert(axis_id, np.s_[:])
+                slicetup = tuple(indexlist)
+                yvals = ydata.get_data()[slicetup].magnitude
+
+                try:
+                    if guess is None:
+                        pointguess = (np.mean(xvals), (np.max(xvals) - np.min(xvals)) / 4, np.max(yvals), np.min(yvals))
+                        coeffs, pcov = curve_fit(gaussian, xvals, yvals, pointguess)
+                    else:
+                        coeffs, pcov = curve_fit(sech2, xvals, yvals, guess)
+                except RuntimeError as e:
+                    coeffs = np.zeros(4)
+                    pcov = np.full((4, 4), np.inf)
+                except ValueError as e:
+                    coeffs = np.zeros(4)
+                    pcov = np.full((4, 4), np.inf)
+                # Take absolute value for tau, because negative widths don't make sense and curve is identical:
+                coeffs[1] = abs(coeffs[1])
+                self.coeffs[(np.s_[:],) + index] = coeffs
+                try:
+                    self.accuracy[(np.s_[:],) + index] = np.sqrt(np.diag(pcov))
+                except ValueError as e:  # Fit failed. pcov = inf, diag(inf) throws exception:
+                    self.accuracy[(np.s_[:],) + index] = np.inf
+
+                if verbose:
+                    print_counter += 1
+                    if print_counter % print_interval == 0:
+                        tpf = ((time.time() - start_time) / float(print_counter))
+                        etr = tpf * (np.prod(map_shape) - print_counter)
+                        print("tiff {0:d} / {1:d}, Time/Fit {3:.4f}s ETR: {2:.1f}s".format(print_counter,
+                                                                                           np.prod(map_shape),
+                                                                                           etr, tpf))
+
+            self.x_0_unit = xunit
+            self.tau_unit = xunit
+            self.A_unit = yunit
+            self.C_unit = yunit
+            if keepdata:
+                self.data = data
+
+    @property
+    def x_0(self):
+        return u.to_ureg(self.coeffs[0], self.x_0_unit)
+
+    @property
+    def tau(self):
+        return u.to_ureg(self.coeffs[1], self.tau_unit)
+
+    @property
+    def A(self):
+        return u.to_ureg(self.coeffs[2], self.A_unit)
+
+    @property
+    def C(self):
+        return u.to_ureg(self.coeffs[3], self.C_unit)
+
+    @property
+    def FWHM(self):
+        return 2 * np.log(1 + np.sqrt(2)) * self.tau
+
+    @property
+    def x_0_accuracy(self):
+        return u.to_ureg(self.accuracy[0], self.x_0_unit)
+
+    @property
+    def tau_accuracy(self):
+        return u.to_ureg(self.accuracy[1], self.tau_unit)
+
+    @property
+    def A_accuracy(self):
+        return u.to_ureg(self.accuracy[2], self.A_unit)
+
+    @property
+    def C_accuracy(self):
+        return u.to_ureg(self.accuracy[3], self.C_unit)
+
+    @property
+    def FWHM_accuracy(self):
+        return 2 * np.log(1 + np.sqrt(2)) * self.tau_accuracy
+
+    def sech2(self, x, sel):
+        """
+        The Hyperbolic secant squared function corresponding to the fit values of the Sech2_Fit instance at a given position of the
+        data.
+
+        :param x: The value for which to evaluate the sech2. (Quantity or numerical in correct unit).
+
+        :param sel: An index tuple addressing the selected point.
+        :type sel: tuple of int
+
+        :return: The value of the sech2 function at the value x. Returned as Quantity in whichever unit the fit
+            data was given.
+        """
+        x = u.to_ureg(x, self.x_0_unit)
+        return sech2(x, self.x_0[sel], self.tau[sel], self.A[sel], self.C[sel])
+
+    @staticmethod
+    def tau_from_FWHM(FWHM):
+        return FWHM / (2 * np.log(1 + np.sqrt(2)))
+
+    @staticmethod
+    def FWHM_from_tau(tau):
+        return 2 * np.log(1 + np.sqrt(2)) * tau
