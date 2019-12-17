@@ -463,9 +463,13 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 	if sum_only:
 		sample_data = peem_dld_read_terra_sumimage(os.path.join(folderpath, powerfiles[list(powerfiles.keys())[0]][
 			0]))
+		if norm_to_exptime:
+			sample_data.datafields[0] = sample_data.datafields[0] / u.to_ureg(1,'s')
 	else:
 		sample_data = peem_dld_read_terra(os.path.join(folderpath, powerfiles[list(powerfiles.keys())[0]][
 			0]))
+		if norm_to_exptime:
+			sample_data.datafields[0] = sample_data.datafields[0] / u.to_ureg(1,'s')
 
 	# ----------------------Create dataset------------------------
 	# Test data size:
@@ -531,6 +535,9 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 		else:
 			idata = peem_dld_read_terra(os.path.join(folderpath, powerfiles[power][0]))
 
+		if norm_to_exptime:
+			idata.get_datafield(0).data = idata.get_datafield(0).data / powerfiles[power][1]
+
 		# Check data consistency:
 		assert idata.shape == sample_data.shape, "Trying to combine scan data with different shape."
 		for ax1, ax2 in zip(idata.axes, sample_data.axes):
@@ -539,10 +546,7 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 			"Trying to combine scan data with different data dimensionality."
 
 		# Write data:
-		if norm_to_exptime:
-			dataarray[islice] = idata.get_datafield(0).data / powerfiles[power][1]
-		else:
-			dataarray[islice] = idata.get_datafield(0).data
+		dataarray[islice] = idata.get_datafield(0).data
 		if verbose:
 			tpf = ((time.time() - start_time) / float(i + 1))
 			etr = tpf * (dataset.shape[0] - i + 1)
