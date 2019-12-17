@@ -373,7 +373,8 @@ def powerlaw_folder_peem_camera(folderpath, pattern="mW", powerunit=None, poweru
 	return snomtools.data.datasets.stack_DataSets(datastack, poweraxis, axis=-1, label="Powerlaw " + folderpath)
 
 
-def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunitlabel=None, sum_only=False,
+def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunitlabel=None, h5target=False,
+							 sum_only=False,
 							 norm_to_exptime=False):
 	"""
 
@@ -389,6 +390,9 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 	:param powerunitlabel: string: Will be used as the unit for the power axis plotlabel. Can be for example a LaTeX
 		siunitx command. If not given, the powerunit parameter will be used.
 
+	:param h5target: The HDF5 target to write to.
+	:type h5target: str **or** h5py.Group **or** True, *optional*
+
 	:param sum_only: If True, only sum images will be read instead of full energy resolved data. *default: False*
 
 	:param norm_to_exptime: If True, counts will be divided by exposure time in seconds. The exposure time will be
@@ -398,7 +402,7 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 
 	:return: The dataset containing the images stacked along a power axis.
 	"""
-
+	# ----------------------Create Axis------------------------
 	if powerunit is None:
 		powerunit = pattern
 	if powerunitlabel is None:
@@ -425,7 +429,7 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 			power = float(foundp.group(1).replace(',', '.'))
 
 			if norm_to_exptime:
-				#calculate aquisition time in seconds and add it to powerfiles list
+				# calculate aquisition time in seconds and add it to powerfiles list
 				foundm = re.search(tunm, filename)
 				founds = re.search(tuns, filename)
 				foundh = re.search(tunh, filename)
@@ -442,43 +446,113 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 					second = float(founds.group(1).replace(',', '.'))
 
 					exp_time = exp_time + second
-				powerfiles[power] = [filename, u.to_ureg(exp_time,'s')]
+				if exp_time == 0:
+					print('Error in norm_to_exptime. Exptime 0 detected in power ' + str(power))
+				powerfiles[power] = [filename, u.to_ureg(exp_time, 's')]
 			else:
-				#since no norming is desired, the norming factor is set to 1 [dimensionless]
+				# since no norming is desired, the norming factor is set to 1 [dimensionless]
 				exp_time = 1
 				powerfiles[power] = [filename, u.to_ureg(exp_time)]
 
 
+	# Generate power axis:
+	pl = 'Power / ' + powerunitlabel
 	axlist = []
-	datastack = []
-
-	for power in iter(sorted(powerfiles.keys())):
-		if sum_only:
-			dataslice = peem_dld_read_terra_sumimage(os.path.join(folderpath, powerfiles[power][0]))
-			try:
-				dataslice.datafields[0] = dataslice.datafields[0] / powerfiles[power][1]
-			except:
-				print('An error occured in the norming to aquisition time. Aquisition time set from ' + str(
-					powerfiles[power][1]) + ' to 1 [dimensionless] in power' + str(powerfiles[power][0]))
-				dataslice.datafields[0] = dataslice.datafields[0] /  u.to_ureg(1)
-			datastack.append(dataslice)
-
-		else:
-			dataslice = peem_dld_read_terra(os.path.join(folderpath, powerfiles[power][0]))
-			try:
-				dataslice.datafields[0] = dataslice.datafields[0] / powerfiles[power][1]
-			except:
-				print('An error occured in the norming to aquisition time. Aquisition time set from ' + str(
-					powerfiles[power][1]) + ' to 1 [dimensionless] in power' + str(powerfiles[power][0]))
-				dataslice.datafields[0] = dataslice.datafields[0] /  u.to_ureg(1)
-			datastack.append(dataslice)
-		axlist.append(power)
+	for powerstep in iter(sorted(powerfiles.keys())):
+		axlist.append(powerstep)
 	powers = u.to_ureg(axlist, powerunit)
-
-	pl = 'Power / ' + powerunitlabel  # Plot label for power axis.
 	poweraxis = snomtools.data.datasets.Axis(powers, label='power', plotlabel=pl)
 
-	return snomtools.data.datasets.stack_DataSets(datastack, poweraxis, axis=-1, label="Powerlaw " + folderpath)
+	if sum_only:
+		sample_data = peem_dld_read_terra_sumimage(os.path.join(folderpath, powerfiles[list(powerfiles.keys())[0]][
+			0]))
+	else:
+		sample_data = peem_dld_read_terra(os.path.join(folderpath, powerfiles[list(powerfiles.keys())[0]][
+			0]))
+
+	#----------------------Create dataset------------------------
+	# Test data size:
+	axlist = [poweraxis] + sample_data.axes
+	newshape = poweraxis.shape + sample_data.shape
+	#Build the data-structure that the loaded data gets filled into
+	if h5target:
+		chunks = True
+		compression = 'gzip'
+		compression_opts = 4
+
+		# Probe HDF5 initialization to optimize buffer size:
+		if chunks is True:  # Default is auto chunk alignment, so we need to probe.
+			chunk_size = probe_chunksize(shape=newshape, compression=compression, compression_opts=compression_opts)
+		else:
+			chunk_size = chunks
+		min_cache_size = chunk_size[0] * numpy.prod(sample_data.shape) * 4  # 32bit floats require 4 bytes.
+		use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 64 MB just to be sure.
+
+		# Initialize full DataSet with zeroes:
+		dataspace = snomtools.data.datasets.Data_Handler_H5(unit=sample_data.get_datafield(0).get_unit(),
+															shape=newshape, chunks=chunks,
+															compression=compression, compression_opts=compression_opts,
+															chunk_cache_mem_size=use_cache_size)
+		dataarray = snomtools.data.datasets.DataArray(dataspace,
+													  label=sample_data.get_datafield(0).get_label(),
+													  plotlabel=sample_data.get_datafield(0).get_plotlabel(),
+													  h5target=dataspace.h5target,
+													  chunks=chunks,
+													  compression=compression, compression_opts=compression_opts,
+													  chunk_cache_mem_size=use_cache_size)
+		dataset = snomtools.data.datasets.DataSet("Powerlaw " + folderpath, [dataarray], axlist, h5target=h5target,
+												  chunk_cache_mem_size=use_cache_size)
+	else:
+		# In-memory data processing without h5 files.
+		dataspace = numpy.zeros(newshape)
+		dataarray = snomtools.data.datasets.DataArray(dataspace,
+													  label=sample_data.get_datafield(0).get_label(),
+													  plotlabel=sample_data.get_datafield(0).get_plotlabel(),
+													  h5target=None)
+		dataset = snomtools.data.datasets.DataSet("Powerlaw " + folderpath, [dataarray], axlist, h5target=h5target)
+
+	dataarray = dataset.get_datafield(0)
+
+	# ----------------------Fill dataset------------------------
+	# Fill in data from imported tiffs:
+	slicebase = tuple([numpy.s_[:] for j in range(len(sample_data.shape))])
+
+	if verbose:
+		import time
+		print("Reading Powerlaw Folder of shape: ", dataset.shape)
+		if h5target:
+			print("... generating chunks of shape: ", dataset.get_datafield(0).data.ds_data.chunks)
+			print("... using cache size {0:d} MB".format(use_cache_size // 1024 ** 2))
+		else:
+			print("... in memory")
+		start_time = time.time()
+	for i, power in zip(list(range(len(powerfiles))), iter(sorted(powerfiles.keys()))):
+		islice = (i,) + slicebase
+		# Import tiff:
+		if sum_only:
+			idata =peem_dld_read_terra_sumimage(os.path.join(folderpath, powerfiles[power][0]))
+		else:
+			idata =  peem_dld_read_terra(os.path.join(folderpath, powerfiles[power][0]))
+
+		# Check data consistency:
+		assert idata.shape == sample_data.shape, "Trying to combine scan data with different shape."
+		for ax1, ax2 in zip(idata.axes, sample_data.axes):
+			assert ax1.units == ax2.units, "Trying to combine scan data with different axis dimensionality."
+		assert idata.get_datafield(0).units == sample_data.get_datafield(0).units, \
+			"Trying to combine scan data with different data dimensionality."
+
+		# Write data:
+		if norm_to_exptime:
+			dataarray[islice] = idata.get_datafield(0).data/powerfiles[power][1]
+		else:
+			dataarray[islice] = idata.get_datafield(0).data
+		if verbose:
+			tpf = ((time.time() - start_time) / float(i + 1))
+			etr = tpf * (dataset.shape[0] - i + 1)
+			print("tiff {0:d} / {1:d}, Time/File {3:.2f}s ETR: {2:.1f}s".format(i, dataset.shape[0], etr, tpf))
+
+	return dataset
+
 
 
 def tr_folder_peem_camera_terra(folderpath, delayunit="um", delayfactor=0.2, delayunitlabel=None,
@@ -713,6 +787,7 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
 	axlist = [scanaxis] + sample_data.axes
 	newshape = scanaxis.shape + sample_data.shape
 
+	#Build the data-structure that the loaded data gets filled into
 	if h5target:
 		chunks = True
 		compression = 'gzip'
