@@ -429,7 +429,7 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 			power = float(foundp.group(1).replace(',', '.'))
 
 			if norm_to_exptime:
-				# calculate aquisition time in seconds and add it to powerfiles list
+				# calculate aquisition time in seconds and add it to powerfiles list as norming factor
 				foundm = re.search(tunm, filename)
 				founds = re.search(tuns, filename)
 				foundh = re.search(tunh, filename)
@@ -447,13 +447,10 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 
 					exp_time = exp_time + second
 				if exp_time == 0:
-					print('Error in norm_to_exptime. Exptime 0 detected in power ' + str(power))
+					print('WARNING in norm_to_exptime. Exptime 0 detected for power ' + str(power))
 				powerfiles[power] = [filename, u.to_ureg(exp_time, 's')]
 			else:
-				# since no norming is desired, the norming factor is set to 1 [dimensionless]
-				exp_time = 1
-				powerfiles[power] = [filename, u.to_ureg(exp_time)]
-
+				powerfiles[power] = [filename]
 
 	# Generate power axis:
 	pl = 'Power / ' + powerunitlabel
@@ -470,11 +467,11 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 		sample_data = peem_dld_read_terra(os.path.join(folderpath, powerfiles[list(powerfiles.keys())[0]][
 			0]))
 
-	#----------------------Create dataset------------------------
+	# ----------------------Create dataset------------------------
 	# Test data size:
 	axlist = [poweraxis] + sample_data.axes
 	newshape = poweraxis.shape + sample_data.shape
-	#Build the data-structure that the loaded data gets filled into
+	# Build the data-structure that the loaded data gets filled into
 	if h5target:
 		chunks = True
 		compression = 'gzip'
@@ -530,9 +527,9 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 		islice = (i,) + slicebase
 		# Import tiff:
 		if sum_only:
-			idata =peem_dld_read_terra_sumimage(os.path.join(folderpath, powerfiles[power][0]))
+			idata = peem_dld_read_terra_sumimage(os.path.join(folderpath, powerfiles[power][0]))
 		else:
-			idata =  peem_dld_read_terra(os.path.join(folderpath, powerfiles[power][0]))
+			idata = peem_dld_read_terra(os.path.join(folderpath, powerfiles[power][0]))
 
 		# Check data consistency:
 		assert idata.shape == sample_data.shape, "Trying to combine scan data with different shape."
@@ -543,7 +540,7 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 
 		# Write data:
 		if norm_to_exptime:
-			dataarray[islice] = idata.get_datafield(0).data/powerfiles[power][1]
+			dataarray[islice] = idata.get_datafield(0).data / powerfiles[power][1]
 		else:
 			dataarray[islice] = idata.get_datafield(0).data
 		if verbose:
@@ -552,7 +549,6 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 			print("tiff {0:d} / {1:d}, Time/File {3:.2f}s ETR: {2:.1f}s".format(i, dataset.shape[0], etr, tpf))
 
 	return dataset
-
 
 
 def tr_folder_peem_camera_terra(folderpath, delayunit="um", delayfactor=0.2, delayunitlabel=None,
@@ -787,7 +783,7 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
 	axlist = [scanaxis] + sample_data.axes
 	newshape = scanaxis.shape + sample_data.shape
 
-	#Build the data-structure that the loaded data gets filled into
+	# Build the data-structure that the loaded data gets filled into
 	if h5target:
 		chunks = True
 		compression = 'gzip'
