@@ -469,7 +469,7 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 		sample_data = peem_dld_read_terra(os.path.join(folderpath, powerfiles[list(powerfiles.keys())[0]][
 			0]))
 		if norm_to_exptime:
-			sample_data.datafields[0] = sample_data.datafields[0] / u.to_ureg(1,'s')
+			sample_data.datafields[0] = sample_data.datafields[0] / u.to_ureg(1,'s')	#ToDo: Fix labels to cnt/s
 
 	# ----------------------Create dataset------------------------
 	# Test data size:
@@ -505,7 +505,7 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 												  chunk_cache_mem_size=use_cache_size)
 	else:
 		# In-memory data processing without h5 files.
-		dataspace = numpy.zeros(newshape)
+		dataspace = u.to_ureg(numpy.zeros(newshape),sample_data.datafields[0].get_unit())
 		dataarray = snomtools.data.datasets.DataArray(dataspace,
 													  label=sample_data.get_datafield(0).get_label(),
 													  plotlabel=sample_data.get_datafield(0).get_plotlabel(),
@@ -817,7 +817,7 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
 												  chunk_cache_mem_size=use_cache_size)
 	else:
 		# In-memory data processing without h5 files.
-		dataspace = numpy.zeros(newshape)
+		dataspace = numpy.zeros(newshape) #FIXME: should probably be u.to_ureg(numpy.zeros(newshape),sample_data.datafields[0].get_unit())
 		dataarray = snomtools.data.datasets.DataArray(dataspace,
 													  label=sample_data.get_datafield(0).get_label(),
 													  plotlabel=sample_data.get_datafield(0).get_plotlabel(),
