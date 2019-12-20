@@ -465,11 +465,15 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 			0]))
 		if norm_to_exptime:
 			sample_data.datafields[0] = sample_data.datafields[0] / u.to_ureg(1,'s')
+			sample_data.datafields[0].set_label('counts/seconds')
+			sample_data.datafields[0].set_plotlabel('counts/seconds')
 	else:
 		sample_data = peem_dld_read_terra(os.path.join(folderpath, powerfiles[list(powerfiles.keys())[0]][
 			0]))
 		if norm_to_exptime:
-			sample_data.datafields[0] = sample_data.datafields[0] / u.to_ureg(1,'s')	#ToDo: Fix labels to cnt/s
+			sample_data.datafields[0] = sample_data.datafields[0] / u.to_ureg(1,'s')
+			sample_data.datafields[0].set_label('counts/seconds')
+			sample_data.datafields[0].set_plotlabel('counts/seconds')
 
 	# ----------------------Create dataset------------------------
 	# Test data size:
