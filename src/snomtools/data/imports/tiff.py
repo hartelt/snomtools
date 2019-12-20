@@ -821,7 +821,7 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
 												  chunk_cache_mem_size=use_cache_size)
 	else:
 		# In-memory data processing without h5 files.
-		dataspace = numpy.zeros(newshape) #FIXME: should probably be u.to_ureg(numpy.zeros(newshape),sample_data.datafields[0].get_unit())
+		dataspace = u.to_ureg(numpy.zeros(newshape),sample_data.datafields[0].get_unit())
 		dataarray = snomtools.data.datasets.DataArray(dataspace,
 													  label=sample_data.get_datafield(0).get_label(),
 													  plotlabel=sample_data.get_datafield(0).get_plotlabel(),
