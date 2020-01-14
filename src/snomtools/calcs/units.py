@@ -194,3 +194,29 @@ def meshgrid(*args):
 	for i in range(len(gridtup)):
 		outlist.append(to_ureg(gridtup[i], unitbuffer[i]))
 	return tuple(outlist)
+
+
+def latex_si(input_):
+	"""
+	Returns a LaTeX \si command for a correct LaTeX representation of the unit.
+
+	:param input_: Must be castable as a quantity.
+
+	:return: str: The command string, e.g. '\\si[]{\\femto\\second}'.
+	"""
+	input_ = to_ureg(input_)
+	# noinspection PyStringFormat
+	return "{:Lx}".format(input_.units)
+
+
+def latex_SI(input_):
+	"""
+	Returns a LaTeX \SI command for a correct LaTeX representation of the quantity.
+
+	:param input_: Must be castable as a quantity.
+
+	:return: str: The command string, e.g. '\\SI[]{1}{\\femto\\second}'.
+	"""
+	input_ = to_ureg(input_)
+	# noinspection PyStringFormat
+	return "{:Lx}".format(input_)

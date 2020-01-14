@@ -118,7 +118,8 @@ class Drift(object):
 					print("...done")
 
 				# for layers along stackAxisID find drift:
-				self.drift = self.template_matching_stack(self.data3D.get_datafield(0), self.template, stackAxisID,
+				self.drift = self.template_matching_stack(self.data3D.get_datafield(0), self.template,
+														  self.dstackAxisID,
 														  method=method, subpixel=subpixel)
 
 			else:
@@ -323,7 +324,6 @@ class Drift(object):
 		if verbose:
 			import time
 			start_time = time.time()
-			print(str(start_time))
 			print("Calculating {0} driftvectors...".format(data.shape[stackAxisID]))
 
 		for i in range(data.shape[stackAxisID]):
@@ -337,6 +337,9 @@ class Drift(object):
 				etr = tpf * (data.shape[stackAxisID] - i + 1)
 				print("vector {0:d} / {1:d}, Time/slice {3:.2f}s ETR: {2:.1f}s".format(i, data.shape[stackAxisID], etr,
 																					   tpf))
+				print("position ({0:.1f},{1:.1f}) correlation {2:.3f}".format(driftlist[-1][0][0],
+																			  driftlist[-1][0][1],
+																			  driftlist[-1][1]))
 
 		indexList = cls.findindex(threshold[0], threshold[1], [result[1] for result in driftlist])
 		driftlist_corrected = cls.cleanList(indexList, [xydata[0] for xydata in driftlist])

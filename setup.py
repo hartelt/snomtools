@@ -1,25 +1,29 @@
 #!/usr/bin/env python
 """
-This is an example for the possible setup of a library
-located by default within the src/ folder.
+This is a setup script, adapted from an example for the possible setup of a 
+library located by default within the src/ folder.
 All packages will be installed to python.site-packages
 simply run:
 
     >>> python setup.py install
 
+NOTE: Due to a bug in the version detection system, this is not supported yet.
+Use local installation as described below.
+
 For a local installation or if you like to develop further
 
     >>> python setup.py develop --user
 
-
-The test_suite located within the test/ folder
-will be executed automatically.
+Make sure to install all requirements first, typically with pip.
 
 Regarding tifffile on Windows x64-systems:
-In case of problems while installing the package for x64 Python, use Anaconda Distribution
+In case of problems while installing the package for x64 Python, 
+use Anaconda Distribution.
+
+As soon as we implemented proper unit testing, the test_suite located within 
+the test/ folder will be executed automatically.
 """
 from setuptools import setup, find_packages
-from pip.req import parse_requirements
 
 
 # from pip.req import parse_requirements #obsolete since pip version x
@@ -38,7 +42,6 @@ __version__ = '1.0'
 install_reqs = parse_requirements('requirements.txt')
 reqs = install_reqs
 
-
 packages = find_packages(source_path)
 
 
@@ -46,9 +49,9 @@ packages = find_packages(source_path)
 # version should be considered using git's short or better the full hash
 def get_version_from_git():
 	"""
-    Get the short version string of a git repository
-    :return: (str) version information
-    """
+	Get the short version string of a git repository
+	:return: (str) version information
+	"""
 	import subprocess
 	try:
 		v = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'])
