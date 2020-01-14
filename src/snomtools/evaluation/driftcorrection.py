@@ -433,7 +433,10 @@ class Drift(object):
 		"""
 		assert isinstance(data, snomtools.data.datasets.DataSet), \
 			"ERROR: No dataset or ROI instance given to extract_3Ddata."
-		return data.project_nd(stackAxisID, yAxisID, xAxisID)
+		if [data.get_axis_index(n) for n in [stackAxisID, yAxisID, xAxisID]] == [0,1,2]:
+			return data
+		else:
+			return data.project_nd(stackAxisID, yAxisID, xAxisID)
 
 	@staticmethod
 	def extract_templatedata(data, yAxisID, xAxisID):
