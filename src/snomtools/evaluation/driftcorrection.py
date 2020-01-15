@@ -152,6 +152,55 @@ class Drift(object):
 	def drift_relative(self):
 		return self.as_relative_vectors(self.drift)
 
+	@property
+	def xdrift(self):
+		return np.array([t[1] for t in self.drift])
+
+	@property
+	def xdrift_relative(self):
+		return np.array([t[1] for t in self.drift_relative])
+
+	@property
+	def ydrift(self):
+		return np.array([t[0] for t in self.drift])
+
+	@property
+	def ydrift_relative(self):
+		return np.array([t[0] for t in self.drift_relative])
+
+	@property
+	def driftdata(self):
+		d_axis = self.data.get_axis(self.dstackAxisID)
+		y_axis = self.data.get_axis(self.dyAxisID)
+		x_axis = self.data.get_axis(self.dxAxisID)
+		das = []
+		das.append(snomtools.data.datasets.DataArray(self.ydrift, label="Axis {0} drift index".format(y_axis.label)))
+		das.append(snomtools.data.datasets.DataArray(self.ydrift_relative,
+													 label="Axis {0} drift relative".format(y_axis.label)))
+		das.append(snomtools.data.datasets.DataArray([y_axis.value_floatindex(y).magnitude for y in self.ydrift],
+													 unit=y_axis.units,
+													 label="Axis {0} drift position".format(y_axis.label)))
+		das.append(snomtools.data.datasets.DataArray(
+			[(y_axis.value_floatindex(y) - y_axis.value_floatindex(self.template_origin[0])).magnitude
+			 for y in self.ydrift],
+			unit=y_axis.units,
+			label="Axis {0} drift relative postition".format(y_axis.label)))
+
+		das.append(snomtools.data.datasets.DataArray(self.xdrift, label="Axis {0} drift index".format(x_axis.label)))
+		das.append(snomtools.data.datasets.DataArray(self.xdrift_relative,
+													 label="Axis {0} drift relative".format(x_axis.label)))
+		das.append(snomtools.data.datasets.DataArray([x_axis.value_floatindex(x).magnitude for x in self.xdrift],
+													 unit=x_axis.units,
+													 label="Axis {0} drift position".format(x_axis.label)))
+		das.append(snomtools.data.datasets.DataArray(
+			[(x_axis.value_floatindex(x) - x_axis.value_floatindex(self.template_origin[1])).magnitude
+			 for x in self.xdrift],
+			unit=x_axis.units,
+			label="Axis {0} drift relative postition".format(x_axis.label)))
+
+		return snomtools.data.datasets.DataSet("drift from " + self.data.label, das, [d_axis])
+
+
 	def as_relative_vectors(self, vectors):
 		for vec in vectors:
 			yield self.relative_vector(vec)
@@ -260,7 +309,8 @@ class Drift(object):
 												self.data.plotconf, h5target=h5target)
 		return newds
 
-	def match_rotation_scale(self,reference_data, tomatch_data, angle_settings=(0, 0, 0), scale_settings=(1, 0, 0), digits=5,
+	def match_rotation_scale(self, reference_data, tomatch_data, angle_settings=(0, 0, 0), scale_settings=(1, 0, 0),
+							 digits=5,
 							 output_dir=None, saveImg=False,
 							 saveRes=False):
 		'''
@@ -282,8 +332,8 @@ class Drift(object):
 			match_rotation_scale(reference_data, tomatch_data_cropped, angle_settings=(3, 0.1, 300), output_dir=output_dir, saveRes=True)
 		'''
 		rot_crop_data = rot.rot_scale_data(data=tomatch_data, angle_settings=angle_settings,
-									   scale_settings=scale_settings, digits=digits, output_dir=output_dir,
-									   saveImg=saveImg)
+										   scale_settings=scale_settings, digits=digits, output_dir=output_dir,
+										   saveImg=saveImg)
 		results = []
 		for variations in rot_crop_data:
 			print('Matching: angle ' + str(variations[0]) + ' scale ' + str(variations[1]))
@@ -436,7 +486,7 @@ class Drift(object):
 		"""
 		assert isinstance(data, snomtools.data.datasets.DataSet), \
 			"ERROR: No dataset or ROI instance given to extract_3Ddata."
-		if [data.get_axis_index(n) for n in [stackAxisID, yAxisID, xAxisID]] == [0,1,2]:
+		if [data.get_axis_index(n) for n in [stackAxisID, yAxisID, xAxisID]] == [0, 1, 2]:
 			return data
 		else:
 			return data.project_nd(stackAxisID, yAxisID, xAxisID)
