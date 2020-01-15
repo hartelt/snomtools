@@ -184,6 +184,7 @@ def EMfield_3d(filepath, axes=None, unit_light=None, unit_space="um", field_keys
 			dataarrays.append(snomtools.data.datasets.DataArray(data, label=component,
 																plotlabel=field_label_dict[component],
 																h5target=True))
+			del data
 	out_axes = []
 	if verbose:
 		print("Reading Axes Data...")
