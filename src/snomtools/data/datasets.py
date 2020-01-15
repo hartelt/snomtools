@@ -733,6 +733,8 @@ class Data_Handler_H5(u.Quantity):
 
 		:return: Slice tuple.
 		"""
+		if self.shape == (): # If self is scalar, return iterator with only () as slice, else iteration breaks.
+			return iter([()])
 		iterlist = [range(i) for i in self.shape]
 		if iterlist:
 			iterlist.pop()
@@ -1486,6 +1488,8 @@ class Data_Handler_np(u.Quantity):
 
 		:return: Slice tuple.
 		"""
+		if self.shape == (): # If self is scalar, return iterator with only () as slice, else iteration breaks.
+			return iter([()])
 		iterlist = [range(i) for i in self.shape]
 		iterlist.pop()
 		iterlist.append([numpy.s_[:]])
@@ -2393,6 +2397,25 @@ class Axis(DataArray):
 		:return: array of ints: The corresponding indexes with the same shape as values.
 		"""
 		return numpy.searchsorted(self.data, values)
+
+	def value_floatindex(self, idx):
+		"""
+		Assuming the axis elements are sorted, this returns an approximated value between two points,
+		addressed by a float number, with a simple linear approximation.
+
+		:param idx: float: An number between 0 and len(Axis)-1.
+
+		:return: Corresponding linearly approximated value.
+		"""
+		if idx <= 0:
+			return self.data.q[0]
+		if idx >= len(self)-1:
+			return self.data.q[-1]
+		idx_int = int(idx)
+		left_weight = 1 - (idx - idx_int)
+		right_weight = idx - idx_int
+		# Return approximated values, use quantities rather than Data_Handlers, to avoid spamming scalar temp h5s:
+		return left_weight * self.data.q[idx_int] + right_weight * self.data.q[idx_int + 1]
 
 	def scale_linear(self, scaling=1., offset=None, unit=None, label=None, plotlabel=None):
 		"""
