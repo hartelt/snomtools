@@ -396,7 +396,7 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 	:param sum_only: If True, only sum images will be read instead of full energy resolved data. *default: False*
 
 	:param norm_to_exptime: If True, counts will be divided by exposure time in seconds. The exposure time will be
-		taken out of the filename. This helps to make powerlaws with measurements with diffrent exposure times. 
+		taken out of the filename. This helps to make powerlaws with measurements with different exposure times.
 
 	:type sum_only: bool, *optional*
 
@@ -447,7 +447,7 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 
 					exp_time = exp_time + second
 				if exp_time == 0:
-					print('WARNING in norm_to_exptime. Exptime 0 detected for power ' + str(power))
+					print('WARNING in norm_to_exptime. Exposure time 0 or no exposure time detected for power ' + str(power))
 				powerfiles[power] = [filename, u.to_ureg(exp_time, 's')]
 			else:
 				powerfiles[power] = [filename]
@@ -474,7 +474,7 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 			sample_data.datafields[0] = sample_data.datafields[0] / u.to_ureg(1,'s')
 			sample_data.datafields[0].set_label('counts/seconds')
 			sample_data.datafields[0].set_plotlabel('counts/seconds')
-
+	#ToDo:Write functions that create the following hdf5 dataset structure
 	# ----------------------Create dataset------------------------
 	# Test data size:
 	axlist = [poweraxis] + sample_data.axes
