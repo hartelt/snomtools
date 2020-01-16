@@ -1169,7 +1169,7 @@ def sech2(x, x_0, tau, A, C):
 
 class Sech2_Fit(object):
     """
-    A Gauss Fit of given data with benefits.
+    A Sech squared Fit of given data with benefits.
     """
 
     def __init__(self, data=None, guess=None, data_id=0, axis_id=0, keepdata=True, normalize=False):
