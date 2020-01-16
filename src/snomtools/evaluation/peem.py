@@ -344,7 +344,7 @@ class Powerlaw:
 			guess_offset = u.to_ureg(guess[2], str(powers.units)).magnitude
 		guess = (guess_amplitude, guess_exponent, guess_offset)
 
-		return scipy.optimize.curve_fit(Powerlaw.fitfunction, powers.magnitude, intensities.magnitude, guess)
+		return scipy.optimize.curve_fit(Powerlaw.fitfunction, powers.magnitude, intensities.magnitude, guess, maxfev=100000)
 
 	def y(self, x, logx=False):
 		x = u.to_ureg(x, self.powerunit).magnitude
