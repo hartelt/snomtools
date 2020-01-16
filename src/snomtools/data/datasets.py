@@ -666,8 +666,6 @@ class Data_Handler_H5(u.Quantity):
 
 	# TODO: Implement rotate_slice similar to shift_slice by using scipy.ndimage.interpolation.rotate
 
-	# FIXME: Iterators for scalar data seems to freeze system.
-
 	def iterchunkslices(self, dim=None, dims=None):
 		"""
 		Iterator, which returns slice objects which address the data chunk-wise. This can be used wo very efficiently
