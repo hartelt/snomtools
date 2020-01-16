@@ -1,0 +1,12 @@
+out/
+*~
+*.orig
+*.hdf5
+*.mat
+test*
+*.png
+*.bak
+
+# Un-ignore all of data
+!data/raw_data.tif
+!data/template_10deg_s0.5.tif

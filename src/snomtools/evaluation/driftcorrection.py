@@ -150,13 +150,105 @@ class Drift(object):
 
 	@property
 	def drift_relative(self):
+		"""
+		The relative drift vector list, as in difference to the template_origin.
+
+		:return: List of (y-difference, x-difference) given in Pixels (Array Indices).
+		"""
 		return self.as_relative_vectors(self.drift)
 
+	@property
+	def xdrift(self):
+		"""
+		The x-components of the drift vector list.
+
+		:return: List of x-values given in Pixels (Array Indices).
+		"""
+		return np.array([t[1] for t in self.drift])
+
+	@property
+	def xdrift_relative(self):
+		"""
+		The x-components of the relative drift vector list (Relative to template_origin).
+
+		:return: List of x-difference-values given in Pixels (Array Indices).
+		"""
+		return np.array([t[1] for t in self.drift_relative])
+
+	@property
+	def ydrift(self):
+		"""
+		The y-components of the drift vector list.
+
+		:return: List of y-values given in Pixels (Array Indices).
+		"""
+		return np.array([t[0] for t in self.drift])
+
+	@property
+	def ydrift_relative(self):
+		"""
+		The y-components of the relative drift vector list (Relative to template_origin).
+
+		:return: List of y-difference-values given in Pixels (Array Indices).
+		"""
+		return np.array([t[0] for t in self.drift_relative])
+
+	@property
+	def driftdata(self):
+		"""
+		The detected drift data collected in a DataSet. The DataSet will be 1-D along the drift axis and will contain
+		multiple DataArrays, representing the absolute and relative drift components along both image dimensions.
+		Also, the corresponding (absolute and relative) position on the x and y Axis will be calculated
+		(E.g. how many micrometers (not pixels) did the image drift in the x and y direction.).
+
+		:return: A DataSet containing the assembled drift data.
+		"""
+		d_axis = self.data.get_axis(self.dstackAxisID)
+		y_axis = self.data.get_axis(self.dyAxisID)
+		x_axis = self.data.get_axis(self.dxAxisID)
+		das = []
+		das.append(snomtools.data.datasets.DataArray(self.ydrift, label="Axis {0} drift index".format(y_axis.label)))
+		das.append(snomtools.data.datasets.DataArray(self.ydrift_relative,
+													 label="Axis {0} drift relative".format(y_axis.label)))
+		das.append(snomtools.data.datasets.DataArray([y_axis.value_floatindex(y).magnitude for y in self.ydrift],
+													 unit=y_axis.units,
+													 label="Axis {0} drift position".format(y_axis.label)))
+		das.append(snomtools.data.datasets.DataArray(
+			[(y_axis.value_floatindex(y) - y_axis.value_floatindex(self.template_origin[0])).magnitude
+			 for y in self.ydrift],
+			unit=y_axis.units,
+			label="Axis {0} drift relative postition".format(y_axis.label)))
+
+		das.append(snomtools.data.datasets.DataArray(self.xdrift, label="Axis {0} drift index".format(x_axis.label)))
+		das.append(snomtools.data.datasets.DataArray(self.xdrift_relative,
+													 label="Axis {0} drift relative".format(x_axis.label)))
+		das.append(snomtools.data.datasets.DataArray([x_axis.value_floatindex(x).magnitude for x in self.xdrift],
+													 unit=x_axis.units,
+													 label="Axis {0} drift position".format(x_axis.label)))
+		das.append(snomtools.data.datasets.DataArray(
+			[(x_axis.value_floatindex(x) - x_axis.value_floatindex(self.template_origin[1])).magnitude
+			 for x in self.xdrift],
+			unit=x_axis.units,
+			label="Axis {0} drift relative postition".format(x_axis.label)))
+
+		return snomtools.data.datasets.DataSet("drift from " + self.data.label, das, [d_axis])
+
+
 	def as_relative_vectors(self, vectors):
+		"""
+		This is the iterator form of the relative_vector() below.
+		"""
 		for vec in vectors:
 			yield self.relative_vector(vec)
 
 	def relative_vector(self, vector):
+		"""
+		Calculate a relative driftvector by subtracting the template_origin vector.
+
+		:param vector: 2-tuple of (y-pixel, x-pixel), the absolute driftvector.
+
+		:return: 2-tuple of (y-pixel-difference, x-pixel-difference), the relative driftvector.
+		"""
 		o_y, o_x = self.template_origin
 		d_y, d_x = vector
 		return (d_y - o_y, d_x - o_x)
@@ -165,6 +257,7 @@ class Drift(object):
 		"""
 		Generates the full shift vector according to the shape of self.data (minus the stackAxis) out of the 2d drift
 			vectors at a given index along the stackAxis.
+		# TESTME: I think the docs here might be wrong and actually the full vector INCLUDING the stackaxis is returned.
 
 		:param int stack_index: An index along the stackAxis
 
@@ -181,6 +274,13 @@ class Drift(object):
 		return arr
 
 	def __getitem__(self, sel):
+		"""
+		Return the shifted data for a selection (slice) of the data.
+
+		:param sel:  A selection (slice) adressing a range of the data.
+
+		:return: DataArray containing the shifted data
+		"""
 		# Get full addressed slice from selection.
 		full_selection = full_slice(sel, len(self.data.shape))
 		slicebase_wo_stackaxis = np.delete(full_selection, self.dstackAxisID)
@@ -203,7 +303,17 @@ class Drift(object):
 			return shifted_slice_list[0].__class__.stack(shifted_slice_list)
 
 	def corrected_data(self, h5target=None):
-		"""Return the full driftcorrected dataset."""
+		"""
+		Return the full driftcorrected dataset.
+		2D data is shifted for each position along the stack to negate the drift.
+		Shifting is done with DataHandler_H5/_np.shift_slice methods, which have scipy.ndimage.interpolation.shift
+		under the hood.
+		If h5target is given, the calculations are done chunk-wise for optimal performance.
+
+		:param h5target: A hdf5 target (path for hdf5-File or h5py Group) to write to.
+
+		:return: The driftcorrected DataSet.
+		"""
 
 		oldda = self.data.get_datafield(0)
 		if h5target:
@@ -260,7 +370,8 @@ class Drift(object):
 												self.data.plotconf, h5target=h5target)
 		return newds
 
-	def match_rotation_scale(self,reference_data, tomatch_data, angle_settings=(0, 0, 0), scale_settings=(1, 0, 0), digits=5,
+	def match_rotation_scale(self, reference_data, tomatch_data, angle_settings=(0, 0, 0), scale_settings=(1, 0, 0),
+							 digits=5,
 							 output_dir=None, saveImg=False,
 							 saveRes=False):
 		'''
@@ -282,8 +393,8 @@ class Drift(object):
 			match_rotation_scale(reference_data, tomatch_data_cropped, angle_settings=(3, 0.1, 300), output_dir=output_dir, saveRes=True)
 		'''
 		rot_crop_data = rot.rot_scale_data(data=tomatch_data, angle_settings=angle_settings,
-									   scale_settings=scale_settings, digits=digits, output_dir=output_dir,
-									   saveImg=saveImg)
+										   scale_settings=scale_settings, digits=digits, output_dir=output_dir,
+										   saveImg=saveImg)
 		results = []
 		for variations in rot_crop_data:
 			print('Matching: angle ' + str(variations[0]) + ' scale ' + str(variations[1]))
@@ -436,7 +547,10 @@ class Drift(object):
 		"""
 		assert isinstance(data, snomtools.data.datasets.DataSet), \
 			"ERROR: No dataset or ROI instance given to extract_3Ddata."
-		return data.project_nd(stackAxisID, yAxisID, xAxisID)
+		if [data.get_axis_index(n) for n in [stackAxisID, yAxisID, xAxisID]] == [0, 1, 2]:
+			return data
+		else:
+			return data.project_nd(stackAxisID, yAxisID, xAxisID)
 
 	@staticmethod
 	def extract_templatedata(data, yAxisID, xAxisID):

@@ -5,6 +5,7 @@ Rotation and scaling is possible with output of biggest possible rectangle of va
 
 import numpy as np
 import scipy.ndimage
+import cv2 as cv
 
 
 def rotate_cropped(data, angle):
@@ -18,7 +19,7 @@ def rotate_cropped(data, angle):
 	cache = scipy.ndimage.interpolation.rotate(data, angle=angle, reshape=False, output=None,
 											   order=1,
 											   mode='constant', cval=np.nan, prefilter=False)
-	w, h = rotatedRectWithMaxArea(data.shape[0], data.shape[1], np.radians(angle))
+	w, h = rotatedRectWithMaxArea(data.shape[1], data.shape[0], np.radians(angle))
 	return crop_around_center(cache, w, h)
 
 
@@ -28,19 +29,19 @@ def crop_around_center(image, width, height):
 	around it's centre point
 	"""
 
-	image_size = (image.shape[1], image.shape[0])
-	image_center = (int(image_size[0] * 0.5), int(image_size[1] * 0.5))
+	image_center = (np.rint(image.shape[0] * 0.5), np.rint(image.shape[1] * 0.5))
 
-	if (width > image_size[0]):
-		width = image_size[0]
+	if (width > image.shape[1]):
+		width = image.shape[1]
 
-	if (height > image_size[1]):
-		height = image_size[1]
+	if (height > image.shape[0]):
+		height = image.shape[0]
 
-	x1 = int(image_center[0] - width * 0.5) + 1
-	x2 = int(image_center[0] + width * 0.5) - 1
-	y1 = int(image_center[1] - height * 0.5) + 1
-	y2 = int(image_center[1] + height * 0.5) - 1
+	y1 = int(np.ceil(image_center[0] - height * 0.5))
+	y2 = int(np.floor(image_center[0] + height * 0.5))
+	x1 = int(np.ceil(image_center[1] - width * 0.5))
+	x2 = int(np.floor(image_center[1] + width * 0.5))
+
 
 	return image[y1:y2, x1:x2]
 
@@ -119,7 +120,7 @@ def rot_scale_data(data, angle_settings=(0, 0, 0), scale_settings=(1, 0, 0), dig
 	zeroscale = scale_centervalue - scale_variations / 2 * scale_res
 
 	rot_crop_data = {
-		(round(zeroangle + i * angle_res, digits), round(zeroscale + j * scale_res, digits)): scale_data(
+		(round(zeroangle + i * angle_res, digits), round(zeroscale + j * scale_res, digits)): scale_rotated(
 			rotate_cropped(data, round(zeroangle + i * angle_res, digits)),
 			round(zeroscale + j * scale_res, digits),
 			round(zeroangle + i * angle_res, digits), output_dir, saveImg=saveImg)
@@ -137,54 +138,66 @@ def scale_rotated(data, zoomfactor, angle, debug_dir=None, saveImg=False):
 	return zoomed_data
 
 
+
+
 if __name__ == '__main__':  # Just for testing:
-	raw_data = np.zeros((10, 10))
-	raw_data[3] = 10
+	import matplotlib.pyplot as plt
+	import cv2 as cv
+	import math as math
+	raw_data = np.ones((1000, 2000))*500
+	raw_data[500] = 10
+	raw_data[:,1000] = 20
+	plt.imshow(raw_data)
+	output_dir = 'D:/debug/'
+	saveImages = False
 
-	output_dir = 'None'
-
-	angle_variations = 0  # How many values besides centerpoint (even for centerpoint in variation)
-	angle_res = 90
+	angle_variations = 90  # How many values besides centerpoint (even for centerpoint in variation)
+	angle_res = 1
 	angle_centervalue = 45
 
 	scale_variations = 2
 	scale_res = 0.5
 	scale_centervalue = 1
 
-	rf = 8  # rounding of angle and scale to rf = x digits
+	rf = 2  # rounding of angle and scale to rf = x digits
 
 	zeroangle = angle_centervalue - angle_variations / 2 * angle_res
 	zeroscale = scale_centervalue - scale_variations / 2 * scale_res
+
 
 	# Rotate, crop then scale for all variations
 	rot_crop_data = {(round(zeroangle + i * angle_res, rf), round(zeroscale + j * scale_res, rf)):
 		scale_rotated(
 			rotate_cropped(raw_data, round(zeroangle + i * angle_res, rf)), round(zeroscale + j * scale_res, rf),
 			round(zeroangle + i * angle_res, rf), saveImg=False)
-		for i in range(angle_variations + 1) for j in range(scale_variations + 1)}
+		for i in range(angle_variations+1) for j in range(scale_variations+1)}
 
-	# Results
-	print('Raw Data')
-	print(np.round(raw_data))
-	# print(raw_data)
-	print('Raw-Data has shape: ' + str(raw_data.shape) + '\n')
+	# Checking, if the cornervalues of the generated data are not Nan, since in this example, all data is not Nan
+	cornervalues =[]
+	for element in rot_crop_data:
+		data = rot_crop_data[element]	#This is how the data of each variation gets acessed
+		cornervalues.append((data[0,0],data[0,data.shape[1]-1],data[data.shape[0]-1,0],data[data.shape[0]-1,data.shape[1]-1]))
+		if saveImages == True:
+			cv.imwrite(output_dir + str(element) + '.tif', data)
 
-	print('Only Rotation:')
-	print(np.round(scipy.ndimage.interpolation.rotate(raw_data, angle=angle_centervalue, reshape=False, output=None,
-													  order=1, mode='constant', cval=np.nan, prefilter=False)))
-	print('\n')
 
-	print('Only Scale:')
-	data = np.round(scale_data(raw_data, 1.2))
-	print(data)
-	print('Data has shape: ' + str(data.shape) + '\n')
+	print('Nan found in corners: ')
+	hasnan = lambda array: any(filter(math.isnan, array))
+	if hasnan(np.ravel(cornervalues)):
+		print('Yes, something is broken')
+	else:
+		print('No, everything is fine')
 
-	print('Altered Data')
-	for variations in rot_crop_data:
-		print('Angle,Scale')
-		print(variations)
-		# print(rot_crop_data[variations])
-		print(np.round(rot_crop_data[variations]))
-		print('Data has shape: ' + str(rot_crop_data[variations].shape) + '\n')
+
+	print_everything = False
+	if print_everything == True:
+		# Access data via dict
+		print('Altered Data')
+		for variations in rot_crop_data:
+			print('Angle,Scale')
+			print(variations)
+			# print(rot_crop_data[variations])
+			print(np.round(rot_crop_data[variations]))
+			print('Data has shape: ' + str(rot_crop_data[variations].shape) + '\n')
 
 	print('Done')
