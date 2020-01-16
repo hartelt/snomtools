@@ -1,5 +1,10 @@
 """
-bla
+This file provides functions to evaluate k-space data measured e.g. with PEEM.
+Explicitly functions to scale dldpixels into inverse Angstrom.
+The methods work on a 4D DataSet imported with snomtools.
+For furter info about data structures, see:
+data.imports
+data.datasets.py
 """
 
 import snomtools.data.datasets as ds
@@ -13,9 +18,11 @@ import matplotlib.pyplot as plt
 __author__ = 'Lukas Hellbrück'
 
 
-# Scale HDF5 file
 def load_dispersion_data(data, y_axisid='y', x_axisid='x', e_axisid='energy', d_axisid='delay'):
     """
+    Loads a 4D HDF5 file and projects it onto the energy- and y-axis to create a dispersion plot.
+    For better statistics, 10 slices around dldpixel center in x-axis and 10 slices around
+    time zero are summed up.
 
     :param data: 4D-DataSet with y-pixel, x-pixel, energy and a k-space dimension.
 
@@ -31,7 +38,6 @@ def load_dispersion_data(data, y_axisid='y', x_axisid='x', e_axisid='energy', d_
     with a summation over slices around time zero and x-pixel mean point
     """
     # Define parameters for projection:
-    # TODO: change this to optional parameters in function head!
     delay_center = int(len(data.get_axis(d_axisid)) / 2)
     delay_offset = 0
     delay_window = 10
@@ -47,15 +53,15 @@ def load_dispersion_data(data, y_axisid='y', x_axisid='x', e_axisid='energy', d_
                    x_center + x_offset + int(x_window / 2)]
     }
     sumroi = ds.ROI(data, sum_boundaries_index, by_index=True)
+
     # Project RoI to k_x-E-Plane and return data:
     return snomtools.data.transformation.project.project_2d(sumroi, e_axisid, y_axisid)
 
 
-# Plots a given k_scale guess:
 def show_kscale(dispersion_data, guess_zeropixel=None, guess_scalefactor=None, guess_energyoffset=None,
                 k_axisid='y', e_axisid='energy'):
     """
-    Plots the 2d dispersion data along a free electron parable with given parameters. Useful to test k scaling.
+    Plots the 2d dispersion data along a free electron parable with given parameters. Useful to test k scale.
 
     :param dispersion_data: 2D-DataSet with an energy and a k-space dimension.
 
@@ -88,6 +94,7 @@ def show_kscale(dispersion_data, guess_zeropixel=None, guess_scalefactor=None, g
     else:
         scalefactor = u.to_ureg(guess_scalefactor, "1/angstrom/pixel")
 
+    # Calculate a free electron parabola with given parameters
     parab_data = freeElectronParabola(dldpixels, scalefactor, zeropoint, energy_offset)
 
     # Plot dispersion and ParabolaFit
@@ -101,9 +108,9 @@ def show_kscale(dispersion_data, guess_zeropixel=None, guess_scalefactor=None, g
     return (scalefactor, zeropoint)
 
 
-# standard parabola function with nature constants and our scaling factor
 def freeElectronParabola(x, kscale, zero, offset, energyunit='eV'):
     """
+    Calculates a standard free electron parabolawith nature constans and given scaling factor
 
     :param x: An array of x-pixels.
 
@@ -122,9 +129,10 @@ def freeElectronParabola(x, kscale, zero, offset, energyunit='eV'):
     return (hbar ** 2 * (kscale * (x - zero)) ** 2 / (2 * m_e) + offset).to(energyunit)
 
 
-# Scale axes of DataSet according do found parameters:
 def kscale_axes(data, scalefactor, yzero=None, xzero=None, yaxisid='y', xaxisid='x'):
     """
+    Scales the x- and y-axis of a given set of dldpixels from a 4D-Dataset to k-space, depending on a before
+    determined scalefactor.
 
     :param data: 4D-DataSet with y-pixel, x-pixel, energy and a k-space dimension.
 
