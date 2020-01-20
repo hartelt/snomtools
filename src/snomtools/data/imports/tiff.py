@@ -322,6 +322,7 @@ def opo_folder_peem_camera(folderpath, pattern="", waveunit='nm', waveunitlabel=
 
 def powerlaw_folder_peem_camera(folderpath, pattern="mW", powerunit=None, powerunitlabel=None, decimal=None):
 	"""
+	Imports the folder of a powerlaw measurement, done by taking a Camera PEEM image for every laser power.
 
 	:param folderpath: The (relative or absolute) path of the folders containing the powerlaw measurement series.
 
@@ -377,6 +378,7 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 							 sum_only=False,
 							 norm_to_exptime=False):
 	"""
+	Imports the folder of a powerlaw measurement, done by taking a DLD PEEM image for every laser power.
 
 	:param folderpath: The (relative or absolute) path of the folders containing the powerlaw measurement series.
 
