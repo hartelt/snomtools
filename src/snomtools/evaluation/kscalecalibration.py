@@ -1,3 +1,5 @@
+#!/usr/bin/python
+#-*- coding:utf-8 -*-
 """
 This file provides functions to evaluate k-space data measured e.g. with PEEM.
 Explicitly functions to scale dldpixels into inverse Angstrom.
@@ -12,46 +14,72 @@ import snomtools.calcs.units as u
 import snomtools.data.fits
 import snomtools.data.transformation.project
 import snomtools.plots.datasets
-from snomtools.calcs.constants import m_e, hbar, e
+from snomtools.calcs.constants import m_e, hbar
 import matplotlib.pyplot as plt
 
 __author__ = 'Lukas Hellbrück'
 
 
-def load_dispersion_data(data, y_axisid='y', x_axisid='x', e_axisid='energy', d_axisid='delay'):
+def load_dispersion_data(data, y_axisid='y', x_axisid='x', e_axisid='energy', d_axisid='delay',
+						 x_center=None, x_offset=0, x_window=10,
+						 delay_center=None, delay_offset=0, delay_window=10):
 	"""
-	Loads a 4D HDF5 file and projects it onto the energy- and y-axis to create a dispersion plot.
-	For better statistics, 10 slices around dldpixel center in x-axis and 10 slices around
-	time zero are summed up.
+	Loads a n-D HDF5 file and projects it onto the energy- and pixel axis of the dispersion data (default 'energy, 'y')
+	to create a dispersion plot.
+	For better statistics, a number of slices along the *other* pixel axis (default 'x') and time delay axis
+	(default 'delay') are summed up (10,10 by default).
 
-	:param data: 4D-DataSet with y-pixel, x-pixel, energy and a k-space dimension.
+	:param data: n-D-DataSet with y-pixel, x-pixel, energy and a k-space dimension.
 
-	:param y_axisid: The name (label) of the y-axis of the data.
+	:param y_axisid: The name (label) of the y-axis of the data, used as dispersion k direction.
 
-	:param x_axisid: The name (label) of the x-axis of the data.
+	:param x_axisid: The name (label) of the x-axis of the data, used to sum over. If set to `False` or `None`,
+		no pixel summation is done and other `x_`...-Parameters are ignored.
 
-	:param e_axisid: The name (label) of the energy-axis of the data.
+	:param e_axisid: The name (label) of the energy-axis of the data, used for the dispersion.
 
-	:param d_axisid: The name (label) of the delay-axis of the data.
+	:param d_axisid: The name (label) of the delay-axis of the data, used to sum over. If set to `False` or `None`,
+		no summation is done and other `delay_`...-Parameters are ignored.
 
-	:return: The projection of the 4D-Dataset on the y-pixel and energy axis,
-	with a summation over slices around time zero and x-pixel mean point
+	:param x_center: The center position index along the x Axis around which shall be summed.
+		Default: The "middle" of the axis, defined as half its length.
+	:type x_center: int
+
+	:param x_offset: An offset in pixels (array indices) relative to `x_center`. For example using this with
+		default `x_center` allows to provide a relative rather than absolute origin to sum over.
+	:type x_offset: int
+
+	:param x_window: A number of pixels around the center to sum over. Default: `10`
+	:type x_window: int
+
+	:param delay_center: The center position index along the delay Axis around which shall be summed.
+		Default: The "middle" of the axis, defined as half its length.
+	:type delay_center: int
+
+	:param delay_offset: An offset in energy channels (array indices) relative to `delay_center`. For example using this
+		with default `delay_center` allows to provide a relative rather than absolute origin to sum over.
+	:type delay_offset: int
+
+	:param delay_window: A number of energy channels around the center to sum over. Default: `10`
+	:type delay_window: int
+
+	:return: The projection of the n-D-Dataset on the pixel and energy axis,
+		with a summation over slices around time zero and pixel mean point
 	"""
-	# Define parameters for projection:
-	delay_center = int(len(data.get_axis(d_axisid)) / 2)
-	delay_offset = 0
-	delay_window = 10
-	x_center = int(len(data.get_axis(x_axisid)) / 2)
-	x_offset = 0
-	x_window = 10
+	# Define RoI boundaries to sum over for better statistics:
+	sum_boundaries_index = {}
+	if d_axisid:
+		if delay_center is None:
+			delay_center = int(len(data.get_axis(d_axisid)) / 2)
+		sum_boundaries_index[d_axisid] = [delay_center + delay_offset - int(delay_window / 2),
+										  delay_center + delay_offset + int(delay_window / 2)]
+	if x_axisid:
+		if x_center is None:
+			x_center = int(len(data.get_axis(x_axisid)) / 2)
+		sum_boundaries_index[x_axisid] = [x_center + x_offset - int(x_window / 2),
+										  x_center + x_offset + int(x_window / 2)]
 
-	# Define RoI to sum over for better statistics:
-	sum_boundaries_index = {
-		d_axisid: [delay_center + delay_offset - int(delay_window / 2),
-				   delay_center + delay_offset + int(delay_window / 2)],
-		x_axisid: [x_center + x_offset - int(x_window / 2),
-				   x_center + x_offset + int(x_window / 2)]
-	}
+	# Initialize RoI:
 	sumroi = ds.ROI(data, sum_boundaries_index, by_index=True)
 
 	# Project RoI to k_x-E-Plane and return data:
