@@ -24,43 +24,43 @@ def load_dispersion_data(data, y_axisid='y', x_axisid='x', e_axisid='energy', d_
 						 x_center=None, x_offset=0, x_window=10,
 						 delay_center=None, delay_offset=0, delay_window=10):
 	"""
-	Loads a n-D HDF5 file and projects it onto the energy- and pixel axis of the dispersion data (default 'energy, 'y')
-	to create a dispersion plot.
-	For better statistics, a number of slices along the *other* pixel axis (default 'x') and time delay axis
-	(default 'delay') are summed up (10,10 by default).
+	Loads a n-D HDF5 file and projects it onto the energy- and pixel axis of the dispersion data (default ``energy``,
+	``y``) to create a dispersion plot.
+	For better statistics, a number of slices along the *other* pixel axis (default ``x``) and time delay axis
+	(default ``delay``) are summed up (``10``, ``10`` by default).
 
 	:param data: n-D-DataSet with y-pixel, x-pixel, energy and a k-space dimension.
 
 	:param y_axisid: The name (label) of the y-axis of the data, used as dispersion k direction.
 
-	:param x_axisid: The name (label) of the x-axis of the data, used to sum over. If set to `False` or `None`,
-		no pixel summation is done and other `x_`...-Parameters are ignored.
+	:param x_axisid: The name (label) of the x-axis of the data, used to sum over. If set to ``False`` or ``None``,
+		no pixel summation is done and other ``x_``...-Parameters are ignored.
 
 	:param e_axisid: The name (label) of the energy-axis of the data, used for the dispersion.
 
-	:param d_axisid: The name (label) of the delay-axis of the data, used to sum over. If set to `False` or `None`,
-		no summation is done and other `delay_`...-Parameters are ignored.
+	:param d_axisid: The name (label) of the delay-axis of the data, used to sum over. If set to ``False`` or ``None``,
+		no summation is done and other ``delay_``...-Parameters are ignored.
 
 	:param x_center: The center position index along the x Axis around which shall be summed.
 		Default: The "middle" of the axis, defined as half its length.
 	:type x_center: int
 
-	:param x_offset: An offset in pixels (array indices) relative to `x_center`. For example using this with
-		default `x_center` allows to provide a relative rather than absolute origin to sum over.
+	:param x_offset: An offset in pixels (array indices) relative to ``x_center``. For example using this with
+		default ``x_center`` allows to provide a relative rather than absolute origin to sum over.
 	:type x_offset: int
 
-	:param x_window: A number of pixels around the center to sum over. Default: `10`
+	:param x_window: A number of pixels around the center to sum over. Default: ``10``
 	:type x_window: int
 
 	:param delay_center: The center position index along the delay Axis around which shall be summed.
 		Default: The "middle" of the axis, defined as half its length.
 	:type delay_center: int
 
-	:param delay_offset: An offset in energy channels (array indices) relative to `delay_center`. For example using this
-		with default `delay_center` allows to provide a relative rather than absolute origin to sum over.
+	:param delay_offset: An offset in energy channels (array indices) relative to ``delay_center``. For example using
+		this with default ``delay_center`` allows to provide a relative rather than absolute origin to sum over.
 	:type delay_offset: int
 
-	:param delay_window: A number of energy channels around the center to sum over. Default: `10`
+	:param delay_window: A number of energy channels around the center to sum over. Default: ``10``
 	:type delay_window: int
 
 	:return: The projection of the n-D-Dataset on the pixel and energy axis,
@@ -96,16 +96,17 @@ def show_kscale(dispersion_data, guess_zeropixel=None, guess_scalefactor=None, g
 	:param guess_zeropixel: The origin pixel value of the parable, given in pixels or unscaled k-axis units.
 
 	:param guess_scalefactor: The scalefactor translating unscaled k-axis units to k-space. Typically given in
-	'angstrom**-1 per pixel'.
+		``angstrom**-1 per pixel``.
 
 	:param guess_energyoffset: The origin of the parable on the energy axis. Typically, something like the drift
-	voltage in PEEM.
+		voltage in PEEM.
 
-	:param k_axisid: The name (label) of the k-axis of the data.
+	:param k_axisid: The name (label) of the k-axis of the data. Default: ``y``
 
-	:param e_axisid: The name (label) of the energy axis of the data.
+	:param e_axisid: The name (label) of the energy axis of the data. Default: ``energy``
 
-	:return: A tuple of (scalefactor, zeropixel) that was used for the plot.
+	:return: A tuple of (scalefactor, zeropixel) that was used for the plot. As this is just the replicated input
+		parameters, it can be ignored or used for info/debugging.
 	"""
 	# Define parabola and parameters for fit
 	if guess_energyoffset is None:
@@ -129,8 +130,8 @@ def show_kscale(dispersion_data, guess_zeropixel=None, guess_scalefactor=None, g
 	plt.figure()
 	ax = plt.subplot(111)
 	snomtools.plots.datasets.project_2d(dispersion_data, ax, e_axisid, k_axisid)
-	ax.plot(dldpixels, parab_data, 'r-', label="Fitparabel")
-	ax.invert_yaxis()
+	ax.plot(dldpixels, parab_data, 'r-', label="Fitparabel") # Plot parabola as red line.
+	ax.invert_yaxis() # project_2d flips the y axis as it assumes standard matrix orientation, so flip it back.
 	plt.show()
 
 	return (scalefactor, zeropoint)
@@ -138,17 +139,25 @@ def show_kscale(dispersion_data, guess_zeropixel=None, guess_scalefactor=None, g
 
 def freeElectronParabola(x, kscale, zero, offset, energyunit='eV'):
 	"""
-	Calculates a standard free electron parabolawith nature constans and given scaling factor
+	Calculates a standard free electron parabola with nature constants and given scaling factor.
+
+	.. note:: This function can also be used to get a free electron parabola for already calibrated k-space DataSets:
+		Just put in the k-space axis data as ``x``, set ``kscale`` to ``1`` and give ``offset`` corresponding to the
+		scaled units on your k-space axis.
+
+		Example::
+
+			freeElectronParabola(mykspacedata.get_axis('k_y').data, 1, u.to_ureg(1.2, 'angstrom**-1'))
 
 	:param x: An array of x-pixels.
 
 	:param kscale: The scalefactor translating unscaled k-axis units to k-space. Typically given in
-	'angstrom**-1 per pixel'.
+		``angstrom**-1 per pixel``.
 
 	:param zero: The origin pixel value of the parable, given in pixels or unscaled k-axis units.
 
 	:param offset: The origin of the parable on the energy axis. Typically, something like the drift
-	voltage in PEEM.
+		voltage in PEEM.
 
 	:param energyunit: Desired unit, you want to use in your data. Typically electronVolts
 
@@ -165,7 +174,7 @@ def kscale_axes(data, scalefactor, yzero=None, xzero=None, yaxisid='y', xaxisid=
 	:param data: 4D-DataSet with y-pixel, x-pixel, energy and a k-space dimension.
 
 	:param scalefactor: The scalefactor translating unscaled k-axis units to k-space. Typically given in
-	'angstrom**-1 per pixel'.
+		``angstrom**-1 per pixel``.
 
 	:param yzero: The offset of the Gamma-point in k_y direction.
 
