@@ -297,9 +297,9 @@ texinfo_documents = [
 
 # Bibliographic Dublin Core info.
 epub_title = u'snomtools'
-epub_author = u'Michael Hartelt, Cristian González'
-epub_publisher = u'Michael Hartelt, Cristian González'
-epub_copyright = u'2015, Michael Hartelt, Cristian González'
+epub_author = u'Michael Hartelt and others'
+epub_publisher = u'Michael Hartelt and others'
+epub_copyright = u'2015, Michael Hartelt and others'
 
 # The basename for the epub file. It defaults to the project name.
 #epub_basename = u'snomtools'
