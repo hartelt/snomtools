@@ -12,6 +12,14 @@ snomtools.evaluation.driftcorrection module
     :undoc-members:
     :show-inheritance:
 
+snomtools.evaluation.kscalecalibration module
+---------------------------------------------
+
+.. automodule:: snomtools.evaluation.kscalecalibration
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 snomtools.evaluation.microscopy module
 --------------------------------------
 
