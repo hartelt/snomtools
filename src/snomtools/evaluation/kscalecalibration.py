@@ -16,6 +16,7 @@ import snomtools.data.transformation.project
 import snomtools.plots.datasets
 from snomtools.calcs.constants import m_e, hbar
 import matplotlib.pyplot as plt
+import os
 
 __author__ = 'Lukas Hellbrück'
 
@@ -87,6 +88,7 @@ def load_dispersion_data(data, y_axisid='y', x_axisid='x', e_axisid='energy', d_
 
 
 def show_kscale(dispersion_data, guess_zeropixel=None, guess_scalefactor=None, guess_energyoffset=None,
+				guess_kfov = None,
 				k_axisid='y', e_axisid='energy'):
 	"""
 	Plots the 2d dispersion data along a free electron parable with given parameters. Useful to test k scale.
@@ -96,10 +98,16 @@ def show_kscale(dispersion_data, guess_zeropixel=None, guess_scalefactor=None, g
 	:param guess_zeropixel: The origin pixel value of the parable, given in pixels or unscaled k-axis units.
 
 	:param guess_scalefactor: The scalefactor translating unscaled k-axis units to k-space. Typically given in
-		``angstrom**-1 per pixel``.
+		``angstrom**-1 per pixel``. Alternatively, ``guess_kfov`` can be used to give full kspace width instead,
+		see below.
 
 	:param guess_energyoffset: The origin of the parable on the energy axis. Typically, something like the drift
 		voltage in PEEM.
+
+	:param guess_kfov: Only used if ``guess_scalefactor`` is not given. Then, this can be given (in ``angstrom**-1``)
+		to guess the kspace-Field-of-View (full kspace image width) instead of a factor per pixel.
+		If neither ``guess_scalefactor`` or this parameter are given, a generic value for ``guess_kfov`` of
+		``1.5 angstrom**-1`` is used.
 
 	:param k_axisid: The name (label) of the k-axis of the data. Default: ``y``
 
@@ -118,10 +126,14 @@ def show_kscale(dispersion_data, guess_zeropixel=None, guess_scalefactor=None, g
 		zeropoint = dldpixels.mean()
 	else:
 		zeropoint = u.to_ureg(guess_zeropixel, "pixel")
-	if guess_scalefactor is None:
-		scalefactor = u.to_ureg(1.5, "1/angstrom") / (dldpixels.max() - dldpixels.min())
+	if guess_kfov is None:
+		guess_kfov = u.to_ureg(1.5, "1/angstrom")
 	else:
-		scalefactor = u.to_ureg(guess_scalefactor, "1/angstrom") / (dldpixels.max() - dldpixels.min())
+		guess_kfov = u.to_ureg(guess_kfov, "1/angstrom")
+	if guess_scalefactor is None:
+		scalefactor = guess_kfov / (dldpixels.max() - dldpixels.min())
+	else:
+		scalefactor = u.to_ureg(guess_scalefactor, "1/angstrom per pixel")
 
 	# Calculate a free electron parabola with given parameters
 	parab_data = freeElectronParabola(dldpixels, scalefactor, zeropoint, energy_offset)
@@ -203,24 +215,27 @@ def kscale_axes(data, scalefactor, yzero=None, xzero=None, yaxisid='y', xaxisid=
 
 
 if __name__ == '__main__':
-	# ___ Example for usage ___:# Load experimental data, copy to new target and project dispersion data:
+	# ___ Example for usage ___:
+	# Load experimental data, copy to new target and project dispersion data:
+	data_folder = os.path.abspath("E:\\Evaluation\\20200102_Au111")
 	file = "1. Durchlauf_binned.hdf5"
-	full_data = ds.DataSet.from_h5(file, file.replace('.hdf5', '_kscaled.hdf5'))
+	file_path = os.path.join(data_folder,file)
+	full_data = ds.DataSet.from_h5(file_path, file_path.replace('.hdf5', '_kscaled.hdf5'))
 
 	# Parameters for fitting the Parabola to your data
-	scalefactor = None
-	offset = None
-	zero = None
+	scalefactor = None # example: u.to_ureg(0.02, 'angstrom**-1 per pixel')
+	e_offset = None # example: u.to_ureg(30, 'eV')
+	zero = None # example: u.to_ureg(650/2, 'pixel')
+	kfov = None # example: u.to_ureg(1.5, '1/angstrom')
 
-	dispersion_data = snomtools.evaluation.kscalecalibration.load_dispersion_data(full_data, y_axisid='y binned x10', x_axisid='x binned x10')
+	dispersion_data = load_dispersion_data(full_data, y_axisid='y binned x10', x_axisid='x binned x10')
 
 	# Show k-space scaling example by plotting parabola along data:
-	(scalefactor, zeropoint) = snomtools.evaluation.kscalecalibration.show_kscale(
-		dispersion_data, guess_zeropixel=zero, guess_scalefactor=scalefactor, guess_energyoffset=offset, k_axisid='y binned x10')
+	(scalefactor, zeropoint) = show_kscale(dispersion_data, zero, scalefactor, e_offset, kfov, k_axisid='y binned x10')
 	print((scalefactor, zeropoint))
 
 	# Scale k-space axes according to some scaling factor and save the scaled DataSet:
 	save = False
 	if save:
-		snomtools.evaluation.kscalecalibration.kscale_axes(full_data, scalefactor, zeropoint, yaxisid='y binned x10', xaxisid='x binned x10')
+		kscale_axes(full_data, scalefactor, zeropoint, yaxisid='y binned x10', xaxisid='x binned x10')
 		full_data.saveh5()
