@@ -121,7 +121,7 @@ def show_kscale(dispersion_data, guess_zeropixel=None, guess_scalefactor=None, g
 	if guess_scalefactor is None:
 		scalefactor = u.to_ureg(1.5, "1/angstrom") / (dldpixels.max() - dldpixels.min())
 	else:
-		scalefactor = u.to_ureg(guess_scalefactor, "1/angstrom/pixel")
+		scalefactor = u.to_ureg(guess_scalefactor, "1/angstrom") / (dldpixels.max() - dldpixels.min())
 
 	# Calculate a free electron parabola with given parameters
 	parab_data = freeElectronParabola(dldpixels, scalefactor, zeropoint, energy_offset)
