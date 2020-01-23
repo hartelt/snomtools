@@ -203,18 +203,24 @@ def kscale_axes(data, scalefactor, yzero=None, xzero=None, yaxisid='y', xaxisid=
 
 
 if __name__ == '__main__':
-	# ___ Example for usage ___:
-	# Load experimental data, copy to new target and project dispersion data:
+	# ___ Example for usage ___:# Load experimental data, copy to new target and project dispersion data:
 	file = "1. Durchlauf_binned.hdf5"
 	full_data = ds.DataSet.from_h5(file, file.replace('.hdf5', '_kscaled.hdf5'))
-	dispersion_data = load_dispersion_data(full_data, y_axisid='y binned x10', x_axisid='x binned x10')
+
+	# Parameters for fitting the Parabola to your data
+	scalefactor = None
+	offset = None
+	zero = None
+
+	dispersion_data = snomtools.evaluation.kscalecalibration.load_dispersion_data(full_data, y_axisid='y binned x10', x_axisid='x binned x10')
 
 	# Show k-space scaling example by plotting parabola along data:
-	(scalefactor, zeropoint) = show_kscale(dispersion_data, k_axisid='y binned x10')
+	(scalefactor, zeropoint) = snomtools.evaluation.kscalecalibration.show_kscale(
+		dispersion_data, guess_zeropixel=zero, guess_scalefactor=scalefactor, guess_energyoffset=offset, k_axisid='y binned x10')
 	print((scalefactor, zeropoint))
 
 	# Scale k-space axes according to some scaling factor and save the scaled DataSet:
-	save = True
+	save = False
 	if save:
-		kscale_axes(full_data, scalefactor, zeropoint, yaxisid='y binned x10', xaxisid='x binned x10')
+		snomtools.evaluation.kscalecalibration.kscale_axes(full_data, scalefactor, zeropoint, yaxisid='y binned x10', xaxisid='x binned x10')
 		full_data.saveh5()
