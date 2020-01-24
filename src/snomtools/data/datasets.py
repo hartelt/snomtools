@@ -2432,8 +2432,10 @@ class Axis(DataArray):
 		if unit:
 			points_scaled = u.to_ureg(points_scaled, unit)
 		self.data = points_scaled
-		self.set_label(label)
-		self.set_plotlabel(plotlabel)
+		if not (label is None):
+			self.set_label(label)
+		if not (plotlabel is None):
+			self.set_plotlabel(plotlabel)
 
 	def __str__(self):
 		out = "Axis"
