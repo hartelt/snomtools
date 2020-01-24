@@ -58,11 +58,11 @@ def read_jpeg(filepath):
 	# Careful about orientation! This is like a matrix:
 	# rows go first and are numbered in vertical direction -> Y
 	# columns go last and are numbered in horizontal direction -> X
-	xaxis = ds.Axis(np.arange(0, indata.shape[0]), unit='pixel', label='y', plotlabel='y')
-	yaxis = ds.Axis(np.arange(0, indata.shape[1]), unit='pixel', label='x', plotlabel='x')
+	yaxis = ds.Axis(np.arange(0, indata.shape[0]), unit='pixel', label='y', plotlabel='y')
+	xaxis = ds.Axis(np.arange(0, indata.shape[1]), unit='pixel', label='x', plotlabel='x')
 
 	# Return dataset:
-	return ds.DataSet(label=filebase, datafields=[dataarray], axes=[xaxis, yaxis])
+	return ds.DataSet(label=filebase, datafields=[dataarray], axes=[yaxis, xaxis])
 
 
 def timelog_folder(folderpath, timeunit='s', timeunitlabel=None,

@@ -166,11 +166,11 @@ def peem_dld_read_terra(filepath):
 	# Careful about orientation! This is like a matrix:
 	# rows go first and are numbered in vertical direction -> Y
 	# columns go last and are numbered in horizontal direction -> X
-	xaxis = snomtools.data.datasets.Axis(numpy.arange(0, indata.shape[1]), unit='pixel', label='y', plotlabel='y')
-	yaxis = snomtools.data.datasets.Axis(numpy.arange(0, indata.shape[2]), unit='pixel', label='x', plotlabel='x')
+	yaxis = snomtools.data.datasets.Axis(numpy.arange(0, indata.shape[1]), unit='pixel', label='y', plotlabel='y')
+	xaxis = snomtools.data.datasets.Axis(numpy.arange(0, indata.shape[2]), unit='pixel', label='x', plotlabel='x')
 
 	# Return dataset:
-	return snomtools.data.datasets.DataSet(label=filebase, datafields=[dataarray], axes=[taxis, xaxis, yaxis])
+	return snomtools.data.datasets.DataSet(label=filebase, datafields=[dataarray], axes=[taxis, yaxis, xaxis])
 
 
 def peem_dld_read_terra_sumimage(filepath):
@@ -196,12 +196,12 @@ def peem_dld_read_terra_sumimage(filepath):
 	# Careful about orientation! This is like a matrix:
 	# rows go first and are numbered in vertical direction -> Y
 	# columns go last and are numbered in horizontal direction -> X
-	xaxis = snomtools.data.datasets.Axis(numpy.arange(0, sumdata.shape[0]), unit='pixel', label='y', plotlabel='y')
-	yaxis = snomtools.data.datasets.Axis(numpy.arange(0, sumdata.shape[1]), unit='pixel', label='x', plotlabel='x')
+	yaxis = snomtools.data.datasets.Axis(numpy.arange(0, sumdata.shape[0]), unit='pixel', label='y', plotlabel='y')
+	xaxis = snomtools.data.datasets.Axis(numpy.arange(0, sumdata.shape[1]), unit='pixel', label='x', plotlabel='x')
 
 	# Build dataset:
 	ds_sum = snomtools.data.datasets.DataSet(label="sumimage " + filebase, datafields=[sumdataarray],
-											 axes=[xaxis, yaxis])
+											 axes=[yaxis, xaxis])
 	return ds_sum
 
 
@@ -252,11 +252,11 @@ def peem_camera_read_camware(filepath):
 	# Careful about orientation! This is like a matrix:
 	# rows go first and are numbered in vertical direction -> Y
 	# columns go last and are numbered in horizontal direction -> X
-	xaxis = snomtools.data.datasets.Axis(numpy.arange(0, indata.shape[0]), unit='pixel', label='y', plotlabel='y')
-	yaxis = snomtools.data.datasets.Axis(numpy.arange(0, indata.shape[1]), unit='pixel', label='x', plotlabel='x')
+	yaxis = snomtools.data.datasets.Axis(numpy.arange(0, indata.shape[0]), unit='pixel', label='y', plotlabel='y')
+	xaxis = snomtools.data.datasets.Axis(numpy.arange(0, indata.shape[1]), unit='pixel', label='x', plotlabel='x')
 
 	# Return dataset:
-	return snomtools.data.datasets.DataSet(label=filebase, datafields=[dataarray], axes=[xaxis, yaxis])
+	return snomtools.data.datasets.DataSet(label=filebase, datafields=[dataarray], axes=[yaxis, xaxis])
 
 
 def peem_camera_read_terra(filepath):
