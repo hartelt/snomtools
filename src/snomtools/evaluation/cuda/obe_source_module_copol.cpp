@@ -26,7 +26,7 @@ __device__ void stepOBE (double* dxdy, const double* rho, const double laser, co
     dxdy[8] = 2*laser*rho[5];
 }
 
-__global__ void simOBEcuda (double* AC, const double* Delaylist, const double w, const double FWHM, const double G1, const double G2, const double G3, const double t_min)
+__global__ void simOBEcudaCoPolTest (double* AC, const double* Delaylist, const double w, const double FWHM, const double G1, const double G2, const double G3, const double t_min)
 {
     int idx = blockIdx.x*blockDim.x + threadIdx.x; // Unique index
 
