@@ -1,3 +1,11 @@
+# -*- coding:utf-8 -*-
+
+"""
+This file contains evaluation methods that use an Optical Bloch Equations (OBE) model,
+assuming co-polarized laser pulses incident on a three-level-system.
+It is typically used to evaluate time-resolved 2-Photon-Photoemission (2PPE) data.
+"""
+
 import numpy as np
 import pycuda.driver as drv
 import pycuda.tools
