@@ -17,6 +17,10 @@ import re
 import h5py
 import sys
 import os
+from snomtools.evaluation.cuda import cuda_sources
+import snomtools.data.datasets as ds
+
+CUDA_SOURCEFILE = "obe_source_module_copol.cu"
 
 
 def lowpass(data, highcut, srate, order):
@@ -100,7 +104,7 @@ def CreateCoPolDelay(stepsize, MaxDelay):
 	# create delay list
 	Delays = []
 	# create pm values
-	Delays = np.arange(0.0,round(self.gpuOBE_buffersize*stepsize,2),stepsize)
+	Delays = np.arange(0.0, round(self.gpuOBE_buffersize * stepsize, 2), stepsize)
 
 	return np.asarray(Delays)
 
@@ -148,98 +152,13 @@ def fitTauACblauCoPol(ExpDelays, tau, Amp, Offset, Center):
 	global gpuOBE_normparameter
 	global gpuOBE_Phaseresolution
 	return TauACCoPol(ExpDelays, gpuOBE_laserBlau, gpuOBE_LaserBlauFWHM, tau, Amp, Offset, Center,
-						 normparameter=gpuOBE_normparameter, Phase=gpuOBE_Phaseresolution)
+					  normparameter=gpuOBE_normparameter, Phase=gpuOBE_Phaseresolution)
 
 
-mod = SourceModule("""
-#include <stdio.h>
-#define CUDART_PI_F 3.141592654f
-
-__device__ void stepOBE (double* dxdy, const double* rho, const double laser, const double w, const double w2, const double g12, const double g13, const double g23, const double g22)
-{
-
-    //12R
-    dxdy[0] = -laser*rho[3] - w*rho[1] - g12*rho[0];
-    //12I
-    dxdy[1] = laser*(-rho[7] + rho[6] + rho[2]) + w*rho[0] - g12*rho[1];
-    //13R
-    dxdy[2] = laser*(rho[5] - rho[1]) - w2*rho[3] - g13*rho[2];
-    //13I
-    dxdy[3] = laser*(-rho[4] + rho[0]) + w2*rho[2] -g13*rho[3];
-    //23R
-    dxdy[4] = laser*rho[3] - w*rho[5] - g23*rho[4];
-    //23I
-    dxdy[5] = laser*(-rho[8] + rho[7] - rho[2]) + w*rho[4] - g23*rho[5];
-
-    //dxdy[6] = -2*laser*rho[1] - g11*rho[6];
-    //11R
-    dxdy[6] = -2*laser*rho[1] + g22*rho[7];
-    //22R
-    dxdy[7] = 2*laser*(rho[1] - rho[5]) - g22*rho[7];
-    //33R
-    dxdy[8] = 2*laser*rho[5];
-}
-
-__global__ void simOBEcuda (double* AC, const double* Delaylist, const double w, const double FWHM, const double G1, const double G2, const double G3, const double t_min)
-{
-    int idx = blockIdx.x*blockDim.x + threadIdx.x; // Unique index
-
-    //double g11 = 2*G1;
-    //double g12 = G1;
-    double g12 = G1 + G2;
-    double g13 = G1 + G3;
-    double g23 = G2 + G3;
-    double g22 = 2*G2;
-
-    const double w2 = 2*w;
-
-    int n = round(2*t_min/0.1);
-
-    double delta_t = 2*t_min/n;
-
-    double delay = Delaylist[idx];
-    double laser = 0;
-    double time = 0;
-
-    // rho = {12R,12I,13R,13I,23R,23I,11R,22R,33R}
-    double rho[9] = {0,0,0,0,0,0, 1,0,0};
-
-    double k1[9] = {0,0,0,0,0,0, 0,0,0};
-    double k2[9] = {0,0,0,0,0,0, 0,0,0};
-    double k3[9] = {0,0,0,0,0,0, 0,0,0};
-    double k4[9] = {0,0,0,0,0,0, 0,0,0};
-    double tmp[9] = {0,0,0,0,0,0, 0,0,0};
-
-    double laser1 = 0, laser2 = 0;
-
-    double h = delta_t;
-    double hh = delta_t/2;
-
-
-    for(int i=0; i<n; i++)
-    {
-
-        time = i*delta_t;
-        laser = 0.5 * 0.0012 / CUDART_PI_F * 2 * ( cos(w*(time-t_min)) / cosh(-(time-t_min)/(FWHM)) + cos(w*(time-t_min+delay)) / cosh(-(time-t_min+delay)/(FWHM)) );
-        laser1 = 0.5 * 0.0012 / CUDART_PI_F * 2 * ( cos(w*(time+hh-t_min)) / cosh(-(time+hh-t_min)/(FWHM)) + cos(w*(time+hh-t_min+delay)) / cosh(-(time+hh-t_min+delay)/(FWHM)) );
-        laser2 = 0.5 * 0.0012 / CUDART_PI_F * 2 * ( cos(w*(time+h-t_min)) / cosh(-(time+h-t_min)/(FWHM)) + cos(w*(time+h-t_min+delay)) / cosh(-(time+h-t_min+delay)/(FWHM)) );
-
-        stepOBE(k1, rho, laser, w, w2, g12, g13, g23, g22);
-        for(int i = 0; i<9; i++) tmp[i] = rho[i] + hh * k1[i];
-        stepOBE(k2, tmp, laser1, w, w2, g12, g13, g23, g22);
-        for(int i = 0; i<9; i++) tmp[i] = rho[i] + hh * k2[i];
-        stepOBE(k3, tmp, laser1, w, w2, g12, g13, g23, g22);
-        for(int i = 0; i<9; i++) tmp[i] = rho[i] + h * k3[i];
-        stepOBE(k4, tmp, laser2, w, w2, g12, g13, g23, g22);
-
-        for(int j=0; j<9; j++)
-        {
-            rho[j] = rho[j] + h/6 * (k1[j] + k4[j] + 2*(k2[j] + k3[j]));
-        }
-    }
-
-    AC[idx] = rho[8]; 
-}""")
+# Load and compile Cuda Source:
+with open(cuda_sources[CUDA_SOURCEFILE], 'r') as myfile:
+	source = myfile.read()
+mod = SourceModule(source)
 
 
 def gpuOBE_ACBlauCoPolTest(Delaylist, tau, laserWavelength, laserFWHM, buffersize):
@@ -282,6 +201,7 @@ def gpuOBE_ACBlauCoPolTest(Delaylist, tau, laserWavelength, laserFWHM, buffersiz
 
 	return IAC
 
+
 # Example to test functionality
 minimal_example_test = False
 if minimal_example_test:
@@ -299,7 +219,7 @@ if minimal_example_test:
 	Center = 0.0
 	IAC = TauACCoPol(Delays, L, FWHM, tau, Amp, Offset, Center, normparameter=False, Phase=False)
 	# LaserAC(ExpDelays,L,FWHM,Amp,Offset,Center):
-	#IAC2 = LaserAC(Delays, L, FWHM, Amp, Offset, Center)
+	# IAC2 = LaserAC(Delays, L, FWHM, Amp, Offset, Center)
 	endtime = timer()
 	print(endtime - starttime)
 # figure()
@@ -309,7 +229,6 @@ if minimal_example_test:
 # plot(Delays,normAC(IAC2))
 # loop = np.loadtxt('D:/PEEM samples/CudaTest/forloops.txt')
 # plot(Delays,normAC(loop))
-
 
 
 # Script for evaluation on local PC
@@ -322,15 +241,12 @@ HfO2outfolder = os.path.join(HfO2folder, "cudaresults")
 if not os.path.exists(HfO2outfolder):
 	os.makedirs(HfO2outfolder)
 
-
-
 HfO2data = ds.DataSet.from_h5(HfO2datah5)
 HfO2FWHM = ds.DataSet.from_h5(HfO2FWHMh5)
 
 print(HfO2data)
 print(HfO2FWHM.get_datafield(0).min())
 HfO2_AC_FWHM = HfO2FWHM.get_datafield(0).min().magnitude
-
 
 print("Start: ", datetime.datetime.now().isoformat())
 
@@ -357,7 +273,7 @@ for i, energy in enumerate(HfO2data.get_axis('energy').data):
 	guess_Offset = np.min(ExpData)
 	guess_Amp = np.max(ExpData) - guess_Offset
 	p0 = (guess_lifetime, guess_Amp, guess_Offset, -4.0)
-	#fitTauACblau(ExpDelays,FWHM,Amp,Offset,Center)
+	# fitTauACblau(ExpDelays,FWHM,Amp,Offset,Center)
 
 	try:
 		# popt, pcov = curve_fit(fitTauACblau, ExpDelays, ExpData, p0,
