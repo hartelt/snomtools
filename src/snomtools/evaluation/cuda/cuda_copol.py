@@ -17,7 +17,7 @@ import re
 import h5py
 import sys
 import os
-from snomtools.evaluation.cuda import cuda_sources
+from snomtools.evaluation.cuda import load_cuda_source
 import snomtools.data.datasets as ds
 
 CUDA_SOURCEFILE = "obe_source_module_copol.cu"
@@ -156,9 +156,7 @@ def fitTauACblauCoPol(ExpDelays, tau, Amp, Offset, Center):
 
 
 # Load and compile Cuda Source:
-with open(cuda_sources[CUDA_SOURCEFILE], 'r') as myfile:
-	source = myfile.read()
-mod = SourceModule(source)
+mod = SourceModule(load_cuda_source(CUDA_SOURCEFILE))
 
 
 def gpuOBE_ACBlauCoPolTest(Delaylist, tau, laserWavelength, laserFWHM, buffersize):

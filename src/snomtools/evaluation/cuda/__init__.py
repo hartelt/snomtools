@@ -25,3 +25,18 @@ def is_cuda_sourcefile(filename):
 
 module_folder = os.path.abspath(os.path.dirname(__file__))
 cuda_sources = {f: os.path.join(module_folder, f) for f in filter(is_cuda_sourcefile, os.listdir(module_folder))}
+
+
+def load_cuda_source(filename):
+	"""
+	Loads a cuda source file and returns it as string. The filename must be present as a .cu file in the module folder.
+
+	:param str filename: The source file to load.
+
+	:return: The source code.
+	:rtype: str
+	"""
+	full_source_path = cuda_sources[filename]
+	with open(full_source_path, 'r') as myfile:
+		source = myfile.read()
+	return source
