@@ -148,6 +148,57 @@ def show_kscale(dispersion_data, guess_zeropixel=None, guess_scalefactor=None, g
 
 	return (scalefactor, zeropoint)
 
+def show_state_parabola(dispersion_data, guess_zeropixel=None, guess_mass=None, guess_energyoffset=None,
+				k_axisid='y', e_axisid='energy'):
+	"""
+	Plots the 2d dispersion data along a parable for a intermediate state with given parameters. Useful
+	for finding out the specific band mass.
+
+	:param dispersion_data: 2D-DataSet with an energy and a k-space dimension.
+
+	:param guess_zeropixel: The origin k value of the parable, given in ``1/angstrom``.
+
+	:param guess_mass: The bandmass of the intermediate state you are interested. Typically given in
+		units of m_e (electronmass).
+
+	:param guess_energyoffset: The origin of the parable on the energy axis. Typically, something like the drift
+		voltage in PEEM.
+
+	:param k_axisid: The name (label) of the k-axis of the data. Default: ``y``
+
+	:param e_axisid: The name (label) of the energy axis of the data. Default: ``energy``
+
+	:return: The value of the bandmass, that was used in the plot. Typically given in
+		units of m_e (electronmass).
+	"""
+	# Define parabola and parameters for fit
+	if guess_energyoffset is None:
+		energy_offset = u.to_ureg(30, "eV")
+	else:
+		energy_offset = u.to_ureg(guess_energyoffset, "eV")
+	k = dispersion_data.get_axis(k_axisid).data
+	if guess_zeropixel is None:
+		zeropoint = k.mean()
+	else:
+		zeropoint = u.to_ureg(guess_zeropixel, "1/angstrom")
+	if guess_mass is None:
+		bandmass = m_e
+	else:
+		bandmass = u.to_ureg(guess_mass * m_e, "kg")
+
+	# Calculate a parabola with set electronmass
+	parab_data = bandDispersionRelation(k, bandmass, zeropoint, energy_offset)
+
+	# Plot dispersion and ParabolaFit
+	plt.figure()
+	ax = plt.subplot(111)
+	snomtools.plots.datasets.project_2d(dispersion_data, ax, e_axisid, k_axisid)
+	ax.plot(k, parab_data, 'r-', label="Fitparabel") # Plot parabola as red line.
+	ax.invert_yaxis() # project_2d flips the y axis as it assumes standard matrix orientation, so flip it back.
+	plt.show()
+
+	return bandmass / m_e
+
 
 def freeElectronParabola(x, kscale, zero, offset, energyunit='eV'):
 	"""
