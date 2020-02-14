@@ -26,7 +26,46 @@ import h5py
 import sys
 import os
 from snomtools.evaluation.cuda import load_cuda_source
+
+# Import snomtools from source by pulling the repo to ~/repos/:
+home = os.path.expanduser("~")
+sys.path.insert(0, os.path.join(home, "repos/snomtools/src/"))
+sys.path.insert(0, os.path.join(home, "repos/pint/"))
 import snomtools.data.datasets as ds
+
+dev = pycuda.autoinit.device
+print('Device: ' + str(drv.Device.name(dev)))
+print('Compute capability: ' + str(drv.Device.compute_capability(dev)[0]) + '.' + str(
+	drv.Device.compute_capability(dev)[1]))
+print('Total memory: ' + str(drv.Device.total_memory(dev) / 1024 / 1024) + ' MB')
+print('Device clock rate: ' + str(dev.clock_rate / 1000) + ' MHz')
+print('Max grid size x: ' + str(dev.max_grid_dim_x))
+print('Max grid size y: ' + str(dev.max_grid_dim_y))
+print('Max block size x: ' + str(dev.max_block_dim_x))
+print('Max block size y: ' + str(dev.max_block_dim_y))
+print('Max block size z: ' + str(dev.max_block_dim_z))
+print('Multiprocessor count: ' + str(dev.multiprocessor_count))
+print('shared_memory_per_block: ' + str(dev.shared_memory_per_block))
+print('max_shared_memory_per_block: ' + str(dev.max_shared_memory_per_block))
+print('registers_per_block: ' + str(dev.registers_per_block))
+print('max_registers_per_block: ' + str(dev.max_registers_per_block))
+print('max_threads_per_multiprocessor: ' + str(dev.max_threads_per_multiprocessor))
+print('max_threads_per_block: ' + str(dev.max_threads_per_block))
+
+gpuOBE_blocksize = int(dev.max_block_dim_x / 4)
+print('Setting max buffer size to half that value (for double precision?): ' + str(gpuOBE_blocksize))
+
+# Simulation overhead - Do more timesteps than delaysteps to avoid that the
+# system reached equilibrium. If you have a dropping signal at the border
+# of your simulation increase this value
+gpuOBE_simOverhead = 1.3  # 1.2
+
+# Tau for FWHM relax - This small tau is used to fit the FWHM of the
+# corresponding laser pulse. Don't use 0, otherwise the numerics will crash
+gpuOBE_simFWHMTau = 0.05
+
+## Constants
+c = 299792458
 
 CUDA_SOURCEFILE = "obe_source_module_copol.cu"
 
@@ -117,7 +156,7 @@ def CreateCoPolDelay(stepsize, MaxDelay):
 	return np.asarray(Delays)
 
 
-def coreTauACoPol(x, tau, L, FWHM):
+def coreTauACCoPol(x, tau, L, FWHM):
 	global gpuOBE_buffersize
 	IAC = gpuOBE_ACBlauCoPolTest(x, tau, L, FWHM, gpuOBE_buffersize)
 	return IAC
@@ -183,9 +222,11 @@ def gpuOBE_ACBlauCoPolTest(Delaylist, tau, laserWavelength, laserFWHM, buffersiz
 	G2 = 1. / T2
 	G3 = 1. / T3
 
+	IAC = np.zeros(gpuOBE_buffersize, dtype=np.float64)
+	t_min = gpuOBE_simOverhead * max(abs(Delaylist))
+
 	simOBErb = mod.get_function("simOBEcudaCoPolTest")
-	# print('buffersize', buffersize)
-	n_delays = buffersize, 2
+
 	grid_x = gpuOBE_gridsize
 	grid_y = 1
 
@@ -194,14 +235,10 @@ def gpuOBE_ACBlauCoPolTest(Delaylist, tau, laserWavelength, laserFWHM, buffersiz
 	block_z = 1
 	# assert buffersize <= 1024, "Maximum number of threads per block exceeded"
 
-	delaylist = Delaylist  # np.linspace(-200,200,512)
-	t_min = gpuOBE_simOverhead * max(abs(delaylist))
+	delays = np.empty((gpuOBE_buffersize), dtype=np.float64)
+	delays = np.array(delaylist, dtype=np.float64)
 
-	# print len(inputlist)
-	delays = np.array(listofdelays, dtype=np.float64)
-	# print [alphas[0],betas[0]],[alphas[1],betas[1]],[alphas[2],betas[2]],[alphas[3],betas[3]]
-	IAC = np.zeros(gpuOBE_buffersize, dtype=np.float64)
-	simOBErb(drv.Out(IAC), drv.In(delaylist), np.float64(w), np.float64(FWHM),
+	simOBErb(drv.Out(IAC), drv.In(delays), np.float64(w), np.float64(FWHM),
 			 np.float64(G1 + G2), np.float64(G1 + G3), np.float64(G2 + G3), np.float64(t_min),
 			 grid=(grid_x, grid_y), block=(block_x, block_y, block_z))
 
