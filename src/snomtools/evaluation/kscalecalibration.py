@@ -177,6 +177,24 @@ def freeElectronParabola(x, kscale, zero, offset, energyunit='eV'):
 	"""
 	return (hbar ** 2 * (kscale * (x - zero)) ** 2 / (2 * m_e) + offset).to(energyunit)
 
+def bandDispersionRelation(k, m, zero, offset, energyunit='eV'):
+	"""
+	Calculates a standard free electron parabola with nature constants and given scaling factor.
+
+	:param k: An array of inverse Angstroem.
+
+	:param m: The bandmass m, to fit a freeElectronParabola to a state in your dispersion plot.
+
+	:param zero: The origin pixel value of the parable, given in ``angstrom**-1``.
+
+	:param offset: The origin of the parable on the energy axis. Depending on the state of interest.
+
+	:param energyunit: Desired unit, you want to use in your data. Typically electronVolts
+
+	:return: Return a parabola with a specific electron mass, to fit to your dispersion plot.
+	"""
+	return (hbar ** 2 * (k - zero) ** 2 / (2 * m) + offset).to(energyunit)
+
 
 def kscale_axes(data, scalefactor, yzero=None, xzero=None, yaxisid='y', xaxisid='x'):
 	"""
