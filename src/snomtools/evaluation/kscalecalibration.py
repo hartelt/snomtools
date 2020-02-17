@@ -182,9 +182,9 @@ def show_state_parabola(dispersion_data, guess_zeropixel=None, guess_mass=None, 
 	else:
 		zeropoint = u.to_ureg(guess_zeropixel, "1/angstrom")
 	if guess_mass is None:
-		bandmass = m_e
+		bandmass = u.to_ureg(1, "m_e")
 	else:
-		bandmass = u.to_ureg(guess_mass * m_e, "kg")
+		bandmass = u.to_ureg(guess_mass, "m_e")
 
 	# Calculate a parabola with set electronmass
 	parab_data = bandDispersionRelation(k, bandmass, zeropoint, energy_offset)
@@ -197,7 +197,7 @@ def show_state_parabola(dispersion_data, guess_zeropixel=None, guess_mass=None, 
 	ax.invert_yaxis() # project_2d flips the y axis as it assumes standard matrix orientation, so flip it back.
 	plt.show()
 
-	return bandmass / m_e
+	return bandmass
 
 
 def freeElectronParabola(x, kscale, zero, offset, energyunit='eV'):
