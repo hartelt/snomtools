@@ -247,7 +247,7 @@ def bandDispersionRelation(k, m, zero, offset, energyunit='eV'):
 	return (hbar ** 2 * (k - zero) ** 2 / (2 * m) + offset).to(energyunit)
 
 
-def kscale_axes(data, scalefactor, yzero=None, xzero=None, yaxisid='y', xaxisid='x'):
+def kscale_axes(data, scalefactor, yzero=None, xzero=None, y_axisid='y', x_axisid='x'):
 	"""
 	Scales the x- and y-axis of a given set of dldpixels from a 4D-Dataset to k-space, depending on a before
 	determined scalefactor.
@@ -268,17 +268,17 @@ def kscale_axes(data, scalefactor, yzero=None, xzero=None, yaxisid='y', xaxisid=
 	:return: The k-scaled 4D-Dataset.
 	"""
 	if yzero is None:
-		yzero = data.get_axis(yaxisid).mean()
+		yzero = data.get_axis(y_axisid).mean()
 	else:
-		yzero = u.to_ureg(yzero, data.get_axis(yaxisid).units)
-	data.get_axis(yaxisid).scale_linear(scalefactor, scalefactor * (-yzero), 'angstrom**-1',
+		yzero = u.to_ureg(yzero, data.get_axis(y_axisid).units)
+	data.get_axis(y_axisid).scale_linear(scalefactor, scalefactor * (-yzero), 'angstrom**-1',
 										label='k_y',
 										plotlabel="k_y / Angstroem^-1")
 	if xzero is None:
-		xzero = data.get_axis(xaxisid).mean()
+		xzero = data.get_axis(x_axisid).mean()
 	else:
-		xzero = u.to_ureg(xzero, data.get_axis(xaxisid).units)
-	data.get_axis(xaxisid).scale_linear(scalefactor, scalefactor * (-xzero), 'angstrom**-1',
+		xzero = u.to_ureg(xzero, data.get_axis(x_axisid).units)
+	data.get_axis(x_axisid).scale_linear(scalefactor, scalefactor * (-xzero), 'angstrom**-1',
 										label='k_x',
 										plotlabel="k_x / Angstroem^-1")
 
