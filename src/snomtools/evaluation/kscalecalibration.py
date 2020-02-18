@@ -332,25 +332,38 @@ def kscale_axes(data, scalefactor, yzero=None, xzero=None, y_axisid='y', x_axisi
 if __name__ == '__main__':
 	# ___ Example for usage ___:
 	# Load experimental data, copy to new target and project dispersion data:
-	data_folder = os.path.abspath("E:\\Evaluation\\20200102_Au111")
-	file = "1. Durchlauf_binned.hdf5"
-	file_path = os.path.join(data_folder,file)
-	full_data = ds.DataSet.from_h5(file_path, file_path.replace('.hdf5', '_kscaled.hdf5'))
+	# Define run you want to scale
+	data_folder = os.path.abspath("Folderpath to data") # example "E:\\Evaluation\\20200102_Au111"
+	file = "HDF5 file to scale"  # example "01_kspace_THG_GI_Texp45m3s_binned.hdf5"
+	file_path = os.path.join(data_folder, file)
+	# If you don't want to create new file with same data but only scaled 'x', 'y' axis, which only doubles amount of data.
+	full_data = ds.DataSet.from_h5(file)
 
 	# Parameters for fitting the Parabola to your data
-	scalefactor = None # example: u.to_ureg(0.02, 'angstrom**-1 per pixel')
-	e_offset = None # example: u.to_ureg(30, 'eV')
-	zero = None # example: u.to_ureg(650/2, 'pixel')
-	kfov = None # example: u.to_ureg(1.5, '1/angstrom')
+	scalefactor = None  # example: u.to_ureg(0.002, 'angstrom**-1 per pixel')
+	e_offset = None  # example: u.to_ureg(30, 'eV')
+	zero = None  # example: u.to_ureg(650/2, 'pixel')
+	kfov = None  # example: u.to_ureg(1.5, '1/angstrom')
 
-	dispersion_data = load_dispersion_data(full_data, y_axisid='y binned x10', x_axisid='x binned x10')
+	# Projects dataset on energy, y-pixel axis
+	# Set d_axisid = False for static data
+	dispersion_data = load_dispersion_data(full_data, y_axisid='y binned x10', x_axisid='x binned x10', d_axisid=False)
+
+	# Trigger for saving Imgae, with figname as name of saved file
+	save = True
+	figname = 'Figure Name'
 
 	# Show k-space scaling example by plotting parabola along data:
-	(scalefactor, zeropoint) = show_kscale(dispersion_data, zero, scalefactor, e_offset, kfov, k_axisid='y binned x10')
+	(scalefactor, zeropoint) = show_kscale(dispersion_data, zero, scalefactor, e_offset, kfov, k_axisid='y binned x10',
+										   savefig=save, figname)
 	print((scalefactor, zeropoint))
 
 	# Scale k-space axes according to some scaling factor and save the scaled DataSet:
-	save = False
+	# Set to True if fit is good, to save/rescale your data
 	if save:
-		kscale_axes(full_data, scalefactor, zeropoint, yaxisid='y binned x10', xaxisid='x binned x10')
+		# If you don't want to create new file with same data but only scaled 'x', 'y' axis
+		# which only doubles amount of data. 'Outcomment' full_data re-definition
+		full_data = ds.DataSet.from_h5(file_path, file_path.replace('.hdf5', '_kscaled.hdf5'))
+		# Applys kscale calibration
+		kscale_axes(full_data, scalefactor, zeropoint, y_axisid='y binned x10', x_axisid='x binned x10')
 		full_data.saveh5()
