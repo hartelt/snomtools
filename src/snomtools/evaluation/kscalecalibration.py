@@ -91,9 +91,9 @@ def load_dispersion_data(data, y_axisid='y', x_axisid='x', e_axisid='energy', d_
     return snomtools.data.transformation.project.project_2d(sumroi, e_axisid, y_axisid)
 
 
-def show_kscale(dispersion_data, guess_zeropixel=None, guess_scalefactor=None, guess_energyoffset=None,
+def show_kscale(dispersion_data, figname, guess_zeropixel=None, guess_scalefactor=None, guess_energyoffset=None,
                 guess_kfov=None,
-                k_axisid='y', e_axisid='energy', savefig=False, figname, **kwargs):
+                k_axisid='y', e_axisid='energy', savefig=False, **kwargs):
     """
     Plots the 2d dispersion data along a free electron parable with given parameters. Useful to test k scale.
 
@@ -169,8 +169,8 @@ def show_kscale(dispersion_data, guess_zeropixel=None, guess_scalefactor=None, g
     return (scalefactor, zeropoint)
 
 
-def show_state_parabola(dispersion_data, guess_zeropixel=None, guess_mass=None, guess_energyoffset=None,
-                        k_axisid='y', e_axisid='energy', savefig=False, figname, **kwargs):
+def show_state_parabola(dispersion_data, figname, guess_zeropixel=None, guess_mass=None, guess_energyoffset=None,
+                        k_axisid='y', e_axisid='energy', savefig=False, **kwargs):
     """
     Plots the 2d dispersion data along a parable for a intermediate state with given parameters. Useful
     for finding out the specific band mass.
