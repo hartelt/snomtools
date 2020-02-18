@@ -37,14 +37,14 @@ def load_dispersion_data(data, y_axisid='y', x_axisid='x', e_axisid='energy', d_
 
     :param x_axisid: The name (label) of the x-axis of the data, used to sum over. If set to ``False`` or ``None``,
         no pixel summation is done and other ``x_``...-Parameters are ignored. Default: ``x``
-    :type x_axisid: str
+    :type x_axisid: str or bool
 
     :param e_axisid: The name (label) of the energy-axis of the data, used for the dispersion. Default: ``energy``
     :type e_axisid: str
 
     :param d_axisid: The name (label) of the delay-axis of the data, used to sum over. If set to ``False`` or ``None``,
         no summation is done and other ``delay_``...-Parameters are ignored. Default: ``delay``
-    :type d_axisid: str
+    :type d_axisid: str or bool
 
     :param x_center: The center position index along the x Axis around which shall be summed.
         Default: The "middle" of the axis, defined as half its length.
@@ -100,22 +100,22 @@ def show_kscale(dispersion_data, guess_zeropixel=None, guess_scalefactor=None, g
     :param dispersion_data: 2D-DataSet with an energy and a k-space dimension.
 
     :param guess_zeropixel: The origin pixel value of the parable, given in pixels or unscaled k-axis units.
-    :type guess_zeropixel: float
+    :type guess_zeropixel: float or None
 
     :param guess_scalefactor: The scalefactor translating unscaled k-axis units to k-space. Typically given in
         ``angstrom**-1 per pixel``. Alternatively, ``guess_kfov`` can be used to give full kspace width instead,
         see below.
-    :type guess_scalefactor: float
+    :type guess_scalefactor: float or None
 
     :param guess_energyoffset: The origin of the parable on the energy axis. Typically, something like the drift
         voltage in PEEM.
-    :type guess_energyoffset: float
+    :type guess_energyoffset: float or None
 
     :param guess_kfov: Only used if ``guess_scalefactor`` is not given. Then, this can be given (in ``angstrom**-1``)
         to guess the kspace-Field-of-View (full kspace image width) instead of a factor per pixel.
         If neither ``guess_scalefactor`` or this parameter are given, a generic value for ``guess_kfov`` of
         ``1.5 angstrom**-1`` is used.
-    :type guess_kfov: float
+    :type guess_kfov: float or None
 
     :param k_axisid: The name (label) of the k-axis of the data. Default: ``y``
     :type k_axisid: str
@@ -178,15 +178,15 @@ def show_state_parabola(dispersion_data, guess_zeropixel=None, guess_mass=None, 
     :param dispersion_data: 2D-DataSet with an energy and a k-space dimension.
 
     :param guess_zeropixel: The origin k value of the parable, given in ``1/angstrom``.
-    :type guess_zeropixel: float
+    :type guess_zeropixel: float or None
 
     :param guess_mass: The bandmass of the intermediate state you are interested. Typically given in
         units of m_e (electronmass).
-    :type guess_mass: float
+    :type guess_mass: float or None
 
     :param guess_energyoffset: The origin of the parable on the energy axis. Typically, something like the drift
         voltage in PEEM.
-    :type guess_energyoffset: float
+    :type guess_energyoffset: float or None
 
     :param k_axisid: The name (label) of the k-axis of the data. Default: ``y``
     :type k_axisid: str
@@ -302,15 +302,15 @@ def kscale_axes(data, scalefactor, yzero=None, xzero=None, y_axisid='y', x_axisi
     :type scalefactor: float
 
     :param yzero: The offset of the Gamma-point in k_y direction.
-    :type yzero: float
+    :type yzero: float or None
 
     :param xzero: The offset of the Gamma-point in k_x direction.
-    :type xzero: float
+    :type xzero: float or None
 
-    :param yaxisid: The name (label) of the x-axis of the data. Default: ``y``
+    :param y_axisid: The name (label) of the x-axis of the data. Default: ``y``
     :type y_axisid: str
 
-    :param xaxisid: The name (label) of the y-axis of the data. Default: ``x``
+    :param x_axisid: The name (label) of the y-axis of the data. Default: ``x``
     :type x_axisid: str
 
     :return: The k-scaled 4D-Dataset.
@@ -357,7 +357,7 @@ if __name__ == '__main__':
 
     # Show k-space scaling example by plotting parabola along data:
     (scalefactor, zeropoint) = show_kscale(dispersion_data, zero, scalefactor, e_offset, kfov, k_axisid='y binned x10',
-                                           savefig=save, figname)
+                                           savefig=save, figname=figname)
     print((scalefactor, zeropoint))
 
     # Scale k-space axes according to some scaling factor and save the scaled DataSet:
