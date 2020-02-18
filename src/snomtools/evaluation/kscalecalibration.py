@@ -89,7 +89,7 @@ def load_dispersion_data(data, y_axisid='y', x_axisid='x', e_axisid='energy', d_
 
 def show_kscale(dispersion_data, guess_zeropixel=None, guess_scalefactor=None, guess_energyoffset=None,
 				guess_kfov = None,
-				k_axisid='y', e_axisid='energy', **kwargs):
+				k_axisid='y', e_axisid='energy', savefig=False, figname, **kwargs):
 	"""
 	Plots the 2d dispersion data along a free electron parable with given parameters. Useful to test k scale.
 
@@ -112,6 +112,12 @@ def show_kscale(dispersion_data, guess_zeropixel=None, guess_scalefactor=None, g
 	:param k_axisid: The name (label) of the k-axis of the data. Default: ``y``
 
 	:param e_axisid: The name (label) of the energy axis of the data. Default: ``energy``
+
+	:param savefig: Boolean, switch to determin if ploted figure should be saved or not.
+
+	:param figname: String, name of the file the plot should be saved into.
+
+	:param kwargs: Keyword arguments for the plot() normalization of the plot object.
 
 	:return: A tuple of (scalefactor, zeropixel) that was used for the plot. As this is just the replicated input
 		parameters, it can be ignored or used for info/debugging.
@@ -143,13 +149,15 @@ def show_kscale(dispersion_data, guess_zeropixel=None, guess_scalefactor=None, g
 	ax = plt.subplot(111)
 	snomtools.plots.datasets.project_2d(dispersion_data, ax, e_axisid, k_axisid, **kwargs)
 	ax.plot(dldpixels, parab_data, 'r-', label="Fitparabel") # Plot parabola as red line.
-	ax.invert_yaxis() # project_2d flips the y axis as it assumes standard matrix orientation, so flip it back.
+	ax.invert_yaxis() # project_2d flips the y axis as it assumes standard matrix orientation, so flip it back.)
+	if savefig:
+		plt.savefig(figname)
 	plt.show()
 
 	return (scalefactor, zeropoint)
 
 def show_state_parabola(dispersion_data, guess_zeropixel=None, guess_mass=None, guess_energyoffset=None,
-				k_axisid='y', e_axisid='energy', **kwargs):
+				k_axisid='y', e_axisid='energy', savefig=False, figname, **kwargs):
 	"""
 	Plots the 2d dispersion data along a parable for a intermediate state with given parameters. Useful
 	for finding out the specific band mass.
@@ -167,6 +175,12 @@ def show_state_parabola(dispersion_data, guess_zeropixel=None, guess_mass=None, 
 	:param k_axisid: The name (label) of the k-axis of the data. Default: ``y``
 
 	:param e_axisid: The name (label) of the energy axis of the data. Default: ``energy``
+
+	:param savefig: Boolean, switch to determin if ploted figure should be saved or not.
+
+	:param figname: String, name of the file the plot should be saved into.
+
+	:param kwargs: Keyword arguments for the plot() normalization of the plot object.
 
 	:return: The value of the bandmass, that was used in the plot. Typically given in
 		units of m_e (electronmass).
@@ -195,6 +209,8 @@ def show_state_parabola(dispersion_data, guess_zeropixel=None, guess_mass=None, 
 	snomtools.plots.datasets.project_2d(dispersion_data, ax, e_axisid, k_axisid, **kwargs)
 	ax.plot(k, parab_data, 'r-', label="Fitparabel") # Plot parabola as red line.
 	ax.invert_yaxis() # project_2d flips the y axis as it assumes standard matrix orientation, so flip it back.
+	if savefig:
+		plt.savefig(figname)
 	plt.show()
 
 	return bandmass
