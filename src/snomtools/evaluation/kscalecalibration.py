@@ -32,15 +32,19 @@ def load_dispersion_data(data, y_axisid='y', x_axisid='x', e_axisid='energy', d_
 
 	:param data: n-D-DataSet with y-pixel, x-pixel, energy and a k-space dimension.
 
-	:param y_axisid: The name (label) of the y-axis of the data, used as dispersion k direction.
+	:param y_axisid: The name (label) of the y-axis of the data, used as dispersion k direction. Default: ``y``
+	:type y_axisid: str
 
 	:param x_axisid: The name (label) of the x-axis of the data, used to sum over. If set to ``False`` or ``None``,
-		no pixel summation is done and other ``x_``...-Parameters are ignored.
+		no pixel summation is done and other ``x_``...-Parameters are ignored. Default: ``x``
+	:type x_axisid: str
 
-	:param e_axisid: The name (label) of the energy-axis of the data, used for the dispersion.
+	:param e_axisid: The name (label) of the energy-axis of the data, used for the dispersion. Default: ``energy``
+	:type e_axisid: str
 
 	:param d_axisid: The name (label) of the delay-axis of the data, used to sum over. If set to ``False`` or ``None``,
-		no summation is done and other ``delay_``...-Parameters are ignored.
+		no summation is done and other ``delay_``...-Parameters are ignored. Default: ``delay``
+	:type d_axisid: str
 
 	:param x_center: The center position index along the x Axis around which shall be summed.
 		Default: The "middle" of the axis, defined as half its length.
@@ -96,26 +100,34 @@ def show_kscale(dispersion_data, guess_zeropixel=None, guess_scalefactor=None, g
 	:param dispersion_data: 2D-DataSet with an energy and a k-space dimension.
 
 	:param guess_zeropixel: The origin pixel value of the parable, given in pixels or unscaled k-axis units.
+	:type guess_zeropixel: float
 
 	:param guess_scalefactor: The scalefactor translating unscaled k-axis units to k-space. Typically given in
 		``angstrom**-1 per pixel``. Alternatively, ``guess_kfov`` can be used to give full kspace width instead,
 		see below.
+	:type guess_scalefactor: float
 
 	:param guess_energyoffset: The origin of the parable on the energy axis. Typically, something like the drift
 		voltage in PEEM.
+	:type guess_energyoffset: float
 
 	:param guess_kfov: Only used if ``guess_scalefactor`` is not given. Then, this can be given (in ``angstrom**-1``)
 		to guess the kspace-Field-of-View (full kspace image width) instead of a factor per pixel.
 		If neither ``guess_scalefactor`` or this parameter are given, a generic value for ``guess_kfov`` of
 		``1.5 angstrom**-1`` is used.
+	:type guess_kfov: float
 
 	:param k_axisid: The name (label) of the k-axis of the data. Default: ``y``
+	:type k_axisid: str
 
 	:param e_axisid: The name (label) of the energy axis of the data. Default: ``energy``
+	:type e_axisid: str
 
-	:param savefig: Boolean, switch to determin if ploted figure should be saved or not.
+	:param savefig: Switch to determin if ploted figure should be saved or not.
+	:type savefig: bool
 
-	:param figname: String, name of the file the plot should be saved into.
+	:param figname: Name of the file the plot should be saved into.
+	:type figname: str
 
 	:param kwargs: Keyword arguments for the plot() normalization of the plot object.
 
@@ -165,20 +177,27 @@ def show_state_parabola(dispersion_data, guess_zeropixel=None, guess_mass=None, 
 	:param dispersion_data: 2D-DataSet with an energy and a k-space dimension.
 
 	:param guess_zeropixel: The origin k value of the parable, given in ``1/angstrom``.
+	:type guess_zeropixel: float
 
 	:param guess_mass: The bandmass of the intermediate state you are interested. Typically given in
 		units of m_e (electronmass).
+	:type guess_mass: float
 
 	:param guess_energyoffset: The origin of the parable on the energy axis. Typically, something like the drift
 		voltage in PEEM.
+	:type guess_energyoffset: float
 
 	:param k_axisid: The name (label) of the k-axis of the data. Default: ``y``
+	:type k_axisid: str
 
 	:param e_axisid: The name (label) of the energy axis of the data. Default: ``energy``
+	:type e_axisid: str
 
-	:param savefig: Boolean, switch to determin if ploted figure should be saved or not.
+	:param savefig: Switch to determin if ploted figure should be saved or not.
+	:type savefig: bool
 
-	:param figname: String, name of the file the plot should be saved into.
+	:param figname: Name of the file the plot should be saved into.
+	:type figname: str
 
 	:param kwargs: Keyword arguments for the plot() normalization of the plot object.
 
@@ -232,13 +251,16 @@ def freeElectronParabola(x, kscale, zero, offset, energyunit='eV'):
 
 	:param kscale: The scalefactor translating unscaled k-axis units to k-space. Typically given in
 		``angstrom**-1 per pixel``.
+	:type kscale: float
 
 	:param zero: The origin pixel value of the parable, given in pixels or unscaled k-axis units.
+	:type zero: float
 
 	:param offset: The origin of the parable on the energy axis. Typically, something like the drift
 		voltage in PEEM.
+	:type offset: float
 
-	:param energyunit: Desired unit, you want to use in your data. Typically electronVolts
+	:param energyunit: Desired unit, you want to use in your data. Default: ``eV``
 
 	:return: Return the free electron parabola energy values for given x-pixel
 	"""
@@ -251,12 +273,15 @@ def bandDispersionRelation(k, m, zero, offset, energyunit='eV'):
 	:param k: An array of inverse Angstroem.
 
 	:param m: The bandmass m, to fit a freeElectronParabola to a state in your dispersion plot.
+	:type m: float
 
 	:param zero: The origin pixel value of the parable, given in ``angstrom**-1``.
+	:type zero: float
 
 	:param offset: The origin of the parable on the energy axis. Depending on the state of interest.
+	:type offset: float
 
-	:param energyunit: Desired unit, you want to use in your data. Typically electronVolts
+	:param energyunit: Desired unit, you want to use in your data. Default: ``eV``
 
 	:return: Return a parabola with a specific electron mass, to fit to your dispersion plot.
 	"""
@@ -272,14 +297,19 @@ def kscale_axes(data, scalefactor, yzero=None, xzero=None, y_axisid='y', x_axisi
 
 	:param scalefactor: The scalefactor translating unscaled k-axis units to k-space. Typically given in
 		``angstrom**-1 per pixel``.
+	:type scalefactor: float
 
 	:param yzero: The offset of the Gamma-point in k_y direction.
+	:type yzero: float
 
 	:param xzero: The offset of the Gamma-point in k_x direction.
+	:type xzero: float
 
-	:param yaxisid: The name (label) of the x-axis of the data.
+	:param yaxisid: The name (label) of the x-axis of the data. Default: ``y``
+	:type y_axisid: str
 
-	:param xaxisid: The name (label) of the y-axis of the data.
+	:param xaxisid: The name (label) of the y-axis of the data. Default: ``x``
+	:type x_axisid: str
 
 	:return: The k-scaled 4D-Dataset.
 	"""
