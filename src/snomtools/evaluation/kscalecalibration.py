@@ -280,11 +280,12 @@ def freeElectronParabola(x, kscale, zero, offset, energyunit='eV'):
 
 def bandDispersionRelation(k, m, zero, offset, energyunit='eV'):
     """
-    Calculates a standard free electron parabola with nature constants and given scaling factor.
+    Calculates a parabolic band with a given effective bandmass.
 
     :param k: An array of inverse Angstroem.
 
     :param m: The bandmass m, to fit a freeElectronParabola to a state in your dispersion plot.
+        If the electron mass m_e (see `calcs.constants`) is given, this will become a free electron parabola.
     :type m: float
 
     :param zero: The origin pixel value of the parable, given in ``angstrom**-1``.
