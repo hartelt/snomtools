@@ -41,7 +41,8 @@ class Rotation(object):
         raw_data = d_original.data.magnitude
         raw_angle = self.angle.magnitude
         rotated_data = scipy.ndimage.rotate(raw_data, raw_angle, self.rot_plane,
-                                            reshape=self.reshape, order=self.order, mode=self.mode,
+                                            reshape=self.reshape, output=np.float32,
+                                            order=self.order, mode=self.mode,
                                             cval=self.cval, prefilter=self.prefilter)
         return ds.DataArray(rotated_data, d_original.units, 'rotated ' + d_original.get_label(),
                             plotlabel=d_original.get_plotlabel())
@@ -51,7 +52,7 @@ class Rotation(object):
         Rotates the full DataSet.
         :return:
         """
-        dataarrays_rotated = [self.dataarray_rotated(d) for d in self.data_original.datafields]
+        dataarrays_rotated = [self.dataarray_rotated(d) for d in self.data_original.dlabels]
         axes_rotated = []
         for i, ax in enumerate(self.data_original.axes):
             if i not in self.rot_plane:
