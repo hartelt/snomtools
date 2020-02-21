@@ -302,14 +302,18 @@ def bandDispersionRelation(k, m, zero, offset, energyunit='eV'):
     return (hbar ** 2 * (k - zero) ** 2 / (2 * m) + offset).to(energyunit)
 
 
-def kscale_axes(data, scalefactor, yzero=None, xzero=None, y_axisid='y', x_axisid='x'):
+def kscale_axes(data, yscalefactor, xscalefactor, yzero=None, xzero=None, y_axisid='y', x_axisid='x'):
     """
     Scales the x- and y-axis of a given set of dldpixels from a 4D-Dataset to k-space, depending on a before
     determined scalefactor.
 
     :param data: 4D-DataSet with y-pixel, x-pixel, energy and a k-space dimension.
 
-    :param scalefactor: The scalefactor translating unscaled k-axis units to k-space. Typically given in
+    :param yscalefactor: The scalefactor translating unscaled ky-axis units to k-space. Typically given in
+        ``angstrom**-1 per pixel``.
+    :type scalefactor: float
+
+    :param xscalefactor: The scalefactor translating unscaled kx-axis units to k-space. Typically given in
         ``angstrom**-1 per pixel``.
     :type scalefactor: float
 
@@ -331,14 +335,14 @@ def kscale_axes(data, scalefactor, yzero=None, xzero=None, y_axisid='y', x_axisi
         yzero = data.get_axis(y_axisid).mean()
     else:
         yzero = u.to_ureg(yzero, data.get_axis(y_axisid).units)
-    data.get_axis(y_axisid).scale_linear(scalefactor, scalefactor * (-yzero), 'angstrom**-1',
+    data.get_axis(y_axisid).scale_linear(yscalefactor, yscalefactor * (-yzero), 'angstrom**-1',
                                          label='k_y',
                                          plotlabel="k_y / Angstroem^-1")
     if xzero is None:
         xzero = data.get_axis(x_axisid).mean()
     else:
         xzero = u.to_ureg(xzero, data.get_axis(x_axisid).units)
-    data.get_axis(x_axisid).scale_linear(scalefactor, scalefactor * (-xzero), 'angstrom**-1',
+    data.get_axis(x_axisid).scale_linear(xscalefactor, xscalefactor * (-xzero), 'angstrom**-1',
                                          label='k_x',
                                          plotlabel="k_x / Angstroem^-1")
 
