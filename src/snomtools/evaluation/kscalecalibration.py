@@ -166,7 +166,7 @@ def show_kscale(dispersion_data, figname, guess_zeropixel=None, guess_scalefacto
     plt.ylim(top=e)
     plt.xlabel("$k_{||}$ [pixel]")
     plt.ylabel("$E_{F}+E_{D}$ [eV]")
-    plt.title("Scalefactor="+str(scalefactor.magnitude)+" & Zero="+ str(zeropoint.magnitude))
+    plt.title("Scalefactor=" + str(scalefactor.magnitude) + " & Zero=" + str(zeropoint.magnitude))
     if savefig:
         plt.savefig(figname)
     plt.show()
@@ -238,7 +238,8 @@ def show_state_parabola(dispersion_data, figname, guess_zeropixel=None, guess_ma
     plt.ylim(top=e)
     plt.xlabel("$k_{||}$ $[\AA^-1]$")
     plt.ylabel("$E_{F}+E_{D}$ [eV]")
-    plt.title("eff. Bandmass "+ str(bandmass.magnitude)+"$m_e$")
+    plt.title("eff. Bandmass= " + str(bandmass.magnitude) + "$m_e$; " + "Zero= " + str(
+        zeropoint.magnitude) + "; Offset= " + str(energy_offset.magnitude))
     if savefig:
         plt.savefig(figname)
     plt.show()
