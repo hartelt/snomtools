@@ -165,7 +165,7 @@ def show_kscale(dispersion_data, figname, guess_zeropixel=None, guess_scalefacto
     e = dispersion_data.get_axis(e_axisid).data.max().magnitude
     plt.ylim(top=e)
     plt.xlabel("$k_{||}$ [pixel]")
-    plt.ylabel("$E_{F}+E_{D}$ [eV]")
+    plt.ylabel("$E_{final}$ [eV]")
     plt.title("Scalefactor=" + str(scalefactor.magnitude) + " & Zero=" + str(zeropoint.magnitude))
     if savefig:
         plt.savefig(figname)
