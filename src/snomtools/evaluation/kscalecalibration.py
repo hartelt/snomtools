@@ -165,7 +165,7 @@ def show_kscale(dispersion_data, figname, guess_zeropixel=None, guess_scalefacto
     e = dispersion_data.get_axis(e_axisid).data.max().magnitude
     plt.ylim(top=e)
     plt.xlabel("$k_{||}$ [pixel]")
-    plt.ylabel("$E_{final}$ [eV]")
+    plt.ylabel("$E_{Interm.}$ [eV]")
     plt.title("Scalefactor=" + str(scalefactor.magnitude) + " & Zero=" + str(zeropoint.magnitude))
     if savefig:
         plt.savefig(figname)
@@ -236,8 +236,8 @@ def show_state_parabola(dispersion_data, figname, guess_zeropixel=None, guess_ma
     ax.invert_yaxis()  # project_2d flips the y axis as it assumes standard matrix orientation, so flip it back.
     e = dispersion_data.get_axis(e_axisid).data.max().magnitude
     plt.ylim(top=e)
-    plt.xlabel("$k_{||}$ $[\AA^-1]$")
-    plt.ylabel("$E_{F}+E_{D}$ [eV]")
+    plt.xlabel("$k_{||}$ $[\AA^{-1}]$")
+    plt.ylabel("$E_{Interm.}$ [eV]")
     plt.title("eff. Bandmass= " + str(bandmass.magnitude) + "$m_e$; " + "Zero= " + str(
         zeropoint.magnitude) + "; Offset= " + str(energy_offset.magnitude))
     if savefig:
