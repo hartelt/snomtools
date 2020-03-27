@@ -40,10 +40,12 @@ if '-v' in sys.argv:
 else:
     verbose = False
 
-dev = pycuda.autoinit.device
-
+# Initialize Nvidia Graphics Card for pycuda:
 if verbose:
     print('_____INITIATING PYCUDA DEVICE_____')
+dev = pycuda.autoinit.device
+gpuOBE_blocksize = int(dev.max_block_dim_x / 4)
+if verbose:
     print('Device: ' + str(drv.Device.name(dev)))
     print('Compute capability: ' + str(drv.Device.compute_capability(dev)[0]) + '.' + str(
         drv.Device.compute_capability(dev)[1]))
@@ -61,10 +63,17 @@ if verbose:
     print('max_registers_per_block: ' + str(dev.max_registers_per_block))
     print('max_threads_per_multiprocessor: ' + str(dev.max_threads_per_multiprocessor))
     print('max_threads_per_block: ' + str(dev.max_threads_per_block))
-gpuOBE_blocksize = int(dev.max_block_dim_x / 4)
-if verbose:
     print('Setting max buffer size to half that value (for double precision?): ' + str(gpuOBE_blocksize))
     print('__________')
+
+# Load and compile Cuda Source:
+CUDA_SOURCEFILE = "obe_source_module_copol.cu"
+if verbose:
+    print('Compiling cuda source module...')
+mod = SourceModule(load_cuda_source(CUDA_SOURCEFILE))
+
+# Constants:
+c = snomtools.calcs.constants.c_float  # TODO: Change to proper quantity usage.
 
 # Simulation overhead - Do more timesteps than delaysteps to avoid that the
 # system reached equilibrium. If you have a dropping signal at the border
@@ -74,11 +83,6 @@ gpuOBE_simOverhead = 1.3  # 1.2
 # Tau for FWHM relax - This small tau is used to fit the FWHM of the
 # corresponding laser pulse. Don't use 0, otherwise the numerics will crash
 gpuOBE_simFWHMTau = 0.05
-
-## Constants
-c = snomtools.calcs.constants.c_float
-
-CUDA_SOURCEFILE = "obe_source_module_copol.cu"
 
 
 def lowpass(data, highcut, srate, order):
@@ -211,10 +215,6 @@ def fitTauACblauCoPol(ExpDelays, tau, Amp, Offset, Center):
     global gpuOBE_Phaseresolution
     return TauACCoPol(ExpDelays, gpuOBE_laserBlau, gpuOBE_LaserBlauFWHM, tau, Amp, Offset, Center,
                       normparameter=gpuOBE_normparameter, Phase=gpuOBE_Phaseresolution)
-
-
-# Load and compile Cuda Source:
-mod = SourceModule(load_cuda_source(CUDA_SOURCEFILE))
 
 
 def gpuOBE_ACBlauCoPolTest(Delaylist, tau, laserWavelength, laserFWHM, buffersize):
