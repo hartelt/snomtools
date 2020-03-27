@@ -27,6 +27,7 @@ import sys
 import os
 from snomtools.evaluation.cuda import load_cuda_source
 import snomtools.data.datasets as ds
+import snomtools.calcs.units as u
 import snomtools.calcs.constants
 
 # For running snomtools on elwe, including cuda evaluations:
@@ -255,6 +256,61 @@ def gpuOBE_ACBlauCoPolTest(Delaylist, tau, laserWavelength, laserFWHM, buffersiz
     return IAC
 
 
+class OBEfit_Copol(object):
+    def __init__(self, data, fitaxis_ID="delay",
+                 laser_lambda=u.to_ureg(400, 'nm'), laser_AC_FWHM=None):
+        assert isinstance(data, (ds.DataSet, ds.ROI))
+        self.data = data
+        self.fitaxis_ID = data.get_axis_index(fitaxis_ID)
+        self.laser_lambda = u.to_ureg(laser_lambda, 'nm')
+        if laser_AC_FWHM:
+            self.laser_AC_FWHM = u.to_ureg(laser_AC_FWHM, 'fs')
+        else:
+            raise NotImplementedError("Auto Guessing of Laser AC not implemented yet.")
+
+    @property
+    def resultshape(self):
+        inshape = np.array(self.data.shape)
+        return tuple(np.delete(inshape, self.fitaxis_ID))
+
+    def build_empty_result_dataset(self, h5target=None, chunks=True):
+        axlist = self.data.axes[:]
+        axlist.pop(self.fitaxis_ID)
+        timeunit = self.data.get_axis(self.fitaxis_ID).units
+        timeunit_SI = u.latex_si(self.data.get_axis(self.fitaxis_ID))
+        countunit = self.data.get_datafield(0).units
+        countunit_SI = u.latex_si(self.data.get_datafield(0))
+        labels = ['lifetimes', 'amplitude', 'offset', 'center']
+        build_df_params = {}
+        build_df_params['lifetimes'] = {'unit': timeunit, 'plotlabel': "Intermediate State Lifetime / " + timeunit_SI}
+        build_df_params['amplitude'] = {'unit': countunit, 'plotlabel': "AC Amplitude / " + countunit_SI}
+        build_df_params['offset'] = {'unit': countunit, 'plotlabel': "AC Background / " + countunit_SI}
+        build_df_params['center'] = {'unit': timeunit, 'plotlabel': "AC Center / " + timeunit_SI}
+        if h5target:
+            dflist = []
+            for l in labels:
+                dataspace = ds.Data_Handler_H5(unit=build_df_params[l]['unit'], shape=self.resultshape, chunks=chunks)
+                dflist.append(ds.DataArray(dataspace,
+                                           label=l,
+                                           plotlabel=build_df_params[l]['plotlabel'],
+                                           h5target=dataspace.h5target,
+                                           chunks=chunks))
+            return ds.DataSet("OBE fit results", dflist, axlist, h5target=h5target)
+        else:
+            dflist = [ds.DataArray(np.zeros(self.resultshape),
+                                   unit=build_df_params[l]['unit'],
+                                   label=l,
+                                   plotlabel=build_df_params[l]['plotlabel'])
+                      for l in labels]
+            return ds.DataSet("OBE fit results", dflist, axlist)
+
+    def obefit(self, h5target=None):
+        print(self.resultshape)
+        targetds = self.build_empty_result_dataset(h5target=h5target)
+        # TODO: ACTUAL ITERATION AND FIT COMES HERE
+        return targetds
+
+
 minimal_example_test = False
 if __name__ == '__main__':
     minimal_example_test = True
@@ -358,3 +414,12 @@ if evaluation_test:
     HfO2result.saveh5(os.path.join(HfO2outfolder, 'HfO2 sp Lifetimes ownpulselength-4.hdf5'))
 
     print("HfO2 data stored: ", datetime.datetime.now().isoformat())
+
+class_test = True
+if class_test:
+    # RUN THIS IN snomtools/test folder where testdata hdf5s are:
+    testdata = ds.DataSet.from_h5file("cuda_OBEtest_copol.hdf5")
+    fitobject = OBEfit_Copol(testdata, laser_AC_FWHM=40.)
+    result = fitobject.obefit()
+
+    print("...done.")
