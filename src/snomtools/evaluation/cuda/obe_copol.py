@@ -258,7 +258,8 @@ def gpuOBE_ACBlauCoPolTest(Delaylist, tau, laserWavelength, laserFWHM, buffersiz
 
 class OBEfit_Copol(object):
     def __init__(self, data, fitaxis_ID="delay",
-                 laser_lambda=u.to_ureg(400, 'nm'), laser_AC_FWHM=None):
+                 laser_lambda=u.to_ureg(400, 'nm'), laser_AC_FWHM=None,
+                 data_AC_FWHM=None, time_zero=u.to_ureg(0, 'fs')):
         assert isinstance(data, (ds.DataSet, ds.ROI))
         self.data = data
         self.fitaxis_ID = data.get_axis_index(fitaxis_ID)
@@ -267,47 +268,106 @@ class OBEfit_Copol(object):
             self.laser_AC_FWHM = u.to_ureg(laser_AC_FWHM, 'fs')
         else:
             raise NotImplementedError("Auto Guessing of Laser AC not implemented yet.")
+        if data_AC_FWHM:
+            raise NotImplementedError("Start parameters given by AC FWHM not implemented yet.")
+        if time_zero:
+            self.time_zero = u.to_ureg(time_zero, 'fs')
+
+        timeunit = self.data.get_axis(self.fitaxis_ID).units
+        timeunit_SI = u.latex_si(self.data.get_axis(self.fitaxis_ID))
+        countunit = self.data.get_datafield(0).units
+        countunit_SI = u.latex_si(self.data.get_datafield(0))
+        self.result_datalabels = ['lifetimes', 'amplitude', 'offset', 'center']
+        self.result_dataparams = {}
+        self.result_dataparams['lifetimes'] = {'unit': timeunit,
+                                               'plotlabel': "Intermediate State Lifetime / " + timeunit_SI}
+        self.result_dataparams['amplitude'] = {'unit': countunit, 'plotlabel': "AC Amplitude / " + countunit_SI}
+        self.result_dataparams['offset'] = {'unit': countunit, 'plotlabel': "AC Background / " + countunit_SI}
+        self.result_dataparams['center'] = {'unit': timeunit, 'plotlabel': "AC Center / " + timeunit_SI}
 
     @property
     def resultshape(self):
         inshape = np.array(self.data.shape)
         return tuple(np.delete(inshape, self.fitaxis_ID))
 
+    @property
+    def fitaxis(self):
+        return self.data.get_axis(self.fitaxis_ID)
+
     def build_empty_result_dataset(self, h5target=None, chunks=True):
         axlist = self.data.axes[:]
         axlist.pop(self.fitaxis_ID)
-        timeunit = self.data.get_axis(self.fitaxis_ID).units
-        timeunit_SI = u.latex_si(self.data.get_axis(self.fitaxis_ID))
-        countunit = self.data.get_datafield(0).units
-        countunit_SI = u.latex_si(self.data.get_datafield(0))
-        labels = ['lifetimes', 'amplitude', 'offset', 'center']
-        build_df_params = {}
-        build_df_params['lifetimes'] = {'unit': timeunit, 'plotlabel': "Intermediate State Lifetime / " + timeunit_SI}
-        build_df_params['amplitude'] = {'unit': countunit, 'plotlabel': "AC Amplitude / " + countunit_SI}
-        build_df_params['offset'] = {'unit': countunit, 'plotlabel': "AC Background / " + countunit_SI}
-        build_df_params['center'] = {'unit': timeunit, 'plotlabel': "AC Center / " + timeunit_SI}
         if h5target:
             dflist = []
-            for l in labels:
-                dataspace = ds.Data_Handler_H5(unit=build_df_params[l]['unit'], shape=self.resultshape, chunks=chunks)
+            for l in self.result_datalabels:
+                dataspace = ds.Data_Handler_H5(unit=self.result_dataparams[l]['unit'],
+                                               shape=self.resultshape, chunks=chunks)
                 dflist.append(ds.DataArray(dataspace,
                                            label=l,
-                                           plotlabel=build_df_params[l]['plotlabel'],
+                                           plotlabel=self.result_dataparams[l]['plotlabel'],
                                            h5target=dataspace.h5target,
                                            chunks=chunks))
             return ds.DataSet("OBE fit results", dflist, axlist, h5target=h5target)
         else:
             dflist = [ds.DataArray(np.zeros(self.resultshape),
-                                   unit=build_df_params[l]['unit'],
+                                   unit=self.result_dataparams[l]['unit'],
                                    label=l,
-                                   plotlabel=build_df_params[l]['plotlabel'])
-                      for l in labels]
+                                   plotlabel=self.result_dataparams[l]['plotlabel'])
+                      for l in self.result_datalabels]
             return ds.DataSet("OBE fit results", dflist, axlist)
 
     def obefit(self, h5target=None):
         print(self.resultshape)
         targetds = self.build_empty_result_dataset(h5target=h5target)
-        # TODO: ACTUAL ITERATION AND FIT COMES HERE
+
+        # Set global variables for copypasted methods.
+        # TODO: Use proper class methods that don't need this ugly global variables.
+        global gpuOBE_stepsize
+        gpuOBE_stepsize = 1.0
+        global gpuOBE_laserBlau
+        gpuOBE_laserBlau = self.laser_lambda.magnitude
+        global gpuOBE_LaserBlauFWHM
+        gpuOBE_LaserBlauFWHM = self.laser_AC_FWHM.magnitude
+        global gpuOBE_normparameter
+        gpuOBE_normparameter = False
+        global gpuOBE_Phaseresolution
+        gpuOBE_Phaseresolution = False
+
+        ExpDelays = self.fitaxis.data.magnitude
+        for target_slice in np.ndindex(self.resultshape):  # Simple iteration for now.
+            # Build source data slice:
+            slice_list = list(target_slice)
+            slice_list.insert(self.fitaxis_ID, np.s_[:])
+            source_slice = tuple(slice_list)
+
+            # Load experimental data to fit to:
+            ExpData = self.data.get_datafield(0).data[source_slice].magnitude
+
+            # Set start values for fitparameters:
+            guess_lifetime = 20.  # TODO: Dynamically generate meaningful guess or load from FWHM-data.
+            guess_Offset = np.min(ExpData)
+            guess_Amp = np.max(ExpData) - guess_Offset
+            guess_center = self.time_zero.magnitude
+            p0 = (guess_lifetime, guess_Amp, guess_Offset, guess_center)
+            if verbose:
+                print("Guess for index {0}: {1}".format(target_slice, p0))
+
+            # Do the fit: # TODO: Do this with proper class methods.
+            try:
+                popt, pcon = curve_fit(fitTauACblauCoPol, ExpDelays, ExpData, p0,
+                                       bounds=([0.0, 0.0, 0.0, -20. + guess_center],
+                                               [200., np.inf, np.inf, 20. + guess_center]))
+                if verbose:
+                    print("Result for index {0}: {1}".format(target_slice, popt))
+            except RuntimeError as e:  # Fit failed
+                popt = np.full((4,), np.nan)
+                pcon = np.full((4, 4), np.nan)
+                print("OBE fit for index {0} failed.".format(target_slice))
+
+            for i, l in enumerate(self.result_datalabels):
+                targetds.get_datafield(l).data[target_slice] = u.to_ureg(popt[i], self.result_dataparams[l]['unit'])
+                # TODO: Store fit accuracies.
+
         return targetds
 
 
@@ -417,9 +477,9 @@ if evaluation_test:
 
 class_test = True
 if class_test:
-    # RUN THIS IN snomtools/test folder where testdata hdf5s are:
+    # RUN THIS IN snomtools/test folder where testdata hdf5s are, or set your paths and parameters accordingly:
     testdata = ds.DataSet.from_h5file("cuda_OBEtest_copol.hdf5")
-    fitobject = OBEfit_Copol(testdata, laser_AC_FWHM=40.)
+    fitobject = OBEfit_Copol(testdata, laser_AC_FWHM=50., time_zero=-9.3)
     result = fitobject.obefit()
-
+    result.saveh5("cuda_OBEtest_copol_result.hdf5")
     print("...done.")
