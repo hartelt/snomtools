@@ -264,26 +264,35 @@ class OBEfit_Copol(object):
         self.data = data
         self.fitaxis_ID = data.get_axis_index(fitaxis_ID)
         self.laser_lambda = u.to_ureg(laser_lambda, 'nm')
+        if data_AC_FWHM:
+            # Check if dimensions and axes fit:
+            assert isinstance(data_AC_FWHM, (ds.DataSet, ds.ROI))
+            assert (data_AC_FWHM.shape == self.resultshape)
+            assert u.same_dimension(data_AC_FWHM.get_datafield(0).data, u.to_ureg('1 fs'))
+        self.data_AC_FWHM = data_AC_FWHM
         if laser_AC_FWHM:
             self.laser_AC_FWHM = u.to_ureg(laser_AC_FWHM, 'fs')
+        elif data_AC_FWHM:
+            self.laser_AC_FWHM = u.to_ureg(-1, 'fs') + data_AC_FWHM.get_datafield(0).min()
+            if verbose:
+                "Guessing Laser AC FWHM from Data FWHM - 1 fs: {0}".format(self.laser_AC_FWHM)
         else:
-            raise NotImplementedError("Auto Guessing of Laser AC not implemented yet.")
-        if data_AC_FWHM:
-            raise NotImplementedError("Start parameters given by AC FWHM not implemented yet.")
+            raise ValueError("No laser AC FwHM given.")
         if time_zero:
             self.time_zero = u.to_ureg(time_zero, 'fs')
+        else:
+            self.time_zero = u.to_ureg(0, 'fs')
 
         timeunit = self.data.get_axis(self.fitaxis_ID).units
         timeunit_SI = u.latex_si(self.data.get_axis(self.fitaxis_ID))
         countunit = self.data.get_datafield(0).units
         countunit_SI = u.latex_si(self.data.get_datafield(0))
         self.result_datalabels = ['lifetimes', 'amplitude', 'offset', 'center']
-        self.result_dataparams = {}
-        self.result_dataparams['lifetimes'] = {'unit': timeunit,
-                                               'plotlabel': "Intermediate State Lifetime / " + timeunit_SI}
-        self.result_dataparams['amplitude'] = {'unit': countunit, 'plotlabel': "AC Amplitude / " + countunit_SI}
-        self.result_dataparams['offset'] = {'unit': countunit, 'plotlabel': "AC Background / " + countunit_SI}
-        self.result_dataparams['center'] = {'unit': timeunit, 'plotlabel': "AC Center / " + timeunit_SI}
+        self.result_dataparams = {
+            'lifetimes': {'unit': timeunit, 'plotlabel': "Intermediate State Lifetime / " + timeunit_SI},
+            'amplitude': {'unit': countunit, 'plotlabel': "AC Amplitude / " + countunit_SI},
+            'offset': {'unit': countunit, 'plotlabel': "AC Background / " + countunit_SI},
+            'center': {'unit': timeunit, 'plotlabel': "AC Center / " + timeunit_SI}}
 
     @property
     def resultshape(self):
@@ -344,7 +353,11 @@ class OBEfit_Copol(object):
             ExpData = self.data.get_datafield(0).data[source_slice].magnitude
 
             # Set start values for fitparameters:
-            guess_lifetime = 20.  # TODO: Dynamically generate meaningful guess or load from FWHM-data.
+            if self.data_AC_FWHM:
+                guess_lifetime = (self.data_AC_FWHM.get_datafield(0)[target_slice] - self.laser_AC_FWHM).magnitude
+            else:
+                print("Warning: No meaningful lifetime guess available.")
+                guess_lifetime = 20.  # TODO: Dynamically generate meaningful guess.
             guess_Offset = np.min(ExpData)
             guess_Amp = np.max(ExpData) - guess_Offset
             guess_center = self.time_zero.magnitude
