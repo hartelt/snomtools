@@ -385,48 +385,51 @@ def gaussian_2D(xydata_tuple, amplitude, xo, yo, sigma_x, sigma_y, theta, offset
     This code is based on https://stackoverflow.com/a/21566831/8654672
     Working example:
 
+    .. code-block::
 
-	import matplotlib.pyplot as plt
-	import scipy.optimize as opt
+        import matplotlib.pyplot as plt
+        import scipy.optimize as opt
 
-	# Create x and y indices
-	x = np.linspace(0, 200, 201)
-	y = np.linspace(0, 200, 201)
-	x, y = np.meshgrid(x, y)
+        # Create x and y indices
+        x = np.linspace(0, 200, 201)
+        y = np.linspace(0, 200, 201)
+        x, y = np.meshgrid(x, y)
 
-	# create data
-	g_params = np.asarray((3, 100, 100, 20, 40, 20, 10))
-	data = gaussian_2D((x, y),g_params[0], g_params[1], g_params[2], g_params[3], g_params[4],g_params[5], g_params[6])
+        # create data
+        g_params = np.asarray((3, 100, 100, 20, 40, 20, 10))
+        data = gaussian_2D((x, y),g_params[0], g_params[1], g_params[2], g_params[3], g_params[4],g_params[5], g_params[6])
 
-	# plot twoD_Gaussian data generated above
-	plt.figure()
-	plt.imshow(data.reshape(201, 201) , origin='lower')
-	plt.colorbar()
-	plt.show()
+        # plot twoD_Gaussian data generated above
+        plt.figure()
+        plt.imshow(data.reshape(201, 201) , origin='lower')
+        plt.colorbar()
+        plt.show()
 
-	# fit gaussian to this
-	initial_guess = g_params +  np.asarray((1, - 10, 10,  5, - 5, -20,  3))  # original values + some work for the algorithm
-	popt, pcov = opt.curve_fit(gaussian_2D, (x, y), data, p0=initial_guess, maxfev=10000)
+        # fit gaussian to this
+        initial_guess = g_params +  np.asarray((1, - 10, 10,  5, - 5, -20,  3))  # original values + some work for the algorithm
+        popt, pcov = opt.curve_fit(gaussian_2D, (x, y), data, p0=initial_guess, maxfev=10000)
 
-	print('Fitting Results:')
-	print('amplitude: ' + str(g_params[0]) + '\t fit: ' + str(popt[0]) + '\n' +
-		  'xo: ' + str(g_params[1]) + '\t fit: ' + str(popt[1]) + '\n' +
-		  'yo: ' + str(g_params[2]) + '\t fit: ' + str(popt[2]) + '\n' +
-		  'sigma_x: ' + str(g_params[3]) + '\t fit: ' + str(popt[3]) + '\n' +
-		  'sigma_y: ' + str(g_params[4]) + '\t fit: ' + str(popt[4]) + '\n' +
-		  'theta: ' + str(g_params[5]) + '\t fit: ' + str(popt[5]) + '\n' +
-		  'offset: ' + str(g_params[6]) + '\t fit: ' + str(popt[6]))
-	print('Note the error in theta and therefore the change in the sigmas! This is a demonstration of bad starting parameters aswell as the limited accuracy in the angle, even for good ones. the plotted result still looks decend tho.')
+        print('Fitting Results:')
+        print('amplitude: ' + str(g_params[0]) + '\\t fit: ' + str(popt[0]) + '\\n' +
+              'xo: ' + str(g_params[1]) + '\\t fit: ' + str(popt[1]) + '\\n' +
+              'yo: ' + str(g_params[2]) + '\\t fit: ' + str(popt[2]) + '\\n' +
+              'sigma_x: ' + str(g_params[3]) + '\\t fit: ' + str(popt[3]) + '\\n' +
+              'sigma_y: ' + str(g_params[4]) + '\\t fit: ' + str(popt[4]) + '\\n' +
+              'theta: ' + str(g_params[5]) + '\\t fit: ' + str(popt[5]) + '\\n' +
+              'offset: ' + str(g_params[6]) + '\\t fit: ' + str(popt[6]))
+        print('Note the error in theta and therefore the change in the sigmas! This is a demonstration of bad starting
+            parameters aswell as the limited accuracy in the angle, even for good ones. the plotted result still looks
+            decend tho.')
 
-	data_fitted = gaussian_2D((x, y), *popt)
+        data_fitted = gaussian_2D((x, y), *popt)
 
-	fig, ax = plt.subplots(1, 1)
-	ax.hold(True)
-	ax.imshow(data.reshape(201, 201), cmap=plt.cm.jet,
-			  extent=(x.min(), x.max(), y.min(), y.max()), aspect='auto', origin='lower')
+        fig, ax = plt.subplots(1, 1)
+        ax.hold(True)
+        ax.imshow(data.reshape(201, 201), cmap=plt.cm.jet,
+                  extent=(x.min(), x.max(), y.min(), y.max()), aspect='auto', origin='lower')
 
-	ax.contour(x, y, data_fitted.reshape(201, 201), 10, colors='w', origin='lower')
-	plt.show()
+        ax.contour(x, y, data_fitted.reshape(201, 201), 10, colors='w', origin='lower')
+        plt.show()
     '''
     (x, y) = xydata_tuple
     xo = float(xo)
