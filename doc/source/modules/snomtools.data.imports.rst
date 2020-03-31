@@ -1,19 +1,35 @@
-snomtools.data.imports package
-==============================
+snomtools\.data\.imports package
+================================
 
 Submodules
 ----------
 
-snomtools.data.imports.lumerical_mat module
--------------------------------------------
+snomtools\.data\.imports\.jpeg module
+-------------------------------------
+
+.. automodule:: snomtools.data.imports.jpeg
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+snomtools\.data\.imports\.lumerical\_mat module
+-----------------------------------------------
 
 .. automodule:: snomtools.data.imports.lumerical_mat
     :members:
     :undoc-members:
     :show-inheritance:
 
-snomtools.data.imports.tiff module
-----------------------------------
+snomtools\.data\.imports\.terra module
+--------------------------------------
+
+.. automodule:: snomtools.data.imports.terra
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+snomtools\.data\.imports\.tiff module
+-------------------------------------
 
 .. automodule:: snomtools.data.imports.tiff
     :members:

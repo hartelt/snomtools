@@ -1,27 +1,27 @@
-snomtools.calcs.materials package
-=================================
+snomtools\.calcs\.materials package
+===================================
 
 Submodules
 ----------
 
-snomtools.calcs.materials.dielectrics module
---------------------------------------------
+snomtools\.calcs\.materials\.dielectrics module
+-----------------------------------------------
 
 .. automodule:: snomtools.calcs.materials.dielectrics
     :members:
     :undoc-members:
     :show-inheritance:
 
-snomtools.calcs.materials.literature module
--------------------------------------------
+snomtools\.calcs\.materials\.literature module
+----------------------------------------------
 
 .. automodule:: snomtools.calcs.materials.literature
     :members:
     :undoc-members:
     :show-inheritance:
 
-snomtools.calcs.materials.metals module
----------------------------------------
+snomtools\.calcs\.materials\.metals module
+------------------------------------------
 
 .. automodule:: snomtools.calcs.materials.metals
     :members:

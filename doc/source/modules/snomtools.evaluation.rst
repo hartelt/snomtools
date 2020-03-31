@@ -1,51 +1,51 @@
-snomtools.evaluation package
-============================
+snomtools\.evaluation package
+=============================
 
 Submodules
 ----------
 
-snomtools.evaluation.driftcorrection module
--------------------------------------------
+snomtools\.evaluation\.driftcorrection module
+---------------------------------------------
 
 .. automodule:: snomtools.evaluation.driftcorrection
     :members:
     :undoc-members:
     :show-inheritance:
 
-snomtools.evaluation.microscopy module
---------------------------------------
+snomtools\.evaluation\.microscopy module
+----------------------------------------
 
 .. automodule:: snomtools.evaluation.microscopy
     :members:
     :undoc-members:
     :show-inheritance:
 
-snomtools.evaluation.peem module
---------------------------------
+snomtools\.evaluation\.peem module
+----------------------------------
 
 .. automodule:: snomtools.evaluation.peem
     :members:
     :undoc-members:
     :show-inheritance:
 
-snomtools.evaluation.peem_dld module
-------------------------------------
+snomtools\.evaluation\.peem\_dld module
+---------------------------------------
 
 .. automodule:: snomtools.evaluation.peem_dld
     :members:
     :undoc-members:
     :show-inheritance:
 
-snomtools.evaluation.pes module
--------------------------------
+snomtools\.evaluation\.pes module
+---------------------------------
 
 .. automodule:: snomtools.evaluation.pes
     :members:
     :undoc-members:
     :show-inheritance:
 
-snomtools.evaluation.pumpprobe module
--------------------------------------
+snomtools\.evaluation\.pumpprobe module
+---------------------------------------
 
 .. automodule:: snomtools.evaluation.pumpprobe
     :members:
