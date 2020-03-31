@@ -33,11 +33,11 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
-    'matplotlib.sphinxext.only_directives',
+    # 'matplotlib.sphinxext.only_directives',
     'matplotlib.sphinxext.plot_directive',
     'sphinx.ext.doctest',
     'sphinx.ext.todo',
-    'sphinx.ext.pngmath',
+    # 'sphinx.ext.pngmath',
     'sphinx.ext.viewcode',
 ]
 autodoc_default_flags = ["members", "private-members", "special-members","show-inheritance"]
