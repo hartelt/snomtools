@@ -20,6 +20,7 @@ from scipy.optimize import curve_fit
 import scipy.integrate as integrate
 from timeit import default_timer as timer
 import datetime
+import time
 from scipy.interpolate import InterpolatedUnivariateSpline
 import re
 import h5py
@@ -29,6 +30,7 @@ from snomtools.evaluation.cuda import load_cuda_source
 import snomtools.data.datasets as ds
 import snomtools.calcs.units as u
 import snomtools.calcs.constants
+import snomtools.data.fits
 
 # For running snomtools on elwe, including cuda evaluations:
 # Import snomtools from source by pulling the repo to ~/repos/ and then using
@@ -40,6 +42,7 @@ if '-v' in sys.argv:
     verbose = True
 else:
     verbose = False
+print_interval = 1
 
 # Initialize Nvidia Graphics Card for pycuda:
 if verbose:
@@ -259,7 +262,8 @@ def gpuOBE_ACBlauCoPolTest(Delaylist, tau, laserWavelength, laserFWHM, buffersiz
 class OBEfit_Copol(object):
     def __init__(self, data, fitaxis_ID="delay",
                  laser_lambda=u.to_ureg(400, 'nm'), laser_AC_FWHM=None,
-                 data_AC_FWHM=None, time_zero=u.to_ureg(0, 'fs')):
+                 data_AC_FWHM=None, time_zero=u.to_ureg(0, 'fs'),
+                 max_lifetime=u.to_ureg(200, 'fs')):
         assert isinstance(data, (ds.DataSet, ds.ROI))
         self.data = data
         self.fitaxis_ID = data.get_axis_index(fitaxis_ID)
@@ -269,15 +273,30 @@ class OBEfit_Copol(object):
             assert isinstance(data_AC_FWHM, (ds.DataSet, ds.ROI))
             assert (data_AC_FWHM.shape == self.resultshape)
             assert u.same_dimension(data_AC_FWHM.get_datafield(0).data, u.to_ureg('1 fs'))
-        self.data_AC_FWHM = data_AC_FWHM
+            self.data_AC_FWHM = data_AC_FWHM
+            try:
+                self.AC_FWHM = self.data_AC_FWHM.get_datafield('fwhm')
+            except AttributeError:
+                self.AC_FWHM = self.data_AC_FWHM.get_datafield(0)
+            try:
+                self.AC_amplitude = self.data_AC_FWHM.get_datafield('amplitude')
+            except AttributeError:
+                self.AC_amplitude = None
+            try:
+                self.AC_background = self.data_AC_FWHM.get_datafield('background')
+            except AttributeError:
+                self.AC_background = None
+        else:
+            self.data_AC_FWHM = self.fit_data_FWHM()
+            self.AC_FWHM = self.data_AC_FWHM.get_datafield('fwhm')
+            self.AC_amplitude = self.data_AC_FWHM.get_datafield('amplitude')
+            self.AC_background = self.data_AC_FWHM.get_datafield('background')
         if laser_AC_FWHM:
             self.laser_AC_FWHM = u.to_ureg(laser_AC_FWHM, 'fs')
-        elif data_AC_FWHM:
-            self.laser_AC_FWHM = u.to_ureg(-1, 'fs') + data_AC_FWHM.get_datafield(0).min()
-            if verbose:
-                "Guessing Laser AC FWHM from Data FWHM - 1 fs: {0}".format(self.laser_AC_FWHM)
         else:
-            raise ValueError("No laser AC FwHM given.")
+            self.laser_AC_FWHM = u.to_ureg(-1, 'fs') + self.AC_FWHM.min()
+            if verbose:
+                print("Guessing Laser AC FWHM from Data FWHM - 1 fs: {0}".format(self.laser_AC_FWHM))
         if time_zero:
             self.time_zero = u.to_ureg(time_zero, 'fs')
         else:
@@ -293,6 +312,7 @@ class OBEfit_Copol(object):
             'amplitude': {'unit': countunit, 'plotlabel': "AC Amplitude / " + countunit_SI},
             'offset': {'unit': countunit, 'plotlabel': "AC Background / " + countunit_SI},
             'center': {'unit': timeunit, 'plotlabel': "AC Center / " + timeunit_SI}}
+        self.max_lifetime = max_lifetime
 
     @property
     def resultshape(self):
@@ -302,6 +322,12 @@ class OBEfit_Copol(object):
     @property
     def fitaxis(self):
         return self.data.get_axis(self.fitaxis_ID)
+
+    def fit_data_FWHM(self):
+        if verbose:
+            print("Fitting Data with Lorentzian...")
+        lorentzfit = snomtools.data.fits.Lorentz_Fit_nD(self.data, axis_id=self.fitaxis_ID, keepdata=False)
+        return lorentzfit.export_parameters()
 
     def build_empty_result_dataset(self, h5target=None, chunks=True):
         axlist = self.data.axes[:]
@@ -342,6 +368,12 @@ class OBEfit_Copol(object):
         global gpuOBE_Phaseresolution
         gpuOBE_Phaseresolution = False
 
+        if verbose:
+            print("Fitting {0} OBE fits with cuda...".format(np.prod(self.resultshape)))
+            print("Start: ", datetime.datetime.now().isoformat())
+            start_time = time.time()
+            print_counter = 0
+
         ExpDelays = self.fitaxis.data.magnitude
         for target_slice in np.ndindex(self.resultshape):  # Simple iteration for now.
             # Build source data slice:
@@ -353,13 +385,16 @@ class OBEfit_Copol(object):
             ExpData = self.data.get_datafield(0).data[source_slice].magnitude
 
             # Set start values for fitparameters:
-            if self.data_AC_FWHM:
-                guess_lifetime = (self.data_AC_FWHM.get_datafield(0)[target_slice] - self.laser_AC_FWHM).magnitude
+            guess_lifetime = (self.AC_FWHM[target_slice] - self.laser_AC_FWHM).magnitude
+            guess_lifetime = min(guess_lifetime, self.max_lifetime.magnitude - 1.)
+            if self.AC_background:
+                guess_Offset = self.AC_background[target_slice].magnitude
             else:
-                print("Warning: No meaningful lifetime guess available.")
-                guess_lifetime = 20.  # TODO: Dynamically generate meaningful guess.
-            guess_Offset = np.min(ExpData)
-            guess_Amp = np.max(ExpData) - guess_Offset
+                guess_Offset = np.min(ExpData)
+            if self.AC_amplitude:
+                guess_Amp = self.AC_amplitude[target_slice].magnitude
+            else:
+                guess_Amp = np.max(ExpData) - guess_Offset
             guess_center = self.time_zero.magnitude
             p0 = (guess_lifetime, guess_Amp, guess_Offset, guess_center)
             if verbose:
@@ -369,7 +404,7 @@ class OBEfit_Copol(object):
             try:
                 popt, pcon = curve_fit(fitTauACblauCoPol, ExpDelays, ExpData, p0,
                                        bounds=([0.0, 0.0, 0.0, -20. + guess_center],
-                                               [200., np.inf, np.inf, 20. + guess_center]))
+                                               [self.max_lifetime.magnitude, np.inf, np.inf, 20. + guess_center]))
                 if verbose:
                     print("Result for index {0}: {1}".format(target_slice, popt))
             except RuntimeError as e:  # Fit failed
@@ -381,6 +416,16 @@ class OBEfit_Copol(object):
                 targetds.get_datafield(l).data[target_slice] = u.to_ureg(popt[i], self.result_dataparams[l]['unit'])
                 # TODO: Store fit accuracies.
 
+            if verbose:
+                print_counter += 1
+                if print_counter % print_interval == 0:
+                    tpf = ((time.time() - start_time) / float(print_counter))
+                    etr = tpf * (np.prod(self.resultshape) - print_counter)
+                    print("Fit {0:d} / {1:d}, Time/Fit {3:.4f}s ETR: {2:.1f}s".format(print_counter,
+                                                                                      np.prod(self.resultshape),
+                                                                                      etr, tpf))
+        if verbose:
+            print("End: ", datetime.datetime.now().isoformat())
         return targetds
 
 
@@ -492,7 +537,7 @@ class_test = True
 if class_test:
     # RUN THIS IN snomtools/test folder where testdata hdf5s are, or set your paths and parameters accordingly:
     testdata = ds.DataSet.from_h5file("cuda_OBEtest_copol.hdf5")
-    fitobject = OBEfit_Copol(testdata, laser_AC_FWHM=50., time_zero=-9.3)
+    fitobject = OBEfit_Copol(testdata, time_zero=-9.3)
     result = fitobject.obefit()
     result.saveh5("cuda_OBEtest_copol_result.hdf5")
     print("...done.")
