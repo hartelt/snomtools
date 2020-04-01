@@ -48,7 +48,10 @@ print_interval = 1
 if verbose:
     print('_____INITIATING PYCUDA DEVICE_____')
 dev = pycuda.autoinit.device
-gpuOBE_blocksize = int(dev.max_block_dim_x / 4)
+# Setting acually used block size:
+# Using more than half the max_block_dim_x breaks (double precision??)
+# Using higher values instead of 2 increases performance (on Michaels RTX2080)
+gpuOBE_blocksize = int(dev.max_block_dim_x / 8)
 if verbose:
     print('Device: ' + str(drv.Device.name(dev)))
     print('Compute capability: ' + str(drv.Device.compute_capability(dev)[0]) + '.' + str(
@@ -67,7 +70,7 @@ if verbose:
     print('max_registers_per_block: ' + str(dev.max_registers_per_block))
     print('max_threads_per_multiprocessor: ' + str(dev.max_threads_per_multiprocessor))
     print('max_threads_per_block: ' + str(dev.max_threads_per_block))
-    print('Setting max buffer size to half that value (for double precision?): ' + str(gpuOBE_blocksize))
+    print('Setting used block size to fraction (consider performance, double precision?): ' + str(gpuOBE_blocksize))
     print('__________')
 
 # Load and compile Cuda Source:
@@ -120,7 +123,7 @@ def CreateCoPolDelay(stepsize, MaxDelay):
     # simOverhead factor; otherwise curve will not fit together after concatenate
 
     # number of points needed to fit MaxDelay into buffer
-    numPoints = MaxDelay / stepsize
+    numPoints = 2 * MaxDelay / stepsize
 
     # determine buffer size
     # if its smaller, you can do the calculation on the cpu...
@@ -170,8 +173,10 @@ def CreateCoPolDelay(stepsize, MaxDelay):
     # create delay list
     Delays = []
     # create pm values
-    Delays = np.arange(0.0, round(gpuOBE_buffersize * stepsize, 2), stepsize)
-
+    # Delays = np.arange(0.0, round(gpuOBE_buffersize * stepsize, 2), stepsize) # Only one side
+    Delays = np.arange(-round(gpuOBE_buffersize * stepsize / 2, 2),
+                       round(gpuOBE_buffersize * stepsize / 2, 2),
+                       stepsize)  # Both sides
     return np.asarray(Delays)
 
 
@@ -357,14 +362,20 @@ class OBEfit_Copol(object):
 
         # Set global variables for copypasted methods.
         # TODO: Use proper class methods that don't need this ugly global variables.
+        # gpuOBE_stepsize is the stepsize with which the actual interferometric Autocorrelation (IAC) is calculated.
+        # For non phase-resolved evaluation, the omega_0 component is extracted afterwards with a lowpass filter.
+        # This means you should NOT set this to large values to save calculation time!
+        # Use something well below optical cycle (e.g. 0.2fs) to have good IAC!
         global gpuOBE_stepsize
-        gpuOBE_stepsize = 1.0
+        gpuOBE_stepsize = 0.2
         global gpuOBE_laserBlau
         gpuOBE_laserBlau = self.laser_lambda.magnitude
         global gpuOBE_LaserBlauFWHM
         gpuOBE_LaserBlauFWHM = self.laser_AC_FWHM.magnitude
+        # gpuOBE_normparameter is used in TauACCopol to switch between normalizing the curve before scaling and offset.
+        # It must be True to fit including Amplitude and Offset, as done below!
         global gpuOBE_normparameter
-        gpuOBE_normparameter = False
+        gpuOBE_normparameter = True
         global gpuOBE_Phaseresolution
         gpuOBE_Phaseresolution = False
 
@@ -386,7 +397,7 @@ class OBEfit_Copol(object):
 
             # Set start values for fitparameters:
             guess_lifetime = (self.AC_FWHM[target_slice] - self.laser_AC_FWHM).magnitude
-            guess_lifetime = min(guess_lifetime, self.max_lifetime.magnitude - 1.)
+            guess_lifetime = min(guess_lifetime, self.max_lifetime.magnitude - 1.)  # Assure guess < fit constraints.
             if self.AC_background:
                 guess_Offset = self.AC_background[target_slice].magnitude
             else:
@@ -437,7 +448,7 @@ if __name__ == '__main__':
 if minimal_example_test:
     if verbose:
         print("Testing minimal example...")
-    gpuOBE_stepsize = 1.0
+    gpuOBE_stepsize = 0.2
     Delays = CreateCoPolDelay(gpuOBE_stepsize, 200.0)
     starttime = timer()
     # Delays = np.arange(-200,200,0.1)
