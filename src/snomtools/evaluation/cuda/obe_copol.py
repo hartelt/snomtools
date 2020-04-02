@@ -123,7 +123,10 @@ def CreateCoPolDelay(stepsize, MaxDelay):
     # simOverhead factor; otherwise curve will not fit together after concatenate
 
     # number of points needed to fit MaxDelay into buffer
-    numPoints = 2 * MaxDelay / stepsize
+    # only half AC:
+    numPoints = MaxDelay / stepsize
+    # two-sided AC:
+    # numPoints = 2 * MaxDelay / stepsize
 
     # determine buffer size
     # if its smaller, you can do the calculation on the cpu...
@@ -172,11 +175,12 @@ def CreateCoPolDelay(stepsize, MaxDelay):
 
     # create delay list
     Delays = []
-    # create pm values
-    # Delays = np.arange(0.0, round(gpuOBE_buffersize * stepsize, 2), stepsize) # Only one side
-    Delays = np.arange(-round(gpuOBE_buffersize * stepsize / 2, 2),
-                       round(gpuOBE_buffersize * stepsize / 2, 2),
-                       stepsize)  # Both sides
+    # Only half AC:
+    Delays = np.arange(0.0, round(gpuOBE_buffersize * stepsize, 2), stepsize)
+    # Two-sided AC:
+    # Delays = np.arange(-round(gpuOBE_buffersize * stepsize / 2, 2),
+    #                    round(gpuOBE_buffersize * stepsize / 2, 2),
+    #                    stepsize)  # Both sides
     return np.asarray(Delays)
 
 
@@ -191,10 +195,16 @@ def TauACCoPol(ExpDelays, L, FWHM, tau, Amp, Offset, Center, normparameter=False
     maxDelay = np.amax(np.array(ExpDelays))
     simDelays = CreateCoPolDelay(gpuOBE_stepsize, maxDelay)
 
-    IAC = coreTauACCoPol(simDelays, tau, L, FWHM)
+    # If delays are pos/neg:
+    # IAC = coreTauACCoPol(simDelays, tau, L, FWHM)
+    # xi = simDelays + Center
+
+    # If delays are only positive:
+    half_IAC = coreTauACCoPol(simDelays, tau, L, FWHM)
+    IAC = np.concatenate((half_IAC[::-1], half_IAC[1::]))
+    xi = np.concatenate((-simDelays[::-1], simDelays[1::])) + Center
 
     if (normparameter == False):
-        xi = simDelays + Center
         if (Phase == False):
             yi = getw0CoPol(IAC, gpuOBE_stepsize, normparameter=False)
         elif (Phase == True):
@@ -204,12 +214,11 @@ def TauACCoPol(ExpDelays, L, FWHM, tau, Amp, Offset, Center, normparameter=False
         intpAC = s(x)
 
     elif (normparameter == True):
-        IAC = norm(IAC)
-        xi = simDelays + Center
         if (Phase == False):
-            yi = np.array(getw0CoPol(IAC, gpuOBE_stepsize, normparameter=True))
+            # Normalizing IAC before the w0-Filter seems to improve performance.
+            yi = np.array(getw0CoPol(norm(IAC), gpuOBE_stepsize, normparameter=True))
         elif (Phase == True):
-            yi = IAC
+            yi = norm(IAC)
         x = ExpDelays
         s = InterpolatedUnivariateSpline(xi, yi, k=1)
         intpAC = s(x)
@@ -449,7 +458,7 @@ if minimal_example_test:
     if verbose:
         print("Testing minimal example...")
     gpuOBE_stepsize = 0.2
-    Delays = CreateCoPolDelay(gpuOBE_stepsize, 200.0)
+    Delays = np.arange(-200, 200, 1)  # Both sides
     starttime = timer()
     # Delays = np.arange(-200,200,0.1)
     # print ('length',len(Delays))
