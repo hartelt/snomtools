@@ -27,6 +27,7 @@ __device__ void stepOBE (double* dxdy, const double* rho, const double laser, co
 }
 
 __global__ void simOBEcudaCoPolTest (double* AC, const double* Delaylist, const double w, const double FWHM, const double G1, const double G2, const double G3, const double t_min)
+// RUNGE-KUTTA Verfahren happens here to solve OBE for full density matrix.
 {
     int idx = blockIdx.x*blockDim.x + threadIdx.x; // Unique index
 
