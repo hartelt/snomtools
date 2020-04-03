@@ -40,7 +40,10 @@ extensions = [
     # 'sphinx.ext.pngmath',
     'sphinx.ext.viewcode',
 ]
-autodoc_default_flags = ["members", "private-members", "special-members","show-inheritance"]
+autodoc_default_flags = ["members",
+                         # "private-members",  # Commenting out this turns off __data etc.
+                         # "special-members",  # Commenting out this turns off __weakref__, but also __init__ etc.
+                         "show-inheritance"]
 # autosummary_generate = True
 # autodoc_member_order = 'bysource'
 
