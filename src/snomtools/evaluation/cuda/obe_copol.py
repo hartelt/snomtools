@@ -286,7 +286,7 @@ class OBEfit_Copol(object):
                  max_lifetime=u.to_ureg(200, 'fs')):
         """
         The initializer, which builds the OBEfit object according to the given data and parameters.
-        The acutal fit and return of results is then done with :func:`~OBEfit_Copol.obefit`.
+        The actual fit and return of results is then done with :func:`~OBEfit_Copol.obefit`.
 
         :param data:
         :type data: :class:`~snomtools.data.datasets.DataSet`
