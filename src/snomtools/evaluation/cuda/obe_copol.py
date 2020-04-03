@@ -330,6 +330,14 @@ class OBEfit_Copol(object):
 
     @property
     def resultshape(self):
+        """
+        Generates the shape of the OBEfit result. The DataSet returned by :func:`~OBEfit_Copol.obefit` will have this
+        shape, containing the fit result parameters.
+        Effectively, the result shape will be the shape of the input data, reduced by the delay axis.
+
+        :return: Shape of the evaluated (fitted) DataSet.
+        :rtype: tuple
+        """
         inshape = np.array(self.data.shape)
         return tuple(np.delete(inshape, self.fitaxis_ID))
 
@@ -450,8 +458,12 @@ class OBEfit_Copol(object):
 
 
 minimal_example_test = False
+evaluation_test = False
+class_test = False
 if __name__ == '__main__':
-    minimal_example_test = True
+    minimal_example_test = False
+    evaluation_test = False
+    class_test = True
 
 # Example to test functionality
 if minimal_example_test:
@@ -479,7 +491,6 @@ if minimal_example_test:
     # plot((-300,300),(2.0,2.0))
     # plot(Delays,normAC(IAC))
 
-evaluation_test = False
 if evaluation_test:
     # Script for evaluation on local PC
     wd = "/home/hartelt/repos/evaluation/2018/08 August/BFoerster crosspol"
@@ -553,7 +564,6 @@ if evaluation_test:
 
     print("HfO2 data stored: ", datetime.datetime.now().isoformat())
 
-class_test = True
 if class_test:
     # RUN THIS IN snomtools/test folder where testdata hdf5s are, or set your paths and parameters accordingly:
     testdata = ds.DataSet.from_h5file("cuda_OBEtest_copol.hdf5")
