@@ -274,10 +274,64 @@ def gpuOBE_ACBlauCoPolTest(Delaylist, tau, laserWavelength, laserFWHM, buffersiz
 
 
 class OBEfit_Copol(object):
+    """
+    The OBE fit class...
+
+    .. automethod:: __init__
+    """
+
     def __init__(self, data, fitaxis_ID="delay",
                  laser_lambda=u.to_ureg(400, 'nm'), laser_AC_FWHM=None,
                  data_AC_FWHM=None, time_zero=u.to_ureg(0, 'fs'),
                  max_lifetime=u.to_ureg(200, 'fs')):
+        """
+        The initializer, which builds the OBEfit object according to the given data and parameters.
+        The acutal fit and return of results is then done with :func:`~OBEfit_Copol.obefit`.
+
+        :param data:
+        :type data: :class:`~snomtools.data.datasets.DataSet`
+
+        :param fitaxis_ID: A valid identifier of the axis along which the autocorrelation was measured.
+            Typically something like "delay" (the default).
+        :type fitaxis_ID: str *or* int
+
+        :param laser_lambda: The laser wavelength of the measurement.
+            If a numeric value is given, nanometers are assumed.
+        :type laser_lambda: pint Quantity *or* numeric
+
+        :param laser_AC_FWHM: The laser (second order) Autocorrelation FWHM,
+            gained from an autocorrelation measurement of the laser pulses without a lifetime effect,
+            e.g. with SHG or 2PPE through an intermediate state with neglectable lifetime.
+            This is an important parameter, as the lifetime can only be evaluated out of the 2PPE Autocorrelation,
+            if the laser pulse length is known.
+            If a numeric value is given, femtoseconds are assumed.
+        :type laser_AC_FWHM: pint Quantity *or* numeric
+
+        :param data_AC_FWHM: If an FWHM map of the data was evaluated in advance, 
+            (e.g. using :class:`snomtools.data.fits.Lorentz_Fit_nD`)
+            the corresponding data can be given here.
+            The data must have the same dimensions as :attr:`~OBEfit_Copol.resultshape`, 
+            meaning the input data shape reduced by the delay axis,
+            and must contain a :class:`~snomtools.data.datasets.DataArray` containing the autocorrelation FHWM
+            with label `fwhm` or at index `0`.
+            If `amplitude` and `background` are also present, better fit start parameters are derived from them.
+            If not given, the values are extracted from `data` by fitting Lorentzians along the delay axis
+            with :class:`snomtools.data.fits.Lorentz_Fit_nD`.
+        :type data_AC_FWHM: :class:`~snomtools.data.datasets.DataSet` *or* :class:`~snomtools.data.datasets.ROI`
+
+        :param time_zero: The actual time zero on the delay axis.
+            If a numeric value is given, femtoseconds are assumed.
+        :type time_zero: pint Quantity *or* numeric
+
+        :param max_lifetime: The maximum lifetime used as boundary for the obe fit.
+            If a numeric value is given, femtoseconds are assumed.
+        :type max_lifetime: pint Quantity *or* numeric
+
+        .. warning::
+            If no value is given for `laser_AC_FWHM`, the value is guessed guessed from `data_AC_FWHM`,
+            by taking its minimum minus 1 femtosecond.
+            This only works if the data region contains a value with neglectable lifetime!
+        """
         assert isinstance(data, (ds.DataSet, ds.ROI))
         self.data = data
         self.fitaxis_ID = data.get_axis_index(fitaxis_ID)
@@ -286,12 +340,12 @@ class OBEfit_Copol(object):
             # Check if dimensions and axes fit:
             assert isinstance(data_AC_FWHM, (ds.DataSet, ds.ROI))
             assert (data_AC_FWHM.shape == self.resultshape)
-            assert u.same_dimension(data_AC_FWHM.get_datafield(0).data, u.to_ureg('1 fs'))
             self.data_AC_FWHM = data_AC_FWHM
             try:
                 self.AC_FWHM = self.data_AC_FWHM.get_datafield('fwhm')
             except AttributeError:
                 self.AC_FWHM = self.data_AC_FWHM.get_datafield(0)
+            assert u.same_dimension(self.AC_FWHM, u.to_ureg('1 fs'))
             try:
                 self.AC_amplitude = self.data_AC_FWHM.get_datafield('amplitude')
             except AttributeError:
@@ -309,8 +363,8 @@ class OBEfit_Copol(object):
             self.laser_AC_FWHM = u.to_ureg(laser_AC_FWHM, 'fs')
         else:
             self.laser_AC_FWHM = u.to_ureg(-1, 'fs') + self.AC_FWHM.min()
-            if verbose:
-                print("Guessing Laser AC FWHM from Data FWHM - 1 fs: {0}".format(self.laser_AC_FWHM))
+            print("WARNING: No laser AC FWHM given. Guessing guessing from Data FWHM - 1 fs: {0}".format(
+                self.laser_AC_FWHM))
         if time_zero:
             self.time_zero = u.to_ureg(time_zero, 'fs')
         else:
@@ -343,15 +397,52 @@ class OBEfit_Copol(object):
 
     @property
     def fitaxis(self):
+        """
+        Returns the delay Axis object of the input data, along which the AC Fit is done.
+
+        :return: The fit axis.
+        :rtype: :class:`~snomtools.data.datasets.Axis`
+        """
         return self.data.get_axis(self.fitaxis_ID)
 
     def fit_data_FWHM(self):
+        """
+        Fits the input data with a Lorentzian, using :class:`snomtools.data.fits.Lorentz_Fit_nD`.
+        This generates the curve parameters FWHM, Amplitude, Background and Center, which are used to generate start
+        parameters for obefit.
+
+        :return: The fit parameter DataSet resulting from the Lorentz fit.
+        :rtype: :class:`~snomtools.data.datasets.DataSet`
+        """
         if verbose:
             print("Fitting Data with Lorentzian...")
         lorentzfit = snomtools.data.fits.Lorentz_Fit_nD(self.data, axis_id=self.fitaxis_ID, keepdata=False)
         return lorentzfit.export_parameters()
 
-    def build_empty_result_dataset(self, h5target=None, chunks=True):
+    def build_empty_result_dataset(self, h5target=None, chunks=True, chunk_cache_mem_size=None):
+        """
+        Generates a :class:`~snomtools.data.datasets.DataSet`, of shape :attr:`~OBEfit_Copol.resultshape`
+        to write the OBE fit results into.
+        The axes will be the ones of the input data without the delay axis.
+        Empty DataArrays (containing zeroes) are initialized for the OBE fit parameters.
+
+        :param h5target: The HDF5 target to write to.
+            If `None` is given (the default), then a DataSet in numpy mode (in-memory) is generated.
+        :type h5target: str *or*  :class:`h5py.Group` *or* None
+
+        :param chunks: The chunk size to use for the HDF5 data. Ignored in numpy mode (see above).
+            If `True` is given (the default), the chunk size is automatically chosen as usual.
+            If `False` is given, no chunking and compression of the data will be done (not recommended).
+        :type chunks: tuple of int
+
+        :param chunk_cache_mem_size: Explicitly set chunk cache memory size (in bytes) for HDF5 File.
+            This can be used to optimize I/O performance according to iteration over the data.
+            Defaults are set in :mod:`snomtools.data.h5tools`
+        :type chunk_cache_mem_size: int
+
+        :return: The empty DataSet to write result parameters to.
+        :rtype: :class:`~snomtools.data.datasets.DataSet`
+        """
         axlist = self.data.axes[:]
         axlist.pop(self.fitaxis_ID)
         if h5target:
@@ -364,7 +455,8 @@ class OBEfit_Copol(object):
                                            plotlabel=self.result_dataparams[l]['plotlabel'],
                                            h5target=dataspace.h5target,
                                            chunks=chunks))
-            return ds.DataSet("OBE fit results", dflist, axlist, h5target=h5target)
+            return ds.DataSet("OBE fit results", dflist, axlist,
+                              h5target=h5target, chunk_cache_mem_size=chunk_cache_mem_size)
         else:
             dflist = [ds.DataArray(np.zeros(self.resultshape),
                                    unit=self.result_dataparams[l]['unit'],
@@ -374,6 +466,25 @@ class OBEfit_Copol(object):
             return ds.DataSet("OBE fit results", dflist, axlist)
 
     def obefit(self, h5target=None):
+        """
+        Performs the OBE fit using pycuda and returns the obtained parameters :class:`~snomtools.data.datasets.DataSet`.
+
+        .. note:: The Fit uses the old global functions salvaged from Philip's cuda codes by Tobi and Lukas.
+            The global variables used therein are set using the corresponding instance variables.
+            or are still hardcoded.
+            This works, but should be made nice by rewriting them to proper class methods.
+
+        .. note:: The iteration over the data dimensions is one by single indices with :func:`numpy.ndindex`.
+            This might work fine due to the dominant runtime of the cuda fit itself, but for huge nD-data,
+            it might be advantageous to implement a nice chunk-wise I/O for better performance.
+
+        :param h5target: The HDF5 target to write to.
+            If `None` is given (the default), then a DataSet in numpy mode (in-memory) is generated.
+        :type h5target: str *or*  :class:`h5py.Group` *or* None
+
+        :return: The DataSet containing the obtained fit parameters.
+        :rtype: :class:`~snomtools.data.datasets.DataSet`
+        """
         print(self.resultshape)
         targetds = self.build_empty_result_dataset(h5target=h5target)
 
@@ -437,9 +548,10 @@ class OBEfit_Copol(object):
                     print("Result for index {0}: {1}".format(target_slice, popt))
             except RuntimeError as e:  # Fit failed
                 popt = np.full((4,), np.nan)
-                pcon = np.full((4, 4), np.nan)
+                pcon = np.full((4, 4), np.inf)
                 print("OBE fit for index {0} failed.".format(target_slice))
 
+            # Write the obtained parameters to the result DataSet:
             for i, l in enumerate(self.result_datalabels):
                 targetds.get_datafield(l).data[target_slice] = u.to_ureg(popt[i], self.result_dataparams[l]['unit'])
                 # TODO: Store fit accuracies.
