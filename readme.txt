@@ -19,6 +19,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+For optimal performance, use Python 3, 64 bit.
+The package was originally written in Python 2 and was adapted to Python 3.
+Python 2 is supported through the use of the future module, but full support is not prioritized in the further development, especially since the End-of-Life of Python 2 in 2020.
+32 bit versions of Python work, but especially for large data and on Windows, out-of-memory problems may occur.
 
 To install, run:
     >>> pip install -r requirements.txt
