@@ -490,7 +490,7 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 			chunk_size = probe_chunksize(shape=newshape, compression=compression, compression_opts=compression_opts)
 		else:
 			chunk_size = chunks
-		min_cache_size = chunk_size[0] * numpy.prod(sample_data.shape) * 4  # 32bit floats require 4 bytes.
+		min_cache_size = chunk_size[0] * int(numpy.prod(sample_data.shape)) * 4  # 32bit floats require 4 bytes.
 		use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 64 MB just to be sure.
 
 		# Initialize full DataSet with zeroes:
@@ -802,7 +802,7 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
 			chunk_size = probe_chunksize(shape=newshape, compression=compression, compression_opts=compression_opts)
 		else:
 			chunk_size = chunks
-		min_cache_size = chunk_size[0] * numpy.prod(sample_data.shape) * 4  # 32bit floats require 4 bytes.
+		min_cache_size = chunk_size[0] * int(numpy.prod(sample_data.shape)) * 4  # 32bit floats require 4 bytes.
 		use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 64 MB just to be sure.
 
 		# Initialize full DataSet with zeroes:
