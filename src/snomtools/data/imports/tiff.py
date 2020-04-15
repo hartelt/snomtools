@@ -14,6 +14,7 @@ import tifffile
 import re
 import warnings
 import sys
+import psutil
 import snomtools.calcs.units as u
 from snomtools.data.h5tools import probe_chunksize
 
@@ -806,28 +807,35 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
 
         # Handle chunking and optimize buffer size:
         if chunks is True:  # Default is auto chunk alignment, so we need to probe.
-            chunk_size = probe_chunksize(shape=newshape, compression=compression, compression_opts=compression_opts)
-            min_cache_size = chunk_size[0] * int(numpy.prod(sample_data.shape)) * 4  # 32bit floats require 4 bytes.
-            use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 64 MB just to be sure.
-            # TODO: Reduce chunk size for very large datasets.
+            max_available_cache = psutil.virtual_memory().available * 0.7  # 70 % of available memory
+            use_chunk_size = probe_chunksize(shape=newshape, compression=compression, compression_opts=compression_opts)
+            min_cache_size = use_chunk_size[0] * int(numpy.prod(sample_data.shape)) * 4  # 32bit floats require 4 bytes.
+            use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 128 MB just to be sure.
+            while use_cache_size > max_available_cache:
+                use_chunk_size = (use_chunk_size[0] // 2,) + use_chunk_size[1:]  # Reduce chunk scan chunk size by half.
+                if verbose:
+                    print("Warning: Chunk alignment to large. "
+                          "Using half chunk size along scan direction: {0}".format(use_chunk_size))
+                min_cache_size = use_chunk_size[0] * int(numpy.prod(sample_data.shape)) * 4  # 32bit floats = 4 bytes.
+                use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 128 MB just to be sure.
         elif chunks:  # Chunk size is explicitly set:
-            chunk_size = chunks
-            min_cache_size = chunk_size[0] * int(numpy.prod(sample_data.shape)) * 4  # 32bit floats require 4 bytes.
-            use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 64 MB just to be sure.
+            use_chunk_size = chunks
+            min_cache_size = use_chunk_size[0] * int(numpy.prod(sample_data.shape)) * 4  # 32bit floats require 4 bytes.
+            use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 128 MB just to be sure.
         else:  # Chunked storage is turned off:
-            chunk_size = False
+            use_chunk_size = False
             use_cache_size = None
 
         # Initialize full DataSet with zeroes:
         dataspace = snomtools.data.datasets.Data_Handler_H5(unit=sample_data.get_datafield(0).get_unit(),
-                                                            shape=newshape, chunks=chunks,
+                                                            shape=newshape, chunks=use_chunk_size,
                                                             compression=compression, compression_opts=compression_opts,
                                                             chunk_cache_mem_size=use_cache_size)
         dataarray = snomtools.data.datasets.DataArray(dataspace,
                                                       label=sample_data.get_datafield(0).get_label(),
                                                       plotlabel=sample_data.get_datafield(0).get_plotlabel(),
                                                       h5target=dataspace.h5target,
-                                                      chunks=chunks,
+                                                      chunks=use_chunk_size,
                                                       compression=compression, compression_opts=compression_opts,
                                                       chunk_cache_mem_size=use_cache_size)
         dataset = snomtools.data.datasets.DataSet("Terra Scan " + folderpath, [dataarray], axlist, h5target=h5target,
