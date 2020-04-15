@@ -812,8 +812,9 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
             min_cache_size = use_chunk_size[0] * int(numpy.prod(sample_data.shape)) * 4  # 32bit floats require 4 bytes.
             use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 128 MB just to be sure.
             while use_cache_size > max_available_cache:
-                # TODO: Optimize this by increasing use_chunk_size[1:] to not decrease the overall chunk size too much.
-                use_chunk_size = (use_chunk_size[0] // 2,) + use_chunk_size[1:]  # Reduce chunk scan chunk size by half.
+                ndims = len(use_chunk_size[1:])
+                # Reduce chunk scan chunk size by half. Increase chunk size in other dimensions to keep size constant.
+                use_chunk_size = (use_chunk_size[0] // 2,) + tuple(int(n * (1 + 2 / ndims)) for n in use_chunk_size[1:])
                 if verbose:
                     print("Warning: Chunk alignment to large. "
                           "Using half chunk size along scan direction: {0}".format(use_chunk_size))
