@@ -17,6 +17,7 @@ import snomtools.plots.datasets
 from snomtools.calcs.constants import m_e, hbar
 import matplotlib.pyplot as plt
 import os
+from matplotlib import cm
 
 __author__ = 'Lukas Hellbrück'
 
@@ -229,19 +230,22 @@ def show_state_parabola(dispersion_data, figname, guess_zeropixel=None, guess_ma
     parab_data = bandDispersionRelation(k, bandmass, zeropoint, energy_offset)
 
     # Plot dispersion and ParabolaFit
-    plt.figure()
+    plt.figure(figsize=(7,4.8))
     ax = plt.subplot(111)
     snomtools.plots.datasets.project_2d(dispersion_data, ax, e_axisid, k_axisid, **kwargs)
     ax.plot(k, parab_data, 'r-', label="Fitparabel")  # Plot parabola as red line.
     ax.invert_yaxis()  # project_2d flips the y axis as it assumes standard matrix orientation, so flip it back.
     e = dispersion_data.get_axis(e_axisid).data.max().magnitude
     plt.ylim(top=e)
-    plt.xlabel("$k_{||}$ $[\AA^{-1}]$")
-    plt.ylabel("$E_{Interm.}$ [eV]")
-    plt.title("eff. Bandmass= " + str(bandmass.magnitude) + "$m_e$; " + "Zero= " + str(
-        zeropoint.magnitude) + "; Offset= " + str(energy_offset.magnitude))
+    ax.legend(loc='lower left')
+    ax.tick_params(axis='both', labelsize=12)
+    plt.xlabel("$k_{||,x}$ / $(\AA^{-1})$", fontsize=14)
+    plt.ylabel("$E_{Interm.}$ / (eV)", fontsize=14)
+    cb = plt.colorbar(cm.ScalarMappable(cmap='BuPu_r'))
+    cb.set_label("Normalisierte Zählrate", labelpad=6, size=14)
+    cb.ax.tick_params(labelsize=12)
     if savefig:
-        plt.savefig(figname)
+        plt.savefig(figname, bbox_inches='tight', dpi=200)
     plt.show()
 
     return bandmass
