@@ -816,13 +816,18 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
             min_cache_size = use_chunk_size[0] * int(numpy.prod(sample_data.shape)) * 8  # 64bit = 4 bytes.
             use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 128 MB just to be sure.
             while use_cache_size > max_available_cache:
-                ndims = len(use_chunk_size[1:])
                 if verbose:
                     print("Warning: Chunk alignment {0} to large for available cache.".format(use_chunk_size))
-                # Reduce chunk scan chunk size by half. Increase chunk size in other dimensions to keep reasonable size:
-                use_chunk_size = (use_chunk_size[0] // 2,) + tuple(
-                    int(n * (1 + 0.5 / ndims)) for n in use_chunk_size[1:])
-                # use_chunk_size = (use_chunk_size[0] // 2,) + use_chunk_size[1:] # Just reduce scan chunk size.
+                # Reduce chunk scan chunk size by half:
+                use_chunk_size = (use_chunk_size[0] // 2,) + use_chunk_size[1:]
+                # Note: It looks tempting to do something like this to keep overall chunk size constant:
+                # ndims = len(use_chunk_size[1:])
+                # use_chunk_size = (use_chunk_size[0] // 2,) + tuple(
+                #     int(n * (2 ** (1 / ndims))) for n in use_chunk_size[1:])
+                # This is NOT better, because of overhang (length % chunksize) which can exceed buffer!
+                # I'll not do an advanced search for optimal values for constant size,
+                # because the chunk size should still be reasonable down to 1/16 MB or so.
+                # MH, 2020-04-16
                 if verbose:
                     print("Using half chunk size along scan direction: {0}".format(use_chunk_size))
                 min_cache_size = use_chunk_size[0] * int(numpy.prod(sample_data.shape)) * 8  # 64bit = 8 bytes.
