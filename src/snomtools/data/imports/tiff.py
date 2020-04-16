@@ -378,7 +378,8 @@ def powerlaw_folder_peem_camera(folderpath, pattern="mW", powerunit=None, poweru
 
 def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunitlabel=None, h5target=False,
                              sum_only=False,
-                             norm_to_exptime=False):
+                             norm_to_exptime=False,
+                             chunks=True):
     """
 
     :param folderpath: The (relative or absolute) path of the folders containing the powerlaw measurement series.
@@ -402,6 +403,13 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
         taken out of the filename. This helps to make powerlaws with measurements with different exposure times.
 
     :type sum_only: bool, *optional*
+
+    :param chunks: If given as a tuple of ints of length of the to-be-read data dimensionality, this can be used to
+        explicitly set the chunk alignment for the output data. Useful if a specific chunk size is desired.
+        If `True` is given (the default), the chunk alignment is chosen automatically.
+        Ignored if h5target is `False`.
+        Chunking can be turned off by giving `False` (not recommended).
+    :type chunks: tuple *of* ints **or** bool
 
     :return: The dataset containing the images stacked along a power axis.
     """
@@ -478,35 +486,59 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
             sample_data.datafields[0] = sample_data.datafields[0] / u.to_ureg(1, 's')
             sample_data.datafields[0].set_label('counts/seconds')
             sample_data.datafields[0].set_plotlabel('counts/seconds')
-    # ToDo:Write functions that create the following hdf5 dataset structure
+    # ToDo: Write functions that create the following hdf5 dataset structure
     # ----------------------Create dataset------------------------
     # Test data size:
     axlist = [poweraxis] + sample_data.axes
     newshape = poweraxis.shape + sample_data.shape
     # Build the data-structure that the loaded data gets filled into
     if h5target:
-        chunks = True
         compression = 'gzip'
         compression_opts = 4
 
-        # Probe HDF5 initialization to optimize buffer size:
+        # Handle chunking and optimize buffer size:
         if chunks is True:  # Default is auto chunk alignment, so we need to probe.
-            chunk_size = probe_chunksize(shape=newshape, compression=compression, compression_opts=compression_opts)
-        else:
-            chunk_size = chunks
-        min_cache_size = chunk_size[0] * int(numpy.prod(sample_data.shape)) * 4  # 32bit floats require 4 bytes.
-        use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 64 MB just to be sure.
+            max_available_cache = psutil.virtual_memory().available * 0.7  # 70 % of available memory
+            if MAX_CACHE_SIZE:
+                max_available_cache = min(max_available_cache, MAX_CACHE_SIZE)  # Stay below hardcoded debug limit.
+            use_chunk_size = probe_chunksize(shape=newshape, compression=compression, compression_opts=compression_opts)
+            min_cache_size = use_chunk_size[0] * int(numpy.prod(sample_data.shape)) * 8  # 64bit = 4 bytes.
+            use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 128 MB just to be sure.
+            while use_cache_size > max_available_cache:
+                if verbose:
+                    print("Warning: Chunk alignment {0} to large for available cache.".format(use_chunk_size))
+                # Reduce chunk scan chunk size by half:
+                use_chunk_size = (use_chunk_size[0] // 2,) + use_chunk_size[1:]
+                # Note: It looks tempting to do something like this to keep overall chunk size constant:
+                # ndims = len(use_chunk_size[1:])
+                # use_chunk_size = (use_chunk_size[0] // 2,) + tuple(
+                #     int(n * (2 ** (1 / ndims))) for n in use_chunk_size[1:])
+                # This is NOT better, because of overhang (length % chunksize) which can exceed buffer!
+                # I'll not do an advanced search for optimal values for constant size,
+                # because the chunk size should still be reasonable down to 1/16 MB or so.
+                # MH, 2020-04-16
+                if verbose:
+                    print("Using half chunk size along scan direction: {0}".format(use_chunk_size))
+                min_cache_size = use_chunk_size[0] * int(numpy.prod(sample_data.shape)) * 8  # 64bit = 8 bytes.
+                use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 128 MB just to be sure.
+        elif chunks:  # Chunk size is explicitly set:
+            use_chunk_size = chunks
+            min_cache_size = use_chunk_size[0] * int(numpy.prod(sample_data.shape)) * 8  # 64bit = 8 bytes.
+            use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 128 MB just to be sure.
+        else:  # Chunked storage is turned off:
+            use_chunk_size = False
+            use_cache_size = None
 
         # Initialize full DataSet with zeroes:
         dataspace = snomtools.data.datasets.Data_Handler_H5(unit=sample_data.get_datafield(0).get_unit(),
-                                                            shape=newshape, chunks=chunks,
+                                                            shape=newshape, chunks=use_chunk_size,
                                                             compression=compression, compression_opts=compression_opts,
                                                             chunk_cache_mem_size=use_cache_size)
         dataarray = snomtools.data.datasets.DataArray(dataspace,
                                                       label=sample_data.get_datafield(0).get_label(),
                                                       plotlabel=sample_data.get_datafield(0).get_plotlabel(),
                                                       h5target=dataspace.h5target,
-                                                      chunks=chunks,
+                                                      chunks=use_chunk_size,
                                                       compression=compression, compression_opts=compression_opts,
                                                       chunk_cache_mem_size=use_cache_size)
         dataset = snomtools.data.datasets.DataSet("Powerlaw " + folderpath, [dataarray], axlist, h5target=h5target,
