@@ -393,7 +393,14 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
         siunitx command. If not given, the powerunit parameter will be used.
 
     :param h5target: The HDF5 target to write to.
-    :type h5target: str **or** h5py.Group **or** True, *optional*
+    :type h5target: str **or** h5py.Group **or** True (the default), *optional*
+
+    .. warning::
+        The default value `True` for `h5target` reads into a DataSet in temp file mode.
+        The cache size (`chunk_cache_mem_size`) is not forwarded to DataArrays in this DataSet.
+        Therefore the data is read in with default cache size, which can be **very** slow!
+
+        Use the proper target for `h5target` directly for maximum performance.
 
     :param sum_only: If True, only sum images will be read instead of full energy resolved data. *default: False*
     :type sum_only: bool, *optional*
@@ -784,7 +791,14 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
     :param str scanaxispl: A plot label for the axis of the scan.
 
     :param h5target: The HDF5 target to write to.
-    :type h5target: str **or** h5py.Group **or** True, *optional*
+    :type h5target: str **or** h5py.Group **or** True (the default), *optional*
+
+    .. warning::
+        The default value `True` for `h5target` reads into a DataSet in temp file mode.
+        The cache size (`chunk_cache_mem_size`) is not forwarded to DataArrays in this DataSet.
+        Therefore the data is read in with default cache size, which can be **very** slow!
+
+        Use the proper target for `h5target` directly for maximum performance.
 
     :param chunks: If given as a tuple of ints of length of the to-be-read data dimensionality, this can be used to
         explicitly set the chunk alignment for the output data. Useful if a specific chunk size is desired.
