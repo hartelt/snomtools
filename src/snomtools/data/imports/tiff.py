@@ -377,9 +377,7 @@ def powerlaw_folder_peem_camera(folderpath, pattern="mW", powerunit=None, poweru
 
 
 def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunitlabel=None, h5target=False,
-                             sum_only=False,
-                             norm_to_exptime=False,
-                             chunks=True):
+                             sum_only=False, norm_to_exptime=False, chunks=True):
     """
 
     :param folderpath: The (relative or absolute) path of the folders containing the powerlaw measurement series.
@@ -398,11 +396,10 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
     :type h5target: str **or** h5py.Group **or** True, *optional*
 
     :param sum_only: If True, only sum images will be read instead of full energy resolved data. *default: False*
+    :type sum_only: bool, *optional*
 
     :param norm_to_exptime: If True, counts will be divided by exposure time in seconds. The exposure time will be
         taken out of the filename. This helps to make powerlaws with measurements with different exposure times.
-
-    :type sum_only: bool, *optional*
 
     :param chunks: If given as a tuple of ints of length of the to-be-read data dimensionality, this can be used to
         explicitly set the chunk alignment for the output data. Useful if a specific chunk size is desired.
