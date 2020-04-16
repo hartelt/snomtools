@@ -25,6 +25,8 @@ if '-v' in sys.argv or __name__ == "__main__":
 else:
     verbose = False
 
+MAX_CACHE_SIZE = None  # 4 * 1024 ** 3  # 4 GB
+
 terra_tag_ids = {
     "peem_settings": "41000",
     "roi_and_bin": "41010",
@@ -808,21 +810,26 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
         # Handle chunking and optimize buffer size:
         if chunks is True:  # Default is auto chunk alignment, so we need to probe.
             max_available_cache = psutil.virtual_memory().available * 0.7  # 70 % of available memory
+            if MAX_CACHE_SIZE:
+                max_available_cache = min(max_available_cache, MAX_CACHE_SIZE)  # Stay below hardcoded debug limit.
             use_chunk_size = probe_chunksize(shape=newshape, compression=compression, compression_opts=compression_opts)
-            min_cache_size = use_chunk_size[0] * int(numpy.prod(sample_data.shape)) * 4  # 32bit floats require 4 bytes.
+            min_cache_size = use_chunk_size[0] * int(numpy.prod(sample_data.shape)) * 8  # 64bit = 4 bytes.
             use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 128 MB just to be sure.
             while use_cache_size > max_available_cache:
                 ndims = len(use_chunk_size[1:])
-                # Reduce chunk scan chunk size by half. Increase chunk size in other dimensions to keep size constant.
-                use_chunk_size = (use_chunk_size[0] // 2,) + tuple(int(n * (1 + 2 / ndims)) for n in use_chunk_size[1:])
                 if verbose:
-                    print("Warning: Chunk alignment to large. "
-                          "Using half chunk size along scan direction: {0}".format(use_chunk_size))
-                min_cache_size = use_chunk_size[0] * int(numpy.prod(sample_data.shape)) * 4  # 32bit floats = 4 bytes.
+                    print("Warning: Chunk alignment {0} to large for available cache.".format(use_chunk_size))
+                # Reduce chunk scan chunk size by half. Increase chunk size in other dimensions to keep reasonable size:
+                use_chunk_size = (use_chunk_size[0] // 2,) + tuple(
+                    int(n * (1 + 0.5 / ndims)) for n in use_chunk_size[1:])
+                # use_chunk_size = (use_chunk_size[0] // 2,) + use_chunk_size[1:] # Just reduce scan chunk size.
+                if verbose:
+                    print("Using half chunk size along scan direction: {0}".format(use_chunk_size))
+                min_cache_size = use_chunk_size[0] * int(numpy.prod(sample_data.shape)) * 8  # 64bit = 8 bytes.
                 use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 128 MB just to be sure.
         elif chunks:  # Chunk size is explicitly set:
             use_chunk_size = chunks
-            min_cache_size = use_chunk_size[0] * int(numpy.prod(sample_data.shape)) * 4  # 32bit floats require 4 bytes.
+            min_cache_size = use_chunk_size[0] * int(numpy.prod(sample_data.shape)) * 8  # 64bit = 8 bytes.
             use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 128 MB just to be sure.
         else:  # Chunked storage is turned off:
             use_chunk_size = False
