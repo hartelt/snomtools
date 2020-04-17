@@ -11,10 +11,10 @@ import snomtools.data.datasets as ds
 import snomtools.calcs.units as u
 from snomtools.data.h5tools import probe_chunksize
 import numpy as np
-import scipy.ndimage
 import sys
 import os
 import datetime
+import imageio
 import dateutil.parser as dparser
 
 __author__ = 'Michael Hartelt'
@@ -50,7 +50,7 @@ def read_jpeg(filepath):
 	filebase = os.path.basename(filepath)
 
 	# Read tif file to numpy array. Axes will be (x, y):
-	indata = scipy.ndimage.imread(filepath, flatten=True)
+	indata = imageio.imread(filepath, as_gray=True)
 
 	# Initialize data for dataset:
 	dataarray = ds.DataArray(indata, unit='dimensionless', label='brightness', plotlabel='Brightness')
