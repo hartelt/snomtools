@@ -521,6 +521,12 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
                 # I'll not do an advanced search for optimal values for constant size,
                 # because the chunk size should still be reasonable down to 1/16 MB or so.
                 # MH, 2020-04-16
+                if use_chunk_size[0] < 1:  # Avoid edge case 0
+                    use_chunk_size = (1,) + use_chunk_size[1:]
+                    print("Warning: Cannot reduce chunk size to fit into available buffer. Readin might be slow!")
+                    min_cache_size = use_chunk_size[0] * int(numpy.prod(sample_data.shape)) * 8  # 64bit = 8 bytes.
+                    use_cache_size = min_cache_size + 32 * 1024 ** 2  # Add 32 MB , overhang is small in this case.
+                    break
                 if verbose:
                     print("Using half chunk size along scan direction: {0}".format(use_chunk_size))
                 min_cache_size = use_chunk_size[0] * int(numpy.prod(sample_data.shape)) * 8  # 64bit = 8 bytes.
@@ -871,6 +877,12 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
                 # I'll not do an advanced search for optimal values for constant size,
                 # because the chunk size should still be reasonable down to 1/16 MB or so.
                 # MH, 2020-04-16
+                if use_chunk_size[0] < 1:  # Avoid edge case 0
+                    use_chunk_size = (1,) + use_chunk_size[1:]
+                    print("Warning: Cannot reduce chunk size to fit into available buffer. Readin might be slow!")
+                    min_cache_size = use_chunk_size[0] * int(numpy.prod(sample_data.shape)) * 8  # 64bit = 8 bytes.
+                    use_cache_size = min_cache_size + 32 * 1024 ** 2  # Add 32 MB , overhang is small in this case.
+                    break
                 if verbose:
                     print("Using half chunk size along scan direction: {0}".format(use_chunk_size))
                 min_cache_size = use_chunk_size[0] * int(numpy.prod(sample_data.shape)) * 8  # 64bit = 8 bytes.
