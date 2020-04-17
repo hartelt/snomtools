@@ -8,3 +8,4 @@ psutil
 opencv-python
 future
 matplotlib
+imageio
