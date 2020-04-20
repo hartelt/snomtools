@@ -67,8 +67,8 @@ class File(h5py.File):
 		mem_free = psutil.virtual_memory().available
 		if chunk_cache_mem_size >= mem_free:
 			mem_use = mem_free - (32 * 1024 ** 2)
-			warning_message = (("Required buffer size of {0:d} MB exceeds free memory. \
-					  Reducing to {1:d} MB.".format(chunk_cache_mem_size / 1024 ** 2, mem_use / 1024 ** 2)))
+			warning_message = (("Required buffer size of {0:f} MB exceeds free memory. \
+					  Reducing to {1:f} MB.".format(chunk_cache_mem_size / 1024 ** 2, mem_use / 1024 ** 2)))
 			warning_message += "\n Performance might be worse than expected!"
 			warnings.warn(warning_message)
 			chunk_cache_mem_size = mem_use
