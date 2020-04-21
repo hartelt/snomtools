@@ -2538,6 +2538,10 @@ class ROI(object):
 	def shape(self):
 		return self.get_datafield(0).shape
 
+	@property
+	def axes(self):
+		return [self.get_axis(i) for i in range(self.dimensions)]
+
 	def set_limits_all(self, limitlist, by_index=False):
 		"""
 		Each set of limits must be given as 2-tuples of the form (start,stop), where start and stop can be a quantity
