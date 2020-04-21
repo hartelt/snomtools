@@ -70,12 +70,12 @@ def normalize_by_reference(data, refdata, data_id=0, refdata_id=0, exclude_axes=
 	del refquantity
 
 	data_normalized[~ np.isfinite(data_normalized)] = 0  # set inf, and NaN to 0
-	data.add_datafield(data_normalized, label=newlabel, plotlabel=new_plotlabel)
+	data.add_datafield(data_normalized, label=newlabel+'_reference_'+mode, plotlabel=new_plotlabel+'_reference_'+mode)
 	return data
 
 
 def normalize_along_axis(data, axes, data_id=0,
-							   mode="division",
+							   mode="div", ref='max',
 							   newlabel='normalizeddata',
 							   new_plotlabel="Normalized Data"):
 	"""
@@ -89,10 +89,16 @@ def normalize_along_axis(data, axes, data_id=0,
 	:param data_id: A valid identifier of the DataArray in the DataSet instance to apply normalization to. Per
 		default, the first DataArray is taken.
 
-
 	:param mode: The mode how the calculation between the data and reference should be done, Valid options:
 		"division", "divide", "div": Divide every pixel of the data by the corresponding pixel of the reference.
 		"subtraction", "subtract", "sub": Subtract every pixel of the data by the corresponding pixel of the reference.
+
+	:param ref: The calculation of the reference data. Valid options:
+		"max": Maximum as reference to normaize.
+		"mean": Mean as reference to normaize.
+		"absmax": Absolute maximum as reference.
+		"absmin": Absolute minimum as reference.
+		"sum": Sum as reference.
 
 	:param newlabel: The label to set for the created DataArray.
 
@@ -103,18 +109,38 @@ def normalize_along_axis(data, axes, data_id=0,
 
 	assert isinstance(data, ds.DataSet), "ERROR: No DataSet given or imported."
 
-	countsdata = data.get_datafield(data_id).get_data()
 	axindexlist = []
 	for axis in axes:
 		axindexlist.append(data.get_axis_index(axis))
 	axindexes = tuple(axindexlist)
-	normalized_max = countsdata / countsdata.max(axis=axindexes, keepdims=True)
-	normalized_max[~ np.isfinite(normalized_max)] = 0  # set inf, and NaN to 0
-	data.add_datafield(normalized_max, label=newlabel+'max', plotlabel=new_plotlabel+'max')
 
-	normalized_mean = countsdata / countsdata.mean(axis=axindexes, keepdims=True)
-	normalized_mean[~ np.isfinite(normalized_mean)] = 0  # set inf, and NaN to 0
-	data.add_datafield(normalized_mean, label=newlabel+'mean', plotlabel=new_plotlabel+'mean')
+	normalized_data = data.get_datafield(data_id).get_data()
 
+	if ref == 'max':
+		refquantity = normalized_data.max(axis=axindexes, keepdims=True)
+	elif ref == 'mean':
+		refquantity = normalized_data.mean(axis=axindexes, keepdims=True)
+	elif ref == 'sum':
+		refquantity =  normalized_data.sum(axis=axindexes, keepdims=True)
+	elif ref == 'absmax':
+		refquantity = normalized_data.absmax(axis=axindexes, keepdims=True)
+	elif ref == 'absmin':
+		refquantity = normalized_data.absmin(axis=axindexes, keepdims=True)
+	else:
+		raise ValueError("Unrecognized reference for normalize_along_axis.")
+
+	if mode in ["division", "divide", "div"]:
+		normalized_data = normalized_data / refquantity
+	elif mode in ["subtraction", "subtract", "sub"]:
+		if refquantity.dtype == np.dtype('uint'):
+			refquantity = refquantity.astype('int')  # To avoid unsigned integer overflow.
+		normalized_data = normalized_data - refquantity
+	else:
+		raise ValueError("Unrecognized mode for normalize_by_reference.")
+
+	normalized_data[~ np.isfinite(normalized_data)] = 0  # set inf, and NaN to 0
+	data.add_datafield(normalized_data, label=newlabel+'_axes_'+str(axes)[1:-1]+'_'+mode, plotlabel=new_plotlabel+'_axes_'+str(axes)[1:-1]+'_'+mode)
 	return data
 
+
+# TO DO: def normalize_sensitivity()
