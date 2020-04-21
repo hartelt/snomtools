@@ -375,11 +375,17 @@ class OBEfit_Copol(object):
         countunit = self.data.get_datafield(0).units
         countunit_SI = u.latex_si(self.data.get_datafield(0))
         self.result_datalabels = ['lifetimes', 'amplitude', 'offset', 'center']
-        self.result_dataparams = {
+        self.result_accuracylabels = ['lifetimes_accuracy', 'amplitude_accuracy', 'offset_accuracy', 'center_accuracy']
+        self.result_params = {
             'lifetimes': {'unit': timeunit, 'plotlabel': "Intermediate State Lifetime / " + timeunit_SI},
             'amplitude': {'unit': countunit, 'plotlabel': "AC Amplitude / " + countunit_SI},
             'offset': {'unit': countunit, 'plotlabel': "AC Background / " + countunit_SI},
-            'center': {'unit': timeunit, 'plotlabel': "AC Center / " + timeunit_SI}}
+            'center': {'unit': timeunit, 'plotlabel': "AC Center / " + timeunit_SI},
+            'lifetimes_accuracy': {'unit': timeunit,
+                                   'plotlabel': "Intermediate State Lifetime Fit Accuracy / " + timeunit_SI},
+            'amplitude_accuracy': {'unit': countunit, 'plotlabel': "AC Amplitude Fit Accuracy / " + countunit_SI},
+            'offset_accuracy': {'unit': countunit, 'plotlabel': "AC Background Fit Accuracy / " + countunit_SI},
+            'center_accuracy': {'unit': timeunit, 'plotlabel': "AC Center Fit Accuracy / " + timeunit_SI}}
         self.max_lifetime = max_lifetime
 
     @property
@@ -447,22 +453,22 @@ class OBEfit_Copol(object):
         axlist.pop(self.fitaxis_ID)
         if h5target:
             dflist = []
-            for l in self.result_datalabels:
-                dataspace = ds.Data_Handler_H5(unit=self.result_dataparams[l]['unit'],
+            for l in self.result_datalabels + self.result_accuracylabels:
+                dataspace = ds.Data_Handler_H5(unit=self.result_params[l]['unit'],
                                                shape=self.resultshape, chunks=chunks)
                 dflist.append(ds.DataArray(dataspace,
                                            label=l,
-                                           plotlabel=self.result_dataparams[l]['plotlabel'],
+                                           plotlabel=self.result_params[l]['plotlabel'],
                                            h5target=dataspace.h5target,
                                            chunks=chunks))
             return ds.DataSet("OBE fit results", dflist, axlist,
                               h5target=h5target, chunk_cache_mem_size=chunk_cache_mem_size)
         else:
             dflist = [ds.DataArray(np.zeros(self.resultshape),
-                                   unit=self.result_dataparams[l]['unit'],
+                                   unit=self.result_params[l]['unit'],
                                    label=l,
-                                   plotlabel=self.result_dataparams[l]['plotlabel'])
-                      for l in self.result_datalabels]
+                                   plotlabel=self.result_params[l]['plotlabel'])
+                      for l in self.result_datalabels + self.result_accuracylabels]
             return ds.DataSet("OBE fit results", dflist, axlist)
 
     def obefit(self, h5target=None):
@@ -541,20 +547,21 @@ class OBEfit_Copol(object):
 
             # Do the fit: # TODO: Do this with proper class methods.
             try:
-                popt, pcon = curve_fit(fitTauACblauCoPol, ExpDelays, ExpData, p0,
+                popt, pcov = curve_fit(fitTauACblauCoPol, ExpDelays, ExpData, p0,
                                        bounds=([0.0, 0.0, 0.0, -20. + guess_center],
                                                [self.max_lifetime.magnitude, np.inf, np.inf, 20. + guess_center]))
                 if verbose:
                     print("Result for index {0}: {1}".format(target_slice, popt))
             except RuntimeError as e:  # Fit failed
                 popt = np.full((4,), np.nan)
-                pcon = np.full((4, 4), np.inf)
+                pcov = np.full((4, 4), np.inf)
                 print("OBE fit for index {0} failed.".format(target_slice))
 
             # Write the obtained parameters to the result DataSet:
             for i, l in enumerate(self.result_datalabels):
-                targetds.get_datafield(l).data[target_slice] = u.to_ureg(popt[i], self.result_dataparams[l]['unit'])
-                # TODO: Store fit accuracies.
+                targetds.get_datafield(l).data[target_slice] = u.to_ureg(popt[i], self.result_params[l]['unit'])
+            for i, l in enumerate(self.result_accuracylabels):
+                targetds.get_datafield(l).data[target_slice] = u.to_ureg(pcov[i, i], self.result_params[l]['unit'])
 
             if verbose:
                 print_counter += 1
