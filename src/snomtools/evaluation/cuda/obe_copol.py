@@ -534,6 +534,7 @@ class OBEfit_Copol(object):
             # Set start values for fitparameters:
             guess_lifetime = (self.AC_FWHM[target_slice] - self.laser_AC_FWHM).magnitude
             guess_lifetime = min(guess_lifetime, self.max_lifetime.magnitude - 1.)  # Assure guess < fit constraints.
+            guess_lifetime = max(guess_lifetime, 3.)  # Assure guess > 0
             if self.AC_background:
                 guess_Offset = self.AC_background[target_slice].magnitude
             else:
