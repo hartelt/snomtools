@@ -688,9 +688,9 @@ class Gauss_Fit_nD(object):
                     if print_counter % print_interval == 0:
                         tpf = ((time.time() - start_time) / float(print_counter))
                         etr = tpf * (np.prod(map_shape) - print_counter)
-                        print("tiff {0:d} / {1:d}, Time/Fit {3:.4f}s ETR: {2:.1f}s".format(print_counter,
-                                                                                           np.prod(map_shape),
-                                                                                           etr, tpf))
+                        print("Fit {0:d} / {1:d}, Time/Fit {3:.4f}s ETR: {2:.1f}s".format(print_counter,
+                                                                                          np.prod(map_shape),
+                                                                                          etr, tpf))
 
             self.x_0_unit = xunit
             self.sigma_unit = xunit
@@ -1098,9 +1098,9 @@ class Lorentz_Fit_nD(object):
                     if print_counter % print_interval == 0:
                         tpf = ((time.time() - start_time) / float(print_counter))
                         etr = tpf * (np.prod(map_shape) - print_counter)
-                        print("tiff {0:d} / {1:d}, Time/Fit {3:.4f}s ETR: {2:.1f}s".format(print_counter,
-                                                                                           np.prod(map_shape),
-                                                                                           etr, tpf))
+                        print("Fit {0:d} / {1:d}, Time/Fit {3:.4f}s ETR: {2:.1f}s".format(print_counter,
+                                                                                          np.prod(map_shape),
+                                                                                          etr, tpf))
 
             self.x_0_unit = xunit
             self.gamma_unit = xunit
@@ -1504,9 +1504,9 @@ class Sech2_Fit_nD(object):
                     if print_counter % print_interval == 0:
                         tpf = ((time.time() - start_time) / float(print_counter))
                         etr = tpf * (np.prod(map_shape) - print_counter)
-                        print("tiff {0:d} / {1:d}, Time/Fit {3:.4f}s ETR: {2:.1f}s".format(print_counter,
-                                                                                           np.prod(map_shape),
-                                                                                           etr, tpf))
+                        print("Fit {0:d} / {1:d}, Time/Fit {3:.4f}s ETR: {2:.1f}s".format(print_counter,
+                                                                                          np.prod(map_shape),
+                                                                                          etr, tpf))
 
             self.x_0_unit = xunit
             self.tau_unit = xunit
