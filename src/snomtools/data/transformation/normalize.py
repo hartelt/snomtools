@@ -5,11 +5,10 @@ This script holds transformation functions for datasets, normalize data relative
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-import numpy
-import snomtools.data.datasets
+import numpy as np
+import snomtools.data.datasets as ds
 
 __author__ = 'hartelt'
-
 
 def normalize_by_reference(data, refdata, data_id=0, refdata_id=0, exclude_axes=None,
 						   mode="division",
@@ -44,8 +43,8 @@ def normalize_by_reference(data, refdata, data_id=0, refdata_id=0, exclude_axes=
 
 	:return: The modified dataset.
 	"""
-	assert isinstance(data, snomtools.data.datasets.DataSet), "ERROR: No DataSet given or imported."
-	assert isinstance(refdata, snomtools.data.datasets.DataSet), "ERROR: No DataSet given or imported."
+	assert isinstance(data, ds.DataSet), "ERROR: No DataSet given or imported."
+	assert isinstance(refdata, ds.DataSet), "ERROR: No DataSet given or imported."
 
 	# Assemble tuple of axis indices to project onto:
 	if exclude_axes:
@@ -62,7 +61,7 @@ def normalize_by_reference(data, refdata, data_id=0, refdata_id=0, exclude_axes=
 	if mode in ["division", "divide", "div"]:
 		data_normalized = data.get_datafield(data_id).get_data() / refquantity
 	elif mode in ["subtraction", "subtract", "sub"]:
-		if refquantity.dtype == numpy.dtype('uint'):
+		if refquantity.dtype == np.dtype('uint'):
 			refquantity = refquantity.astype('int')  # To avoid unsigned integer overflow.
 		data_normalized = data.get_datafield(data_id).get_data() - refquantity
 	else:
@@ -70,6 +69,6 @@ def normalize_by_reference(data, refdata, data_id=0, refdata_id=0, exclude_axes=
 
 	del refquantity
 
-	data_normalized[~ numpy.isfinite(data_normalized)] = 0  # set inf, and NaN to 0
+	data_normalized[~ np.isfinite(data_normalized)] = 0  # set inf, and NaN to 0
 	data.add_datafield(data_normalized, label=newlabel, plotlabel=new_plotlabel)
 	return data
