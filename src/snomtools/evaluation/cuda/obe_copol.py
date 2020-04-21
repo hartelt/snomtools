@@ -387,6 +387,8 @@ class OBEfit_Copol(object):
             'offset_accuracy': {'unit': countunit, 'plotlabel': "AC Background Fit Accuracy / " + countunit_SI},
             'center_accuracy': {'unit': timeunit, 'plotlabel': "AC Center Fit Accuracy / " + timeunit_SI}}
         self.max_lifetime = max_lifetime
+        self.timeunit = timeunit
+        self.countunit = countunit
 
     @property
     def resultshape(self):
@@ -686,8 +688,8 @@ if evaluation_test:
 if class_test:
     # RUN THIS IN snomtools/test folder where testdata hdf5s are, or set your paths and parameters accordingly:
     testdata = ds.DataSet.from_h5file("cuda_OBEtest_copol.hdf5")
-    testroi = ds.ROI(testdata, {'energy': [200, 203]}, by_index=True)
-    fitobject = OBEfit_Copol(testroi, time_zero=-9.3)
+    testroi = ds.ROI(testdata, {'energy': [200, 205]}, by_index=True)
+    fitobject = OBEfit_Copol(testdata, time_zero=-9.3)
     result = fitobject.obefit()
     result.saveh5("cuda_OBEtest_copol_result.hdf5")
     print("...done.")
