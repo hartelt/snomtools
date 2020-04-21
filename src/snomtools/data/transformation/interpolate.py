@@ -5,15 +5,15 @@ This script holds transformation functions for datasets, that are based on inter
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-import numpy
-import snomtools.data.datasets as datasets
+import numpy as np
+import snomtools.data.datasets as ds
 import scipy.interpolate
 import snomtools.calcs.units as units
 
 __author__ = 'hartelt'
 
 
-def griddata(dataset, xi, method='linear', fill_value=numpy.nan, rescale=False):
+def griddata(dataset, xi, method='linear', fill_value=np.nan, rescale=False):
 	"""
 
 	:param dataset: The dataset to transform.
@@ -30,7 +30,7 @@ def griddata(dataset, xi, method='linear', fill_value=numpy.nan, rescale=False):
 
 	:return:
 	"""
-	assert isinstance(dataset, datasets.DataSet), "ERROR: No DataSet instance given."
+	assert isinstance(dataset, ds.DataSet), "ERROR: No DataSet instance given."
 	raise NotImplementedError("Griddata to be implemented soon...")
 
 
@@ -51,11 +51,11 @@ if __name__ == '__main__':  # Just for testing:
 	data = dataset.get_datafield(0).get_data()[:, :, 15]
 
 	print("Generating grid...")
-	newgrid = numpy.mgrid[-3.:3.:64j, -3.:3.:64j]
-	# newx = numpy.arange(-3., 3., .5) * units.ureg('um')
-	# newy = numpy.arange(-3., 3., .5) * units.ureg('um')
+	newgrid = np.mgrid[-3.:3.:64j, -3.:3.:64j]
+	# newx = np.arange(-3., 3., .5) * units.ureg('um')
+	# newy = np.arange(-3., 3., .5) * units.ureg('um')
 	# print(newx, newy)
-	# newgrid = numpy.meshgrid(newx,newy)
+	# newgrid = np.meshgrid(newx,newy)
 
 	print("Interpolating...")
 	interp = scipy.interpolate.griddata((x.to('um').flatten(), y.to('um').flatten()), data.flatten(), tuple(newgrid),
