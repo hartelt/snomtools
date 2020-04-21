@@ -3693,7 +3693,7 @@ class DataSet(object):
 
         :param axis: int, optional: The axis in the result array along which the input arrays are stacked.
 
-        :param label: string, optional: The label for the new DataSet. If not given, the label of the first DataArray in
+        :param label: string, optional: The label for the new DataSet. If not given, the label of the first DataSet in
             the input stack is used.
 
         :param plotconf: The plot configuration to be used for the new DataSet. If not given, the configuration of the
@@ -3712,8 +3712,7 @@ class DataSet(object):
 
         # Check if data is compatible: All DataSets must have same dimensions and number of datafields:
         for ds in datastack:
-            assert (
-                    ds.shape == datastack[
+            assert (ds.shape == datastack[
                 0].shape), "ERROR: DataSets of inconsistent dimensions given to stack_DataSets"
             assert (len(ds.datafields) == len(datastack[0].datafields)), "ERROR: DataSets with different number of " \
                                                                          "datafields given to stack_DataSets"
@@ -3742,6 +3741,79 @@ class DataSet(object):
             else:
                 stack.add_datafield(stack_DataArrays(dfstack, axis=axis))
 
+        stack.check_data_consistency()
+        return stack
+
+    @classmethod
+    def concatenate(cls, data, axis=0, label=None, plotconf=None, h5target=None):
+        """
+        Concatenates a sequence of DataSets to a new DataSet.
+        The input data must contain one axis `axis` of which the different parts contained in the single DataSets of
+        the input can be appended to one new Axis.
+        The rest of the axes of the input must be identical, and the DataArrays must be compatible.
+
+        .. warning::
+            This method uses numpy.concatenate under the hood! Data must fit into memory!
+
+        # TODO: Implement memory-independent version of this.
+
+        :param data: sequence of DataSets: The Data to be stacked.
+
+        :param axis: A valid id of the axes along which to concatenate the DataSets
+
+        :param label: string, optional: The label for the new DataSet. If not given, the label of the first DataSet in
+            the input is used.
+
+        :param plotconf: The plot configuration to be used for the new DataSet. If not given, the configuration of the
+            first DataSet in the input is used.
+
+        :return: The concatenated DataSet.
+        """
+        # Check if input data types are ok:
+        for ds in data:
+            assert (isinstance(ds, DataSet)), "ERROR: Non-DataSet object given to stack_DataSets"
+
+        # Find out along which axis to stack and check shape of the other dimensions:
+        axis = data[0].get_axis_index(axis)
+        shapelist = list(data[0].shape)
+        shapelist.pop(axis)
+        shape_to_stack = tuple(shapelist)
+        # Build new axes grid:
+        new_axes_list = data[0].axes.copy()
+        new_axes_list.pop(axis)
+        new_axis_data = numpy.concatenate([ds.get_axis(axis).data for ds in data])
+        new_axis = Axis(new_axis_data,
+                        label=data[0].get_axis(axis).get_label(),
+                        plotlabel=data[0].get_axis(axis).get_plotlabel())
+        new_axes_list.insert(axis, new_axis)
+
+        # Check if input data is compatible:
+        for ds in data:
+            checkshapelist = list(ds.shape)
+            checkshapelist.pop(axis)
+            checkshape = tuple(checkshapelist)
+            assert (checkshape == shape_to_stack), "ERROR: Input data has incompatible shapes."
+            for i, ax in enumerate(new_axes_list):
+                if i != axis:
+                    assert numpy.allclose(ax, ds.get_axis[i]), "ERROR: Input data has incompatible Axis."
+            assert (len(ds.datafields) == len(data[0].datafields)), \
+                "ERROR: Input data has different number of datafields."
+
+        if label is None:
+            label = data[0].get_label()
+        if plotconf is None:
+            plotconf = data[0].get_plotconf()
+
+        # Initialize new DataSet:
+        stack = DataSet(label=label, plotconf=plotconf, h5target=h5target)
+        stack.axes = new_axes_list
+
+        # Stack the datafields all the DataSets and add them to the stacked Set:
+        for i, df in enumerate(data[0].datafields):
+            dfdata = numpy.concatenate([ds.get_datafield(i) for ds in data], axis=axis)
+            stack.add_datafield(dfdata, label=df.get_label(), plotlabel=df.get_plotlabel())
+
+        # Check if everything is fine and return the data.
         stack.check_data_consistency()
         return stack
 
@@ -3964,5 +4036,14 @@ if __name__ == "__main__":  # just for testing
         print("closing...")
         for f in h5files:
             f.close()
+
+    test_concatenate = True
+    if test_concatenate:
+        concatdata = [DataSet.from_h5(f) for f in ["cuda_OBEtest_copol_result.hdf5",
+                                                   "cuda_OBEtest_copol_result205.hdf5",
+                                                   "cuda_OBEtest_copol_result215.hdf5",
+                                                   "cuda_OBEtest_copol_result205.hdf5"]]
+        concatresult = DataSet.concatenate(concatdata, axis='energy')
+        concatresult.saveh5("concatenated.hdf5")
 
     print("OK")
