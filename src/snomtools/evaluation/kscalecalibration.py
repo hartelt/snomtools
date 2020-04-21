@@ -18,6 +18,7 @@ from snomtools.calcs.constants import m_e, hbar
 import matplotlib.pyplot as plt
 import os
 from matplotlib import cm
+import numpy as np
 
 __author__ = 'Lukas Hellbrück'
 
@@ -239,7 +240,9 @@ def show_state_parabola(dispersion_data, figname, guess_zeropixel=None, guess_ma
     plt.ylim(top=e)
     ax.legend(loc='lower left')
     ax.tick_params(axis='both', labelsize=12)
+    ax.set_facecolor((0.30196078431372547, 0.0, 0.29411764705882354, 1.0))
     plt.xlabel("$k_{||,x}$ / $(\AA^{-1})$", fontsize=14)
+    plt.xticks(np.arange(-1, 1.25, 0.25))
     plt.ylabel("$E_{Interm.}$ / (eV)", fontsize=14)
     cb = plt.colorbar(cm.ScalarMappable(cmap='BuPu_r'))
     cb.set_label("Normalisierte Zählrate", labelpad=6, size=14)
