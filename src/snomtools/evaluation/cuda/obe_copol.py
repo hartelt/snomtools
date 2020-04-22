@@ -537,12 +537,14 @@ class OBEfit_Copol(object):
             guess_lifetime = max(guess_lifetime, 3.)  # Assure guess > 0
             if self.AC_background:
                 guess_Offset = self.AC_background[target_slice].magnitude
+                guess_Offset = max(guess_Offset, np.min(ExpData), 0.00000001)
             else:
-                guess_Offset = np.min(ExpData)
+                guess_Offset = max(np.min(ExpData), 0.00000001)
             if self.AC_amplitude:
                 guess_Amp = self.AC_amplitude[target_slice].magnitude
+                guess_Amp = max(guess_Amp, np.max(ExpData) - guess_Offset, 0.00000001)
             else:
-                guess_Amp = np.max(ExpData) - guess_Offset
+                guess_Amp = max(np.max(ExpData) - guess_Offset, 0.00000001)
             guess_center = self.time_zero.magnitude
             p0 = (guess_lifetime, guess_Amp, guess_Offset, guess_center)
             if verbose:
