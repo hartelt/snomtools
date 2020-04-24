@@ -51,7 +51,7 @@ dev = pycuda.autoinit.device
 # Setting acually used block size:
 # Using more than half the max_block_dim_x breaks (double precision??)
 # Using higher values instead of 2 increases performance (on Michaels RTX2080)
-gpuOBE_blocksize = int(dev.max_block_dim_x / 8)
+gpuOBE_blocksize = int(dev.max_block_dim_x / 16)
 if verbose:
     print('Device: ' + str(drv.Device.name(dev)))
     print('Compute capability: ' + str(drv.Device.compute_capability(dev)[0]) + '.' + str(
@@ -267,7 +267,7 @@ def gpuOBE_ACBlauCoPolTest(Delaylist, tau, laserWavelength, laserFWHM, buffersiz
     delays = np.array(Delaylist, dtype=np.float64)
 
     simOBErb(drv.Out(IAC), drv.In(delays), np.float64(w), np.float64(FWHM),
-             np.float64(G1 + G2), np.float64(G1 + G3), np.float64(G2 + G3), np.float64(t_min),
+             np.float64(G1), np.float64(G2), np.float64(G3), np.float64(t_min),
              grid=(grid_x, grid_y), block=(block_x, block_y, block_z))
 
     return IAC
@@ -283,7 +283,8 @@ class OBEfit_Copol(object):
     def __init__(self, data, fitaxis_ID="delay",
                  laser_lambda=u.to_ureg(400, 'nm'), laser_AC_FWHM=None,
                  data_AC_FWHM=None, time_zero=u.to_ureg(0, 'fs'),
-                 max_lifetime=u.to_ureg(200, 'fs')):
+                 max_lifetime=u.to_ureg(200, 'fs'),
+                 cuda_IAC_stepsize=None):
         """
         The initializer, which builds the OBEfit object according to the given data and parameters.
         The actual fit and return of results is then done with :func:`~OBEfit_Copol.obefit`.
@@ -327,6 +328,15 @@ class OBEfit_Copol(object):
             If a numeric value is given, femtoseconds are assumed.
         :type max_lifetime: pint Quantity *or* numeric
 
+        :param cuda_IAC_stepsize: The discretization step size for the interferometric autocorrelation calculated on
+            the GPU.
+            For non phase-resolved evaluation, the omega_0 component is extracted afterwards with a lowpass filter.
+            This means you should NOT set this to large values to save calculation time!
+            Use something well below optical cycle (e.g. 0.2fs) to have good IAC!
+            The default is calculated from the laser wavelenth, to (1/5.5) of the optical cycle
+            (avoids sampling artifacts).
+        :type cuda_IAC_stepsize: pint Quantity *or* numeric
+
         .. warning::
             If no value is given for `laser_AC_FWHM`, the value is guessed guessed from `data_AC_FWHM`,
             by taking its minimum minus 1 femtosecond.
@@ -369,6 +379,10 @@ class OBEfit_Copol(object):
             self.time_zero = u.to_ureg(time_zero, 'fs')
         else:
             self.time_zero = u.to_ureg(0, 'fs')
+        if cuda_IAC_stepsize is None:
+            self.cuda_IAC_stepsize = laser_lambda.to('fs', 'light') / 5.5  # Optical cycle /4 = Nyquist for omega_2
+        else:
+            self.cuda_IAC_stepsize = u.to_ureg(cuda_IAC_stepsize, 'fs')
 
         timeunit = self.data.get_axis(self.fitaxis_ID).units
         timeunit_SI = u.latex_si(self.data.get_axis(self.fitaxis_ID))
@@ -503,7 +517,7 @@ class OBEfit_Copol(object):
         # This means you should NOT set this to large values to save calculation time!
         # Use something well below optical cycle (e.g. 0.2fs) to have good IAC!
         global gpuOBE_stepsize
-        gpuOBE_stepsize = 0.2
+        gpuOBE_stepsize = self.cuda_IAC_stepsize.magnitude
         global gpuOBE_laserBlau
         gpuOBE_laserBlau = self.laser_lambda.magnitude
         global gpuOBE_LaserBlauFWHM
@@ -692,7 +706,7 @@ if class_test:
     # RUN THIS IN snomtools/test folder where testdata hdf5s are, or set your paths and parameters accordingly:
     testdata = ds.DataSet.from_h5file("cuda_OBEtest_copol.hdf5")
     testroi = ds.ROI(testdata, {'energy': [200, 205]}, by_index=True)
-    fitobject = OBEfit_Copol(testdata, time_zero=-9.3)
+    fitobject = OBEfit_Copol(testroi, time_zero=-9.3, laser_AC_FWHM=u.to_ureg(49, 'fs'))
     result = fitobject.obefit()
-    result.saveh5("cuda_OBEtest_copol_result.hdf5")
+    result.saveh5("cuda_OBEtest_copol_result_ROI_step0.2.hdf5")
     print("...done.")
