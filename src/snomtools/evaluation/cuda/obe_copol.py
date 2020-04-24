@@ -51,7 +51,7 @@ dev = pycuda.autoinit.device
 # Setting acually used block size:
 # Using more than half the max_block_dim_x breaks (double precision??)
 # Using higher values instead of 2 increases performance (on Michaels RTX2080)
-gpuOBE_blocksize = int(dev.max_block_dim_x / 16)
+gpuOBE_blocksize = int(dev.max_block_dim_x / 8)
 if verbose:
     print('Device: ' + str(drv.Device.name(dev)))
     print('Compute capability: ' + str(drv.Device.compute_capability(dev)[0]) + '.' + str(
@@ -380,7 +380,8 @@ class OBEfit_Copol(object):
         else:
             self.time_zero = u.to_ureg(0, 'fs')
         if cuda_IAC_stepsize is None:
-            self.cuda_IAC_stepsize = laser_lambda.to('fs', 'light') / 5.5  # Optical cycle /4 = Nyquist for omega_2
+            # self.cuda_IAC_stepsize = laser_lambda.to('fs', 'light') / 5.5  # Optical cycle /4 = Nyquist for omega_2
+            self.cuda_IAC_stepsize = u.to_ureg(0.1, 'fs')
         else:
             self.cuda_IAC_stepsize = u.to_ureg(cuda_IAC_stepsize, 'fs')
 
@@ -486,6 +487,36 @@ class OBEfit_Copol(object):
                                    plotlabel=self.result_params[l]['plotlabel'])
                       for l in self.result_datalabels + self.result_accuracylabels]
             return ds.DataSet("OBE fit results", dflist, axlist)
+
+    def optimize_gpu_blocksize(self):
+        # TODO: Implement optimization with timing probes.
+        raise NotImplementedError()
+        # Set global variables for copypasted methods.
+        global gpuOBE_stepsize
+        gpuOBE_stepsize = self.cuda_IAC_stepsize.magnitude
+        # gpuOBE_stepsize = 0.2132456489749419681
+        global gpuOBE_laserBlau
+        gpuOBE_laserBlau = self.laser_lambda.magnitude
+        global gpuOBE_LaserBlauFWHM
+        gpuOBE_LaserBlauFWHM = self.laser_AC_FWHM.magnitude
+        # gpuOBE_normparameter is used in TauACCopol to switch between normalizing the curve before scaling and offset.
+        # It must be True to fit including Amplitude and Offset, as done below!
+        global gpuOBE_normparameter
+        gpuOBE_normparameter = True
+        global gpuOBE_Phaseresolution
+        gpuOBE_Phaseresolution = False
+
+        ExpDelays = self.fitaxis.data.magnitude
+
+        res = TauACCoPol(ExpDelays,
+                         self.laser_lambda.magnitude,
+                         self.laser_AC_FWHM.magnitude,
+                         10.,
+                         200.,
+                         100.,
+                         0.,
+                         normparameter=False, Phase=False)
+        return res
 
     def obefit(self, h5target=None):
         """
@@ -707,6 +738,7 @@ if class_test:
     testdata = ds.DataSet.from_h5file("cuda_OBEtest_copol.hdf5")
     testroi = ds.ROI(testdata, {'energy': [200, 205]}, by_index=True)
     fitobject = OBEfit_Copol(testroi, time_zero=-9.3, laser_AC_FWHM=u.to_ureg(49, 'fs'))
+    fitobject.optimize_gpu_blocksize()
     result = fitobject.obefit()
     result.saveh5("cuda_OBEtest_copol_result_ROI_step0.2.hdf5")
     print("...done.")
