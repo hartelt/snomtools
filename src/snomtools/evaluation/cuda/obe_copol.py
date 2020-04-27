@@ -21,6 +21,7 @@ import scipy.integrate as integrate
 from timeit import default_timer as timer
 import datetime
 import time
+import timeit
 from scipy.interpolate import InterpolatedUnivariateSpline
 import re
 import h5py
@@ -174,14 +175,12 @@ def CreateCoPolDelay(stepsize, MaxDelay):
     # print(gpuOBE_buffersize,gpuOBE_gridsize)
 
     # create delay list
-    Delays = []
     # Only half AC:
-    Delays = np.arange(0.0, round(gpuOBE_buffersize * stepsize, 2), stepsize)
+    delays = np.arange(0.0, gpuOBE_buffersize * stepsize, stepsize)
     # Two-sided AC:
-    # Delays = np.arange(-round(gpuOBE_buffersize * stepsize / 2, 2),
-    #                    round(gpuOBE_buffersize * stepsize / 2, 2),
-    #                    stepsize)  # Both sides
-    return np.asarray(Delays)
+    # delays = np.arange(-gpuOBE_buffersize * stepsize / 2, gpuOBE_buffersize * stepsize / 2, stepsize)  # Both sides
+    assert len(delays) == gpuOBE_buffersize, "Delay list has wrong length."
+    return delays
 
 
 def coreTauACCoPol(x, tau, L, FWHM):
@@ -380,8 +379,9 @@ class OBEfit_Copol(object):
         else:
             self.time_zero = u.to_ureg(0, 'fs')
         if cuda_IAC_stepsize is None:
-            # self.cuda_IAC_stepsize = laser_lambda.to('fs', 'light') / 5.5  # Optical cycle /4 = Nyquist for omega_2
-            self.cuda_IAC_stepsize = u.to_ureg(0.1, 'fs')
+            # Optical cycle /4 = Nyquist for omega_2
+            self.cuda_IAC_stepsize = round(laser_lambda.to('fs', 'light') / 5.5, 3)
+            self.cuda_IAC_stepsize = max(self.cuda_IAC_stepsize, u.to_ureg(0.001, 'fs'))  # limit to 1 as.
         else:
             self.cuda_IAC_stepsize = u.to_ureg(cuda_IAC_stepsize, 'fs')
 
@@ -488,13 +488,26 @@ class OBEfit_Copol(object):
                       for l in self.result_datalabels + self.result_accuracylabels]
             return ds.DataSet("OBE fit results", dflist, axlist)
 
-    def optimize_gpu_blocksize(self):
-        # TODO: Implement optimization with timing probes.
-        raise NotImplementedError()
+    def optimize_gpu_blocksize(self, n_samples=10):
+        """
+        Self-optimization for the GPU calculation block size.
+        Runs a sample calculation of an Autocorrelation for generic values,
+        trying with block sizes of different `2**n`-fractions of the hardware maximum.
+        Sets the global `gpuOBE_blocksize` to the optimal value afterwards.
+
+        :param n_samples: The number of times to repeat the sample calculation for statistics.
+        :type n_samples: int
+
+        :return: The value of `gpuOBE_blocksize` after optimization.
+        :rtype: int
+        """
+        if verbose:
+            print("Optimizing cuda block size...")
+
         # Set global variables for copypasted methods.
+        global gpuOBE_blocksize
         global gpuOBE_stepsize
         gpuOBE_stepsize = self.cuda_IAC_stepsize.magnitude
-        # gpuOBE_stepsize = 0.2132456489749419681
         global gpuOBE_laserBlau
         gpuOBE_laserBlau = self.laser_lambda.magnitude
         global gpuOBE_LaserBlauFWHM
@@ -508,15 +521,39 @@ class OBEfit_Copol(object):
 
         ExpDelays = self.fitaxis.data.magnitude
 
-        res = TauACCoPol(ExpDelays,
-                         self.laser_lambda.magnitude,
-                         self.laser_AC_FWHM.magnitude,
-                         10.,
-                         200.,
-                         100.,
-                         0.,
-                         normparameter=False, Phase=False)
-        return res
+        # Define callable for timeit function:
+        def totime():
+            TauACCoPol(ExpDelays,
+                       self.laser_lambda.magnitude,
+                       self.laser_AC_FWHM.magnitude,
+                       10.,
+                       200.,
+                       100.,
+                       0.,
+                       normparameter=True, Phase=False)
+
+        calculation_times = []
+        for n in range(1, 11):
+            gpuOBE_blocksize = int(dev.max_block_dim_x / 2 ** n)
+            if gpuOBE_blocksize < 1:
+                # A block size cannot be zero.
+                break
+            calculation_time = timeit.timeit(totime, number=n_samples)
+            calculation_times.append(calculation_time)
+            if verbose:
+                print("Tested block size {0}: {1:.3f} s per AC.".format(gpuOBE_blocksize, calculation_time / n_samples))
+
+            if calculation_time > min(calculation_times) * 1.2:
+                # If it is worse by more than 20% it will continue to get worse.
+                break
+
+        n_min = np.argmin(calculation_times) + 1  # Indices are n+1.
+        gpuOBE_blocksize = int(dev.max_block_dim_x / 2 ** n_min)  # Set optimal block_size to use.
+        if verbose:
+            print("Optimal block size {0} with {1:.3f} s per AC.".format(gpuOBE_blocksize,
+                                                                         calculation_times[n_min - 1] / n_samples))
+
+        return gpuOBE_blocksize
 
     def obefit(self, h5target=None):
         """
@@ -538,7 +575,8 @@ class OBEfit_Copol(object):
         :return: The DataSet containing the obtained fit parameters.
         :rtype: :class:`~snomtools.data.datasets.DataSet`
         """
-        print(self.resultshape)
+        if verbose:
+            print("Calculating lifetime dataset of shape {0}...".format(self.resultshape))
         targetds = self.build_empty_result_dataset(h5target=h5target)
 
         # Set global variables for copypasted methods.
