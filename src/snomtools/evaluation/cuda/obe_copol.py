@@ -700,7 +700,7 @@ class OBEfit_Copol(object):
         """
         if self.result is None:
             raise ValueError("A result AC cannot be calculated without a result.")
-        assert (self.result.get_datafield(0)[s].shape is ()), "Trying to address multiple elements at once."
+        assert (self.result.get_datafield(0)[s].shape == ()), "Trying to address multiple elements at once."
 
         # Set global variables for copypasted methods.
         global gpuOBE_stepsize
