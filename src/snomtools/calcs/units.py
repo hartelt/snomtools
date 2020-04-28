@@ -104,7 +104,7 @@ def normalize_unitstr(unitstr):
 
 	:return: string: converted
 	"""
-	return str(ureg(unitstr).units)
+	return str(ureg(str(unitstr)).units)
 
 
 def is_quantity(tocheck):
