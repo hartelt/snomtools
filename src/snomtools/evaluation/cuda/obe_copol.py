@@ -32,6 +32,7 @@ import snomtools.data.datasets as ds
 import snomtools.calcs.units as u
 import snomtools.calcs.constants
 import snomtools.data.fits
+from snomtools.data.tools import full_slice
 
 # For running snomtools on elwe, including cuda evaluations:
 # Import snomtools from source by pulling the repo to ~/repos/ and then using
@@ -411,6 +412,7 @@ class OBEfit_Copol(object):
             'center_accuracy': {'unit': timeunit, 'plotlabel': "AC Center Fit Accuracy / " + timeunit_SI}}
         self.timeunit = timeunit
         self.countunit = countunit
+        self.result = None
 
     @property
     def resultshape(self):
@@ -434,6 +436,19 @@ class OBEfit_Copol(object):
         :rtype: :class:`~snomtools.data.datasets.Axis`
         """
         return self.data.get_axis(self.fitaxis_ID)
+
+    def source_slice_from_target_slice(self, target_slice):
+        """
+        Builds a slice addressing the input data from a slice addressing the result data,
+        by inserting a full selection along the fit axis.
+
+        :param target_slice: A slice addressing a selection on the result data.
+
+        :return: A slice addressing the corresponding selection in the input data.
+        """
+        slice_list = list(full_slice(target_slice))
+        slice_list.insert(self.fitaxis_ID, np.s_[:])
+        return tuple(slice_list)
 
     def fit_data_FWHM(self):
         """
@@ -614,9 +629,7 @@ class OBEfit_Copol(object):
         ExpDelays = self.fitaxis.data.magnitude
         for target_slice in np.ndindex(self.resultshape):  # Simple iteration for now.
             # Build source data slice:
-            slice_list = list(target_slice)
-            slice_list.insert(self.fitaxis_ID, np.s_[:])
-            source_slice = tuple(slice_list)
+            source_slice = self.source_slice_from_target_slice(target_slice)
 
             # Load experimental data to fit to:
             ExpData = self.data.get_datafield(0).data[source_slice].magnitude
@@ -669,7 +682,64 @@ class OBEfit_Copol(object):
                                                                                       etr, tpf))
         if verbose:
             print("End: ", datetime.datetime.now().isoformat())
+        self.result = targetds
         return targetds
+
+    def resultAC(self, s):
+        """
+        Return the autocorrelation trace according to the fit result for a specific slice.
+        Can be used to compare the fit with the data.
+
+        ..warning::
+            This will throw an exception if the result doesn't exist yet.
+
+        :param s: A slice addressing a single point on the result data.
+
+        :return: A tuple of (Delays, Fitted Autocorrelation)
+        :rtype: tuple(Quantity, Quantity)
+        """
+        if self.result is None:
+            raise ValueError("A result AC cannot be calculated without a result.")
+        assert (self.result.get_datafield(0)[s].shape is ()), "Trying to address multiple elements at once."
+
+        # Set global variables for copypasted methods.
+        global gpuOBE_stepsize
+        gpuOBE_stepsize = self.cuda_IAC_stepsize.magnitude
+        global gpuOBE_laserBlau
+        gpuOBE_laserBlau = self.laser_lambda.magnitude
+        global gpuOBE_LaserBlauFWHM
+        gpuOBE_LaserBlauFWHM = self.laser_AC_FWHM.magnitude
+        # gpuOBE_normparameter is used in TauACCopol to switch between normalizing the curve before scaling and offset.
+        # It must be True to fit including Amplitude and Offset, as done below!
+        global gpuOBE_normparameter
+        gpuOBE_normparameter = True
+        global gpuOBE_Phaseresolution
+        gpuOBE_Phaseresolution = False
+
+        ExpDelays = self.fitaxis.data.magnitude
+        ac = TauACCoPol(ExpDelays,
+                        self.laser_lambda.magnitude,
+                        self.laser_AC_FWHM.magnitude,
+                        self.result.get_datafield('lifetimes').data[s].magnitude,
+                        self.result.get_datafield('amplitude').data[s].magnitude,
+                        self.result.get_datafield('offset').data[s].magnitude,
+                        self.result.get_datafield('center').data[s].magnitude,
+                        normparameter=True, Phase=False)
+        return ExpDelays, u.to_ureg(ac, self.countunit)
+
+    def dataAC(self, s):
+        """
+        Return the autocorrelation trace according to the input data for a specific slice.
+        Can be used to compare the fit with the data.
+
+        :param s: A slice addressing a single point on the result data.
+
+        :return: A tuple of (Delays, Data Autocorrelation)
+        :rtype: tuple(Quantity, Quantity)
+        """
+        assert (self.data.get_datafield(0)[self.source_slice_from_target_slice(s)].shape == self.fitaxis.shape), \
+            "Trying to address multiple elements at once."
+        return self.fitaxis.data, self.data.get_datafield(0).data[self.source_slice_from_target_slice(s)]
 
 
 minimal_example_test = False
@@ -782,9 +852,16 @@ if evaluation_test:
 if class_test:
     # RUN THIS IN snomtools/test folder where testdata hdf5s are, or set your paths and parameters accordingly:
     testdata = ds.DataSet.from_h5file("cuda_OBEtest_copol.hdf5")
-    testroi = ds.ROI(testdata, {'energy': [200, 205]}, by_index=True)
-    fitobject = OBEfit_Copol(testroi, time_zero=-9.3, laser_AC_FWHM=u.to_ureg(49, 'fs'))
-    fitobject.optimize_gpu_blocksize()
+    testroi = ds.ROI(testdata, {'energy': [200, 202]}, by_index=True)
+    fitobject = OBEfit_Copol(testroi, time_zero=-9.3, laser_AC_FWHM=u.to_ureg(49, 'fs'),
+                             max_time_zero_offset=u.to_ureg(40, 'fs'))  # neuer Parameter
+    fitobject.optimize_gpu_blocksize()  # hier wird die blocksize optimiert, muss vor obefit() aufgerufen werden.
     result = fitobject.obefit()
+
+    #  How to view the fit results:
+    # from matplotlib import pyplot as plt
+    # plt.plot(*fitobject.dataAC(0))
+    # plt.plot(*fitobject.resultAC(0))
+
     result.saveh5("cuda_OBEtest_copol_result_ROI_step0.2.hdf5")
     print("...done.")
