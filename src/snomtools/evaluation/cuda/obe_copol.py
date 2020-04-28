@@ -741,6 +741,67 @@ class OBEfit_Copol(object):
             "Trying to address multiple elements at once."
         return self.fitaxis.data, self.data.get_datafield(0).data[self.source_slice_from_target_slice(s)]
 
+    def resultACdata(self, h5target=True, write_to_indata=False):
+        # Prepare DataSet to write to:
+        if write_to_indata:
+            if self.data.h5target:
+                dh = ds.Data_Handler_H5(unit=self.countunit, shape=self.data.shape)
+                self.data.add_datafield(dh, label="obefit", plotlabel="OBE fit")
+            else:
+                self.data.add_datafield(np.zeros(self.data.shape), self.countunit, label="obefit", plotlabel="OBE fit")
+            outdata = self.data
+            outdf = self.data.get_datafield('obefit')
+        else:
+            if h5target:
+                outdf = ds.DataArray(ds.Data_Handler_H5(unit=self.countunit, shape=self.data.shape),
+                                     label="obefit", plotlabel="OBE fit")
+            else:
+                outdf = ds.DataArray(np.zeros(self.data.shape), self.countunit, label="obefit", plotlabel="OBE fit")
+            outdata = ds.DataSet("OBE fit", [outdf], self.data.axes, h5target=h5target)
+            outdf = outdata.get_datafield('obefit')
+
+        # Set global variables for copypasted methods:
+        # TODO: Use proper class methods that don't need this ugly global variables.
+        # gpuOBE_stepsize is the stepsize with which the actual interferometric Autocorrelation (IAC) is calculated.
+        # For non phase-resolved evaluation, the omega_0 component is extracted afterwards with a lowpass filter.
+        # This means you should NOT set this to large values to save calculation time!
+        # Use something well below optical cycle (e.g. 0.2fs) to have good IAC!
+        global gpuOBE_stepsize
+        gpuOBE_stepsize = self.cuda_IAC_stepsize.magnitude
+        global gpuOBE_laserBlau
+        gpuOBE_laserBlau = self.laser_lambda.magnitude
+        global gpuOBE_LaserBlauFWHM
+        gpuOBE_LaserBlauFWHM = self.laser_AC_FWHM.magnitude
+        # gpuOBE_normparameter is used in TauACCopol to switch between normalizing the curve before scaling and offset.
+        # It must be True to fit including Amplitude and Offset, as done below!
+        global gpuOBE_normparameter
+        gpuOBE_normparameter = True
+        global gpuOBE_Phaseresolution
+        gpuOBE_Phaseresolution = False
+
+        if verbose:
+            print("Writing {0} ACs for OBE fit with cuda...".format(np.prod(self.resultshape)))
+            print("Start: ", datetime.datetime.now().isoformat())
+            start_time = time.time()
+            print_counter = 0
+            print_interval = 1
+
+        for ac_slice in np.ndindex(self.resultshape):  # Simple iteration for now.
+            # Build source data slice:
+            out_slice = self.source_slice_from_target_slice(ac_slice)
+            # Calculate result AC and write down:
+            outdf[out_slice] = self.resultAC(ac_slice)[1]
+
+            if verbose:
+                print_counter += 1
+                if print_counter % print_interval == 0:
+                    tpf = ((time.time() - start_time) / float(print_counter))
+                    etr = tpf * (np.prod(self.resultshape) - print_counter)
+                    print("AC {0:d} / {1:d}, Time/AC {3:.4f}s ETR: {2:.1f}s".format(print_counter,
+                                                                                    np.prod(self.resultshape),
+                                                                                    etr, tpf))
+
+        return outdata
 
 minimal_example_test = False
 evaluation_test = False
@@ -863,5 +924,9 @@ if class_test:
     # plt.plot(*fitobject.dataAC(0))
     # plt.plot(*fitobject.resultAC(0))
 
-    result.saveh5("cuda_OBEtest_copol_result_ROI_step0.2.hdf5")
+    result.saveh5("cuda_OBEtest_copol_result_ROI.hdf5")
+
+    resultacs = fitobject.resultACdata(h5target="cuda_OBEtest_copol_result_ROI_fitacs.hdf5")
+    resultacs.saveh5()
+
     print("...done.")
