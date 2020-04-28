@@ -282,7 +282,7 @@ class OBEfit_Copol(object):
     def __init__(self, data, fitaxis_ID="delay",
                  laser_lambda=u.to_ureg(400, 'nm'), laser_AC_FWHM=None,
                  data_AC_FWHM=None, time_zero=u.to_ureg(0, 'fs'),
-                 max_lifetime=u.to_ureg(200, 'fs'),
+                 max_lifetime=u.to_ureg(200, 'fs'), max_time_zero_offset=u.to_ureg(20, 'fs'),
                  cuda_IAC_stepsize=None):
         """
         The initializer, which builds the OBEfit object according to the given data and parameters.
@@ -327,6 +327,11 @@ class OBEfit_Copol(object):
             If a numeric value is given, femtoseconds are assumed.
         :type max_lifetime: pint Quantity *or* numeric
 
+        :param max_time_zero_offset: The offset on the time axis from the predefined time zero,
+            used as boundary for the obe fit.
+            If a numeric value is given, femtoseconds are assumed.
+        :type max_time_zero_offset: pint Quantity *or* numeric
+
         :param cuda_IAC_stepsize: The discretization step size for the interferometric autocorrelation calculated on
             the GPU.
             For non phase-resolved evaluation, the omega_0 component is extracted afterwards with a lowpass filter.
@@ -344,6 +349,11 @@ class OBEfit_Copol(object):
         assert isinstance(data, (ds.DataSet, ds.ROI))
         self.data = data
         self.fitaxis_ID = data.get_axis_index(fitaxis_ID)
+
+        timeunit = self.data.get_axis(self.fitaxis_ID).units
+        countunit = self.data.get_datafield(0).units
+
+        # Process optional args:
         self.laser_lambda = u.to_ureg(laser_lambda, 'nm')
         if data_AC_FWHM:
             # Check if dimensions and axes fit:
@@ -374,10 +384,9 @@ class OBEfit_Copol(object):
             self.laser_AC_FWHM = u.to_ureg(-1, 'fs') + self.AC_FWHM.min()
             print("WARNING: No laser AC FWHM given. Guessing guessing from Data FWHM - 1 fs: {0}".format(
                 self.laser_AC_FWHM))
-        if time_zero:
-            self.time_zero = u.to_ureg(time_zero, 'fs')
-        else:
-            self.time_zero = u.to_ureg(0, 'fs')
+        self.time_zero = u.to_ureg(time_zero, 'fs')
+        self.max_lifetime = u.to_ureg(max_lifetime, 'fs')
+        self.max_time_zero_offset = u.to_ureg(max_time_zero_offset, 'fs')
         if cuda_IAC_stepsize is None:
             # Optical cycle /4 = Nyquist for omega_2
             self.cuda_IAC_stepsize = round(laser_lambda.to('fs', 'light') / 5.5, 3)
@@ -385,9 +394,8 @@ class OBEfit_Copol(object):
         else:
             self.cuda_IAC_stepsize = u.to_ureg(cuda_IAC_stepsize, 'fs')
 
-        timeunit = self.data.get_axis(self.fitaxis_ID).units
+        # Generate labels and info for output data:
         timeunit_SI = u.latex_si(self.data.get_axis(self.fitaxis_ID))
-        countunit = self.data.get_datafield(0).units
         countunit_SI = u.latex_si(self.data.get_datafield(0))
         self.result_datalabels = ['lifetimes', 'amplitude', 'offset', 'center']
         self.result_accuracylabels = ['lifetimes_accuracy', 'amplitude_accuracy', 'offset_accuracy', 'center_accuracy']
@@ -401,7 +409,6 @@ class OBEfit_Copol(object):
             'amplitude_accuracy': {'unit': countunit, 'plotlabel': "AC Amplitude Fit Accuracy / " + countunit_SI},
             'offset_accuracy': {'unit': countunit, 'plotlabel': "AC Background Fit Accuracy / " + countunit_SI},
             'center_accuracy': {'unit': timeunit, 'plotlabel': "AC Center Fit Accuracy / " + timeunit_SI}}
-        self.max_lifetime = max_lifetime
         self.timeunit = timeunit
         self.countunit = countunit
 
@@ -636,8 +643,9 @@ class OBEfit_Copol(object):
             # Do the fit: # TODO: Do this with proper class methods.
             try:
                 popt, pcov = curve_fit(fitTauACblauCoPol, ExpDelays, ExpData, p0,
-                                       bounds=([0.0, 0.0, 0.0, -20. + guess_center],
-                                               [self.max_lifetime.magnitude, np.inf, np.inf, 20. + guess_center]))
+                                       bounds=([0.0, 0.0, 0.0, -self.max_time_zero_offset.magnitude + guess_center],
+                                               [self.max_lifetime.magnitude, np.inf, np.inf,
+                                                self.max_time_zero_offset.magnitude + guess_center]))
                 if verbose:
                     print("Result for index {0}: {1}".format(target_slice, popt))
             except RuntimeError as e:  # Fit failed
