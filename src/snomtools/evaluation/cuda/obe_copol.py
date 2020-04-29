@@ -284,7 +284,8 @@ class OBEfit_Copol(object):
                  laser_lambda=u.to_ureg(400, 'nm'), laser_AC_FWHM=None,
                  data_AC_FWHM=None, time_zero=u.to_ureg(0, 'fs'),
                  max_lifetime=u.to_ureg(200, 'fs'), max_time_zero_offset=u.to_ureg(20, 'fs'),
-                 cuda_IAC_stepsize=None):
+                 cuda_IAC_stepsize=None,
+                 fit_mode='lorentz'):
         """
         The initializer, which builds the OBEfit object according to the given data and parameters.
         The actual fit and return of results is then done with :func:`~OBEfit_Copol.obefit`.
@@ -342,6 +343,10 @@ class OBEfit_Copol(object):
             (avoids sampling artifacts).
         :type cuda_IAC_stepsize: pint Quantity *or* numeric
 
+        :param mode: The fit mode for the start parameter approximation.
+            Choose between 'lorentz' (default), 'gauss', or 'sech2'.
+        :type mode: str
+
         .. warning::
             If no value is given for `laser_AC_FWHM`, the value is guessed guessed from `data_AC_FWHM`,
             by taking its minimum minus 1 femtosecond.
@@ -375,7 +380,7 @@ class OBEfit_Copol(object):
             except AttributeError:
                 self.AC_background = None
         else:
-            self.data_AC_FWHM = self.fit_data_FWHM()
+            self.data_AC_FWHM = self.fit_data_FWHM(mode=fit_mode)
             self.AC_FWHM = self.data_AC_FWHM.get_datafield('fwhm')
             self.AC_amplitude = self.data_AC_FWHM.get_datafield('amplitude')
             self.AC_background = self.data_AC_FWHM.get_datafield('background')
@@ -450,19 +455,33 @@ class OBEfit_Copol(object):
         slice_list.insert(self.fitaxis_ID, np.s_[:])
         return tuple(slice_list)
 
-    def fit_data_FWHM(self):
+    def fit_data_FWHM(self, mode='lorentz'):
         """
         Fits the input data with a Lorentzian, using :class:`snomtools.data.fits.Lorentz_Fit_nD`.
         This generates the curve parameters FWHM, Amplitude, Background and Center, which are used to generate start
         parameters for obefit.
 
+        :param mode: Choose between 'lorentz' (default), 'gauss', or 'sech2'.
+        :type mode: str
+
         :return: The fit parameter DataSet resulting from the Lorentz fit.
         :rtype: :class:`~snomtools.data.datasets.DataSet`
         """
-        if verbose:
-            print("Fitting Data with Lorentzian...")
-        lorentzfit = snomtools.data.fits.Lorentz_Fit_nD(self.data, axis_id=self.fitaxis_ID, keepdata=False)
-        return lorentzfit.export_parameters()
+        if mode == 'lorentz':
+            if verbose:
+                print("Fitting Data with Lorentzian...")
+            fit = snomtools.data.fits.Lorentz_Fit_nD(self.data, axis_id=self.fitaxis_ID, keepdata=False)
+        elif mode == 'gauss':
+            if verbose:
+                print("Fitting Data with Gaussian...")
+            fit = snomtools.data.fits.Gauss_Fit_nD(self.data, axis_id=self.fitaxis_ID, keepdata=False)
+        elif mode == 'sech2':
+            if verbose:
+                print("Fitting Data with Sech^2...")
+            fit = snomtools.data.fits.Sech2_Fit_nD(self.data, axis_id=self.fitaxis_ID, keepdata=False)
+        else:
+            raise ValueError('Invalid fit mode.')
+        return fit.export_parameters()
 
     def build_empty_result_dataset(self, h5target=None, chunks=True, chunk_cache_mem_size=None):
         """
@@ -803,6 +822,7 @@ class OBEfit_Copol(object):
 
         return outdata
 
+
 minimal_example_test = False
 evaluation_test = False
 class_test = False
@@ -914,7 +934,8 @@ if class_test:
     # RUN THIS IN snomtools/test folder where testdata hdf5s are, or set your paths and parameters accordingly:
     testdata = ds.DataSet.from_h5file("cuda_OBEtest_copol.hdf5")
     testroi = ds.ROI(testdata, {'energy': [200, 202]}, by_index=True)
-    fitobject = OBEfit_Copol(testroi, time_zero=-9.3, laser_AC_FWHM=u.to_ureg(49, 'fs'),
+    testroida = testroi.get_DataSet()
+    fitobject = OBEfit_Copol(testroida, time_zero=-9.3, laser_AC_FWHM=u.to_ureg(49, 'fs'),
                              max_time_zero_offset=u.to_ureg(40, 'fs'))  # neuer Parameter
     fitobject.optimize_gpu_blocksize()  # hier wird die blocksize optimiert, muss vor obefit() aufgerufen werden.
     result = fitobject.obefit()
@@ -926,7 +947,7 @@ if class_test:
 
     result.saveh5("cuda_OBEtest_copol_result_ROI.hdf5")
 
-    resultacs = fitobject.resultACdata(h5target="cuda_OBEtest_copol_result_ROI_fitacs.hdf5")
-    resultacs.saveh5()
+    fitobject.resultACdata(write_to_indata=True)
+    testroida.saveh5("cuda_OBEtest_copol_ROI_with_ACs.hdf5")
 
     print("...done.")
