@@ -279,6 +279,8 @@ class OBEfit_Copol(object):
 
     .. automethod:: __init__
     """
+    result_datalabels = ['lifetimes', 'amplitude', 'offset', 'center']
+    result_accuracylabels = ['lifetimes_accuracy', 'amplitude_accuracy', 'offset_accuracy', 'center_accuracy']
 
     def __init__(self, data, fitaxis_ID="delay",
                  laser_lambda=u.to_ureg(400, 'nm'), laser_AC_FWHM=None,
@@ -380,10 +382,10 @@ class OBEfit_Copol(object):
             except AttributeError:
                 self.AC_background = None
         else:
-            self.data_AC_FWHM = self.fit_data_FWHM(mode=fit_mode)
-            self.AC_FWHM = self.data_AC_FWHM.get_datafield('fwhm')
-            self.AC_amplitude = self.data_AC_FWHM.get_datafield('amplitude')
-            self.AC_background = self.data_AC_FWHM.get_datafield('background')
+            self.data_AC_FWHM = None
+            self.AC_FWHM = None
+            self.AC_amplitude = None
+            self.AC_background = None
         if laser_AC_FWHM:
             self.laser_AC_FWHM = u.to_ureg(laser_AC_FWHM, 'fs')
         else:
@@ -403,8 +405,6 @@ class OBEfit_Copol(object):
         # Generate labels and info for output data:
         timeunit_SI = u.latex_si(self.data.get_axis(self.fitaxis_ID))
         countunit_SI = u.latex_si(self.data.get_datafield(0))
-        self.result_datalabels = ['lifetimes', 'amplitude', 'offset', 'center']
-        self.result_accuracylabels = ['lifetimes_accuracy', 'amplitude_accuracy', 'offset_accuracy', 'center_accuracy']
         self.result_params = {
             'lifetimes': {'unit': timeunit, 'plotlabel': "Intermediate State Lifetime / " + timeunit_SI},
             'amplitude': {'unit': countunit, 'plotlabel': "AC Amplitude / " + countunit_SI},
@@ -481,7 +481,13 @@ class OBEfit_Copol(object):
             fit = snomtools.data.fits.Sech2_Fit_nD(self.data, axis_id=self.fitaxis_ID, keepdata=False)
         else:
             raise ValueError('Invalid fit mode.')
-        return fit.export_parameters()
+
+        # Save results to instance variables:
+        self.data_AC_FWHM = fit.export_parameters()
+        self.AC_FWHM = self.data_AC_FWHM.get_datafield('fwhm')
+        self.AC_amplitude = self.data_AC_FWHM.get_datafield('amplitude')
+        self.AC_background = self.data_AC_FWHM.get_datafield('background')
+        return self.data_AC_FWHM
 
     def build_empty_result_dataset(self, h5target=None, chunks=True, chunk_cache_mem_size=None):
         """
@@ -616,6 +622,10 @@ class OBEfit_Copol(object):
         :return: The DataSet containing the obtained fit parameters.
         :rtype: :class:`~snomtools.data.datasets.DataSet`
         """
+        # If we have no data for fit start parameters yet, fit them:
+        if self.data_AC_FWHM is None:
+            self.fit_data_FWHM()
+
         if verbose:
             print("Calculating lifetime dataset of shape {0}...".format(self.resultshape))
         targetds = self.build_empty_result_dataset(h5target=h5target)
@@ -822,6 +832,42 @@ class OBEfit_Copol(object):
 
         return outdata
 
+    def export_parameters(self):
+        """
+        Export the parameters of the OBE fit result.
+
+        ..warning::
+            This will throw an exception if the result doesn't exist yet.
+
+        :return: The fit result DataSet.
+        :rtype:  :class:`~snomtools.data.datasets.DataSet`
+        """
+        if self.result is None:
+            raise ValueError("A result doesn't exist yet.")
+        return self.result
+
+    def import_parameters(self, inparams):
+        """
+        Import already existing (previously calculated) parameters of the OBE fit result.
+        Using this, the *final state* of the OBEfit instance can be reconstructed from known results
+        without running the full cuda fit again.
+        This can be useful to inspect the fit result if the full fitted ACs are not available.
+
+        :param inparams: A DataSet containing the result parameters, in the same form as obtained by performing
+            :func:`~OBEfit_Copol.obefit` or exporting the results with :func:`~OBEfit_Copol.export_parameters`.
+        :type inparams: :class:`~snomtools.data.datasets.DataSet`
+        """
+        # Inspect given data to make sure it fits:
+        assert self.resultshape == inparams.shape, "Import Data shape does not match."
+        for i, ax in enumerate(self.data.axes):
+            if i != self.fitaxis_ID:
+                assert np.allclose(ax.data, inparams.get_axis(ax.label).data), \
+                    "Import Parameter Axes don't match to Data."
+        for l in self.result_datalabels + self.result_accuracylabels:
+            assert l in inparams.dlabels, 'Missing Parameter Data'
+        # Simply set result:
+        self.result = inparams
+
 
 minimal_example_test = False
 evaluation_test = False
@@ -949,5 +995,10 @@ if class_test:
 
     fitobject.resultACdata(write_to_indata=True)
     testroida.saveh5("cuda_OBEtest_copol_ROI_with_ACs.hdf5")
+
+    fitobject2 = OBEfit_Copol(testroida, time_zero=-9.3, laser_AC_FWHM=u.to_ureg(49, 'fs'),
+                             max_time_zero_offset=u.to_ureg(40, 'fs'))
+    fitobject2.import_parameters(ds.DataSet.from_h5("cuda_OBEtest_copol_result_ROI.hdf5"))
+    result2acs = fitobject2.resultACdata()
 
     print("...done.")
