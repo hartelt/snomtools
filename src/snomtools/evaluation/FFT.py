@@ -10,6 +10,7 @@ import os
 import sys
 import numpy as np
 import snomtools.data.datasets as ds
+import snomtools.calcs.units as u
 from snomtools.data.h5tools import probe_chunksize
 import matplotlib.pyplot as plt
 
@@ -113,6 +114,41 @@ class Butterfilter(object):
         return signal.filtfilt(self.b, self.a, data, axis=axis)
 
 
+class FrequencyFilter(object):
+    def __init__(self, data, fundamental_frequency, axis=0, max_order=2, widths=None):
+        assert isinstance(data, (ds.DataSet, ds.ROI))
+        self.indata = data
+        self.filter_axis_id = data.get_axis_index(axis)
+        self.filter_axis = data.get_axis(self.filter_axis_id)
+
+        # Check if axis is ok:
+        assert self.filter_axis.is_linspaced(), "Cannot fourier transform an Axis not evenly spaced."
+        assert self.filter_axis.size > 1, "Cannot fourier transform a single element."
+
+        self.sampling_delta = self.filter_axis.spacing()
+
+        if fundamental_frequency is u.to_ureg(fundamental_frequency).magnitude:  # Fallback for numerical data.
+            fundamental_frequency = u.to_ureg(fundamental_frequency.magnitude, (1 / self.filter_axis.units).units)
+        else:
+            fundamental_frequency = u.to_ureg(fundamental_frequency)
+        assert u.same_dimension((1 / self.filter_axis.units), fundamental_frequency), \
+            "Given frequency dimensionality does not match axis."
+        self.axis_freq_unit = fundamental_frequency.units
+
+        default_widths = u.to_ureg([0.12, 0.075, 0.05, 0.025], 'PHz')  # 800nm Laser omega-components
+        if widths is None:
+            assert max_order <= 3, "Give filter window widths for order >3, defaults are not defined!"
+            self.widths = [default_widths[i] for i in range(max_order + 1)]
+        else:
+            self.widths = u.to_ureg(widths, self.axis_freq_unit)
+
+        # TODO: Initialize filters.
+
+        self.result = None
+
+    # TODO: Filter data.
+
+
 class FFT(object):
     def __init__(self, data, axis=0, transformed_axis_unit=None):
         assert isinstance(data, (ds.DataSet, ds.ROI))
@@ -126,9 +162,9 @@ class FFT(object):
 
         self.sampling_delta = self.axis_to_transform.spacing()
         if transformed_axis_unit is None:
-            self.axis_to_transform_unit = (1 / self.axis_to_transform.units).units
+            self.axis_freq_unit = (1 / self.axis_to_transform.units).units
         else:
-            self.axis_to_transform_unit = transformed_axis_unit
+            self.axis_freq_unit = transformed_axis_unit
 
         self.result = None
 
@@ -143,7 +179,7 @@ class FFT(object):
         if unit is not None:
             ax.set_unit(unit)
         else:
-            ax.set_unit(self.axis_to_transform_unit)
+            ax.set_unit(self.axis_freq_unit)
         return ax
 
     def fft(self, h5target=None):
