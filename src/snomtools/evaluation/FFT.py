@@ -48,6 +48,8 @@ def doFFT_Filter(timedata, deltaT=0.4, w_c=0.375, d0=0.12, d1=0.075, d2=0.05, d3
     '''
     The frequency unit is PHz FFS.
 
+    Wenn der Filter scheisse aussieht an der order drehen!!!
+
     :param timedata:
     :param deltaT: in fs for default filter values
     :param w_c: Center frequency, default 0.375 (PHz, corresponding to 800nm)
@@ -62,7 +64,7 @@ def doFFT_Filter(timedata, deltaT=0.4, w_c=0.375, d0=0.12, d1=0.075, d2=0.05, d3
     phase = -np.angle(freqdata)
     fticks = fftpack.fftshift(fftpack.fftfreq(freqdata.size, deltaT))
 
-    filtdata3, w3, h3 = highpass(timedata, 3 * w_c - d3, deltaT, 5)  # 1.125
+    filtdata3, w3, h3 = highpass(timedata, 3 * w_c - d3, deltaT, 8)  # 1.125
     filtdata2, w2, h2 = bandpass(timedata, 2 * w_c - d2, 2 * w_c + d2, deltaT, 5)  # 0.75
     filtdata1, w1, h1 = bandpass(timedata, 1 * w_c - d1, 1 * w_c + d1, deltaT, 5)  # 800nm =0.375
     filtdata0, w0, h0 = lowpass(timedata, d0, deltaT, 5)
@@ -74,6 +76,34 @@ def doFFT_Filter(timedata, deltaT=0.4, w_c=0.375, d0=0.12, d1=0.075, d2=0.05, d3
 
 
 # -----------------------------------------------------------------------------------------------------
+class Butterfilter(object):
+    def __init__(self, sampling_delta, lowcut=None, highcut=None, order=5):
+        nyq = 1 / (2 * sampling_delta)
+        self.highcut, self.lowcut = highcut, lowcut
+        # Define filters:
+        if (lowcut is not None) and (highcut is not None):  # bandpass
+            low = lowcut / nyq
+            high = highcut / nyq
+            b, a = signal.butter(order, [low, high], btype='band')
+        elif lowcut is not None:  # highpass
+            low = lowcut / nyq
+            b, a = signal.butter(order, low, btype='high')
+        elif highcut is not None:  # lowpass
+            high = highcut / nyq
+            b, a = signal.butter(order, high, btype='low')
+        else:
+            raise ValueError("Cannot define filter without high or lowcut.")
+        self.b, self.a = b, a
+        self.sampling_delta = sampling_delta
+
+    def response(self, Nfreqs=5000):
+        w, h = signal.freqz(self.b, self.a, worN=Nfreqs)
+        prefactor = (1 / self.sampling_delta * 0.5 / np.pi)
+        return w, prefactor * h
+
+    def filtered(self, data, axis=-1):
+        return signal.filtfilt(self.b, self.a, data, axis=axis)
+
 
 if __name__ == '__main__':
     import pathlib as pathlib
