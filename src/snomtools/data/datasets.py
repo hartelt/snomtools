@@ -3328,6 +3328,32 @@ class DataSet(object):
         assert self.check_label_uniqueness(moep.label), "Cannot add datafield. Label already exists!"
         self.datafields.append(moep)
 
+    def add_datafield_empty(self, unit=None, label=None, plotlabel=None,
+                            chunks=True,
+                            dtype=numpy.float32,
+                            compression='gzip', compression_opts=4):
+        # Create empty DataArray:
+        if self.h5target:
+            dataspace = Data_Handler_H5(unit=unit,
+                                        shape=self.shape, chunks=chunks,
+                                        dtype=dtype,
+                                        compression=compression,
+                                        compression_opts=compression_opts)
+            dataarray = DataArray(dataspace,
+                                  label=label,
+                                  plotlabel=plotlabel,
+                                  h5target=dataspace.h5target,
+                                  chunks=chunks,
+                                  compression=compression, compression_opts=compression_opts)
+        else:
+            dataspace = numpy.zeros(self.shape, dtype=dtype)
+            dataarray = DataArray(dataspace,
+                                  unit=unit,
+                                  label=label,
+                                  plotlabel=plotlabel,
+                                  h5target=None)
+        self.add_datafield(dataarray)
+
     def get_datafield(self, label_or_index):
         """
         Tries to assign a DataField to a given parameter, that can be an integer as an index in the
