@@ -274,13 +274,29 @@ class FrequencyFilter(object):
                                                                                                     number_of_calcs,
                                                                                                     etr, tpf))
             else:
-                # Do the whole thing at once, user says it should fit into RAM
+                # Do the whole thing at once, user says it should fit into RAM by not providing h5target
                 for comp in components:
                     df_out = outdata.get_datafield(self.indata.get_datafield(i_df).label + '_omega{0}'.format(comp))
                     df_out.data = self.filteredslice(np.s_[:], comp, i_df)
 
         self.result = outdata
         return outdata
+
+    def response_data(self, n_freqs=5000):
+        responses = []
+        frequencies = None
+        for b in self.butters:
+            freqs, response = b.response(n_freqs)
+            if frequencies is None:
+                frequencies = freqs
+            else:
+                assert np.allclose(freqs, frequencies), "Butters giving inconsistent frequencies."
+            responses.append(response)
+        das = [ds.DataArray(responses[i], label="filter curve omega{0}".format(i)) for i in range(len(self.butters))]
+        data = ds.DataSet("Frequency Filter Response Functions",
+                          das,
+                          [ds.Axis(frequencies, label='frequency')])
+        return data
 
 
 class FFT(object):
@@ -390,7 +406,7 @@ class FFT(object):
                                                                                                  number_of_calcs,
                                                                                                  etr, tpf))
             else:
-                # Do the whole thing at once, user says it should fit into RAM
+                # Do the whole thing at once, user says it should fit into RAM by not providing h5target
                 df_out = outdata.get_datafield("spectral_" + self.indata.get_datafield(i_df).label)
                 df_out.data = self.fftslice(np.s_[:], i_df)
 
@@ -419,6 +435,8 @@ if __name__ == '__main__':
     #                                butter_orders=[5, 5, 5])
     # filtereddata = filterobject.filter_data()
     # filtereddata.saveh5(filtereddatah5)
+    # responsedata = filterobject.response_data()
+    # responsedata.saveh5("butter filter response.hdf5")
     #
     # # Test Filtering into Set:
     # testfile = "frequencytestdata.hdf5"
