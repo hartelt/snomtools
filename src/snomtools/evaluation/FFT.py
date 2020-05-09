@@ -187,7 +187,11 @@ class FrequencyFilter(object):
         filtered_data = self.butters[component].filtered(timedata, axis=self.filter_axis_id)
         return u.to_ureg(filtered_data, df_in.get_unit())
 
+    def filter_direct(self, timedata, component):
+        return self.butters[component].filtered(timedata, axis=self.filter_axis_id)
+
     def filter_data(self, components=None, h5target=None, dfs=None, add_to_indata=False):
+        # Handle Parameters:
         if components is None:
             components = list(range(len(self.butters)))
         else:
@@ -204,6 +208,8 @@ class FrequencyFilter(object):
         new_df_units = [self.indata.get_datafield(d).get_unit()
                         for d in dfs
                         for comp in components]
+
+        # Prepare target dataset:
         if add_to_indata:
             outdata = self.indata
             # Add datafields for filtered data:
@@ -218,7 +224,7 @@ class FrequencyFilter(object):
                 chunks = probe_chunksize(self.indata.shape)
                 iteration_size = [chunks[i] if i != self.filter_axis_id else self.indata.shape[i]
                                   for i in range(len(self.indata.shape))]
-                cache_size_min = np.prod(iteration_size) * 8  # 8 Bytes per 64bit number
+                cache_size_min = np.prod(iteration_size) * len(components) * 8  # 8 Bytes per 64bit number
                 use_cache_size = cache_size_min + 64 * 1024 ** 2  # Add 64 MB to be sure.
             else:
                 use_cache_size = None
@@ -228,7 +234,7 @@ class FrequencyFilter(object):
                                                  h5target=h5target,
                                                  chunk_cache_mem_size=use_cache_size)
 
-        # For each DataArray:
+        # For each DataArray, do the actual filtering:
         for i_df in dfs:
             df_in = self.indata.get_datafield(i_df)
             sample_outdf = outdata.get_datafield(
@@ -255,9 +261,10 @@ class FrequencyFilter(object):
                     progress_counter = 0
 
                 for s in sample_outdf.data.iterchunkslices(dims=iterdims):
+                    timedata = df_in.data[s]
                     for comp in components:
                         df_out = outdata.get_datafield(self.indata.get_datafield(i_df).label + '_omega{0}'.format(comp))
-                        df_out.data[s] = self.filteredslice(s, comp, i_df)
+                        df_out.data[s] = self.filter_direct(timedata, comp)
 
                     if verbose:
                         progress_counter += 1
@@ -266,7 +273,6 @@ class FrequencyFilter(object):
                         print("Filter Chunk {0:d} / {1:d}, Time/File {3:.2f}s ETR: {2:.1f}s".format(progress_counter,
                                                                                                     number_of_calcs,
                                                                                                     etr, tpf))
-                outdata.saveh5()
             else:
                 # Do the whole thing at once, user says it should fit into RAM
                 for comp in components:
@@ -383,7 +389,6 @@ class FFT(object):
                         print("FFT Chunk {0:d} / {1:d}, Time/File {3:.2f}s ETR: {2:.1f}s".format(progress_counter,
                                                                                                  number_of_calcs,
                                                                                                  etr, tpf))
-                outdata.saveh5()
             else:
                 # Do the whole thing at once, user says it should fit into RAM
                 df_out = outdata.get_datafield("spectral_" + self.indata.get_datafield(i_df).label)
@@ -395,44 +400,44 @@ class FFT(object):
 
 if __name__ == '__main__':
     testdatah5 = "PVL_r10_pol244_25µm_-50-150fs_run1.hdf5"
-    testdata = ds.DataSet.in_h5(testdatah5)
+    testdata = ds.DataSet.in_h5(testdatah5, chunk_cache_mem_size=1000 * 1024 ** 2)
     testroi = ds.ROI(testdata, {'x': [500, 505], 'y': [500, 506]}, by_index=True)
 
-    # Test FFT in memory:
-    fftdatah5 = testdatah5.replace(".hdf5", "_roi_FFT.hdf5")
-    fft = FFT(testroi, 'delay', 'PHz')
-    fftdata = fft.fft()
-    fftdata.saveh5(fftdatah5)
+    # # Test FFT in memory:
+    # fftdatah5 = testdatah5.replace(".hdf5", "_roi_FFT.hdf5")
+    # fft = FFT(testroi, 'delay', 'PHz')
+    # fftdata = fft.fft()
+    # fftdata.saveh5(fftdatah5)
+    #
+    # # Test Filtering in memory:
+    # filtereddatah5 = testdatah5.replace(".hdf5", "_roi_filtered.hdf5")
+    # filterobject = FrequencyFilter(testroi,
+    #                                (consts.c / u.to_ureg(800, 'nm')).to('PHz'),
+    #                                'delay',
+    #                                max_order=2,
+    #                                widths=u.to_ureg([0.12, 0.075, 0.05, 0.025], 'PHz'),
+    #                                butter_orders=[5, 5, 5])
+    # filtereddata = filterobject.filter_data()
+    # filtereddata.saveh5(filtereddatah5)
+    #
+    # # Test Filtering into Set:
+    # testfile = "frequencytestdata.hdf5"
+    # testdata_small = testroi.get_DataSet(h5target=testfile)
+    # testdata_small.saveh5()
+    # filterobject = FrequencyFilter(testdata_small,
+    #                                (consts.c / u.to_ureg(800, 'nm')).to('PHz'),
+    #                                'delay',
+    #                                max_order=2,
+    #                                widths=u.to_ureg([0.12, 0.075, 0.05, 0.025], 'PHz'),
+    #                                butter_orders=[5, 5, 5])
+    # filterobject.filter_data(add_to_indata=True)
+    # testdata_small.saveh5()
 
-    # Test Filtering in memory:
-    filtereddatah5 = testdatah5.replace(".hdf5", "_roi_filtered.hdf5")
-    filterobject = FrequencyFilter(testroi,
-                                   (consts.c / u.to_ureg(800, 'nm')).to('PHz'),
-                                   'delay',
-                                   max_order=2,
-                                   widths=u.to_ureg([0.12, 0.075, 0.05, 0.025], 'PHz'),
-                                   butter_orders=[5, 5, 5])
-    filtereddata = filterobject.filter_data()
-    filtereddata.saveh5(filtereddatah5)
-
-    # Test Filtering into Set:
-    testfile = "frequencytestdata.hdf5"
-    testdata_small = testroi.get_DataSet(h5target=testfile)
-    testdata_small.saveh5()
-    filterobject = FrequencyFilter(testdata_small,
-                                   (consts.c / u.to_ureg(800, 'nm')).to('PHz'),
-                                   'delay',
-                                   max_order=2,
-                                   widths=u.to_ureg([0.12, 0.075, 0.05, 0.025], 'PHz'),
-                                   butter_orders=[5, 5, 5])
-    filterobject.filter_data(add_to_indata=True)
-    testdata_small.saveh5()
-
-    # Test FFT on h5:
-    fftdatah5 = testdatah5.replace(".hdf5", "_FFT.hdf5")
-    fft = FFT(testdata, 'delay', 'PHz')
-    fftdata = fft.fft(h5target=fftdatah5)
-    fftdata.saveh5()
+    # # Test FFT on h5:
+    # fftdatah5 = testdatah5.replace(".hdf5", "_FFT.hdf5")
+    # fft = FFT(testdata, 'delay', 'PHz')
+    # fftdata = fft.fft(h5target=fftdatah5)
+    # fftdata.saveh5()
 
     # Test Filtering on h5:
     filtereddatah5 = testdatah5.replace(".hdf5", "_filtered.hdf5")
