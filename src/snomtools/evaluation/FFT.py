@@ -11,8 +11,9 @@ import sys
 import numpy as np
 import snomtools.data.datasets as ds
 import snomtools.calcs.units as u
+import snomtools.calcs.constants as consts
 from snomtools.data.h5tools import probe_chunksize
-import matplotlib.pyplot as plt
+import warnings
 
 if '-v' in sys.argv or __name__ == "__main__":
     verbose = True
@@ -87,7 +88,23 @@ def doFFT_Filter(timedata, deltaT=0.4, w_c=0.375, d0=0.12, d1=0.075, d2=0.05, d3
 
 class Butterfilter(object):
     def __init__(self, sampling_delta, lowcut=None, highcut=None, order=5):
-        nyq = 1 / (2 * sampling_delta)
+        # Parse Arguments:
+        sampling_delta = u.to_ureg(sampling_delta)
+        if (lowcut is not None) and (highcut is not None):
+            highcut = u.to_ureg(highcut)
+            lowcut = u.to_ureg(lowcut)
+            assert lowcut.units == highcut.units, "Low and Highcut must be given in same units."
+            self.freq_unit = lowcut.units
+        elif highcut is not None:
+            highcut = u.to_ureg(highcut)
+            self.freq_unit = highcut.units
+        elif lowcut is not None:
+            lowcut = u.to_ureg(lowcut)
+            self.freq_unit = lowcut.units
+        else:
+            raise ValueError("Cannot define filter without high or lowcut.")
+
+        nyq = (1 / (2 * sampling_delta)).to(self.freq_unit)
         self.highcut, self.lowcut = highcut, lowcut
         # Define filters:
         if (lowcut is not None) and (highcut is not None):  # bandpass
@@ -100,22 +117,23 @@ class Butterfilter(object):
         elif highcut is not None:  # lowpass
             high = highcut / nyq
             b, a = signal.butter(order, high, btype='low')
-        else:
-            raise ValueError("Cannot define filter without high or lowcut.")
         self.b, self.a = b, a
         self.sampling_delta = sampling_delta
+        self.order = order
 
-    def response(self, Nfreqs=5000):
-        w, h = signal.freqz(self.b, self.a, worN=Nfreqs)
-        prefactor = (1 / self.sampling_delta * 0.5 / np.pi)
-        return w, prefactor * h
+    def response(self, n_freqs=5000):
+        w, h = signal.freqz(self.b, self.a, worN=n_freqs)
+        prefactor = (1 / self.sampling_delta * 0.5 / consts.pi_float).to(self.freq_unit)
+        return prefactor * w, h
 
     def filtered(self, data, axis=-1):
         return signal.filtfilt(self.b, self.a, data, axis=axis)
 
 
 class FrequencyFilter(object):
-    def __init__(self, data, fundamental_frequency, axis=0, max_order=2, widths=None):
+    default_widths = u.to_ureg([0.12, 0.075, 0.05, 0.025], 'PHz')
+
+    def __init__(self, data, fundamental_frequency, axis=0, max_order=2, widths=None, butter_orders=5):
         assert isinstance(data, (ds.DataSet, ds.ROI))
         self.indata = data
         self.filter_axis_id = data.get_axis_index(axis)
@@ -134,19 +152,38 @@ class FrequencyFilter(object):
         assert u.same_dimension((1 / self.filter_axis.units), fundamental_frequency), \
             "Given frequency dimensionality does not match axis."
         self.axis_freq_unit = fundamental_frequency.units
+        self.omega = fundamental_frequency
 
-        default_widths = u.to_ureg([0.12, 0.075, 0.05, 0.025], 'PHz')  # 800nm Laser omega-components
         if widths is None:
             assert max_order <= 3, "Give filter window widths for order >3, defaults are not defined!"
-            self.widths = [default_widths[i] for i in range(max_order + 1)]
+            self.widths = [self.default_widths[i] for i in range(max_order + 1)]
         else:
             self.widths = u.to_ureg(widths, self.axis_freq_unit)
 
-        # TODO: Initialize filters.
+        if isinstance(butter_orders, int):
+            butter_orders = [butter_orders for i in range(max_order + 1)]
+        else:
+            assert len(butter_orders) == max_order + 1, "Wrong number of Butter orders."
+
+        self.butters = []
+        # Initialize lowpass filter for low-frequency component omega_0:
+        self.butters.append(Butterfilter(self.sampling_delta, highcut=self.widths[0], order=butter_orders[0]))
+        # Initialize bandbass filters for fundamental and its multiples:
+        for freq_component in range(1, max_order + 1):
+            self.butters.append(Butterfilter(self.sampling_delta,
+                                             lowcut=self.omega * freq_component - self.widths[freq_component],
+                                             highcut=self.omega * freq_component + self.widths[freq_component],
+                                             order=butter_orders[freq_component]))
 
         self.result = None
 
-    # TODO: Filter data.
+    def filteredslice(self, s, component, df=0):
+        if s[self.filter_axis_id] != np.s_[:]:
+            warnings.warn("Frequency filtering a slice that is not full along the filter axis might return bad results")
+        df_in = self.indata.get_datafield(df)
+        timedata = df_in.data[s]
+        filtered_data = self.butters[component].filtered(timedata, axis=self.filter_axis_id)
+        return u.to_ureg(filtered_data, df_in.get_unit())
 
 
 class FFT(object):
@@ -182,7 +219,24 @@ class FFT(object):
             ax.set_unit(self.axis_freq_unit)
         return ax
 
-    def fft(self, h5target=None):
+    def __getitem__(self, s):
+        return self.fftslice(s)
+
+    def fftslice(self, s, df=0):
+        if s[self.axis_to_transform_id] != np.s_[:]:
+            warnings.warn("FFT of a slice that is not full along the FFT axis might return bad results")
+        df_in = self.indata.get_datafield(df)
+        timedata = df_in.data[s]
+        freqdata = fftpack.fftshift(fftpack.fft(timedata, axis=self.axis_to_transform_id),
+                                    axes=self.axis_to_transform_id)
+        return u.to_ureg(freqdata, df_in.get_unit())
+
+    def fft(self, h5target=None, dfs=None):
+        if dfs is None:
+            dfs = list(range(len(self.indata.datafields)))
+        else:
+            dfs = [self.indata.get_datafield_index(l) for l in dfs]
+
         # Prepare DataSet to write to:
         transformed_axis = self.transformed_axis()
         axes = [self.indata.get_axis(i) if i != self.axis_to_transform_id else transformed_axis
@@ -198,17 +252,17 @@ class FFT(object):
         else:
             use_cache_size = None
 
-        df_labels = ["spectral_" + l for l in self.indata.dlabels]
+        df_labels = ["spectral_" + self.indata.get_datafield(i).label for i in dfs]
         outdata = ds.DataSet.empty_from_axes("FFT of " + self.indata.label, df_labels, axes,
-                                             [d.get_unit() for d in self.indata.datafields],
+                                             [self.indata.get_datafield(i).get_unit() for i in dfs],
                                              h5target=h5target,
                                              chunk_cache_mem_size=use_cache_size,
                                              dtypes=np.complex64)
 
         # For each DataArray:
-        for i_df in range(len(self.indata.datafields)):
+        for i_df in dfs:
             df_in = self.indata.get_datafield(i_df)
-            df_out = outdata.get_datafield(i_df)
+            df_out = outdata.get_datafield("spectral_" + self.indata.get_datafield(i_df).label)
             if verbose:
                 import time
                 print("FFT: Handling dataset: {0}".format(df_in))
@@ -228,10 +282,7 @@ class FFT(object):
                     progress_counter = 0
 
                 for s in df_out.data.iterchunkslices(dims=iterdims):
-                    timedata = df_in.data[s]
-                    freqdata = fftpack.fftshift(fftpack.fft(timedata, axis=self.axis_to_transform_id),
-                                                axes=self.axis_to_transform_id)
-                    df_out.data[s] = freqdata
+                    df_out.data[s] = self.fftslice(s, i_df)
 
                     if verbose:
                         progress_counter += 1
@@ -255,10 +306,25 @@ if __name__ == '__main__':
     testdatah5 = "PVL_r10_pol244_25µm_-50-150fs_run1.hdf5"
     testdata = ds.DataSet.in_h5(testdatah5)
 
+    # Test FFT:
     fftdatah5 = testdatah5.replace(".hdf5", "_FFT.hdf5")
     fft = FFT(testdata, 'delay', 'PHz')
-    fftdata = fft.fft(h5target=fftdatah5)
-    fftdata.saveh5()
+    # fftdata = fft.fft(h5target=fftdatah5)
+    # fftdata.saveh5()
+
+    # Test Filtering:
+    filtereddatah5 = testdatah5.replace(".hdf5", "_filtered.hdf5")
+    filterobject = FrequencyFilter(testdata,
+                                   (consts.c / u.to_ureg(800, 'nm')).to('PHz'),
+                                   'delay',
+                                   max_order=2,
+                                   widths=u.to_ureg([0.12, 0.075, 0.05, 0.025], 'PHz'),
+                                   butter_orders=[5, 5, 5])
+
+    times = testdata.get_axis('delay').data
+    counts = testdata.get_datafield(0)[:, 500, 500].data
+
+    w, h = filterobject.butters[0].response()
 
     # import pathlib as pathlib
     #
@@ -395,4 +461,5 @@ if __name__ == '__main__':
     #     plt.ylabel('norm. Intensität', fontsize=fontsize_label)
     #     plt.plot(xAxis, normAC(filtdata3), c='orange')
     #     plt.savefig(os.path.join(path, 'out_high/roi' + str(roi) + '-w3.png'))
-    #     print('moep')
+
+    print('done')
