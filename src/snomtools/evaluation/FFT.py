@@ -13,6 +13,7 @@ import snomtools.data.datasets as ds
 import snomtools.calcs.units as u
 import snomtools.calcs.constants as consts
 from snomtools.data.h5tools import probe_chunksize
+from snomtools.data.tools import full_slice
 import warnings
 
 if '-v' in sys.argv or __name__ == "__main__":
@@ -178,12 +179,102 @@ class FrequencyFilter(object):
         self.result = None
 
     def filteredslice(self, s, component, df=0):
+        s = full_slice(s, self.indata.dimensions)
         if s[self.filter_axis_id] != np.s_[:]:
             warnings.warn("Frequency filtering a slice that is not full along the filter axis might return bad results")
         df_in = self.indata.get_datafield(df)
         timedata = df_in.data[s]
         filtered_data = self.butters[component].filtered(timedata, axis=self.filter_axis_id)
         return u.to_ureg(filtered_data, df_in.get_unit())
+
+    def filter_data(self, components=None, h5target=None, dfs=None, add_to_indata=False):
+        if components is None:
+            components = list(range(len(self.butters)))
+        else:
+            assert all([i < len(self.butters) for i in components]), "Frequency filter not available."
+
+        if dfs is None:
+            dfs = list(range(len(self.indata.dlabels)))
+        else:
+            dfs = [self.indata.get_datafield_index(l) for l in dfs]
+
+        new_df_labels = [self.indata.get_datafield(d).label + '_omega{0}'.format(comp)
+                         for d in dfs
+                         for comp in components]
+        new_df_units = [self.indata.get_datafield(d).get_unit()
+                        for d in dfs
+                        for comp in components]
+        if add_to_indata:
+            outdata = self.indata
+            # Add datafields for filtered data:
+            for label, unit in zip(new_df_labels, new_df_units):
+                outdata.add_datafield_empty(unit, label)
+
+        else:
+            # Prepare DataSet to write to:
+            axes = [self.indata.get_axis(l) for l in self.indata.axlabels]
+
+            if h5target:
+                chunks = probe_chunksize(self.indata.shape)
+                iteration_size = [chunks[i] if i != self.filter_axis_id else self.indata.shape[i]
+                                  for i in range(len(self.indata.shape))]
+                cache_size_min = np.prod(iteration_size) * 8  # 8 Bytes per 64bit number
+                use_cache_size = cache_size_min + 64 * 1024 ** 2  # Add 64 MB to be sure.
+            else:
+                use_cache_size = None
+
+            outdata = ds.DataSet.empty_from_axes("Frequency filtered " + self.indata.label, new_df_labels, axes,
+                                                 new_df_units,
+                                                 h5target=h5target,
+                                                 chunk_cache_mem_size=use_cache_size)
+
+        # For each DataArray:
+        for i_df in dfs:
+            df_in = self.indata.get_datafield(i_df)
+            sample_outdf = outdata.get_datafield(
+                self.indata.get_datafield(i_df).label + '_omega{0}'.format(components[0]))
+
+            if verbose:
+                import time
+                print("Frequency filtering: Handling dataset: {0}".format(df_in))
+                print("Calculating filtered data of shape: ", df_in.shape)
+                if h5target:
+                    print("... with chunks of shape: ", sample_outdf.data.ds_data.chunks)
+                    print("... using cache size {0:d} MB".format(use_cache_size // 1024 ** 2))
+                elif add_to_indata:
+                    print("... with chunks of shape: ", sample_outdf.data.ds_data.chunks)
+                else:
+                    print("... in memory")
+                start_time = time.time()
+
+            if h5target or add_to_indata:
+                # Iterate over chunks and do the Filtering:
+                iterdims = [i for i in range(self.indata.dimensions) if i != self.filter_axis_id]
+                if verbose:
+                    number_of_calcs = np.prod([df_in.shape[i] // df_in.data.ds_data.chunks[i] for i in iterdims])
+                    progress_counter = 0
+
+                for s in sample_outdf.data.iterchunkslices(dims=iterdims):
+                    for comp in components:
+                        df_out = outdata.get_datafield(self.indata.get_datafield(i_df).label + '_omega{0}'.format(comp))
+                        df_out.data[s] = self.filteredslice(s, comp, i_df)
+
+                    if verbose:
+                        progress_counter += 1
+                        tpf = ((time.time() - start_time) / float(progress_counter))
+                        etr = tpf * (number_of_calcs - progress_counter)
+                        print("Filter Chunk {0:d} / {1:d}, Time/File {3:.2f}s ETR: {2:.1f}s".format(progress_counter,
+                                                                                                    number_of_calcs,
+                                                                                                    etr, tpf))
+                outdata.saveh5()
+            else:
+                # Do the whole thing at once, user says it should fit into RAM
+                for comp in components:
+                    df_out = outdata.get_datafield(self.indata.get_datafield(i_df).label + '_omega{0}'.format(comp))
+                    df_out.data = self.filteredslice(np.s_[:], comp, i_df)
+
+        self.result = outdata
+        return outdata
 
 
 class FFT(object):
@@ -223,6 +314,7 @@ class FFT(object):
         return self.fftslice(s)
 
     def fftslice(self, s, df=0):
+        s = full_slice(s, self.indata.dimensions)
         if s[self.axis_to_transform_id] != np.s_[:]:
             warnings.warn("FFT of a slice that is not full along the FFT axis might return bad results")
         df_in = self.indata.get_datafield(df)
@@ -233,7 +325,7 @@ class FFT(object):
 
     def fft(self, h5target=None, dfs=None):
         if dfs is None:
-            dfs = list(range(len(self.indata.datafields)))
+            dfs = list(range(len(self.indata.dlabels)))
         else:
             dfs = [self.indata.get_datafield_index(l) for l in dfs]
 
@@ -266,9 +358,9 @@ class FFT(object):
             if verbose:
                 import time
                 print("FFT: Handling dataset: {0}".format(df_in))
-                print("Calculating FFT data of shape: ", df_in.shape)
+                print("Calculating FFT data of shape: ", df_out.shape)
                 if h5target:
-                    print("... with chunks of shape: ", df_in.data.ds_data.chunks)
+                    print("... with chunks of shape: ", df_out.data.ds_data.chunks)
                     print("... using cache size {0:d} MB".format(use_cache_size // 1024 ** 2))
                 else:
                     print("... in memory")
@@ -288,15 +380,14 @@ class FFT(object):
                         progress_counter += 1
                         tpf = ((time.time() - start_time) / float(progress_counter))
                         etr = tpf * (number_of_calcs - progress_counter)
-                        print("Chunk FFT {0:d} / {1:d}, Time/File {3:.2f}s ETR: {2:.1f}s".format(progress_counter,
+                        print("FFT Chunk {0:d} / {1:d}, Time/File {3:.2f}s ETR: {2:.1f}s".format(progress_counter,
                                                                                                  number_of_calcs,
                                                                                                  etr, tpf))
                 outdata.saveh5()
             else:
                 # Do the whole thing at once, user says it should fit into RAM
-                outdata.get_datafield(i_df).data = fftpack.fftshift(fftpack.fft(df_in.data,
-                                                                                axis=self.axis_to_transform_id),
-                                                                    axis=self.axis_to_transform_id)
+                df_out = outdata.get_datafield("spectral_" + self.indata.get_datafield(i_df).label)
+                df_out.data = self.fftslice(np.s_[:], i_df)
 
         self.result = outdata
         return outdata
@@ -305,14 +396,45 @@ class FFT(object):
 if __name__ == '__main__':
     testdatah5 = "PVL_r10_pol244_25µm_-50-150fs_run1.hdf5"
     testdata = ds.DataSet.in_h5(testdatah5)
+    testroi = ds.ROI(testdata, {'x': [500, 505], 'y': [500, 506]}, by_index=True)
 
-    # Test FFT:
+    # Test FFT in memory:
+    fftdatah5 = testdatah5.replace(".hdf5", "_roi_FFT.hdf5")
+    fft = FFT(testroi, 'delay', 'PHz')
+    fftdata = fft.fft()
+    fftdata.saveh5(fftdatah5)
+
+    # Test Filtering in memory:
+    filtereddatah5 = testdatah5.replace(".hdf5", "_roi_filtered.hdf5")
+    filterobject = FrequencyFilter(testroi,
+                                   (consts.c / u.to_ureg(800, 'nm')).to('PHz'),
+                                   'delay',
+                                   max_order=2,
+                                   widths=u.to_ureg([0.12, 0.075, 0.05, 0.025], 'PHz'),
+                                   butter_orders=[5, 5, 5])
+    filtereddata = filterobject.filter_data()
+    filtereddata.saveh5(filtereddatah5)
+
+    # Test Filtering into Set:
+    testfile = "frequencytestdata.hdf5"
+    testdata_small = testroi.get_DataSet(h5target=testfile)
+    testdata_small.saveh5()
+    filterobject = FrequencyFilter(testdata_small,
+                                   (consts.c / u.to_ureg(800, 'nm')).to('PHz'),
+                                   'delay',
+                                   max_order=2,
+                                   widths=u.to_ureg([0.12, 0.075, 0.05, 0.025], 'PHz'),
+                                   butter_orders=[5, 5, 5])
+    filterobject.filter_data(add_to_indata=True)
+    testdata_small.saveh5()
+
+    # Test FFT on h5:
     fftdatah5 = testdatah5.replace(".hdf5", "_FFT.hdf5")
     fft = FFT(testdata, 'delay', 'PHz')
-    # fftdata = fft.fft(h5target=fftdatah5)
-    # fftdata.saveh5()
+    fftdata = fft.fft(h5target=fftdatah5)
+    fftdata.saveh5()
 
-    # Test Filtering:
+    # Test Filtering on h5:
     filtereddatah5 = testdatah5.replace(".hdf5", "_filtered.hdf5")
     filterobject = FrequencyFilter(testdata,
                                    (consts.c / u.to_ureg(800, 'nm')).to('PHz'),
@@ -320,11 +442,8 @@ if __name__ == '__main__':
                                    max_order=2,
                                    widths=u.to_ureg([0.12, 0.075, 0.05, 0.025], 'PHz'),
                                    butter_orders=[5, 5, 5])
-
-    times = testdata.get_axis('delay').data
-    counts = testdata.get_datafield(0)[:, 500, 500].data
-
-    w, h = filterobject.butters[0].response()
+    filtereddata = filterobject.filter_data(h5target=filtereddatah5)
+    filtereddata.saveh5()
 
     # import pathlib as pathlib
     #
