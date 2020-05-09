@@ -840,6 +840,8 @@ class Data_Handler_H5(u.Quantity):
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
             assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            if self.shape == (): # self is also scalar, so just do default calculation:
+                return super(Data_Handler_H5, self).__add__(other)
             newdh = self.__class__(shape=self.shape, unit=self.get_unit())
             for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
                 newdh[slice_] = owndata + other
@@ -878,6 +880,8 @@ class Data_Handler_H5(u.Quantity):
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
             assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            if self.shape == (): # self is also scalar, so just do default calculation:
+                return super(Data_Handler_H5, self).__iadd__(other)
             for slice_ in self.iterfastslices():
                 self.ds_data[slice_] += other.magnitude
             return self
@@ -905,6 +909,8 @@ class Data_Handler_H5(u.Quantity):
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
             assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            if self.shape == (): # self is also scalar, so just do default calculation:
+                return super(Data_Handler_H5, self).__sub__(other)
             newdh = self.__class__(shape=self.shape, unit=self.get_unit())
             for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
                 newdh[slice_] = owndata - other
@@ -931,6 +937,8 @@ class Data_Handler_H5(u.Quantity):
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
             assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            if self.shape == (): # self is also scalar, so just do default calculation:
+                return super(Data_Handler_H5, self).__isub__(other)
             for slice_ in self.iterfastslices():
                 self.ds_data[slice_] -= other.magnitude
             return self
@@ -955,6 +963,8 @@ class Data_Handler_H5(u.Quantity):
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
             assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            if self.shape == (): # self is also scalar, so just do default calculation:
+                return super(Data_Handler_H5, self).__mul__(other)
             newunit = str((other * u.to_ureg(1., self.get_unit())).units)
             newdh = self.__class__(shape=self.shape, unit=newunit)
             for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
@@ -983,6 +993,8 @@ class Data_Handler_H5(u.Quantity):
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
             assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            if self.shape == (): # self is also scalar, so just do default calculation:
+                return super(Data_Handler_H5, self).__imul__(other)
             self._units = str((other * u.to_ureg(1., self.get_unit())).units)
             for slice_ in self.iterfastslices():
                 self.ds_data[slice_] *= other.magnitude
@@ -1013,6 +1025,8 @@ class Data_Handler_H5(u.Quantity):
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
             assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            if self.shape == (): # self is also scalar, so just do default calculation:
+                return super(Data_Handler_H5, self).__truediv__(other)
             newunit = str((u.to_ureg(1., self.get_unit()) / other).units)
             newdh = self.__class__(shape=self.shape, unit=newunit)
             for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
@@ -1045,6 +1059,8 @@ class Data_Handler_H5(u.Quantity):
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
             assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            if self.shape == (): # self is also scalar, so just do default calculation:
+                return super(Data_Handler_H5, self).__itruediv__(other)
             self._units = str((u.to_ureg(1., self.get_unit()) / other).units)
             for slice_ in self.iterfastslices():
                 self.ds_data[slice_] /= other.magnitude
@@ -1071,6 +1087,8 @@ class Data_Handler_H5(u.Quantity):
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
             assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            if self.shape == (): # self is also scalar, so just do default calculation:
+                return super(Data_Handler_H5, self).__floordiv__(other)
             newunit = str((u.to_ureg(1., self.get_unit()) // other).units)
             newdh = self.__class__(shape=self.shape, unit=newunit)
             for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
@@ -1103,6 +1121,8 @@ class Data_Handler_H5(u.Quantity):
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
             assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            if self.shape == (): # self is also scalar, so just do default calculation:
+                return super(Data_Handler_H5, self).__ifloordiv__(other)
             self._units = str((u.to_ureg(1., self.get_unit()) // other).units)
             for slice_ in self.iterfastslices():
                 self.ds_data[slice_] //= other.magnitude
@@ -1129,6 +1149,8 @@ class Data_Handler_H5(u.Quantity):
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
             assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            if self.shape == (): # self is also scalar, so just do default calculation:
+                return super(Data_Handler_H5, self).__pow__(other)
             newunit = str((u.to_ureg(1., self.get_unit()) ** other).units)
             newdh = self.__class__(shape=self.shape, unit=newunit)
             for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
@@ -1157,6 +1179,8 @@ class Data_Handler_H5(u.Quantity):
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
             assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            if self.shape == (): # self is also scalar, so just do default calculation:
+                return super(Data_Handler_H5, self).__ipow__(other)
             self._units = str((u.to_ureg(1., self.get_unit()) ** other).units)
             for slice_ in self.iterfastslices():
                 self.ds_data[slice_] **= other.magnitude
