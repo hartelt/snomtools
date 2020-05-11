@@ -344,11 +344,13 @@ def check_version(h5root):
     return True
 
 
-def probe_chunksize(shape, compression="gzip", compression_opts=4):
+def probe_chunksize(shape, dtype=numpy.float32, compression="gzip", compression_opts=4):
     """
     Probe the chunk size that would be guessed by the h5py driver.
 
     :param tuple shape: A shape tuple.
+
+    :param dtype: The data type.
 
     :param str compression: Compression mode.
 
@@ -358,7 +360,8 @@ def probe_chunksize(shape, compression="gzip", compression_opts=4):
     :rtype: tuple(int)
     """
     h5target = Tempfile()
-    ds = h5target.create_dataset("data", shape, chunks=True, compression=compression, compression_opts=compression_opts)
+    ds = h5target.create_dataset("data", shape, dtype=dtype,
+                                 chunks=True, compression=compression, compression_opts=compression_opts)
     chunk_size = ds.chunks
     del h5target
     return chunk_size

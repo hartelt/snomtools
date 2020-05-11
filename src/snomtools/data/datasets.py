@@ -34,7 +34,7 @@ class Data_Handler_H5(u.Quantity):
     This "H5 mode" handler keeps the data in h5py objects, but provides access to data as if it were a quantity.
     """
 
-    def __new__(cls, data=None, unit=None, shape=None, h5target=None,
+    def __new__(cls, data=None, unit=None, shape=None, h5target=None, dtype=None,
                 chunks=True, compression="gzip", compression_opts=4, chunk_cache_mem_size=None):
         """
         Initializes and returns a new instance. __new__ is used instead of __init__ because pint Quantity does so,
@@ -50,6 +50,11 @@ class Data_Handler_H5(u.Quantity):
             files, which are cleaned up in __del__.
         :type h5target: h5py Group/File
 
+        :param dtype: The data type. Best given as numpy datatype.
+            The default will be `numpy.float32` when initializing via `shape`.
+            It is ignored if data is given as a DataHandlerH5 or h5py.Dataset because then the data will be copied
+            directly on the file level.
+
         :param chunks: (See h5py docs. Chunks are good in most big data cases!)
 
         :param compression: (See h5py docs. Compression is good in most cases!)
@@ -60,7 +65,7 @@ class Data_Handler_H5(u.Quantity):
 
         :return: The initialized instance.
         """
-        # TODO: Handle Datatypes. Sort compression opts for initializing from existing h5 data.
+        # TODO: Sort compression opts for initializing from existing h5 data.
         if not chunks:
             compression = None
             compression_opts = None
@@ -134,7 +139,11 @@ class Data_Handler_H5(u.Quantity):
                 compression_opts = None
             h5tools.clear_name(h5target, "data")
             h5tools.clear_name(h5target, "unit")
-            inst.ds_data = h5target.create_dataset("data", data=compiled_data.magnitude, chunks=chunks,
+            if dtype is None:
+                dtype = compiled_data.magnitude.dtype
+            inst.ds_data = h5target.create_dataset("data", data=compiled_data.magnitude,
+                                                   dtype=dtype,
+                                                   chunks=chunks,
                                                    compression=compression,
                                                    compression_opts=compression_opts)
             inst.ds_unit = h5target.create_dataset("unit", data=str(compiled_data.units))
@@ -154,7 +163,12 @@ class Data_Handler_H5(u.Quantity):
                 compression_opts = None
             h5tools.clear_name(h5target, "data")
             h5tools.clear_name(h5target, "unit")
-            inst.ds_data = h5target.create_dataset("data", shape, chunks=chunks, compression=compression,
+            if dtype is None:
+                dtype = numpy.float32
+            inst.ds_data = h5target.create_dataset("data", shape,
+                                                   dtype=dtype,
+                                                   chunks=chunks,
+                                                   compression=compression,
                                                    compression_opts=compression_opts)
             inst.ds_unit = h5target.create_dataset("unit", data=u.normalize_unitstr(unit))
             inst.h5target = h5target
@@ -238,6 +252,10 @@ class Data_Handler_H5(u.Quantity):
     @property
     def shape(self):
         return self.ds_data.shape
+
+    @property
+    def size(self):
+        return self.ds_data.size
 
     @property
     def dims(self):
@@ -824,6 +842,8 @@ class Data_Handler_H5(u.Quantity):
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
             assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            if self.shape == (): # self is also scalar, so just do default calculation:
+                return super(Data_Handler_H5, self).__add__(other)
             newdh = self.__class__(shape=self.shape, unit=self.get_unit())
             for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
                 newdh[slice_] = owndata + other
@@ -862,6 +882,8 @@ class Data_Handler_H5(u.Quantity):
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
             assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            if self.shape == (): # self is also scalar, so just do default calculation:
+                return super(Data_Handler_H5, self).__iadd__(other)
             for slice_ in self.iterfastslices():
                 self.ds_data[slice_] += other.magnitude
             return self
@@ -889,6 +911,8 @@ class Data_Handler_H5(u.Quantity):
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
             assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            if self.shape == (): # self is also scalar, so just do default calculation:
+                return super(Data_Handler_H5, self).__sub__(other)
             newdh = self.__class__(shape=self.shape, unit=self.get_unit())
             for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
                 newdh[slice_] = owndata - other
@@ -915,6 +939,8 @@ class Data_Handler_H5(u.Quantity):
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
             assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            if self.shape == (): # self is also scalar, so just do default calculation:
+                return super(Data_Handler_H5, self).__isub__(other)
             for slice_ in self.iterfastslices():
                 self.ds_data[slice_] -= other.magnitude
             return self
@@ -939,6 +965,8 @@ class Data_Handler_H5(u.Quantity):
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
             assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            if self.shape == (): # self is also scalar, so just do default calculation:
+                return super(Data_Handler_H5, self).__mul__(other)
             newunit = str((other * u.to_ureg(1., self.get_unit())).units)
             newdh = self.__class__(shape=self.shape, unit=newunit)
             for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
@@ -967,6 +995,8 @@ class Data_Handler_H5(u.Quantity):
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
             assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            if self.shape == (): # self is also scalar, so just do default calculation:
+                return super(Data_Handler_H5, self).__imul__(other)
             self._units = str((other * u.to_ureg(1., self.get_unit())).units)
             for slice_ in self.iterfastslices():
                 self.ds_data[slice_] *= other.magnitude
@@ -997,6 +1027,8 @@ class Data_Handler_H5(u.Quantity):
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
             assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            if self.shape == (): # self is also scalar, so just do default calculation:
+                return super(Data_Handler_H5, self).__truediv__(other)
             newunit = str((u.to_ureg(1., self.get_unit()) / other).units)
             newdh = self.__class__(shape=self.shape, unit=newunit)
             for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
@@ -1029,6 +1061,8 @@ class Data_Handler_H5(u.Quantity):
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
             assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            if self.shape == (): # self is also scalar, so just do default calculation:
+                return super(Data_Handler_H5, self).__itruediv__(other)
             self._units = str((u.to_ureg(1., self.get_unit()) / other).units)
             for slice_ in self.iterfastslices():
                 self.ds_data[slice_] /= other.magnitude
@@ -1055,6 +1089,8 @@ class Data_Handler_H5(u.Quantity):
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
             assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            if self.shape == (): # self is also scalar, so just do default calculation:
+                return super(Data_Handler_H5, self).__floordiv__(other)
             newunit = str((u.to_ureg(1., self.get_unit()) // other).units)
             newdh = self.__class__(shape=self.shape, unit=newunit)
             for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
@@ -1087,6 +1123,8 @@ class Data_Handler_H5(u.Quantity):
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
             assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            if self.shape == (): # self is also scalar, so just do default calculation:
+                return super(Data_Handler_H5, self).__ifloordiv__(other)
             self._units = str((u.to_ureg(1., self.get_unit()) // other).units)
             for slice_ in self.iterfastslices():
                 self.ds_data[slice_] //= other.magnitude
@@ -1113,6 +1151,8 @@ class Data_Handler_H5(u.Quantity):
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
             assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            if self.shape == (): # self is also scalar, so just do default calculation:
+                return super(Data_Handler_H5, self).__pow__(other)
             newunit = str((u.to_ureg(1., self.get_unit()) ** other).units)
             newdh = self.__class__(shape=self.shape, unit=newunit)
             for slice_, owndata in zip(self.iterfastslices(), self.iterfast()):
@@ -1141,6 +1181,8 @@ class Data_Handler_H5(u.Quantity):
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
             assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            if self.shape == (): # self is also scalar, so just do default calculation:
+                return super(Data_Handler_H5, self).__ipow__(other)
             self._units = str((u.to_ureg(1., self.get_unit()) ** other).units)
             for slice_ in self.iterfastslices():
                 self.ds_data[slice_] **= other.magnitude
@@ -1250,12 +1292,17 @@ class Data_Handler_np(u.Quantity):
     array and can therefore be used as one in many contexts.
     """
 
-    def __new__(cls, data=None, unit=None, shape=None):
+    def __new__(cls, data=None, unit=None, shape=None, dtype=None):
         if data is not None:
             compiled_data = u.to_ureg(data, unit)
-            return super(Data_Handler_np, cls).__new__(cls, compiled_data.magnitude, compiled_data.units)
+            if dtype:
+                return super(Data_Handler_np, cls).__new__(cls, compiled_data.magnitude.astype(dtype),
+                                                           compiled_data.units)
+            else:return super(Data_Handler_np, cls).__new__(cls, compiled_data.magnitude, compiled_data.units)
         elif shape is not None:
-            return cls.__new__(cls, numpy.zeros(shape=shape), unit)
+            if dtype is None:
+                dtype = numpy.float32
+            return cls.__new__(cls, numpy.zeros(shape=shape, dtype=dtype), unit)
         else:
             raise ValueError("Initialized Data_Handler_np with wrong parameters.")
 
@@ -1809,6 +1856,10 @@ class DataArray(object):
     @property
     def shape(self):
         return self._data.shape
+
+    @property
+    def size(self):
+        return self._data.size
 
     @property
     def dims(self):
@@ -2436,6 +2487,32 @@ class Axis(DataArray):
             self.set_label(label)
         if not (plotlabel is None):
             self.set_plotlabel(plotlabel)
+
+    def is_linspaced(self):
+        """
+        Checks if the Axis is evenly (linearly) spaced, meaning all points have same distance to each other.
+
+        :return: Truth value if the axis is evenly spaced.
+        :rtype: bool
+        """
+        if self.data.size <= 1:  # Axis contains only a single point, technically it's "evenly spaced".
+            return True
+        spaces = self.data[1:] - self.data[:-1]
+        return numpy.allclose(spaces, spaces[0])
+
+    def spacing(self):
+        """
+        If Axis is linearly spaced, return the spacing between two points. If not, return None.
+
+        :return: The spacing between two points on the axis as Quantity of same dimension as Axis,
+            None if no regular spacing exists.
+        """
+        if not self.is_linspaced():
+            return None
+        if self.data.size <= 1:  # Axis contains only a single point, so no spacing exists.
+            return None
+        else:
+            return (self.data[1:] - self.data[:-1]).mean()
 
     def __str__(self):
         out = "Axis"
@@ -3097,6 +3174,98 @@ class DataSet(object):
         return cls.from_h5(h5group, h5group, chunk_cache_mem_size=chunk_cache_mem_size)
 
     @classmethod
+    def empty_from_axes(cls, label, datalabels, axes, dataunits=None, dataplotlabels=None,
+                        plotconf=(),
+                        h5target=None, chunk_cache_mem_size=None,
+                        chunks=True, compression='gzip', compression_opts=4,
+                        dtypes = numpy.float32):
+        """
+        Build an empty dataset containing zero-arrays in all DataFields from a list of Axes.
+
+        :param label: The label of the new DataSet.
+        :type label: str
+
+        :param datalabels: A list of labels for the empty DataArrays.
+            The length of this list determines the number of DataArrays to generate.
+        :type datalabels: list(str)
+
+        :param axes: A list of Axes.
+        :type axes: list(:class:`~Axis`)
+
+        :param dataunits: A list of units to assign to the empty DataArrays. Must be of equal length as `datalabels`.
+        :type dataunits: list(str)
+
+        :param dataplotlabels: Optional. A list of plotlabels for the empty DataArrays.
+        :type dataplotlabels: list(str)
+
+        :param plotconf: Optional. A Plotconf for the new DataSet.
+        :type plotconf: dict
+
+        :param h5target: Optional. A target h5 Group or Path to work on.
+        :type h5target: str **or** :class:`~h5py.Group`
+
+        :param chunk_cache_mem_size: A chunk cache size for the H5 file driver in Bytes.
+        :type chunk_cache_mem_size: int
+
+        :param chunks: Explicitly set chunk size for the DataArrays.
+        :type chunks: tuple(int)
+
+        :return:The generated DataSet.
+        :rtype: :class:`~DataSet`
+        """
+        if dataunits is not None:
+            assert len(datalabels) == len(dataunits)
+        else:
+            dataunits = ["dimensionless" for i in range(len(datalabels))]
+        if dataplotlabels is not None:
+            assert len(datalabels) == len(dataplotlabels)
+        else:
+            dataplotlabels = [None for i in range(len(datalabels))]
+        if isinstance(dtypes, (list,tuple)):
+            assert len(datalabels) == len(dtypes)
+        else:
+            dtypes = [dtypes for i in range(len(datalabels))]
+        newshape = tuple([len(ax) for ax in axes])
+
+        if h5target:
+            # Initialize full DataSet with zeroes:
+            das = []
+            for i, label in enumerate(datalabels):
+                dataspace = Data_Handler_H5(unit=dataunits[i],
+                                            shape=newshape, chunks=chunks,
+                                            dtype=dtypes[i],
+                                            compression=compression,
+                                            compression_opts=compression_opts,
+                                            chunk_cache_mem_size=chunk_cache_mem_size)
+                dataarray = DataArray(dataspace,
+                                      label=label,
+                                      plotlabel=dataplotlabels[i],
+                                      h5target=dataspace.h5target,
+                                      chunks=chunks,
+                                      compression=compression, compression_opts=compression_opts,
+                                      chunk_cache_mem_size=chunk_cache_mem_size)
+                das.append(dataarray)
+            dataset = cls(label, das, axes,
+                          plotconf=plotconf,
+                          h5target=h5target,
+                          chunk_cache_mem_size=chunk_cache_mem_size)
+        else:
+            # In-memory data processing without h5 files.
+            das = []
+            for i, label in enumerate(datalabels):
+                dataspace = numpy.zeros(newshape, dtype=dtypes[i])
+                dataarray = DataArray(dataspace,
+                                      unit=dataunits[i],
+                                      label=label,
+                                      plotlabel=dataplotlabels[i],
+                                      h5target=None)
+                das.append(dataarray)
+            dataset = cls(label, das, axes,
+                          plotconf=plotconf,
+                          h5target=h5target)
+        return dataset
+
+    @classmethod
     def from_textfile(cls, path, h5target=None, **kwargs):
         """
         Initializes a new DataSet from an existing text file. The file must contain the data in a column structure
@@ -3186,7 +3355,31 @@ class DataSet(object):
         assert self.check_label_uniqueness(moep.label), "Cannot add datafield. Label already exists!"
         self.datafields.append(moep)
 
-    def get_datafield(self, label_or_index):
+    def add_datafield_empty(self, unit=None, label=None, plotlabel=None,
+                            chunks=True,
+                            dtype=numpy.float32,
+                            compression='gzip', compression_opts=4):
+        # Create empty DataArray:
+        if self.h5target:
+            dataspace = Data_Handler_H5(unit=unit,
+                                        shape=self.shape, chunks=chunks,
+                                        dtype=dtype,
+                                        compression=compression,
+                                        compression_opts=compression_opts)
+            dataarray = DataArray(dataspace,
+                                  label=label,
+                                  plotlabel=plotlabel,
+                                  h5target=dataspace.h5target,
+                                  chunks=chunks,
+                                  compression=compression, compression_opts=compression_opts)
+        else:
+            dataspace = numpy.zeros(self.shape, dtype=dtype)
+            dataarray = DataArray(dataspace,
+                                  unit=unit,
+                                  label=label,
+                                  plotlabel=plotlabel,
+                                  h5target=None)
+        self.add_datafield(dataarray)def get_datafield(self, label_or_index):
         """
         Tries to assign a DataField to a given parameter, that can be an integer as an index in the
         datafields list or a label string. Raises exceptions if there is no matching field.
