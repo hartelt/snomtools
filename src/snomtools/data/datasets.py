@@ -3379,7 +3379,9 @@ class DataSet(object):
                                   label=label,
                                   plotlabel=plotlabel,
                                   h5target=None)
-        self.add_datafield(dataarray)def get_datafield(self, label_or_index):
+        self.add_datafield(dataarray)
+
+    def get_datafield(self, label_or_index):
         """
         Tries to assign a DataField to a given parameter, that can be an integer as an index in the
         datafields list or a label string. Raises exceptions if there is no matching field.
