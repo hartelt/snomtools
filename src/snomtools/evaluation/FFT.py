@@ -162,7 +162,7 @@ class Butterfilter(object):
         :type n_freqs: int
 
         :return: The tuple of (frequencies, amplitudes) of the filter response.
-        :rtype: tuple(pint.Quantity, array of complex numbers)
+        :rtype: tuple[pint.Quantity, numpy.ndarray]
         """
         w, h = signal.freqz(self.b, self.a, worN=n_freqs)
         prefactor = (1 / self.sampling_delta * 0.5 / consts.pi_float).to(self.freq_unit)
@@ -186,9 +186,53 @@ class Butterfilter(object):
 
 
 class FrequencyFilter(object):
+    """
+    A frequency filter defined on a DataSet, filtering around multiples of a fundamental frequency.
+    Typically used for time-resolved data, that is analyzed in multiples of the laser frequencies,
+    the so-called omega-components. The filtering is done with butter filters (:class:`Butterfilter`),
+    defined for each frequency component.
+
+    Example usage with a DataSet instance containing the time axis `delay`,
+    measured with a femtosecond laser with wavelength 800 nm,
+    of which the omega_0, omega_1, omega_2 components are extracted:
+
+    .. code-block::
+        filterobject = FrequencyFilter(testdata,
+                                       (consts.c / u.to_ureg(800, 'nm')).to('PHz'),
+                                       'delay',
+                                       max_order=2,
+                                       widths=u.to_ureg([0.12, 0.075, 0.05, 0.025], 'PHz'),
+                                       butter_orders=[5, 5, 5])
+        filtereddata = filterobject.filter_data(h5target='filtered.hdf5')
+        filtereddata.saveh5()
+
+    .. automethod:: __init__
+    """
     default_widths = u.to_ureg([0.12, 0.075, 0.05, 0.025], 'PHz')  # Omega components for 800 nm Laser.
 
     def __init__(self, data, fundamental_frequency, axis=0, max_order=2, widths=None, butter_orders=5):
+        """
+        The initializer.
+
+        :param data: The data to filter.
+        :type data: :class:`~snomtools.data.datasets.DataSet` or :class:`~snomtools.data.datasets.ROI`
+
+        :param fundamental_frequency:
+        :type fundamental_frequency: pint.Quantity
+
+        :param axis: The axis along which to apply the frequency filter, given as a valid identifier of the axis.
+        :type axis: int or str
+
+        :param max_order: The maximum frequency order to calculate. Default is `2` for up to omega_2 component.
+        :type max_order: int
+
+        :param widths: The half-widths of the frequency window around each multiple of the fundamental frequency.
+        :type widths: list[pint.Quantity or float]
+
+        :param butter_orders: The order of each butter filter defined for the frequency components.
+            Individual orders for each component can be given as a list of ints.
+        :type butter_orders: int or list[int]
+        """
         assert isinstance(data, (ds.DataSet, ds.ROI))
         self.indata = data
         self.filter_axis_id = data.get_axis_index(axis)
@@ -234,6 +278,23 @@ class FrequencyFilter(object):
         self.result = None
 
     def filteredslice(self, s, component, df=0):
+        """
+        Filtered slice of the instance input data.
+
+        :param s: A slice addressing a region of the data to return.
+            Can be conveniently made with `numpy.s_[]`.
+        :type s: slice
+
+        :param component: The frequency component to return.
+        :type component: int
+
+        :param df: The DataArray in the given DataSet to filter, can be specified if multiple are present.
+            Given as a valid identifier (index or label).
+        :type df: int or str
+
+        :return: The filtered data.
+        :rtype: numpy.ndarray
+        """
         s = full_slice(s, self.indata.dimensions)
         if s[self.filter_axis_id] != np.s_[:]:
             warnings.warn("Frequency filtering a slice that is not full along the filter axis might return bad results")
@@ -243,10 +304,44 @@ class FrequencyFilter(object):
         return u.to_ureg(filtered_data, df_in.get_unit())
 
     def filter_direct(self, timedata, component):
+        """
+        Frequency filter an array given directly as parameter.
+
+        :param timedata: The data to filter. Must have the same number of dimensions as the instance input data.
+        :type timedata: numpy.ndarray or pint.Quantity
+
+        :param component: The frequency component to return.
+        :type component: int
+
+        :return: The filtered input data, given as ndarray of same shape.
+        :rtype: numpy.ndarray
+        """
         return self.butters[component].filtered(timedata, axis=self.filter_axis_id)
 
     # noinspection PyUnusedLocal
     def filter_data(self, components=None, h5target=None, dfs=None, add_to_indata=False):
+        """
+        Calculate the full frequency components of the instance input data.
+
+        :param components: A list of components to be calculated.
+            By default (`None`), all components present are used.
+        :type components: None or list[int]
+
+        :param h5target: A HDF5 target to write to, given as a file path or h5py group.
+        :type h5target: str or h5py.Group
+
+        :param dfs: A list of identifiers of DataArrays present in the instance DataSet to filter.
+            By default (`None`), all DataArrays present are used.
+        :type dfs: None or list[int or str]
+
+        :param add_to_indata: If true, write to the instance input DataSet instead of initializing a new output DataSet.
+            In this case, the data of the filtered frequency components are added as new DataArrays
+            and a reference to the input data is returned.
+        :type add_to_indata: bool
+
+        :return: The DataSet containing the full filtered data.
+        :rtype: :class:`~snomtools.data.datasets.DataSet`
+        """
         # Handle Parameters:
         if components is None:
             components = list(range(len(self.butters)))
@@ -339,6 +434,17 @@ class FrequencyFilter(object):
         return outdata
 
     def response_data(self, n_freqs=5000):
+        """
+        Calculate the frequency response of the filter functions defined and return them as 1D-Dataset,
+        containing the frequency axis and a DataArray with complex filter amplitudes for each frequency component.
+        The DataArrays will be written in the filter order and labeled `filter response omegaN` for a component N.
+
+        :param n_freqs: Number of frequency steps to calculate for.
+        :type n_freqs: int
+
+        :return: The DataSet containing the frequency responses.
+        :rtype: :class:`~snomtools.data.datasets.DataSet`
+        """
         responses = []
         frequencies = None
         for b in self.butters:
@@ -348,7 +454,7 @@ class FrequencyFilter(object):
             else:
                 assert np.allclose(freqs, frequencies), "Butters giving inconsistent frequencies."
             responses.append(response)
-        das = [ds.DataArray(responses[i], label="filter curve omega{0}".format(i)) for i in range(len(self.butters))]
+        das = [ds.DataArray(responses[i], label="filter response omega{0}".format(i)) for i in range(len(self.butters))]
         data = ds.DataSet("Frequency Filter Response Functions",
                           das,
                           [ds.Axis(frequencies, label='frequency')])
