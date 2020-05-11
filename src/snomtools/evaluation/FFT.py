@@ -1,12 +1,9 @@
 """
-FFT Script based on the work of Philip.
-That is why unused functions e.g. peak_detect are in this file and some notations are strange
+UPDATE ME
 """
 
 from scipy import fftpack
 import scipy.signal as signal
-from scipy.optimize import curve_fit
-import os
 import sys
 import numpy as np
 import snomtools.data.datasets as ds
@@ -111,12 +108,15 @@ class Butterfilter(object):
         if (lowcut is not None) and (highcut is not None):  # bandpass
             low = lowcut / nyq
             high = highcut / nyq
+            # noinspection PyTupleAssignmentBalance,PyTupleAssignmentBalance
             b, a = signal.butter(order, [low, high], btype='band')
         elif lowcut is not None:  # highpass
             low = lowcut / nyq
+            # noinspection PyTupleAssignmentBalance
             b, a = signal.butter(order, low, btype='high')
         elif highcut is not None:  # lowpass
             high = highcut / nyq
+            # noinspection PyTupleAssignmentBalance
             b, a = signal.butter(order, high, btype='low')
         self.b, self.a = b, a
         self.sampling_delta = sampling_delta
@@ -132,7 +132,7 @@ class Butterfilter(object):
 
 
 class FrequencyFilter(object):
-    default_widths = u.to_ureg([0.12, 0.075, 0.05, 0.025], 'PHz')
+    default_widths = u.to_ureg([0.12, 0.075, 0.05, 0.025], 'PHz')  # Omega components for 800 nm Laser.
 
     def __init__(self, data, fundamental_frequency, axis=0, max_order=2, widths=None, butter_orders=5):
         assert isinstance(data, (ds.DataSet, ds.ROI))
@@ -162,6 +162,7 @@ class FrequencyFilter(object):
             self.widths = u.to_ureg(widths, self.axis_freq_unit)
 
         if isinstance(butter_orders, int):
+            # noinspection PyUnusedLocal
             butter_orders = [butter_orders for i in range(max_order + 1)]
         else:
             assert len(butter_orders) == max_order + 1, "Wrong number of Butter orders."
@@ -190,6 +191,7 @@ class FrequencyFilter(object):
     def filter_direct(self, timedata, component):
         return self.butters[component].filtered(timedata, axis=self.filter_axis_id)
 
+    # noinspection PyUnusedLocal
     def filter_data(self, components=None, h5target=None, dfs=None, add_to_indata=False):
         # Handle Parameters:
         if components is None:
@@ -200,7 +202,7 @@ class FrequencyFilter(object):
         if dfs is None:
             dfs = list(range(len(self.indata.dlabels)))
         else:
-            dfs = [self.indata.get_datafield_index(l) for l in dfs]
+            dfs = [self.indata.get_datafield_index(df) for df in dfs]
 
         new_df_labels = [self.indata.get_datafield(d).label + '_omega{0}'.format(comp)
                          for d in dfs
@@ -218,7 +220,7 @@ class FrequencyFilter(object):
 
         else:
             # Prepare DataSet to write to:
-            axes = [self.indata.get_axis(l) for l in self.indata.axlabels]
+            axes = [self.indata.get_axis(label) for label in self.indata.axlabels]
 
             if h5target:
                 chunks = probe_chunksize(self.indata.shape)
@@ -349,7 +351,7 @@ class FFT(object):
         if dfs is None:
             dfs = list(range(len(self.indata.dlabels)))
         else:
-            dfs = [self.indata.get_datafield_index(l) for l in dfs]
+            dfs = [self.indata.get_datafield_index(df) for df in dfs]
 
         # Prepare DataSet to write to:
         transformed_axis = self.transformed_axis()
