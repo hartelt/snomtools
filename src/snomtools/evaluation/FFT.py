@@ -1,5 +1,5 @@
 """
-UPDATE ME
+This module contains FFT and frequency filtering classes for DataSets.
 """
 
 from scipy import fftpack
@@ -85,7 +85,35 @@ def doFFT_Filter(timedata, deltaT=0.4, w_c=0.375, d0=0.12, d1=0.075, d2=0.05, d3
 # -----------------------------------------------------------------------------------------------------
 
 class Butterfilter(object):
+    """
+    This class is a convenience implementation of the butter filter implemented in
+    `scipy.signal.butter
+    <https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.butter.html#scipy.signal.butter>`.
+    It automatically creates a lowpass, highpass or bandpass filter depending on the parameters given.
+    Parameters can be given as Quantities and units are handled accordingly.
+    :func:`~Butterfilter.response` can be used to output the characteristic frequency response.
+    Data can be filtered using :func:`~Butterfilter.filtered`, which filters data along a specified axis
+    along which the values are spaced by the `sampling_delta` given on initialization.
+
+    .. automethod:: __init__
+    """
     def __init__(self, sampling_delta, lowcut=None, highcut=None, order=5):
+        """
+        The initializer of the Butterfilter. All "time and frequency" parameters can and should be given as quantities.
+        If raw numerical data is given, it still works, but all values are assumed as dimensionless.
+
+        :param sampling_delta: The spacing of the axis along which to filter the data.
+        :type sampling_delta: `pint.Quantity`
+
+        :param lowcut: The low cut, below which the frequency response is faded out.
+        :type lowcut: `pint.Quantity`
+
+        :param highcut: The high cut, below which the frequency response is faded out.
+        :type highcut: `pint.Quantity`
+
+        :param order: The order of the filter, see scipy docs. If the frequency response looks bad, try increasing this.
+        :type order: int
+        """
         # Parse Arguments:
         sampling_delta = u.to_ureg(sampling_delta)
         if (lowcut is not None) and (highcut is not None):
@@ -123,11 +151,37 @@ class Butterfilter(object):
         self.order = order
 
     def response(self, n_freqs=5000):
+        """
+        The characteristic frequency response of the filter. Returned as a 2-tuple,
+        containing frequencies and filter amplitudes.
+        The frequency scale given as a Quantity with a unit defined by the low- and highcut upon initialization.
+        The amplitudes are given as complex numbers,
+        so the absolute value should be used to get the response factor in range 0 to 1.
+
+        :param n_freqs: A number of frequencies to calculate the response for. The outputs will have this length.
+        :type n_freqs: int
+
+        :return: The tuple of (frequencies, amplitudes) of the filter response.
+        :rtype: tuple(pint.Quantity, array of complex numbers)
+        """
         w, h = signal.freqz(self.b, self.a, worN=n_freqs)
         prefactor = (1 / self.sampling_delta * 0.5 / consts.pi_float).to(self.freq_unit)
         return prefactor * w, h
 
     def filtered(self, data, axis=-1):
+        """
+        The frequency filtered data.
+
+        :param data: The data.
+
+        :param axis: The axis of the data along which to apply the frequency filter.
+            Of cause the values along this axis should be spaced according to the `sampling_delta` of the filter.
+            By default (`-1`), the last axis is filtered.
+        :type axis: int
+
+        :return: The filtered data. returned as ndarray with the same shape as the input.
+        :rtype: numpy.ndarray
+        """
         return signal.filtfilt(self.b, self.a, data, axis=axis)
 
 
