@@ -350,7 +350,8 @@ class FrequencyFilter(object):
                 # Iterate over chunks and do the Filtering:
                 iterdims = [i for i in range(self.indata.dimensions) if i != self.filter_axis_id]
                 if verbose:
-                    number_of_calcs = np.prod([df_in.shape[i] // df_in.data.ds_data.chunks[i] for i in iterdims])
+                    number_of_calcs = np.prod(
+                        [sample_outdf.shape[i] // sample_outdf.data.ds_data.chunks[i] for i in iterdims])
                     progress_counter = 0
 
                 for s in sample_outdf.data.iterchunkslices(dims=iterdims):
@@ -451,7 +452,7 @@ class FFT(object):
         if transformed_axis_unit is None:
             self.axis_freq_unit = (1 / self.axis_to_transform.units).units
         else:
-            assert u.same_dimension(self.axis_to_transform, 1 / u.to_ureg(1, transformed_axis_unit))
+            assert u.same_dimension(self.axis_to_transform.data, 1 / u.to_ureg(1, transformed_axis_unit))
             self.axis_freq_unit = transformed_axis_unit
 
         self.result = None
@@ -589,7 +590,7 @@ class FFT(object):
                 # Iterate over chunks and do the FFT:
                 iterdims = [i for i in range(self.indata.dimensions) if i != self.axis_to_transform_id]
                 if verbose:
-                    number_of_calcs = np.prod([df_in.shape[i] // df_in.data.ds_data.chunks[i] for i in iterdims])
+                    number_of_calcs = np.prod([df_out.shape[i] // df_out.data.ds_data.chunks[i] for i in iterdims])
                     progress_counter = 0
 
                 for s in df_out.data.iterchunkslices(dims=iterdims):
@@ -640,13 +641,13 @@ if __name__ == '__main__':
 
     # Test FFT on h5:
     fftdatah5 = testdatah5.replace(".hdf5", "_FFT.hdf5")
-    fft = FFT(testdata, 'delay', 'PHz')
+    fft = FFT(testroi, 'delay', 'PHz')
     fftdata = fft.fft(h5target=fftdatah5)
     fftdata.saveh5()
 
     # Test Filtering on h5:
     filtereddatah5 = testdatah5.replace(".hdf5", "_filtered.hdf5")
-    filterobject = FrequencyFilter(testdata,
+    filterobject = FrequencyFilter(testroi,
                                    (consts.c / u.to_ureg(800, 'nm')).to('PHz'),
                                    'delay',
                                    max_order=2,
