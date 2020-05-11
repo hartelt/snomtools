@@ -97,6 +97,7 @@ class Butterfilter(object):
 
     .. automethod:: __init__
     """
+
     def __init__(self, sampling_delta, lowcut=None, highcut=None, order=5):
         """
         The initializer of the Butterfilter. All "time and frequency" parameters can and should be given as quantities.
@@ -328,6 +329,9 @@ class FrequencyFilter(object):
         :type components: None or list[int]
 
         :param h5target: A HDF5 target to write to, given as a file path or h5py group.
+            If this is given, the filtering is performed in a chunk-wise iteration over the data,
+            for optimal I/O performance and larger-than-memory support.
+            If not given, the FFT will be performed at once in memory.
         :type h5target: str or h5py.Group
 
         :param dfs: A list of identifiers of DataArrays present in the instance DataSet to filter.
@@ -462,7 +466,37 @@ class FrequencyFilter(object):
 
 
 class FFT(object):
+    """
+    A fast Fourier-Tranform (FFT), working on a given DataSet.
+
+    Example usage with a DataSet instance containing the time axis `delay`,
+    and performing the FFT to generate data with a frequency axis with unit PHz:
+
+    .. code-block::
+        fft = FFT(testdata, 'delay', 'PHz')
+        fftdata = fft.fft(h5target='FFT.hdf5')
+        fftdata.saveh5()
+
+    .. automethod:: __init__
+    """
+
     def __init__(self, data, axis=0, transformed_axis_unit=None):
+        """
+        The initializer.
+
+        :param data: The data to transform.
+        :type data: :class:`~snomtools.data.datasets.DataSet` or :class:`~snomtools.data.datasets.ROI`
+
+        :param axis: The axis along which to apply the FFT, given as a valid identifier of the axis.
+        :type axis: int or str
+
+        :param transformed_axis_unit: The unit for the generated frequency axis.
+            Must be compatible with the unit of the axis to transform,
+            meaning the two units must be inverse of each other.
+            If not given, the inverse unit of the Axis to transform is taken,
+            e.g. an Axis of unit `fs` is transformed to `1/fs`.
+        :type transformed_axis_unit: str or pint.Unit
+        """
         assert isinstance(data, (ds.DataSet, ds.ROI))
         self.indata = data
         self.axis_to_transform_id = data.get_axis_index(axis)
@@ -476,15 +510,36 @@ class FFT(object):
         if transformed_axis_unit is None:
             self.axis_freq_unit = (1 / self.axis_to_transform.units).units
         else:
+            assert u.same_dimension(self.axis_to_transform, 1 / u.to_ureg(1, transformed_axis_unit))
             self.axis_freq_unit = transformed_axis_unit
 
         self.result = None
 
     def transformed_axis(self, unit=None, label=None, plotlabel=None):
+        """
+        Calculate the transformed axis, e.g. the frequency axis from the time axis.
+        To calculate the frequency values, an FFT of a 1-dimensional probe slice is performed
+        and the frequency ticks are calculated from the result.
+
+        :param unit: Convert the calculated axis to this unit, deviating from `self.axis_freq_unit`.
+        :type unit: None or str
+
+        :param label: A label for the built axis. If none is given, the prefix `FFT_inverse_`
+            is put before the label of the original axis.
+        :type label: None or str
+
+        :param plotlabel: An (optional) plotlabel for the generated axis.
+        :type plotlabel: None or str
+
+        :return: The frequency axis resulting from the FFT.
+        :rtype: :class:`~snomtools.data.datasets.Axis`
+        """
+        # Calculate the frequency ticks:
         probe_slice = tuple([0 if i != self.axis_to_transform_id else np.s_[:] for i in range(self.indata.dimensions)])
         ax_size = fftpack.fftshift(fftpack.fft(self.indata.get_datafield(0).data[probe_slice].magnitude)).size
         fticks = fftpack.fftshift(fftpack.fftfreq(ax_size, self.sampling_delta.magnitude))
 
+        # Build the Axis object with the correct unit and return it:
         if label is None:
             label = "FFT-inverse_" + self.axis_to_transform.get_label()
         ax = ds.Axis(fticks, 1 / self.axis_to_transform.units, label=label, plotlabel=plotlabel)
@@ -495,9 +550,32 @@ class FFT(object):
         return ax
 
     def __getitem__(self, s):
+        """
+        Get the fourier-transformed data of a specific slice of the first DataArray of the instance input.
+        This just links to :func:`FFT.fftslice`.
+
+        :param s: The slice, addressing a selection of the instance input data.
+        :type s: slice
+
+        :return: The fourier-transformed data for the selection.
+        :rtype: pint.Quantity
+        """
         return self.fftslice(s)
 
     def fftslice(self, s, df=0):
+        """
+        Get the fourier-transformed data of a specific slice of a DataArray of the instance input.
+
+        :param s: The slice, addressing a selection of the instance input data.
+            Can be conveniently made with `numpy.s_[]`.
+        :type s: slice
+
+        :param df: An identifier (index or label) of the DataArray to transform.
+        :type df: int or str
+
+        :return: The fourier-transformed data for the selection.
+        :rtype: pint.Quantity
+        """
         s = full_slice(s, self.indata.dimensions)
         if s[self.axis_to_transform_id] != np.s_[:]:
             warnings.warn("FFT of a slice that is not full along the FFT axis might return bad results")
@@ -508,6 +586,22 @@ class FFT(object):
         return u.to_ureg(freqdata, df_in.get_unit())
 
     def fft(self, h5target=None, dfs=None):
+        """
+        Calculate the fourier transform of the instance input data.
+
+        :param h5target: A HDF5 target to write to, given as a file path or h5py group.
+            If this is given, the FFT is performed in a chunk-wise iteration over the data,
+            for optimal I/O performance and larger-than-memory support.
+            If not given, the FFT will be performed at once in memory.
+        :type h5target: str or h5py.Group
+
+        :param dfs: A list of identifiers of DataArrays present in the instance DataSet to filter.
+            By default (`None`), all DataArrays present are used.
+        :type dfs: None or list[int or str]
+
+        :return: The DataSet containing the full fourier-transformed data.
+        :rtype: :class:`~snomtools.data.datasets.DataSet`
+        """
         if dfs is None:
             dfs = list(range(len(self.indata.dlabels)))
         else:
