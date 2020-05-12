@@ -4109,14 +4109,13 @@ if __name__ == "__main__":  # just for testing
 
     del testdataset
 
-    testdataset2 = DataSet.in_h5('test.hdf5')
-    testdataset2.saveh5("exampledata.hdf5")
+    test_textio = False
+    if test_textio:
+        testdataset3 = DataSet.from_textfile('test2.txt', unitsline=1, h5target="test3.hdf5")
+        testdataset3.saveh5("test3.hdf5")
 
-    testdataset3 = DataSet.from_textfile('test2.txt', unitsline=1, h5target="test3.hdf5")
-    testdataset3.saveh5("test3.hdf5")
-
-    testdataset4 = DataSet.add([testdataset3, testdataset3], h5target="test4.hdf5")
-    testdataset4.saveh5()
+        testdataset4 = DataSet.add([testdataset3, testdataset3], h5target="test4.hdf5")
+        testdataset4.saveh5()
 
     testh5 = h5tools.File('test.hdf5')
 

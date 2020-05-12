@@ -1,5 +1,5 @@
-snomtools.calcs package
-=======================
+snomtools\.calcs package
+========================
 
 Subpackages
 -----------
@@ -12,32 +12,32 @@ Subpackages
 Submodules
 ----------
 
-snomtools.calcs.constants module
---------------------------------
+snomtools\.calcs\.constants module
+----------------------------------
 
 .. automodule:: snomtools.calcs.constants
     :members:
     :undoc-members:
     :show-inheritance:
 
-snomtools.calcs.conversions module
-----------------------------------
+snomtools\.calcs\.conversions module
+------------------------------------
 
 .. automodule:: snomtools.calcs.conversions
     :members:
     :undoc-members:
     :show-inheritance:
 
-snomtools.calcs.prefixes module
--------------------------------
+snomtools\.calcs\.prefixes module
+---------------------------------
 
 .. automodule:: snomtools.calcs.prefixes
     :members:
     :undoc-members:
     :show-inheritance:
 
-snomtools.calcs.units module
-----------------------------
+snomtools\.calcs\.units module
+------------------------------
 
 .. automodule:: snomtools.calcs.units
     :members:

@@ -1,11 +1,11 @@
-snomtools.calcs.plasmons package
-================================
+snomtools\.calcs\.plasmons package
+==================================
 
 Submodules
 ----------
 
-snomtools.calcs.plasmons.spp module
------------------------------------
+snomtools\.calcs\.plasmons\.spp module
+--------------------------------------
 
 .. automodule:: snomtools.calcs.plasmons.spp
     :members:
