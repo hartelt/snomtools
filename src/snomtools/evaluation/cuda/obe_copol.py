@@ -87,7 +87,7 @@ gpuOBE_simOverhead = 1.3  # 1.2
 
 # Tau for FWHM relax - This small tau is used to fit the FWHM of the
 # corresponding laser pulse. Don't use 0, otherwise the numerics will crash
-gpuOBE_simFWHMTau = 0.05
+gpuOBE_simFWHMTau = 0.05  # This seems to be unused. I'll leave it only for legacy reasons. MH, 2020-05-12
 
 
 def lowpass(data, highcut, srate, order):
