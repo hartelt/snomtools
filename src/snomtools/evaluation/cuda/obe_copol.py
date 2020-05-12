@@ -277,6 +277,28 @@ class OBEfit_Copol(object):
     """
     The OBE fit class...
 
+    Usage example, evaluating certain energies of a time- and energy-resolved measurement:
+
+    .. code-block::
+        # Assuming a dataset testdata, containing the measurement data as first DataArray,
+        # with dimensions delay, energy which is loaded from hdf5 file.
+        import snomtools.data.datasets as ds
+        testdata = ds.DataSet.from_h5file("cuda_OBEtest_copol.hdf5")
+        testroi = ds.ROI(testdata, {'energy': [200, 202]}, by_index=True)
+        # Initialize the OBEfit_Copol object:
+        fitobject = OBEfit_Copol(testroi, time_zero=-9.3, laser_AC_FWHM=u.to_ureg(49, 'fs'),
+                                 max_time_zero_offset=u.to_ureg(40, 'fs'))
+        # to optimize performance, call before obefit():
+        fitobject.optimize_gpu_blocksize()
+        #  Perform the actual calculations on the GPU:
+        result = fitobject.obefit()
+        result.saveh5("cuda_OBEtest_copol_result_ROI.hdf5")
+
+        #  To view the fit results of the first energy channel [0]:
+        from matplotlib import pyplot as plt
+        plt.plot(*fitobject.dataAC(0))
+        plt.plot(*fitobject.resultAC(0))
+
     .. automethod:: __init__
     """
     result_datalabels = ['lifetimes', 'amplitude', 'offset', 'center']
@@ -870,11 +892,9 @@ class OBEfit_Copol(object):
 
 
 minimal_example_test = False
-evaluation_test = False
 class_test = False
 if __name__ == '__main__':
     minimal_example_test = False
-    evaluation_test = False
     class_test = True
 
 # Example to test functionality
@@ -903,79 +923,6 @@ if minimal_example_test:
     # plot((-300,300),(2.0,2.0))
     # plot(Delays,normAC(IAC))
 
-if evaluation_test:
-    # Script for evaluation on local PC
-    wd = "/home/hartelt/repos/evaluation/2018/08 August/BFoerster crosspol"
-
-    HfO2folder = os.path.join(wd, "20180829 BFoerster Au HfO2")
-    HfO2datah5 = os.path.join(HfO2folder, "04 - TRER - sum Runs 5-8 - xy_integrated.hdf5")
-    HfO2FWHMh5 = os.path.join(HfO2folder, "HfO2 sp AC Fit Lorentz.hdf5")
-    HfO2outfolder = os.path.join(HfO2folder, "cudaresults")
-    if not os.path.exists(HfO2outfolder):
-        os.makedirs(HfO2outfolder)
-
-    HfO2data = ds.DataSet.from_h5(HfO2datah5)
-    HfO2FWHM = ds.DataSet.from_h5(HfO2FWHMh5)
-
-    print(HfO2data)
-    print(HfO2FWHM.get_datafield(0).min())
-    HfO2_AC_FWHM = HfO2FWHM.get_datafield(0).min().magnitude
-
-    print("Start: ", datetime.datetime.now().isoformat())
-
-    fitparams = []
-
-    for i, energy in enumerate(HfO2data.get_axis('energy').data):
-        print("HfO2 ", i, energy)
-        ExpDelays = HfO2data.get_axis('delay').data.magnitude
-        ExpData = HfO2data.get_datafield(0).data[:, i].magnitude
-        LorentzFWHM = HfO2FWHM.get_datafield(0).data[i]
-        # ExpData = ExpData / np.max(ExpData)
-
-        gpuOBE_stepsize = 1.0
-        gpuOBE_laserBlau = 400.
-        gpuOBE_LaserBlauFWHM = HfO2_AC_FWHM - 4.
-
-        global gpuOBE_normparameter
-        gpuOBE_normparameter = True
-        global gpuOBE_Phaseresolution
-        gpuOBE_Phaseresolution = False
-
-        guess_lifetime = max(1., LorentzFWHM.magnitude - gpuOBE_LaserBlauFWHM)
-        guess_lifetime = min(guess_lifetime, 200.)
-        guess_Offset = np.min(ExpData)
-        guess_Amp = np.max(ExpData) - guess_Offset
-        p0 = (guess_lifetime, guess_Amp, guess_Offset, -4.0)
-        # fitTauACblau(ExpDelays,FWHM,Amp,Offset,Center)
-
-        try:
-            # popt, pcov = curve_fit(fitTauACblau, ExpDelays, ExpData, p0,
-            # 					   bounds=([0, 0., 0., -20.], [200., np.inf, np.inf, 20.]))
-            popt, pcon = curve_fit(fitTauACblauCoPol, ExpDelays, ExpData, p0,
-                                   bounds=([0.0, 0.0, 0.0, -20.], [200., np.inf, np.inf, 20.]))
-        except RuntimeError as e:  # Fit failed
-            popt = np.full((4,), np.nan)
-            pcon = np.full((4, 4), np.nan)
-            print("Fit of HfO2 sp AC for {0:.2f} eV failed.".format(energy))
-
-        fitparams.append(popt)
-
-    print("HFO2 Finished: ", datetime.datetime.now().isoformat())
-
-    HfO2lifeTimes = ds.DataArray(np.array([popt[0] for popt in fitparams]), unit='fs',
-                                 label="lifetimes", plotlabel="Intermediate State Lifetime / \\si{\\femto\\second}")
-    HfO2amplitude = ds.DataArray(np.array([popt[1] for popt in fitparams]), unit='count',
-                                 label="amplitude", plotlabel="AC Amplitude / arb. unit.")
-    HfO2offset = ds.DataArray(np.array([popt[2] for popt in fitparams]), unit='count',
-                              label="offset", plotlabel="AC Background / arb. unit.")
-    HfO2center = ds.DataArray(np.array([popt[3] for popt in fitparams]), unit='fs',
-                              label="center", plotlabel="AC Center / \\si{\\femto\\second}")
-    HfO2result = ds.DataSet('HfO2 lifetime data', [HfO2lifeTimes, HfO2amplitude, HfO2offset, HfO2center],
-                            [HfO2data.get_axis('energy')])
-    HfO2result.saveh5(os.path.join(HfO2outfolder, 'HfO2 sp Lifetimes ownpulselength-4.hdf5'))
-
-    print("HfO2 data stored: ", datetime.datetime.now().isoformat())
-
 if class_test:
     # RUN THIS IN snomtools/test folder where testdata hdf5s are, or set your paths and parameters accordingly:
     testdata = ds.DataSet.from_h5file("cuda_OBEtest_copol.hdf5")
@@ -997,7 +944,7 @@ if class_test:
     testroida.saveh5("cuda_OBEtest_copol_ROI_with_ACs.hdf5")
 
     fitobject2 = OBEfit_Copol(testroida, time_zero=-9.3, laser_AC_FWHM=u.to_ureg(49, 'fs'),
-                             max_time_zero_offset=u.to_ureg(40, 'fs'))
+                              max_time_zero_offset=u.to_ureg(40, 'fs'))
     fitobject2.import_parameters(ds.DataSet.from_h5("cuda_OBEtest_copol_result_ROI.hdf5"))
     result2acs = fitobject2.resultACdata()
 
