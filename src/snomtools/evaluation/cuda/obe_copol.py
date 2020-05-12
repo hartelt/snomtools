@@ -91,6 +91,20 @@ gpuOBE_simFWHMTau = 0.05
 
 
 def lowpass(data, highcut, srate, order):
+    """
+    Filters the given data with a lowpass using scipy's butter filter.
+
+    :param numpy.ndarray data: A 1-D array containing the data to filter.
+
+    :param float highcut: The highcut frequency.
+        Given in units corresponding to the inverse of the time unit in `srate` (?).
+
+    :param float srate: The sampling rate, as in time step of the measurement.
+
+    :param int order: The order of the used butter filter.
+
+    :return: The filtered data and frequency filter response.
+    """
     nyq = 1 / (2 * srate)
     high = highcut / nyq
     b, a = signal.butter(order, high, btype='low')  # ,analog = True)
@@ -100,10 +114,24 @@ def lowpass(data, highcut, srate, order):
 
 
 def norm(data):
+    """
+    Normalizes data from 0 to 1.
+    """
     return (data - data.min()) / (data.max() - data.min())
 
 
 def getw0CoPol(timedata, stepsize, normparameter=False):
+    """
+    Get the omega_0 component of the interferometric autocorrelation.
+
+    :param numpy.ndarray timedata: The IAC data.
+
+    :param float stepsize: The step size between the IAC values.
+
+    :param bool normparameter: If True, return data normalized between 0 and 1.
+
+    :return: The filtered data.
+    """
     filtdata0, w0, h0 = lowpass(timedata, 0.1, stepsize, 5)
     if (normparameter == False):
         return filtdata0
@@ -112,6 +140,16 @@ def getw0CoPol(timedata, stepsize, normparameter=False):
 
 
 def CreateCoPolDelay(stepsize, MaxDelay):
+    """
+    Creates an array of delay values for the discretization of the OBE calculation.
+    Sets the global `OBE_gridsize` so everything fits into the initialized GPU memory.
+
+    :param float stepsize: The step size between the points (femtoseconds).
+
+    :param float MaxDelay: The maximum delay (femtoseconds).
+
+    :return: The delay values as 1D numpy array.
+    """
     # use global vars
     global gpuOBE_buffersize
     global gpuOBE_gridsize
@@ -180,13 +218,57 @@ def CreateCoPolDelay(stepsize, MaxDelay):
     return delays
 
 
-def coreTauACCoPol(x, tau, L, FWHM):
-    global gpuOBE_buffersize
-    IAC = gpuOBE_ACBlauCoPolTest(x, tau, L, FWHM, gpuOBE_buffersize)
-    return IAC
+def fitTauACblauCoPol(ExpDelays, tau, Amp, Offset, Center):
+    """
+    This is a "link function" to give to curve_fit.
+    It contains only the delays (x-axis) and the fit parameters,
+    and gets the rest of the parameters for the AC from globals.
+
+    :param numpy.ndarray ExpDelays: The experimental delay values.
+
+    :param float tau: The lifetime of the intermediate state (femtoseconds).
+
+    :param float Amp: The Amplitude of the Autocorrelation (counts or whatever).
+
+    :param float Offset: The Offset, or Background, as in Counts far from pulse overlap.
+
+    :param float Center: The center, meaning position of the time zero with respect to the given delays.
+
+    :return: The AC curve, approximated with a spline to the experimental delays.
+    """
+    # print '%.2f'%tau,
+    global gpuOBE_laserBlau
+    global gpuOBE_LaserBlauFWHM
+    global gpuOBE_normparameter
+    global gpuOBE_Phaseresolution
+    return TauACCoPol(ExpDelays, gpuOBE_laserBlau, gpuOBE_LaserBlauFWHM, tau, Amp, Offset, Center,
+                      normparameter=gpuOBE_normparameter, Phase=gpuOBE_Phaseresolution)
 
 
 def TauACCoPol(ExpDelays, L, FWHM, tau, Amp, Offset, Center, normparameter=False, Phase=False):
+    """
+    The Autocorrelation, approximated with a spline to the experimental delays.
+
+    :param numpy.ndarray ExpDelays: The experimental delay values.
+
+    :param float L: The laser lambda (nanometers).
+
+    :param float FWHM: The laser AC FWHM (femtoseconds).
+
+    :param float tau: The lifetime of the intermediate state (femtoseconds).
+
+    :param float Amp: The Amplitude of the Autocorrelation (counts or whatever).
+
+    :param float Offset: The Offset, or Background, as in Counts far from pulse overlap.
+
+    :param float Center: The center, meaning position of the time zero with respect to the given delays.
+
+    :param bool normparameter: Set to True to ignore the AC height from cuda and fit amplitude and offset of the curve.
+
+    :param bool Phase: Switch between phase resolved measurement (IAC) or not (only omega_0).
+
+    :return: The AC curve, approximated with a spline to the experimental delays.
+    """
     global gpuOBE_stepsize
     maxDelay = np.amax(np.array(ExpDelays))
     simDelays = CreateCoPolDelay(gpuOBE_stepsize, maxDelay)
@@ -221,17 +303,33 @@ def TauACCoPol(ExpDelays, L, FWHM, tau, Amp, Offset, Center, normparameter=False
     return Amp * intpAC + Offset
 
 
-def fitTauACblauCoPol(ExpDelays, tau, Amp, Offset, Center):
-    # print '%.2f'%tau,
-    global gpuOBE_laserBlau
-    global gpuOBE_LaserBlauFWHM
-    global gpuOBE_normparameter
-    global gpuOBE_Phaseresolution
-    return TauACCoPol(ExpDelays, gpuOBE_laserBlau, gpuOBE_LaserBlauFWHM, tau, Amp, Offset, Center,
-                      normparameter=gpuOBE_normparameter, Phase=gpuOBE_Phaseresolution)
+def coreTauACCoPol(x, tau, L, FWHM):
+    """
+    This just links to :func:`~fitTauACblauCoPol` adding the global `gpuOBE_buffersize` as parameter.
+    The buffersize is not used there, but whatever...
+    """
+    global gpuOBE_buffersize
+    IAC = gpuOBE_ACBlauCoPolTest(x, tau, L, FWHM, gpuOBE_buffersize)
+    return IAC
 
 
 def gpuOBE_ACBlauCoPolTest(Delaylist, tau, laserWavelength, laserFWHM, buffersize):
+    """
+    This function actually calls the functions running on the GPU.
+    It first generates the values for the Gamma values of the Density Matrix and then calls the cuda function.
+
+    :param numpy.ndarray Delaylist: The delaylist of points to calculate the IAC on.
+
+    :param float tau: The inelastic lifetime of the intermediate state (femtoseconds).
+
+    :param float laserWavelength: The laser wavelength (nanometers).
+
+    :param float laserFWHM: The FWHM of the laser pulse Autocorrelation (femtoseconds).
+
+    :param buffersize: Unused.
+
+    :return: The IAC as an 1D numpy array.
+    """
     f = c * 1e9 / laserWavelength
     w = 2 * np.pi * f * 1e-15
 
@@ -258,7 +356,6 @@ def gpuOBE_ACBlauCoPolTest(Delaylist, tau, laserWavelength, laserFWHM, buffersiz
     block_x = gpuOBE_blocksize
     block_y = 1
     block_z = 1
-    # assert buffersize <= 1024, "Maximum number of threads per block exceeded"
 
     delays = np.array(Delaylist, dtype=np.float64)
 
