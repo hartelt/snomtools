@@ -721,14 +721,15 @@ class Gauss_Fit_nD(object):
                     if print_counter % print_interval == 0:
                         tpf = ((time.time() - start_time) / float(print_counter))
                         etr = tpf * (np.prod(map_shape) - print_counter)
-                        print("tiff {0:d} / {1:d}, Time/Fit {3:.4f}s ETR: {2:.1f}s".format(print_counter,
-                                                                                           np.prod(map_shape),
-                                                                                           etr, tpf))
+                        print("Fit {0:d} / {1:d}, Time/Fit {3:.4f}s ETR: {2:.1f}s".format(print_counter,
+                                                                                          np.prod(map_shape),
+                                                                                          etr, tpf))
 
             self.x_0_unit = xunit
             self.sigma_unit = xunit
             self.A_unit = yunit
             self.C_unit = yunit
+            self.axes = [ax for i, ax in enumerate(data.axes) if i != axis_id]
             if keepdata:
                 self.data = data
 
@@ -771,6 +772,34 @@ class Gauss_Fit_nD(object):
     @property
     def FWHM_accuracy(self):
         return 2 * np.sqrt(2 * np.log(2)) * self.sigma_accuracy
+
+    def export_parameters(self, h5target=None):
+        if h5target:
+            da_h5target = True
+        else:
+            da_h5target = None
+        da1 = ds.DataArray(self.FWHM, label="fwhm", plotlabel="Fit Width (FWHM) / \\si{\\femto\\second}",
+                           h5target=da_h5target)
+        da2 = ds.DataArray(self.A, label="amplitude", plotlabel="Fit Amplitude / Counts",
+                           h5target=da_h5target)
+        da3 = ds.DataArray(self.C, label="background", plotlabel="Fit Background / Counts",
+                           h5target=da_h5target)
+        da4 = ds.DataArray(self.x_0, label="center", plotlabel="Fit Center / \\si{\\femto\\second}",
+                           h5target=da_h5target)
+        da5 = ds.DataArray(self.sigma, label="sigma", plotlabel="Fit Sigma) / \\si{\\femto\\second}",
+                           h5target=da_h5target)
+        da1_acc = ds.DataArray(self.FWHM_accuracy, label="fwhm_accuracy",
+                               plotlabel="Fit Width (FWHM) Fit Accuracy / \\si{\\femto\\second}", h5target=da_h5target)
+        da2_acc = ds.DataArray(self.A_accuracy, label="amplitude_accuracy",
+                               plotlabel="Fit Amplitude Fit Accuracy / Counts", h5target=da_h5target)
+        da3_acc = ds.DataArray(self.C_accuracy, label="background_accuracy",
+                               plotlabel="Fit Background Fit Accuracy / Counts", h5target=da_h5target)
+        da4_acc = ds.DataArray(self.x_0_accuracy, label="center_accuracy",
+                               plotlabel="Fit Center Fit Accuracy / \\si{\\femto\\second}", h5target=da_h5target)
+        da5_acc = ds.DataArray(self.sigma_accuracy, label="sigma_accuracy",
+                               plotlabel="Fit Sigma Fit Accuracy) / \\si{\\femto\\second}", h5target=da_h5target)
+        return ds.DataSet("Gauss Fit", [da1, da2, da3, da4, da5, da1_acc, da2_acc, da3_acc, da4_acc, da5_acc],
+                          self.axes, h5target=h5target)
 
     def gaussian(self, x, sel):
         """
@@ -1102,14 +1131,15 @@ class Lorentz_Fit_nD(object):
                     if print_counter % print_interval == 0:
                         tpf = ((time.time() - start_time) / float(print_counter))
                         etr = tpf * (np.prod(map_shape) - print_counter)
-                        print("tiff {0:d} / {1:d}, Time/Fit {3:.4f}s ETR: {2:.1f}s".format(print_counter,
-                                                                                           np.prod(map_shape),
-                                                                                           etr, tpf))
+                        print("Fit {0:d} / {1:d}, Time/Fit {3:.4f}s ETR: {2:.1f}s".format(print_counter,
+                                                                                          np.prod(map_shape),
+                                                                                          etr, tpf))
 
             self.x_0_unit = xunit
             self.gamma_unit = xunit
             self.A_unit = yunit
             self.C_unit = yunit
+            self.axes = [ax for i, ax in enumerate(data.axes) if i != axis_id]
             if keepdata:
                 self.data = data
 
@@ -1152,6 +1182,34 @@ class Lorentz_Fit_nD(object):
     @property
     def FWHM_accuracy(self):
         return 2 * self.gamma_accuracy
+
+    def export_parameters(self, h5target=None):
+        if h5target:
+            da_h5target = True
+        else:
+            da_h5target = None
+        da1 = ds.DataArray(self.FWHM, label="fwhm", plotlabel="Fit Width (FWHM) / \\si{\\femto\\second}",
+                           h5target=da_h5target)
+        da2 = ds.DataArray(self.A, label="amplitude", plotlabel="Fit Amplitude / Counts",
+                           h5target=da_h5target)
+        da3 = ds.DataArray(self.C, label="background", plotlabel="Fit Background / Counts",
+                           h5target=da_h5target)
+        da4 = ds.DataArray(self.x_0, label="center", plotlabel="Fit Center / \\si{\\femto\\second}",
+                           h5target=da_h5target)
+        da5 = ds.DataArray(self.gamma, label="gamma", plotlabel="Fit Gamma / \\si{\\femto\\second}",
+                           h5target=da_h5target)
+        da1_acc = ds.DataArray(self.FWHM_accuracy, label="fwhm_accuracy",
+                               plotlabel="Fit Width (FWHM) Fit Accuracy / \\si{\\femto\\second}", h5target=da_h5target)
+        da2_acc = ds.DataArray(self.A_accuracy, label="amplitude_accuracy",
+                               plotlabel="Fit Amplitude Fit Accuracy / Counts", h5target=da_h5target)
+        da3_acc = ds.DataArray(self.C_accuracy, label="background_accuracy",
+                               plotlabel="Fit Background Fit Accuracy / Counts", h5target=da_h5target)
+        da4_acc = ds.DataArray(self.x_0_accuracy, label="center_accuracy",
+                               plotlabel="Fit Center Fit Accuracy / \\si{\\femto\\second}", h5target=da_h5target)
+        da5_acc = ds.DataArray(self.gamma_accuracy, label="gamma_accuracy",
+                               plotlabel="Fit Gamma Fit Accuracy) / \\si{\\femto\\second}", h5target=da_h5target)
+        return ds.DataSet("Lorentz Fit", [da1, da2, da3, da4, da5, da1_acc, da2_acc, da3_acc, da4_acc, da5_acc],
+                          self.axes, h5target=h5target)
 
     def lorentzian(self, x, sel):
         """
@@ -1479,14 +1537,15 @@ class Sech2_Fit_nD(object):
                     if print_counter % print_interval == 0:
                         tpf = ((time.time() - start_time) / float(print_counter))
                         etr = tpf * (np.prod(map_shape) - print_counter)
-                        print("tiff {0:d} / {1:d}, Time/Fit {3:.4f}s ETR: {2:.1f}s".format(print_counter,
-                                                                                           np.prod(map_shape),
-                                                                                           etr, tpf))
+                        print("Fit {0:d} / {1:d}, Time/Fit {3:.4f}s ETR: {2:.1f}s".format(print_counter,
+                                                                                          np.prod(map_shape),
+                                                                                          etr, tpf))
 
             self.x_0_unit = xunit
             self.tau_unit = xunit
             self.A_unit = yunit
             self.C_unit = yunit
+            self.axes = [ax for i, ax in enumerate(data.axes) if i != axis_id]
             if keepdata:
                 self.data = data
 
@@ -1529,6 +1588,34 @@ class Sech2_Fit_nD(object):
     @property
     def FWHM_accuracy(self):
         return 2 * np.log(1 + np.sqrt(2)) * self.tau_accuracy
+
+    def export_parameters(self, h5target=None):
+        if h5target:
+            da_h5target = True
+        else:
+            da_h5target = None
+        da1 = ds.DataArray(self.FWHM, label="fwhm", plotlabel="Fit Width (FWHM) / \\si{\\femto\\second}",
+                           h5target=da_h5target)
+        da2 = ds.DataArray(self.A, label="amplitude", plotlabel="Fit Amplitude / Counts",
+                           h5target=da_h5target)
+        da3 = ds.DataArray(self.C, label="background", plotlabel="Fit Background / Counts",
+                           h5target=da_h5target)
+        da4 = ds.DataArray(self.x_0, label="center", plotlabel="Fit Center / \\si{\\femto\\second}",
+                           h5target=da_h5target)
+        da5 = ds.DataArray(self.tau, label="tau", plotlabel="Fit Tau / \\si{\\femto\\second}",
+                           h5target=da_h5target)
+        da1_acc = ds.DataArray(self.FWHM_accuracy, label="fwhm_accuracy",
+                               plotlabel="Fit Width (FWHM) Fit Accuracy / \\si{\\femto\\second}", h5target=da_h5target)
+        da2_acc = ds.DataArray(self.A_accuracy, label="amplitude_accuracy",
+                               plotlabel="Fit Amplitude Fit Accuracy / Counts", h5target=da_h5target)
+        da3_acc = ds.DataArray(self.C_accuracy, label="background_accuracy",
+                               plotlabel="Fit Background Fit Accuracy / Counts", h5target=da_h5target)
+        da4_acc = ds.DataArray(self.x_0_accuracy, label="center_accuracy",
+                               plotlabel="Fit Center Fit Accuracy / \\si{\\femto\\second}", h5target=da_h5target)
+        da5_acc = ds.DataArray(self.tau_accuracy, label="tau_accuracy",
+                               plotlabel="Fit Tau Fit Accuracy) / \\si{\\femto\\second}", h5target=da_h5target)
+        return ds.DataSet("Sech2 Fit", [da1, da2, da3, da4, da5, da1_acc, da2_acc, da3_acc, da4_acc, da5_acc],
+                          self.axes, h5target=h5target)
 
     def sech2(self, x, sel):
         """

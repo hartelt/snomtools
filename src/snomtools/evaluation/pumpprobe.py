@@ -10,7 +10,6 @@ from __future__ import division
 from __future__ import print_function
 import snomtools.calcs.conversions
 import snomtools.data.datasets
-import snomtools.data.imports.tiff
 import snomtools.calcs.units as u
 
 __author__ = 'hartelt'
