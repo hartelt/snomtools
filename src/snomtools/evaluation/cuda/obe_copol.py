@@ -4,29 +4,25 @@
 This file contains evaluation methods that use an Optical Bloch Equations (OBE) model,
 assuming co-polarized laser pulses incident on a three-level-system.
 It is typically used to evaluate time-resolved 2-Photon-Photoemission (2PPE) data.
+
+Use the :class:`~OBEfit_Copol` class to do the evaluation on snomtools DataSets.
+
+The class uses the legacy functions and global variables as defined in the code from Philip.
+This might be changed at a later time to improve niceness.
 """
 
 import numpy as np
 import pycuda.driver as drv
-import pycuda.tools
 import pycuda.autoinit
 import pycuda.cumath
 from pycuda.compiler import SourceModule
-import pycuda.gpuarray as gpuarray
-from scipy import fftpack
 import scipy.signal as signal
-from scipy.signal import freqz, butter, lfilter
 from scipy.optimize import curve_fit
-import scipy.integrate as integrate
-from timeit import default_timer as timer
+from scipy.interpolate import InterpolatedUnivariateSpline
 import datetime
 import time
 import timeit
-from scipy.interpolate import InterpolatedUnivariateSpline
-import re
-import h5py
 import sys
-import os
 from snomtools.evaluation.cuda import load_cuda_source
 import snomtools.data.datasets as ds
 import snomtools.calcs.units as u
@@ -98,7 +94,7 @@ def lowpass(data, highcut, srate, order):
     nyq = 1 / (2 * srate)
     high = highcut / nyq
     b, a = signal.butter(order, high, btype='low')  # ,analog = True)
-    w, h = freqz(b, a, worN=5000)
+    w, h = signal.freqz(b, a, worN=5000)
     res = signal.filtfilt(b, a, data)
     return [res, w, h]
 
@@ -314,7 +310,7 @@ class OBEfit_Copol(object):
         The initializer, which builds the OBEfit object according to the given data and parameters.
         The actual fit and return of results is then done with :func:`~OBEfit_Copol.obefit`.
 
-        :param data:
+        :param data: The data to evaluate.
         :type data: :class:`~snomtools.data.datasets.DataSet`
 
         :param fitaxis_ID: A valid identifier of the axis along which the autocorrelation was measured.
@@ -903,7 +899,7 @@ if minimal_example_test:
         print("Testing minimal example...")
     gpuOBE_stepsize = 0.2
     Delays = np.arange(-200, 200, 1)  # Both sides
-    starttime = timer()
+    starttime = time.time()
     # Delays = np.arange(-200,200,0.1)
     # print ('length',len(Delays))
 
@@ -916,7 +912,7 @@ if minimal_example_test:
     IAC = TauACCoPol(Delays, L, FWHM, tau, Amp, Offset, Center, normparameter=False, Phase=False)
     # LaserAC(ExpDelays,L,FWHM,Amp,Offset,Center):
     # IAC2 = LaserAC(Delays, L, FWHM, Amp, Offset, Center)
-    endtime = timer()
+    endtime = time.time()
     print("... done in {0:.3f} seconds".format(endtime - starttime))
     # figure()
     # plot((-300,300),(5.0/3.0,5.0/3.0))
