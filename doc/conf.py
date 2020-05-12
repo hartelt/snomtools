@@ -235,7 +235,7 @@ latex_preamble = r"""
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
   ('index', 'snomtools.tex', u'snomtools Documentation',
-   u'Michael Hartelt, Cristian González', 'manual'),
+   u'Michael Hartelt and others, TU Kaiserslautern', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -265,7 +265,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'snomtools', u'snomtools Documentation',
-     [u'Michael Hartelt, Cristian González'], 1)
+     [u'Michael Hartelt and others, TU Kaiserslautern'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -279,7 +279,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
   ('index', 'snomtools', u'snomtools Documentation',
-   u'Michael Hartelt, Cristian González', 'snomtools', 'One line description of project.',
+   u'Michael Hartelt and others, TU Kaiserslautern', 'snomtools', 'One line description of project.',
    'Miscellaneous'),
 ]
 
