@@ -4233,7 +4233,7 @@ if __name__ == "__main__":  # just for testing
         for f in h5files:
             f.close()
 
-    test_concatenate = True
+    test_concatenate = False
     if test_concatenate:
         concatdata = [DataSet.from_h5(f) for f in ["cuda_OBEtest_copol_result.hdf5",
                                                    "cuda_OBEtest_copol_result205.hdf5",
