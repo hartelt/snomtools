@@ -135,6 +135,7 @@ class FrequencyFilter(object):
     of which the omega_0, omega_1, omega_2 components are extracted:
 
     .. code-block::
+
         filterobject = FrequencyFilter(testdata,
                                        (consts.c / u.to_ureg(800, 'nm')).to('PHz'),
                                        'delay',
@@ -415,6 +416,7 @@ class FFT(object):
     and performing the FFT to generate data with a frequency axis with unit PHz:
 
     .. code-block::
+
         fft = FFT(testdata, 'delay', 'PHz')
         fftdata = fft.fft(h5target='FFT.hdf5')
         fftdata.saveh5()

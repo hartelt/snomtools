@@ -2456,7 +2456,7 @@ class Axis(DataArray):
         addressed by a float number, with a simple linear approximation.
 
         :param idx: float: An number between 0 and len(Axis)-1.
-        If a number out of this range is given, the outer limit value of the axes is returned.
+            If a number out of this range is given, the outer limit value of the axes is returned.
 
         :return: Corresponding linearly approximated value.
         """

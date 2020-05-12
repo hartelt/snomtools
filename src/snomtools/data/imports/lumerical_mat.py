@@ -62,30 +62,30 @@ def EMfield_3d(filepath, axes=None, unit_light=None, unit_space="um", field_keys
 	:param filepath: str: The (absolute or relative) path of input file.
 
 	:param axes: optional: List or tuple of axis keys to be read.
-	If not given, axes are detected automatically by the keys present in the .mat file.
-	For a frequency-domain monitor, wavelength (lambda, :code:`l`) is chosen over frequency frequency (:code:`f`)
-	per default if both are present.
-	Frequency can be chosen by setting this parameter.
-	Example: `axes = ['f','z','x']`
+		If not given, axes are detected automatically by the keys present in the .mat file.
+		For a frequency-domain monitor, wavelength (lambda, :code:`l`) is chosen over frequency frequency (:code:`f`)
+		per default if both are present.
+		Frequency can be chosen by setting this parameter.
+		Example: `axes = ['f','z','x']`
 
 	:param unit_light: str, optional: Set the output unit for the first axis, concerning the light.
-	Defaults are femtoseconds for time, nanometers for wavelength and terahertz for frequency.
-	Read data for values of the first axis is converted to this unit.
+		Defaults are femtoseconds for time, nanometers for wavelength and terahertz for frequency.
+		Read data for values of the first axis is converted to this unit.
 
 	:param unit_space: str, optional: Set the output unit for the second and third axis, concerning the position.
-	Defaults are micrometers.
-	Read data for values of the x/y/z axis is converted to this unit.
+		Defaults are micrometers.
+		Read data for values of the x/y/z axis is converted to this unit.
 
 	:param field_keys: optional: List or tuple of field keys to be read.
-	If not given, keys are detected automatically by the keys present in the .mat file.
-	For possible keys, see "lookup keys" above. Incompatible or absent keys given are ignored.
-	Example: `field_keys = ['E2','Ex','Ey','Ez']` to read only Electric Field.
-	Warning: If only incompatible keys, or keys not present in the .mat file are given, the DataSet consistency check
-	will fail and and exception will be thrown.
+		If not given, keys are detected automatically by the keys present in the .mat file.
+		For possible keys, see "lookup keys" above. Incompatible or absent keys given are ignored.
+		Example: `field_keys = ['E2','Ex','Ey','Ez']` to read only Electric Field.
+		Warning: If only incompatible keys, or keys not present in the .mat file are given,
+		the DataSet consistency check will fail and and exception will be thrown.
 
 	:param h5target: Optional: HDF5 Group or File to store read data in.
-	Default is :code:`True` for working on a temporary file.
-	Numpy-operation in RAM can be set by setting this to :code:`False`.
+		Default is :code:`True` for working on a temporary file.
+		Numpy-operation in RAM can be set by setting this to :code:`False`.
 	:type h5target: h5py Group/File
 
 	:return: The DataSet instance.

@@ -373,6 +373,7 @@ class OBEfit_Copol(object):
     Usage example, evaluating certain energies of a time- and energy-resolved measurement:
 
     .. code-block::
+
         # Assuming a dataset testdata, containing the measurement data as first DataArray,
         # with dimensions delay, energy which is loaded from hdf5 file.
         import snomtools.data.datasets as ds

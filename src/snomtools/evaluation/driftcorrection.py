@@ -256,7 +256,7 @@ class Drift(object):
 	def generate_shiftvector(self, stack_index):
 		"""
 		Generates the full shift vector according to the shape of self.data (minus the stackAxis) out of the 2d drift
-			vectors at a given index along the stackAxis.
+		vectors at a given index along the stackAxis.
 		# TESTME: I think the docs here might be wrong and actually the full vector INCLUDING the stackaxis is returned.
 
 		:param int stack_index: An index along the stackAxis
