@@ -2645,7 +2645,7 @@ class ROI(object):
                 # get the corresponding axis:
                 ax = self.dataset.axes[keyindex]
                 # get the axis index corresponding to the limit and store it:
-                if limitlist[key][0]:
+                if limitlist[key][0] is not None:
                     if by_index:
                         left_limit_index = limitlist[key][0]
                     else:
@@ -2663,7 +2663,7 @@ class ROI(object):
                         print("ERROR: ROI index not valid (typically out of bounds).")
                         raise e
                     self.limits[keyindex][0] = left_limit_index
-                if limitlist[key][1]:
+                if limitlist[key][1] is not None:
                     if by_index:
                         right_limit_index = limitlist[key][1]
                     else:

@@ -1,7 +1,7 @@
 """
 This file provides data evaluation scripts for photoemission spectroscopy (PES) data. This includes anything that is
 not experiment-specific, but can be applied for all photoemission spectra.
-For furter info about data structures, see:
+For further info about data structures, see:
 data.imports.tiff.py
 data.datasets.py
 
@@ -52,6 +52,17 @@ class FermiEdge:
 	"""
 
 	def __init__(self, data=None, guess=None, keepdata=True, normalize=False):
+		"""
+		Extract the fermi edge of a given data set
+
+		:param data: Choose the dataset containing the spectral data that should be extracted.
+
+		:param guess: Optional parameter, set tuple of the start parameters (E_f, dE, c, d) defined in the fermi_edge method
+
+		:param keepdata: Keep the current dataset. If keepdata is set to False, discard the current dataset after use?
+
+		:param normalize: Normalization of the spectrum
+		"""
 		if data:
 			self.data = self.extract_data(data)
 			energyunit = self.data.get_axis(0).get_unit()
@@ -73,7 +84,7 @@ class FermiEdge:
 
 	def __getattr__(self, item):
 		"""
-		This method provides dynamical naming in instances. It is called any time an attribute of the intstance is
+		This method provides dynamical naming in instances. It is called any time an attribute of the instance is
 		not found with the normal naming mechanism. Raises an AttributeError if the name cannot be resolved.
 
 		:param item: The name to get the corresponding attribute.
@@ -218,18 +229,19 @@ class FermiEdge:
 		return curve_fit(fermi_edge, energies.magnitude, intensities.magnitude, guess)
 
 
-def fermi_fit(data, energy_axis=None, range=None, guess=None):
-	"""
-	Fit a Fermi Distribution to the given data.
-
-	:param data:
-
-	:param energy_axis:
-
-	:param range:
-
-	:param guess:
-
-	:return:
-	"""
-	raise NotImplementedError()
+# def fermi_fit(data, energy_axis=None, range=None, guess=None):
+# 	"""
+# 	Fit a Fermi Distribution to the given data.
+#
+# 	:param data:
+#
+# 	:param energy_axis:
+#
+# 	:param range:
+#
+# 	:param guess:
+#
+# 	:return:
+# 	"""
+# 	raise NotImplementedError()
+#fermi_fit is redundant I will remove this when i am ready with all the other tasks
