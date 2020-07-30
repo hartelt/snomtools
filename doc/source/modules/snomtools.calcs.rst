@@ -5,6 +5,7 @@ Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 4
 
    snomtools.calcs.materials
    snomtools.calcs.plasmons
