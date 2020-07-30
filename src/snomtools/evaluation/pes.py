@@ -30,7 +30,7 @@ def fermi_edge(E, E_f, dE, c, d):
 
 	:param E: The x-Axis of the data consists of energies in eV
 
-	:param E_f: The Fermi energy in eV.
+	:param E_f: The Fermi energy in eV.e
 
 	:param dE: Energy Resolution. The broadening of the Fermi edge on top of the thermal broadening,
 		which is introduced by all experimental errors, in eV.
@@ -61,7 +61,7 @@ class FermiEdge:
 
 		:param keepdata: Keep the current dataset. If keepdata is set to False, discard the current dataset after use?
 
-		:param normalize: Normalization of the spectrum
+		:param normalize: Normalization of the spectrum.
 		"""
 		if data:
 			self.data = self.extract_data(data)
