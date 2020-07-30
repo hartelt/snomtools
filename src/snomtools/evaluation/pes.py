@@ -30,7 +30,7 @@ def fermi_edge(E, E_f, dE, c, d):
 
 	:param E: The x-Axis of the data consists of energies in eV
 
-	:param E_f: The Fermi energy in eV.e
+	:param E_f: The Fermi energy in eV.
 
 	:param dE: Energy Resolution. The broadening of the Fermi edge on top of the thermal broadening,
 		which is introduced by all experimental errors, in eV.
