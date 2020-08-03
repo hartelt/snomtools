@@ -57,7 +57,7 @@ class FermiEdge:
 
 		:param data: Choose the dataset containing the spectral data that should be extracted.
 
-		:param guess: Optional parameter, set tuple of the start parameters (E_f, dE, c, d) defined in the fermi_edge method
+		:param guess: Optional parameter, set tuple of the start parameters (E_f, dE, c, d) defined in the fermi_edge method.
 
 		:param keepdata: Keep the current dataset. If keepdata is set to False, discard the current dataset after use?
 
