@@ -1,6 +1,6 @@
 """
 This file provides miscellaneous fitting scripts for data.
-For furter info about data structures, see:
+For further info about data structures, see:
 data.datasets.py
 
 """
@@ -418,8 +418,8 @@ def gaussian_2D(xydata_tuple, amplitude, xo, yo, sigma_x, sigma_y, theta, offset
               'theta: ' + str(g_params[5]) + '\\t fit: ' + str(popt[5]) + '\\n' +
               'offset: ' + str(g_params[6]) + '\\t fit: ' + str(popt[6]))
         print('Note the error in theta and therefore the change in the sigmas! This is a demonstration of bad starting
-            parameters aswell as the limited accuracy in the angle, even for good ones. the plotted result still looks
-            decend tho.')
+            parameters as well as the limited accuracy in the angle, even for good ones. the plotted result still looks
+            descend tho.')
 
         data_fitted = gaussian_2D((x, y), *popt)
 

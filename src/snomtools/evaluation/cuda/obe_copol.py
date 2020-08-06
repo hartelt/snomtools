@@ -46,7 +46,7 @@ print_interval = 1
 if verbose:
     print('_____INITIATING PYCUDA DEVICE_____')
 dev = pycuda.autoinit.device
-# Setting acually used block size:
+# Setting actually used block size:
 # Using more than half the max_block_dim_x breaks (double precision??)
 # Using higher values instead of 2 increases performance (on Michaels RTX2080)
 gpuOBE_blocksize = int(dev.max_block_dim_x / 8)

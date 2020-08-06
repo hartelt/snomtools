@@ -161,7 +161,7 @@ def to_ureg(input_, unit=None, convert_quantities=True):
 			return ureg(input_).to(unit)
 		else:
 			return ureg(input_)
-	else:  # we are dealing with numerial data
+	else:  # we are dealing with numerical data
 		return Quantity(input_, unit)
 
 

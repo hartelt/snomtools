@@ -116,7 +116,7 @@ class Data_Handler_H5(u.Quantity):
             inst.compression_opts = compression_opts
             unit = u.to_ureg(1, unit).units
             h5tools.clear_name(h5target, "data")
-            # h5target.copy(data, h5target) # breaks in h5py 2.2.1, propably because of bug therein.
+            # h5target.copy(data, h5target) # breaks in h5py 2.2.1, probably because of bug therein.
             data.file.copy(data.name, h5target)
             inst.ds_data = h5target["data"]
             h5tools.clear_name(h5target, "unit")
@@ -325,7 +325,7 @@ class Data_Handler_H5(u.Quantity):
 
         # The following line could be replaced with
         # value = u.to_ureg(value).to(self.units)
-        # without changing any functionality. But calling to_ureg twice is more efficient because unneccesary calling
+        # without changing any functionality. But calling to_ureg twice is more efficient because unnecessary calling
         #  of value.to(self.units), which always generates a copy, is avoided if possible.
         value = u.to_ureg(u.to_ureg(value), self.units)
 
@@ -350,7 +350,7 @@ class Data_Handler_H5(u.Quantity):
         """
         Analyzes a selection on the data for backwards (step < 0) slices.
 
-        :param s: The selection slice or tuple of slices and ints to analize.
+        :param s: The selection slice or tuple of slices and ints to analyze.
 
         :return: A list of bools of `len == self.dims` with `True` for every backwards element, else `False`.
         :rtype: list(bool)
@@ -387,7 +387,7 @@ class Data_Handler_H5(u.Quantity):
 
     def to(self, unit, *contexts, **ctx_kwargs):
         """
-        A more performant version of pints Quantity's to, that avoids unneccesary calling of magnitude, and copies on
+        A more performant version of pints Quantity's to, that avoids unnecessary calling of magnitude, and copies on
         HDF5 level if possible.
 
         :param unit: A valid unit string or
@@ -404,7 +404,7 @@ class Data_Handler_H5(u.Quantity):
 
     def ito(self, unit, *contexts, **ctx_kwargs):
         """
-        A more performant version of pints Quantity's ito, that avoids unneccesary calling of magnitude.
+        A more performant version of pints Quantity's ito, that avoids unnecessary calling of magnitude.
 
         :param unit: A valid unit string or
 
@@ -509,7 +509,7 @@ class Data_Handler_H5(u.Quantity):
             else:
                 single_axis_flag = False
         except TypeError:
-            # axis has no len, so it is propably an integer already. Just go on...
+            # axis has no len, so it is probably an integer already. Just go on...
             single_axis_flag = True
 
         if single_axis_flag:  # Only one axis to sum over.
@@ -595,7 +595,7 @@ class Data_Handler_H5(u.Quantity):
         :rtype: Data_Handler_np *or* None
         """
         if prefilter is None:  # if not explicitly set, determine neccesity of prefiltering
-            if order > 0:  # if interpolation is required, spline prefilter is neccesary.
+            if order > 0:  # if interpolation is required, spline prefilter is necessary.
                 prefilter = True
             else:
                 prefilter = False
@@ -636,7 +636,7 @@ class Data_Handler_H5(u.Quantity):
         """
         # TODO: Optimize performance by not loading full data along shifted axes.
         if prefilter is None:  # if not explicitly set, determine neccesity of prefiltering
-            if order > 0:  # if interpolation is required, spline prefilter is neccesary.
+            if order > 0:  # if interpolation is required, spline prefilter is necessary.
                 prefilter = True
             else:
                 prefilter = False
@@ -648,7 +648,7 @@ class Data_Handler_H5(u.Quantity):
             recover_slice = slice_
             shift_dimensioncorrected = shift
         except TypeError:  # Shift is a sequence with shifts for each dimension
-            assert len(shift) == len(slice_), "Propably invalid shift argument."
+            assert len(shift) == len(slice_), "Probably invalid shift argument."
             expanded_slice = []
             recover_slice = []
             shift_dimensioncorrected = []
@@ -1447,7 +1447,7 @@ class Data_Handler_np(u.Quantity):
         :rtype: Data_Handler_np *or* None
         """
         if prefilter is None:  # if not explicitly set, determine neccesity of prefiltering
-            if order > 0:  # if interpolation is required, spline prefilter is neccesary.
+            if order > 0:  # if interpolation is required, spline prefilter is necessary.
                 prefilter = True
             else:
                 prefilter = False
@@ -1483,7 +1483,7 @@ class Data_Handler_np(u.Quantity):
         """
         # TODO: Optimize performance by not loading full data along shifted axes.
         if prefilter is None:  # if not explicitly set, determine neccesity of prefiltering
-            if order > 0:  # if interpolation is required, spline prefilter is neccesary.
+            if order > 0:  # if interpolation is required, spline prefilter is necessary.
                 prefilter = True
             else:
                 prefilter = False
@@ -1496,7 +1496,7 @@ class Data_Handler_np(u.Quantity):
             recover_slice = slice_
             shift_dimensioncorrected = shift
         except TypeError:  # Shift is a sequence with shifts for each dimension
-            assert len(shift) == len(slice_), "Propably invalid shift argument."
+            assert len(shift) == len(slice_), "Probably invalid shift argument."
             expanded_slice = []
             recover_slice = []
             shift_dimensioncorrected = []
@@ -1761,7 +1761,7 @@ class DataArray(object):
         # A DataArray contains everything we need, so we should be done here!
         elif isinstance(data, h5py.Group):  # If a HDF5 Group was given, load data directly.
             self.load_from_h5(data)
-        else:  # We DON'T have everything contained in data, so we need to process it seperately.
+        else:  # We DON'T have everything contained in data, so we need to process it separately.
             if data is None:
                 self._data = None  # No data. Initialize empty instance.
             elif u.is_quantity(data):  # Kind of the same as above, just for the data itself.
@@ -2080,7 +2080,7 @@ class DataArray(object):
 
     def project_nd(self, *args, **kwargs):
         """
-        Projects the datafield onto the given axes. Uses sum() method, but adresses axes to keep instead of axes to
+        Projects the datafield onto the given axes. Uses sum() method, but addresses axes to keep instead of axes to
         sum over.
 
         :param args: Integer indices for the axes to project onto.
@@ -2240,15 +2240,15 @@ class DataArray(object):
     # noinspection PyTypeChecker,PyUnresolvedReferences
     def __getitem__(self, key):
         """
-        To allow adressing parts or elements of the DataArray with [], including slicing as in numpy. This just
+        To allow addressing parts or elements of the DataArray with [], including slicing as in numpy. This just
         forwards to the underlying __getitem__ method of the data object.
 
-        :param key: The key which is given as adressed in dataarray[key].
+        :param key: The key which is given as addressed in dataarray[key].
         :type key: slice **or** int **or** tuples thereof
 
         :return: The sliced data as returned by self.data[key].
         """
-        # if an int is used as an index in a 1D dataarray, a single element is adressed:
+        # if an int is used as an index in a 1D dataarray, a single element is addressed:
         if isinstance(key, int) and len(self.data.shape) == 1:
             return self.data[key]
         # if tuple of ints with length of the number of dimensions of the data is given, we have a single element again:
@@ -2256,12 +2256,12 @@ class DataArray(object):
             if all(isinstance(key[i], int) for i in range(len(key))):
                 assert self.data[key].shape == ()  # a single element must have shape () because it is 0D
                 return self.data[key]
-        # else a part of the array is adressed (even if all dimensions of len 1, this will still be an dataarray...
+        # else a part of the array is addressed (even if all dimensions of len 1, this will still be an dataarray...
         return self.__class__(self.data[key], label=self.label, plotlabel=self.plotlabel)
 
     def __setitem__(self, key, value):
         """
-        To allow adressing parts or elements of the DataArray with [], including slicing as in numpy. This just
+        To allow addressing parts or elements of the DataArray with [], including slicing as in numpy. This just
         forwards to the underlying __setitem__ method of the data object.
 
         :param key: the key in the []
@@ -2433,7 +2433,7 @@ class Axis(DataArray):
         # Else we have a moredimensional array. Try to flatten it:
         flatarray = self.data.flatten()
         if not (len(flatarray) in self.data.shape):  # an invalid conversion.
-            raise ArithmeticError("Non-1D convertable data array in Axis.")
+            raise ArithmeticError("Non-1D convertible data array in Axis.")
         else:
             self.data = flatarray
 
@@ -2823,7 +2823,7 @@ class ROI(object):
     def get_slice(self, data_key=None):
         """
         Creates a slice object (or tuple of them) out of the limits of the ROI This can be used directly in the [] for
-        adressing the part of the arrays corresponding to the ROI.
+        addressing the part of the arrays corresponding to the ROI.
         See:
         http://docs.scipy.org/doc/numpy-1.10.0/reference/generated/numpy.s_.html
         https://docs.python.org/2/c-api/slice.html
@@ -2852,7 +2852,7 @@ class ROI(object):
             elif llim <= rlim:  # both limits given, standard order:
                 return numpy.s_[llim:rlim + 1]
             else:  # both limits given, reverse order:
-                if rlim == 0:  # 0 as index is only adressable like follows, b/c excluding:
+                if rlim == 0:  # 0 as index is only addressable like follows, b/c excluding:
                     return numpy.s_[llim::-1]
                 else:  # rlim must be shifted like above, b/c excluding:
                     return numpy.s_[llim:rlim - 1:-1]
@@ -3285,7 +3285,7 @@ class DataSet(object):
         :return: The initialized DataSet
         """
         path = os.path.abspath(path)
-        # Initalize empty DataSet with the filename as label:
+        # Initialize empty DataSet with the filename as label:
         filename = os.path.basename(path)
         dataset = cls(filename, h5target=h5target)
         # Load data:
@@ -3336,7 +3336,7 @@ class DataSet(object):
 
     def add_datafield(self, data, unit=None, label=None, plotlabel=None):
         """
-        Initalizes a datafield and adds it to the list. All parameters have to be given like the __init__ of DataSets
+        Initializes a datafield and adds it to the list. All parameters have to be given like the __init__ of DataSets
         expects them.
 
         :param data:
@@ -3482,7 +3482,7 @@ class DataSet(object):
 
     def add_axis(self, data, unit=None, label=None, plotlabel=None):
         """
-        Initalizes a datafield and adds it to the list. All parameters have to be given like the __init__ of Axis
+        Initializes a datafield and adds it to the list. All parameters have to be given like the __init__ of Axis
         expects them.
 
         :param data:
@@ -3618,7 +3618,7 @@ class DataSet(object):
 
     def project_nd(self, *args, **kwargs):
         """
-        Projects the datafield onto the given axes. Uses the DataSet.project_nd() method for every datset and returns a
+        Projects the datafield onto the given axes. Uses the DataSet.project_nd() method for every dataset and returns a
         new DataSet with the projected DataFields and the chosen axes.
 
         :param args: Valid identifiers for the axes to project onto.
@@ -3660,7 +3660,7 @@ class DataSet(object):
             # print "Axis "+str(i)+":"
             # print("axis len: "+str(len(self.axes[i])))
             # print("data len: "+str(self.datafields[0].shape[i]))
-            assert (len(self.axes[i]) == self.datafields[0].shape[i]), "Axes lenghts don't fit to data dimensions."
+            assert (len(self.axes[i]) == self.datafields[0].shape[i]), "Axes lengths don't fit to data dimensions."
         return True
 
     def check_label_uniqueness(self, newlabel=None):
