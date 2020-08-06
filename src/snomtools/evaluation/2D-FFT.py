@@ -9,7 +9,7 @@ def radial_profile(data, center):
 	r = r.astype(np.int)	#here, radiusbinning is 1 because of int sized pixels
 
 	tbin = np.bincount(r.ravel(), data.ravel()) #to each radius found in r weight it with it's datapoint
-	nr = np.bincount(r.ravel())					#here to amount of occurences of each radius is recorded
+	nr = np.bincount(r.ravel())					#here to amount of occurrences of each radius is recorded
 	radialprofile = tbin / nr					#norm
 
 	return radialprofile

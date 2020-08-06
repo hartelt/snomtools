@@ -112,7 +112,7 @@ output_dir = win_dir(working_directory + '/out')
 dircheck(output_dir)  # checks if dir exists
 dircheck(output_dir+'/variations/')
 
-template_size = 100	#Size of the image used for correlation calculation. Make shure it's smaller then the reference image
+template_size = 100	#Size of the image used for correlation calculation. Make sure it's smaller then the reference image
 angle_settings = (10,1, 20)  # center, resolution, variations
 scale_settings = (1.5, 0.1, 16)	# center, resolution, variations (cannot zoom <0)
 

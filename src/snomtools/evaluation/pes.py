@@ -1,7 +1,7 @@
 """
 This file provides data evaluation scripts for photoemission spectroscopy (PES) data. This includes anything that is
 not experiment-specific, but can be applied for all photoemission spectra.
-For furter info about data structures, see:
+For further info about data structures, see:
 data.imports.tiff.py
 data.datasets.py
 

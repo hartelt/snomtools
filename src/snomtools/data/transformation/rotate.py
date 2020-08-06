@@ -175,7 +175,7 @@ if __name__ == '__main__':  # Just for testing:
 	# Checking, if the cornervalues of the generated data are not Nan, since in this example, all data is not Nan
 	cornervalues =[]
 	for element in rot_crop_data:
-		data = rot_crop_data[element]	#This is how the data of each variation gets acessed
+		data = rot_crop_data[element]	#This is how the data of each variation gets accessed
 		cornervalues.append((data[0,0],data[0,data.shape[1]-1],data[data.shape[0]-1,0],data[data.shape[0]-1,data.shape[1]-1]))
 		if saveImages == True:
 			cv.imwrite(output_dir + str(element) + '.tif', data)

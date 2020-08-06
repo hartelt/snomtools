@@ -158,7 +158,7 @@ class Tempfile(File):
         try:
             os.rmdir(self.temp_dir)
         except OSError as e:
-            warnings.warn("Tempfile could not remove tempdir. Propably not empty.")
+            warnings.warn("Tempfile could not remove tempdir. Probably not empty.")
             print(e)
 
 

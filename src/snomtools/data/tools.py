@@ -1,6 +1,6 @@
 """
 This file provides miscellaneous tools for data manipulation.
-For furter info about data structures, see:
+For further info about data structures, see:
 data.datasets.py
 
 """
@@ -27,7 +27,7 @@ def assure_1D(data):
 	# Else we have a moredimensional array. Try to flatten it:
 	flatarray = data.flatten()
 	if not (len(flatarray) in data.shape):  # an invalid conversion.
-		raise ArithmeticError("Non-1D convertable data array in Axis.")
+		raise ArithmeticError("Non-1D convertible data array in Axis.")
 	else:
 		return flatarray
 
@@ -92,7 +92,7 @@ def sliced_shape(slice_, shape_):
 	"""
 	Calculate the shape one would get by slicing an array of shape :code:`shape_` with a slice :code:`slice_`.
 
-	.. note:: This is propably very inefficient, because an 1D-Array is initialized and sliced for each dimension.
+	.. note:: This is probably very inefficient, because an 1D-Array is initialized and sliced for each dimension.
 
 	:param slice_: A slice, as generated with numpy.s_[something].
 

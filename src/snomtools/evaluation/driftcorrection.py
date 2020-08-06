@@ -217,7 +217,7 @@ class Drift(object):
 			[(y_axis.value_floatindex(y) - y_axis.value_floatindex(self.template_origin[0])).magnitude
 			 for y in self.ydrift],
 			unit=y_axis.units,
-			label="Axis {0} drift relative postition".format(y_axis.label)))
+			label="Axis {0} drift relative position".format(y_axis.label)))
 
 		das.append(snomtools.data.datasets.DataArray(self.xdrift, label="Axis {0} drift index".format(x_axis.label)))
 		das.append(snomtools.data.datasets.DataArray(self.xdrift_relative,
@@ -229,7 +229,7 @@ class Drift(object):
 			[(x_axis.value_floatindex(x) - x_axis.value_floatindex(self.template_origin[1])).magnitude
 			 for x in self.xdrift],
 			unit=x_axis.units,
-			label="Axis {0} drift relative postition".format(x_axis.label)))
+			label="Axis {0} drift relative position".format(x_axis.label)))
 
 		return snomtools.data.datasets.DataSet("drift from " + self.data.label, das, [d_axis])
 
@@ -277,7 +277,7 @@ class Drift(object):
 		"""
 		Return the shifted data for a selection (slice) of the data.
 
-		:param sel:  A selection (slice) adressing a range of the data.
+		:param sel:  A selection (slice) addressing a range of the data.
 
 		:return: DataArray containing the shifted data
 		"""
@@ -503,7 +503,7 @@ class Drift(object):
 	@staticmethod
 	def subpixel_peak(max_var, results):
 		"""
-		Extrapolates the position of a maximum in a 2D array by logarithmical evaluation of it's surrounding values.
+		Extrapolates the position of a maximum in a 2D array by logarithmic evaluation of it's surrounding values.
 		I.e. for x: max_new=max + ( log(f(x-1)) - log(f(x+1)) ) / ( 2*log(f(x-1)) + 2*log(f(x+1)) - 4*log(f(x)) )
 
 		:param max_var: tuple with position of the maximum
@@ -676,7 +676,7 @@ class Terra_maxmap(object):
 			yield self.relative_vector(vec)
 
 	def relative_vector(self, vector):
-		# Substract mean value from current drift value
+		# Subtract mean value from current drift value
 		o_E = self.meanDrift
 		d_E = vector
 		return (d_E - o_E)
@@ -702,7 +702,7 @@ class Terra_maxmap(object):
 	def corrected_data(self, h5target=None):
 		"""Return the full dataset with maxima-map corrected data. Therefore in each xy pixel the data gets shifted along the energy axis"""
 
-		# Adress the DataArray with all the data
+		# Address the DataArray with all the data
 		fulldata = self.data.get_datafield(0)
 		assert isinstance(fulldata, snomtools.data.datasets.DataArray)
 
@@ -750,7 +750,7 @@ class Terra_maxmap(object):
 
 				# Create big cache array in which the calculated cache arrays will be buffered so only one write process per chunk occurs ->fast
 				bigger_cache_array = np.empty(shape=sliced_shape(chunkslice, fulldata.shape), dtype=np.float32)
-				# Adress the full data of the chunkslice as numpy array
+				# Address the full data of the chunkslice as numpy array
 				fulldata_chunk = snomtools.data.datasets.Data_Handler_np(fulldata.data.ds_data[chunkslice],
 																		 fulldata.get_unit())
 				# define yslice as y axis in chunkslice
@@ -812,7 +812,7 @@ class Terra_maxmap(object):
 								bigger_cache_array[subset_slice_relative] = fulldata_chunk.magnitude[
 									subset_slice_relative]
 							else:
-								# create slices to cut out the kept data, adress it's target position and fill the rest with Nan
+								# create slices to cut out the kept data, address it's target position and fill the rest with Nan
 								sourceslice = list(subset_slice_relative)
 								targetslice = list(subset_slice_relative)
 								restslice = list(subset_slice_relative)
@@ -837,7 +837,7 @@ class Terra_maxmap(object):
 								for dimension in xy_indexes:
 									targetslice.pop(dimension)
 									restslice.pop(dimension)
-								# Write the data using the generated slices for adressing the source in fulldata and the target in cache_array
+								# Write the data using the generated slices for addressing the source in fulldata and the target in cache_array
 								cache_array[tuple(restslice)] = np.nan  # write Nan to restslice positions
 								cache_array[tuple(targetslice)] = fulldata_chunk.magnitude[
 									tuple(sourceslice)]  # write data from sourceslice to positions of targetslice

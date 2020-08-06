@@ -4,7 +4,7 @@
 This file provides functions to evaluate k-space data measured e.g. with PEEM.
 Explicitly functions to scale dldpixels into inverse Angstrom.
 The methods work on a 4D DataSet imported with snomtools.
-For furter info about data structures, see:
+For further info about data structures, see:
 data.imports
 data.datasets.py
 """
