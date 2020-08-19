@@ -94,7 +94,7 @@ def load_dispersion_data(data, y_axisid='y', x_axisid='x', e_axisid='energy', d_
 
 
 def show_kscale(dispersion_data, figname, guess_zeropixel=None, guess_scalefactor=None, guess_energyoffset=None,
-                guess_kfov=None,
+                guess_kfov = None,
                 k_axisid='y', e_axisid='energy', savefig=False, **kwargs):
     """
     Plots the 2d dispersion data along a free electron parable with given parameters. Useful to test k scale.
