@@ -9,6 +9,8 @@ from __future__ import print_function
 import snomtools.data.datasets
 import matplotlib.patches
 import numpy
+import warnings
+import pint
 
 __author__ = "Michael Hartelt"
 
@@ -166,7 +168,9 @@ def project_2d(data, plot_dest, axis_vert=0, axis_hori=1, data_id=0, normalizati
 
 	assert (V.shape == plotdat.shape), "2D plot data doesn't fit to axis mesh..."
 
-	result = plot_dest.pcolormesh(numpy.array(H), numpy.array(V), numpy.array(plotdat), **kwargs)
+	with warnings.catch_warnings():
+		warnings.simplefilter("ignore", category=pint.UnitStrippedWarning)
+		result = plot_dest.pcolormesh(numpy.array(H), numpy.array(V), numpy.array(plotdat), **kwargs)
 	# Flip axis to have correct origin (array-index-like): upper left instead of lower left:
 	plot_dest.invert_yaxis()
 	return result
