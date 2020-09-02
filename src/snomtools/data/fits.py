@@ -659,8 +659,8 @@ class Gauss_Fit_nD(object):
     autocorrelation width map of a time-resolved measurement.
     """
 
-    result_datalabels = ['fwhm', 'amplitude', 'backgroud', 'center', 'sigma']
-    result_accuracylabels = ['fwhm_accuracy', 'amplitude_accuracy', 'backgroud_accuracy', 'center_accuracy', 'sigma_accuracy']
+    result_datalabels = ['amplitude', 'background', 'center', 'sigma']
+    result_accuracylabels = ['amplitude_accuracy', 'background_accuracy', 'center_accuracy', 'sigma_accuracy']
 
     def __init__(self, data=None, guess=None, data_id=0, axis_id=0, keepdata=True):
         global print_counter, start_time
@@ -735,6 +735,15 @@ class Gauss_Fit_nD(object):
             self.axes = [ax for i, ax in enumerate(data.axes) if i != axis_id]
             if keepdata:
                 self.data = data
+
+            if data == None:
+                self.coeffs = None
+                self.accuracy = None
+                self.x_0_unit = None
+                self.sigma_unit = None
+                self.A_unit = None
+                self.C_unit = None
+                self.axes = None
 
     @property
     def x_0(self):
@@ -820,6 +829,11 @@ class Gauss_Fit_nD(object):
         for param in self.result_datalabels + self.result_accuracylabels:
             assert param in data.dlabels, "Missing Parameter Data."
 
+        map_shape_list = list(data.shape)
+        coeff_shape = tuple([4] + map_shape_list)
+        self.coeffs = np.empty(coeff_shape)
+        self.accuracy = np.empty(coeff_shape)
+
         # Set fitting coefficients
         self.coeffs[0] = data.get_datafield('center').rawdata
         self.coeffs[1] = data.get_datafield('sigma').rawdata
@@ -831,10 +845,10 @@ class Gauss_Fit_nD(object):
         self.accuracy[2] = data.get_datafield('amplitude_accuracy').rawdata
         self.accuracy[3] = data.get_datafield('background_accuracy').rawdata
         # Set units
-        self.x_0_unit = data.get_datafield('center').data.get_unit()
-        self.sigma_unit = data.get_datafield('sigma').data.get_unit()
-        self.A_unit = data.get_datafield('amplitude').data.get_unit()
-        self.C_unit = data.get_datafield('background').data.get_unit()
+        self.x_0_unit = data.get_datafield('center').get_unit()
+        self.sigma_unit = data.get_datafield('sigma').get_unit()
+        self.A_unit = data.get_datafield('amplitude').get_unit()
+        self.C_unit = data.get_datafield('background').get_unit()
         # Set axes
         self.axes = data.axes
 
@@ -1105,6 +1119,9 @@ class Lorentz_Fit_nD(object):
     autocorrelation width map of a time-resolved measurement.
     """
 
+    result_datalabels = ['amplitude', 'background', 'center', 'gamma']
+    result_accuracylabels = ['amplitude_accuracy', 'background_accuracy', 'center_accuracy', 'gamma_accuracy']
+
     def __init__(self, data=None, guess=None, data_id=0, axis_id=0, keepdata=True):
         global print_counter, start_time
         if data:
@@ -1180,6 +1197,15 @@ class Lorentz_Fit_nD(object):
             if keepdata:
                 self.data = data
 
+        if data == None:
+            self.coeffs = None
+            self.accuracy = None
+            self.x_0_unit = None
+            self.gamma_unit = None
+            self.A_unit = None
+            self.C_unit = None
+            self.axes = None
+
     @property
     def x_0(self):
         return u.to_ureg(self.coeffs[0], self.x_0_unit)
@@ -1247,6 +1273,45 @@ class Lorentz_Fit_nD(object):
                                plotlabel="Fit Gamma Fit Accuracy) / \\si{\\femto\\second}", h5target=da_h5target)
         return ds.DataSet("Lorentz Fit", [da1, da2, da3, da4, da5, da1_acc, da2_acc, da3_acc, da4_acc, da5_acc],
                           self.axes, h5target=h5target)
+
+    def import_parameters(self, data):
+        '''
+        Import already existing (previously calculated) parameters of the Lorentz_Fit_nD result.
+        Using this, the *final state* of the Lorentz_Fit_nD instance can be reconstructed from known results
+        without running the full lorentzian again.
+        This can be useful to inspect the fit result if the full fitted ACs are not available.
+
+        :param data: A DataSet containing the fitting parameters, in the same form as obtained by performing
+            :func:`~Lorentz_Fit_nD.lorentzian' or exporting the results with :func:`~Lorentz_Fit_nD.export_parameters`.
+        :type data: :class:`~snomtools.data.datasets.DataSet`
+        '''
+
+        # Inspect input data to contain needed parameters
+        for param in self.result_datalabels + self.result_accuracylabels:
+            assert param in data.dlabels, "Missing Parameter Data."
+
+        map_shape_list = list(data.shape)
+        coeff_shape = tuple([4] + map_shape_list)
+        self.coeffs = np.empty(coeff_shape)
+        self.accuracy = np.empty(coeff_shape)
+
+        # Set fitting coefficients
+        self.coeffs[0] = data.get_datafield('center').rawdata
+        self.coeffs[1] = data.get_datafield('gamma').rawdata
+        self.coeffs[2] = data.get_datafield('amplitude').rawdata
+        self.coeffs[3] = data.get_datafield('background').rawdata
+        # Set fitting accuracies
+        self.accuracy[0] = data.get_datafield('center_accuracy').rawdata
+        self.accuracy[1] = data.get_datafield('gamma_accuracy').rawdata
+        self.accuracy[2] = data.get_datafield('amplitude_accuracy').rawdata
+        self.accuracy[3] = data.get_datafield('background_accuracy').rawdata
+        # Set units
+        self.x_0_unit = data.get_datafield('center').get_unit()
+        self.gamma_unit = data.get_datafield('gamma').get_unit()
+        self.A_unit = data.get_datafield('amplitude').get_unit()
+        self.C_unit = data.get_datafield('background').get_unit()
+        # Set axes
+        self.axes = data.axes
 
     def lorentzian(self, x, sel):
         """
@@ -1512,6 +1577,9 @@ class Sech2_Fit_nD(object):
     autocorrelation width map of a time-resolved measurement.
     """
 
+    result_datalabels = ['amplitude', 'background', 'center', 'tau']
+    result_accuracylabels = ['amplitude_accuracy', 'background_accuracy', 'center_accuracy', 'tau_accuracy']
+
     def __init__(self, data=None, guess=None, data_id=0, axis_id=0, keepdata=True):
         global print_counter, start_time
         if data:
@@ -1586,6 +1654,15 @@ class Sech2_Fit_nD(object):
             if keepdata:
                 self.data = data
 
+            if data == None:
+                self.coeffs = None
+                self.accuracy = None
+                self.x_0_unit = None
+                self.tau_unit = None
+                self.A_unit = None
+                self.C_unit = None
+                self.axes = None
+
     @property
     def x_0(self):
         return u.to_ureg(self.coeffs[0], self.x_0_unit)
@@ -1653,6 +1730,45 @@ class Sech2_Fit_nD(object):
                                plotlabel="Fit Tau Fit Accuracy) / \\si{\\femto\\second}", h5target=da_h5target)
         return ds.DataSet("Sech2 Fit", [da1, da2, da3, da4, da5, da1_acc, da2_acc, da3_acc, da4_acc, da5_acc],
                           self.axes, h5target=h5target)
+
+    def import_parameters(self, data):
+        '''
+        Import already existing (previously calculated) parameters of the Sech2_Fit_nD result.
+        Using this, the *final state* of the Sech2_Fit_nD instance can be reconstructed from known results
+        without running the full sech2 again.
+        This can be useful to inspect the fit result if the full fitted ACs are not available.
+
+        :param data: A DataSet containing the fitting parameters, in the same form as obtained by performing
+            :func:`~Sech2_Fit_nD.sech2' or exporting the results with :func:`~Sech2_Fit_nD.export_parameters`.
+        :type data: :class:`~snomtools.data.datasets.DataSet`
+        '''
+
+        # Inspect input data to contain needed parameters
+        for param in self.result_datalabels + self.result_accuracylabels:
+            assert param in data.dlabels, "Missing Parameter Data."
+
+        map_shape_list = list(data.shape)
+        coeff_shape = tuple([4] + map_shape_list)
+        self.coeffs = np.empty(coeff_shape)
+        self.accuracy = np.empty(coeff_shape)
+
+        # Set fitting coefficients
+        self.coeffs[0] = data.get_datafield('center').rawdata
+        self.coeffs[1] = data.get_datafield('tau').rawdata
+        self.coeffs[2] = data.get_datafield('amplitude').rawdata
+        self.coeffs[3] = data.get_datafield('background').rawdata
+        # Set fitting accuracies
+        self.accuracy[0] = data.get_datafield('center_accuracy').rawdata
+        self.accuracy[1] = data.get_datafield('tau_accuracy').rawdata
+        self.accuracy[2] = data.get_datafield('amplitude_accuracy').rawdata
+        self.accuracy[3] = data.get_datafield('background_accuracy').rawdata
+        # Set units
+        self.x_0_unit = data.get_datafield('center').get_unit()
+        self.tau_unit = data.get_datafield('tau').get_unit()
+        self.A_unit = data.get_datafield('amplitude').get_unit()
+        self.C_unit = data.get_datafield('background').get_unit()
+        # Set axes
+        self.axes = data.axes
 
     def sech2(self, x, sel):
         """
