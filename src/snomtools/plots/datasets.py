@@ -9,10 +9,14 @@ from __future__ import print_function
 import snomtools.data.datasets
 import snomtools.calcs.units as u
 import matplotlib.patches
+from matplotlib import __version__ as mplversion
 import numpy
 import warnings
+from packaging import version
 
 __author__ = "Michael Hartelt"
+
+mplversion = version.parse(mplversion)
 
 
 def project_1d(data, plot_dest, axis_id=0, data_id=0, normalization=None, offset=None, **kwargs):
@@ -121,6 +125,17 @@ def project_2d(data, plot_dest, axis_vert=0, axis_hori=1, data_id=0, normalizati
     """
     assert isinstance(data, snomtools.data.datasets.DataSet) or isinstance(data, snomtools.data.datasets.ROI), \
         "No dataset or ROI instance given to plot function."
+
+    # Handle shading for matplotlib pcolormesh kwarg:
+    if 'shading' in kwargs:
+        # The user thought of this so we don't have to.
+        pass
+    else:
+        if mplversion >= version.parse('3.3'):
+            kwargs['shading'] = 'nearest'
+        else:
+            warnings.warn("pcolormesh uses edge points, so the produced image will be offset by half a point. "
+                          "Use matplotlib>=3.3 to resolve this.")
 
     axv_index = data.get_axis_index(axis_vert)
     axv = data.get_axis(axv_index)
