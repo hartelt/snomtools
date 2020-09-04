@@ -13,7 +13,7 @@ from matplotlib import rc, cm
 from matplotlib.colors import LinearSegmentedColormap, ListedColormap
 import matplotlib.pyplot as plt
 
-mplversion = version.parse(matplotlib.__version__)
+mplversion = version.parse(plt.matplotlib.__version__)
 
 ###########################################
 # matplotlib rc settings
