@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 import numpy as np
 import os
+from packaging import version
 # Locale settings
 import locale
 
@@ -11,6 +12,8 @@ import locale
 from matplotlib import rc, cm
 from matplotlib.colors import LinearSegmentedColormap, ListedColormap
 import matplotlib.pyplot as plt
+
+mplversion = version.parse(matplotlib.__version__)
 
 ###########################################
 # matplotlib rc settings
@@ -51,7 +54,11 @@ preamble = "\n".join([
 # for Palatino and other serif fonts use:
 # rc('font',**{'family':'serif','serif':['Palatino']})
 rc('text', usetex=True)
-rc('text.latex', preamble=preamble)  # the text.latex.unicode parameter was removed since matplotlib 3.
+# the text.latex.unicode parameter is depreciated since matplotlib 2.2 and was removed since matplotlib 3.1:
+if mplversion >= version.parse('2.2'):
+    rc('text.latex', preamble=preamble)
+else:
+    rc('text.latex', unicode=True, preamble=preamble)
 
 ###########################################
 # matplotlib convenience
