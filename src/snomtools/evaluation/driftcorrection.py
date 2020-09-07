@@ -411,7 +411,7 @@ class Drift(object):
 
 	@classmethod
 	def template_matching_stack(cls, data, template, stackAxisID, method='cv.TM_CCOEFF_NORMED', subpixel=True,
-								threshold=(0, 0.1)):
+								threshold=(0, 0.2)):
 		"""
 		Passes the data of a 3D array along the stackAxis in form of 2D data to the template_matching function
 
@@ -477,7 +477,7 @@ class Drift(object):
 		"""
 		method = eval(method)
 
-		data_to_match = np.float32(np.array(data_to_match))
+		data_to_match = np.float32(np.array(data_to_match.data))
 		template = np.float32(np.array(template))
 
 		res = cv.matchTemplate(data_to_match, template, method)
