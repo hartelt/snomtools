@@ -664,7 +664,15 @@ class Gauss_Fit_nD(object):
 
     def __init__(self, data=None, guess=None, data_id=0, axis_id=0, keepdata=True):
         global print_counter, start_time
-        if data:
+        if data is None:
+            self.coeffs = None
+            self.accuracy = None
+            self.x_0_unit = None
+            self.sigma_unit = None
+            self.A_unit = None
+            self.C_unit = None
+            self.axes = None
+        else:
             data_id = data.get_datafield_index(data_id)
             axis_id = data.get_axis_index(axis_id)
             xaxis = data.get_axis(axis_id)
@@ -735,15 +743,6 @@ class Gauss_Fit_nD(object):
             self.axes = [ax for i, ax in enumerate(data.axes) if i != axis_id]
             if keepdata:
                 self.data = data
-
-            if data == None:
-                self.coeffs = None
-                self.accuracy = None
-                self.x_0_unit = None
-                self.sigma_unit = None
-                self.A_unit = None
-                self.C_unit = None
-                self.axes = None
 
     @property
     def x_0(self):
@@ -1124,7 +1123,15 @@ class Lorentz_Fit_nD(object):
 
     def __init__(self, data=None, guess=None, data_id=0, axis_id=0, keepdata=True):
         global print_counter, start_time
-        if data:
+        if data is None:
+            self.coeffs = None
+            self.accuracy = None
+            self.x_0_unit = None
+            self.gamma_unit = None
+            self.A_unit = None
+            self.C_unit = None
+            self.axes = None
+        else:
             data_id = data.get_datafield_index(data_id)
             axis_id = data.get_axis_index(axis_id)
             xaxis = data.get_axis(axis_id)
@@ -1196,15 +1203,6 @@ class Lorentz_Fit_nD(object):
             self.axes = [ax for i, ax in enumerate(data.axes) if i != axis_id]
             if keepdata:
                 self.data = data
-
-        if data == None:
-            self.coeffs = None
-            self.accuracy = None
-            self.x_0_unit = None
-            self.gamma_unit = None
-            self.A_unit = None
-            self.C_unit = None
-            self.axes = None
 
     @property
     def x_0(self):
@@ -1582,7 +1580,15 @@ class Sech2_Fit_nD(object):
 
     def __init__(self, data=None, guess=None, data_id=0, axis_id=0, keepdata=True):
         global print_counter, start_time
-        if data:
+        if data is None:
+            self.coeffs = None
+            self.accuracy = None
+            self.x_0_unit = None
+            self.tau_unit = None
+            self.A_unit = None
+            self.C_unit = None
+            self.axes = None
+        else:
             data_id = data.get_datafield_index(data_id)
             axis_id = data.get_axis_index(axis_id)
             xaxis = data.get_axis(axis_id)
@@ -1653,15 +1659,6 @@ class Sech2_Fit_nD(object):
             self.axes = [ax for i, ax in enumerate(data.axes) if i != axis_id]
             if keepdata:
                 self.data = data
-
-            if data == None:
-                self.coeffs = None
-                self.accuracy = None
-                self.x_0_unit = None
-                self.tau_unit = None
-                self.A_unit = None
-                self.C_unit = None
-                self.axes = None
 
     @property
     def x_0(self):
