@@ -94,7 +94,7 @@ def load_dispersion_data(data, y_axisid='y', x_axisid='x', e_axisid='energy', d_
 
 
 def show_kscale(dispersion_data, figname, guess_zeropixel=None, guess_scalefactor=None, guess_energyoffset=None,
-                guess_kfov = None,
+                guess_kfov=None,
                 k_axisid='y', e_axisid='energy', savefig=False, **kwargs):
     """
     Plots the 2d dispersion data along a free electron parable with given parameters. Useful to test k scale.
@@ -221,6 +221,7 @@ def show_state_parabola(dispersion_data, figname, guess_zeropixel=None, guess_ma
     if guess_zeropixel is None:
         zeropoint = k.mean()
     else:
+        # FixMe: This is wrong. A zero-pixel shouldn't be measured in inverse Angstrom. See FixMe below.
         zeropoint = u.to_ureg(guess_zeropixel, "1/angstrom")
     if guess_mass is None:
         bandmass = u.to_ureg(1, "m_e")
@@ -231,7 +232,7 @@ def show_state_parabola(dispersion_data, figname, guess_zeropixel=None, guess_ma
     parab_data = bandDispersionRelation(k, bandmass, zeropoint, energy_offset)
 
     # Plot dispersion and ParabolaFit
-    plt.figure(figsize=(7,4.8))
+    plt.figure(figsize=(7, 4.8))
     ax = plt.subplot(111)
     snomtools.plots.datasets.project_2d(dispersion_data, ax, e_axisid, k_axisid, **kwargs)
     ax.plot(k, parab_data, 'r-', label="Fitparabel")  # Plot parabola as red line.
@@ -360,28 +361,34 @@ if __name__ == '__main__':
     # Define run you want to scale
     data_folder = os.path.abspath("Folderpath to data")  # example "E:\\Evaluation\\20200102_Au111"
     file = "HDF5 file to scale"  # example "01_kspace_THG_GI_Texp45m3s_binned.hdf5"
-    file_path = os.path.join(data_folder, file)
+    file_path = "kscaletest.hdf5"  # os.path.join(data_folder, file)
     # If you don't want to create new file with same data but only scaled 'x', 'y' axis, which only doubles amount of data.
-    full_data = ds.DataSet.from_h5(file)
+    full_data = ds.DataSet.in_h5(file_path)
 
     # Parameters for fitting the Parabola to your data
     scalefactor = None  # example: u.to_ureg(0.002, 'angstrom**-1 per pixel')
-    e_offset = None  # example: u.to_ureg(30, 'eV')
-    zero = None  # example: u.to_ureg(650/2, 'pixel')
-    kfov = None  # example: u.to_ureg(1.5, '1/angstrom')
+    e_offset = None  # example: u.to_ureg(0.54, 'eV')
+    zero = None  # example: u.to_ureg(322, 'pixel')
+    kfov = None  # example: u.to_ureg(1.65, '1/angstrom')
 
     # Projects dataset on energy, y-pixel axis
     # Set d_axisid = False for static data
-    dispersion_data = load_dispersion_data(full_data, y_axisid='y binned x10', x_axisid='x binned x10', d_axisid=False)
+    dispersion_data = load_dispersion_data(full_data, y_axisid='y binned x5', x_axisid='x binned x5', d_axisid=False)
 
     # Trigger for saving Imgae, with figname as name of saved file
     save = True
-    figname = 'Figure Name'
+    figname = 'kscaletest'
 
     # Show k-space scaling example by plotting parabola along data:
-    (scalefactor, zeropoint) = show_kscale(dispersion_data, zero, scalefactor, e_offset, kfov, k_axisid='y binned x10',
-                                           savefig=save, figname=figname)
+    (scalefactor, zeropoint) = show_kscale(dispersion_data, figname, zero, scalefactor, e_offset, kfov,
+                                           k_axisid='y binned x5',
+                                           savefig=save)
     print((scalefactor, zeropoint))
+
+    # FixMe: This does not work: The calls of show_kscale and show_state_parabola seem to be inconsistent,
+    #  one using pixels, the other inverse Angstroms. Maybe show_state_parabola should support both??
+    show_state_parabola(dispersion_data, figname, guess_mass=u.to_ureg(2, 'm_e'), guess_energyoffset=e_offset,
+                        k_axisid='y binned x5')
 
     # Scale k-space axes according to some scaling factor and save the scaled DataSet:
     # Set to True if fit is good, to save/rescale your data
@@ -390,5 +397,6 @@ if __name__ == '__main__':
         # which only doubles amount of data. 'Outcomment' full_data re-definition
         full_data = ds.DataSet.from_h5(file_path, file_path.replace('.hdf5', '_kscaled.hdf5'))
         # Applys kscale calibration
-        kscale_axes(full_data, scalefactor, zeropoint, y_axisid='y binned x10', x_axisid='x binned x10')
+        kscale_axes(full_data, scalefactor, scalefactor, yzero=zeropoint, y_axisid='y binned x5',
+                    x_axisid='x binned x5')
         full_data.saveh5()
