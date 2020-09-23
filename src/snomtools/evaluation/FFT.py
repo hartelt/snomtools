@@ -524,7 +524,7 @@ class FFT(object):
         if s[self.axis_to_transform_id] != np.s_[:]:
             warnings.warn("FFT of a slice that is not full along the FFT axis might return bad results")
         df_in = self.indata.get_datafield(df)
-        timedata = df_in.data[s]
+        timedata = df_in.data[s].magnitude
         freqdata = fftpack.fftshift(fftpack.fft(timedata, axis=self.axis_to_transform_id),
                                     axes=self.axis_to_transform_id)
         return u.to_ureg(freqdata, df_in.get_unit())
