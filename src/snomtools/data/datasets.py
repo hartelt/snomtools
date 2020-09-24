@@ -1870,6 +1870,10 @@ class DataArray(object):
     def units(self):
         return self._data.units
 
+    @property
+    def dtype(self):
+        return self._data.dtype
+
     def get_data_raw(self):
         """
         Get the data as a raw numpy array, not a quantity.
