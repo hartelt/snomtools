@@ -321,12 +321,12 @@ class Drift(object):
 			# Probe HDF5 initialization to optimize buffer size:
 			chunk_size = snomtools.data.h5tools.probe_chunksize(shape=self.data.shape)
 			min_cache_size = np.prod(self.data.shape, dtype=np.int64) // self.data.shape[self.dstackAxisID] * \
-							 chunk_size[
-								 self.dstackAxisID] * 4  # 32bit floats require 4 bytes.
+							 chunk_size[self.dstackAxisID] * oldda.dtype.itemsize  # byte size of numeric type.
 			use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 128 MB just to be sure.
 			# Initialize data handler to write to:
 			dh = snomtools.data.datasets.Data_Handler_H5(unit=str(self.data.datafields[0].units), shape=self.data.shape,
-														 chunk_cache_mem_size=use_cache_size)
+														 chunk_cache_mem_size=use_cache_size,
+														 dtype=oldda.dtype)
 
 			# Calculate driftcorrected data and write it to dh:
 			if verbose:
