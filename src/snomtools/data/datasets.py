@@ -1872,6 +1872,9 @@ class DataArray(object):
 
     @property
     def dtype(self):
+        """
+        The type of the numerical data, e.g. `numpy.float64`.
+        """
         return self._data.dtype
 
     def get_data_raw(self):
