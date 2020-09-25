@@ -629,10 +629,12 @@ class Data_Handler_H5(u.Quantity):
             If :code:`False` is given, the slice of the instance data is overwritten.
         :type output: ndarray *or* dtype *or* :code:`False`, *optional*
 
-        :param h5target: The h5target to in case a new Data_Handler_H5 is generated.
+        :param h5target: The h5target to write to if a Data_Handler_H5 should be generated.
+            If :code:`True` is given, the returned object will be a Data_Handler_H5 (temp file mode).
+            By default (:code:`None`), the data is returned as Quantity (in-memory).
 
         :returns: The shifted data. If output is given as a parameter or :code:`False`, None is returned.
-        :rtype: Data_Handler_H5 *or* None
+        :rtype: Quantity *or* Data_Handler_H5 *or* None
         """
         # TODO: Optimize performance by not loading full data along shifted axes.
         if prefilter is None:  # if not explicitly set, determine neccesity of prefiltering
@@ -679,9 +681,15 @@ class Data_Handler_H5(u.Quantity):
         else:
             assert (output is None) or isinstance(numpy.dtype(output), numpy.dtype), \
                 "Invalid output argument given."
-            return Data_Handler_H5(
-                scipy.ndimage.interpolation.shift(self.ds_data[expanded_slice], shift_dimensioncorrected, output, order,
-                                                  mode, cval, prefilter)[recover_slice], self.units, h5target=h5target)
+            if h5target:
+                return Data_Handler_H5(
+                    scipy.ndimage.interpolation.shift(self.ds_data[expanded_slice], shift_dimensioncorrected, output,
+                                                      order, mode, cval, prefilter)[recover_slice], self.units,
+                    h5target=h5target)
+            else:
+                return u.to_ureg(
+                    scipy.ndimage.interpolation.shift(self.ds_data[expanded_slice], shift_dimensioncorrected, output,
+                                                      order, mode, cval, prefilter)[recover_slice], self.units)
 
     # TODO: Implement rotate_slice similar to shift_slice by using scipy.ndimage.interpolation.rotate
 
