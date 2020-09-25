@@ -302,7 +302,7 @@ class Drift(object):
 		else:  # We shifted several slices, so we have to stack them together again.
 			return shifted_slice_list[0].__class__.stack(shifted_slice_list)
 
-	def corrected_data(self, h5target=None):
+	def corrected_data(self, h5target=None, dtype=None):
 		"""
 		Return the full driftcorrected dataset.
 		2D data is shifted for each position along the stack to negate the drift.
@@ -316,17 +316,22 @@ class Drift(object):
 		"""
 
 		oldda = self.data.get_datafield(0)
+		if dtype is None:
+			dtype = oldda.dtype
+		else:
+			dtype = np.dtype(dtype)
+
 		if h5target:
 			# ToDO:implement chunkwise iteration. e.g. t,E,y,x resolved has chunks (12,6,41,41) with dim (383,81,650,650) = 1.6 GB
 			# Probe HDF5 initialization to optimize buffer size:
-			chunk_size = snomtools.data.h5tools.probe_chunksize(shape=self.data.shape, dtype=oldda.dtype)
+			chunk_size = snomtools.data.h5tools.probe_chunksize(shape=self.data.shape, dtype=dtype)
 			min_cache_size = np.prod(self.data.shape, dtype=np.int64) // self.data.shape[self.dstackAxisID] * \
-							 chunk_size[self.dstackAxisID] * oldda.dtype.itemsize  # byte size of numeric type.
-			use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 128 MB just to be sure.
+							 chunk_size[self.dstackAxisID] * dtype.itemsize  # byte size of numeric type.
+			use_cache_size = min_cache_size + 256 * 1024 ** 2  # Add 256 MB just to be sure.
 			# Initialize data handler to write to:
 			dh = snomtools.data.datasets.Data_Handler_H5(unit=str(self.data.datafields[0].units), shape=self.data.shape,
 														 chunk_cache_mem_size=use_cache_size,
-														 dtype=oldda.dtype)
+														 dtype=dtype)
 
 			# Calculate driftcorrected data and write it to dh:
 			if verbose:
@@ -347,7 +352,8 @@ class Drift(object):
 					step_starttime = time.time()
 				# Get the shifted data from the Data_Handler method:
 				shifted_data = self.data.get_datafield(0).data.shift_slice(subset_slice, shift,
-																		   order=self.interpolation_order)
+																		   order=self.interpolation_order,
+																		   output=dtype)
 				if verbose:
 					print('interpolation done in {0:.2f} s'.format(time.time() - step_starttime))
 					step_starttime = time.time()

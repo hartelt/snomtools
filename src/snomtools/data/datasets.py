@@ -677,7 +677,8 @@ class Data_Handler_H5(u.Quantity):
                                                   mode, cval, prefilter)[recover_slice]
             return None
         else:
-            assert (output is None) or isinstance(output, type), "Invalid output argument given."
+            assert (output is None) or isinstance(numpy.dtype(output), numpy.dtype), \
+                "Invalid output argument given."
             return Data_Handler_H5(
                 scipy.ndimage.interpolation.shift(self.ds_data[expanded_slice], shift_dimensioncorrected, output, order,
                                                   mode, cval, prefilter)[recover_slice], self.units, h5target=h5target)
