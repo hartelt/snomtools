@@ -1535,7 +1535,7 @@ class Data_Handler_np(u.Quantity):
             return None
         else:
             assert (output is None) or isinstance(numpy.dtype(output), numpy.dtype), "Invalid output argument given."
-            return Data_Handler_np(
+            return u.to_ureg(
                 scipy.ndimage.interpolation.shift(self.magnitude[expanded_slice], shift_dimensioncorrected, output,
                                                   order, mode, cval, prefilter)[recover_slice], self.units)
 
