@@ -608,7 +608,7 @@ class Data_Handler_H5(u.Quantity):
             scipy.ndimage.interpolation.shift(self.magnitude, shift, output, order, mode, cval, prefilter)
             return None
         else:
-            assert (output is None) or isinstance(output, type), "Invalid output argument given."
+            assert (output is None) or isinstance(numpy.dtype(output), numpy.dtype), "Invalid output argument given."
             return Data_Handler_H5(scipy.ndimage.interpolation.shift(self.magnitude, shift, output, order, mode, cval,
                                                                      prefilter),
                                    self.units, h5target=h5target)
@@ -629,10 +629,12 @@ class Data_Handler_H5(u.Quantity):
             If :code:`False` is given, the slice of the instance data is overwritten.
         :type output: ndarray *or* dtype *or* :code:`False`, *optional*
 
-        :param h5target: The h5target to in case a new Data_Handler_H5 is generated.
+        :param h5target: The h5target to write to if a Data_Handler_H5 should be generated.
+            If :code:`True` is given, the returned object will be a Data_Handler_H5 (temp file mode).
+            By default (:code:`None`), the data is returned as Quantity (in-memory).
 
         :returns: The shifted data. If output is given as a parameter or :code:`False`, None is returned.
-        :rtype: Data_Handler_H5 *or* None
+        :rtype: Quantity *or* Data_Handler_H5 *or* None
         """
         # TODO: Optimize performance by not loading full data along shifted axes.
         if prefilter is None:  # if not explicitly set, determine neccesity of prefiltering
@@ -677,10 +679,17 @@ class Data_Handler_H5(u.Quantity):
                                                   mode, cval, prefilter)[recover_slice]
             return None
         else:
-            assert (output is None) or isinstance(output, type), "Invalid output argument given."
-            return Data_Handler_H5(
-                scipy.ndimage.interpolation.shift(self.ds_data[expanded_slice], shift_dimensioncorrected, output, order,
-                                                  mode, cval, prefilter)[recover_slice], self.units, h5target=h5target)
+            assert (output is None) or isinstance(numpy.dtype(output), numpy.dtype), \
+                "Invalid output argument given."
+            if h5target:
+                return Data_Handler_H5(
+                    scipy.ndimage.interpolation.shift(self.ds_data[expanded_slice], shift_dimensioncorrected, output,
+                                                      order, mode, cval, prefilter)[recover_slice], self.units,
+                    h5target=h5target)
+            else:
+                return u.to_ureg(
+                    scipy.ndimage.interpolation.shift(self.ds_data[expanded_slice], shift_dimensioncorrected, output,
+                                                      order, mode, cval, prefilter)[recover_slice], self.units)
 
     # TODO: Implement rotate_slice similar to shift_slice by using scipy.ndimage.interpolation.rotate
 
@@ -1460,7 +1469,7 @@ class Data_Handler_np(u.Quantity):
             scipy.ndimage.interpolation.shift(self.magnitude, shift, output, order, mode, cval, prefilter)
             return None
         else:
-            assert (output is None) or isinstance(output, type), "Invalid output argument given."
+            assert (output is None) or isinstance(numpy.dtype(output), numpy.dtype), "Invalid output argument given."
             return Data_Handler_np(scipy.ndimage.interpolation.shift(self.magnitude, shift, output, order, mode, cval,
                                                                      prefilter),
                                    self.units)
@@ -1525,8 +1534,8 @@ class Data_Handler_np(u.Quantity):
                                                   mode, cval, prefilter)[recover_slice]
             return None
         else:
-            assert (output is None) or isinstance(output, type), "Invalid output argument given."
-            return Data_Handler_np(
+            assert (output is None) or isinstance(numpy.dtype(output), numpy.dtype), "Invalid output argument given."
+            return u.to_ureg(
                 scipy.ndimage.interpolation.shift(self.magnitude[expanded_slice], shift_dimensioncorrected, output,
                                                   order, mode, cval, prefilter)[recover_slice], self.units)
 
@@ -1869,6 +1878,13 @@ class DataArray(object):
     @property
     def units(self):
         return self._data.units
+
+    @property
+    def dtype(self):
+        """
+        The type of the numerical data, e.g. `numpy.float64`.
+        """
+        return self._data.dtype
 
     def get_data_raw(self):
         """

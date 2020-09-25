@@ -9,7 +9,7 @@ from __future__ import division
 from __future__ import print_function
 import snomtools.data.datasets
 import os
-import numpy
+import numpy as np
 import tifffile
 import re
 import warnings
@@ -144,7 +144,7 @@ def peem_dld_read_terra(filepath):
 
     # Read tif file to numpy array. Axes will be (timechannel, x, y):
     infile = tifffile.TiffFile(filepath)
-    indata = infile.asarray(numpy.s_[2:])  # slices 0,1 contain sum and error image, so we don't need those.
+    indata = infile.asarray(np.s_[2:])  # slices 0,1 contain sum and error image, so we don't need those.
 
     # Read time binning metadata from tags:
     roi_and_bin_id = "41010"  # as defined by Christian Schneider #define TIFFTAG_ROI_AND_BIN 41010
@@ -164,13 +164,13 @@ def peem_dld_read_terra(filepath):
         taxis = snomtools.data.datasets.Axis([T + i * Tbin for i in range(indata.shape[0])], label='channel',
                                              plotlabel='Time Channel')
     else:
-        taxis = snomtools.data.datasets.Axis(numpy.arange(0, indata.shape[0]), label='channel',
+        taxis = snomtools.data.datasets.Axis(np.arange(0, indata.shape[0]), label='channel',
                                              plotlabel='Time Channel')
     # Careful about orientation! This is like a matrix:
     # rows go first and are numbered in vertical direction -> Y
     # columns go last and are numbered in horizontal direction -> X
-    yaxis = snomtools.data.datasets.Axis(numpy.arange(0, indata.shape[1]), unit='pixel', label='y', plotlabel='y')
-    xaxis = snomtools.data.datasets.Axis(numpy.arange(0, indata.shape[2]), unit='pixel', label='x', plotlabel='x')
+    yaxis = snomtools.data.datasets.Axis(np.arange(0, indata.shape[1]), unit='pixel', label='y', plotlabel='y')
+    xaxis = snomtools.data.datasets.Axis(np.arange(0, indata.shape[2]), unit='pixel', label='x', plotlabel='x')
 
     # Return dataset:
     return snomtools.data.datasets.DataSet(label=filebase, datafields=[dataarray], axes=[taxis, yaxis, xaxis])
@@ -200,8 +200,8 @@ def peem_dld_read_terra_sumimage(filepath):
     # Careful about orientation! This is like a matrix:
     # rows go first and are numbered in vertical direction -> Y
     # columns go last and are numbered in horizontal direction -> X
-    yaxis = snomtools.data.datasets.Axis(numpy.arange(0, sumdata.shape[0]), unit='pixel', label='y', plotlabel='y')
-    xaxis = snomtools.data.datasets.Axis(numpy.arange(0, sumdata.shape[1]), unit='pixel', label='x', plotlabel='x')
+    yaxis = snomtools.data.datasets.Axis(np.arange(0, sumdata.shape[0]), unit='pixel', label='y', plotlabel='y')
+    xaxis = snomtools.data.datasets.Axis(np.arange(0, sumdata.shape[1]), unit='pixel', label='x', plotlabel='x')
 
     # Build dataset:
     ds_sum = snomtools.data.datasets.DataSet(label="sumimage " + filebase, datafields=[sumdataarray],
@@ -256,8 +256,8 @@ def peem_camera_read_camware(filepath):
     # Careful about orientation! This is like a matrix:
     # rows go first and are numbered in vertical direction -> Y
     # columns go last and are numbered in horizontal direction -> X
-    yaxis = snomtools.data.datasets.Axis(numpy.arange(0, indata.shape[0]), unit='pixel', label='y', plotlabel='y')
-    xaxis = snomtools.data.datasets.Axis(numpy.arange(0, indata.shape[1]), unit='pixel', label='x', plotlabel='x')
+    yaxis = snomtools.data.datasets.Axis(np.arange(0, indata.shape[0]), unit='pixel', label='y', plotlabel='y')
+    xaxis = snomtools.data.datasets.Axis(np.arange(0, indata.shape[1]), unit='pixel', label='x', plotlabel='x')
 
     # Return dataset:
     return snomtools.data.datasets.DataSet(label=filebase, datafields=[dataarray], axes=[yaxis, xaxis])
@@ -509,7 +509,7 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
             if MAX_CACHE_SIZE:
                 max_available_cache = min(max_available_cache, MAX_CACHE_SIZE)  # Stay below hardcoded debug limit.
             use_chunk_size = probe_chunksize(shape=newshape, compression=compression, compression_opts=compression_opts)
-            min_cache_size = use_chunk_size[0] * int(numpy.prod(sample_data.shape)) * 8  # 64bit = 4 bytes.
+            min_cache_size = use_chunk_size[0] * int(np.prod(sample_data.shape)) * 2  # 16bit = 2 bytes.
             use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 128 MB just to be sure.
             while use_cache_size > max_available_cache:
                 if verbose:
@@ -527,16 +527,16 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
                 if use_chunk_size[0] < 1:  # Avoid edge case 0
                     use_chunk_size = (1,) + use_chunk_size[1:]
                     print("Warning: Cannot reduce chunk size to fit into available buffer. Readin might be slow!")
-                    min_cache_size = use_chunk_size[0] * int(numpy.prod(sample_data.shape)) * 8  # 64bit = 8 bytes.
+                    min_cache_size = use_chunk_size[0] * int(np.prod(sample_data.shape)) * 2  # 16bit = 2 bytes.
                     use_cache_size = min_cache_size + 32 * 1024 ** 2  # Add 32 MB , overhang is small in this case.
                     break
                 if verbose:
                     print("Using half chunk size along scan direction: {0}".format(use_chunk_size))
-                min_cache_size = use_chunk_size[0] * int(numpy.prod(sample_data.shape)) * 8  # 64bit = 8 bytes.
+                min_cache_size = use_chunk_size[0] * int(np.prod(sample_data.shape)) * 2  # 16bit = 2 bytes.
                 use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 128 MB just to be sure.
         elif chunks:  # Chunk size is explicitly set:
             use_chunk_size = chunks
-            min_cache_size = use_chunk_size[0] * int(numpy.prod(sample_data.shape)) * 8  # 64bit = 8 bytes.
+            min_cache_size = use_chunk_size[0] * int(np.prod(sample_data.shape)) * 2  # 16bit = 2 bytes.
             use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 128 MB just to be sure.
         else:  # Chunked storage is turned off:
             use_chunk_size = False
@@ -546,7 +546,8 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
         dataspace = snomtools.data.datasets.Data_Handler_H5(unit=sample_data.get_datafield(0).get_unit(),
                                                             shape=newshape, chunks=use_chunk_size,
                                                             compression=compression, compression_opts=compression_opts,
-                                                            chunk_cache_mem_size=use_cache_size)
+                                                            chunk_cache_mem_size=use_cache_size,
+                                                            dtype=np.uint16)
         dataarray = snomtools.data.datasets.DataArray(dataspace,
                                                       label=sample_data.get_datafield(0).get_label(),
                                                       plotlabel=sample_data.get_datafield(0).get_plotlabel(),
@@ -558,7 +559,7 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
                                                   chunk_cache_mem_size=use_cache_size)
     else:
         # In-memory data processing without h5 files.
-        dataspace = u.to_ureg(numpy.zeros(newshape), sample_data.datafields[0].get_unit())
+        dataspace = u.to_ureg(np.zeros(newshape, dtype=np.uint16), sample_data.datafields[0].get_unit())
         dataarray = snomtools.data.datasets.DataArray(dataspace,
                                                       label=sample_data.get_datafield(0).get_label(),
                                                       plotlabel=sample_data.get_datafield(0).get_plotlabel(),
@@ -569,7 +570,7 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
 
     # ----------------------Fill dataset------------------------
     # Fill in data from imported tiffs:
-    slicebase = tuple([numpy.s_[:] for j in range(len(sample_data.shape))])
+    slicebase = tuple([np.s_[:] for j in range(len(sample_data.shape))])
 
     if verbose:
         import time
@@ -841,7 +842,7 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
     axlist = []
     for scanstep in iter(sorted(scanfiles.keys())):
         axlist.append(scanstep)
-    scanvalues = u.to_ureg(numpy.array(axlist) * scanfactor, scanunit)
+    scanvalues = u.to_ureg(np.array(axlist) * scanfactor, scanunit)
     scanaxis = snomtools.data.datasets.Axis(scanvalues, label=scanaxislabel, plotlabel=scanaxispl)
 
     # Test data size:
@@ -865,7 +866,7 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
             if MAX_CACHE_SIZE:
                 max_available_cache = min(max_available_cache, MAX_CACHE_SIZE)  # Stay below hardcoded debug limit.
             use_chunk_size = probe_chunksize(shape=newshape, compression=compression, compression_opts=compression_opts)
-            min_cache_size = use_chunk_size[0] * int(numpy.prod(sample_data.shape)) * 8  # 64bit = 4 bytes.
+            min_cache_size = use_chunk_size[0] * int(np.prod(sample_data.shape)) * 2  # 16bit = 2 bytes.
             use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 128 MB just to be sure.
             while use_cache_size > max_available_cache:
                 if verbose:
@@ -883,16 +884,16 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
                 if use_chunk_size[0] < 1:  # Avoid edge case 0
                     use_chunk_size = (1,) + use_chunk_size[1:]
                     print("Warning: Cannot reduce chunk size to fit into available buffer. Readin might be slow!")
-                    min_cache_size = use_chunk_size[0] * int(numpy.prod(sample_data.shape)) * 8  # 64bit = 8 bytes.
+                    min_cache_size = use_chunk_size[0] * int(np.prod(sample_data.shape)) * 2  # 16bit = 2 bytes.
                     use_cache_size = min_cache_size + 32 * 1024 ** 2  # Add 32 MB , overhang is small in this case.
                     break
                 if verbose:
                     print("Using half chunk size along scan direction: {0}".format(use_chunk_size))
-                min_cache_size = use_chunk_size[0] * int(numpy.prod(sample_data.shape)) * 8  # 64bit = 8 bytes.
+                min_cache_size = use_chunk_size[0] * int(np.prod(sample_data.shape)) * 2  # 16bit = 2 bytes.
                 use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 128 MB just to be sure.
         elif chunks:  # Chunk size is explicitly set:
             use_chunk_size = chunks
-            min_cache_size = use_chunk_size[0] * int(numpy.prod(sample_data.shape)) * 8  # 64bit = 8 bytes.
+            min_cache_size = use_chunk_size[0] * int(np.prod(sample_data.shape)) * 2  # 16bit = 2 bytes.
             use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 128 MB just to be sure.
         else:  # Chunked storage is turned off:
             use_chunk_size = False
@@ -902,7 +903,8 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
         dataspace = snomtools.data.datasets.Data_Handler_H5(unit=sample_data.get_datafield(0).get_unit(),
                                                             shape=newshape, chunks=use_chunk_size,
                                                             compression=compression, compression_opts=compression_opts,
-                                                            chunk_cache_mem_size=use_cache_size)
+                                                            chunk_cache_mem_size=use_cache_size,
+                                                            dtype=np.uint16)
         dataarray = snomtools.data.datasets.DataArray(dataspace,
                                                       label=sample_data.get_datafield(0).get_label(),
                                                       plotlabel=sample_data.get_datafield(0).get_plotlabel(),
@@ -914,7 +916,7 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
                                                   chunk_cache_mem_size=use_cache_size)
     else:
         # In-memory data processing without h5 files.
-        dataspace = u.to_ureg(numpy.zeros(newshape), sample_data.datafields[0].get_unit())
+        dataspace = u.to_ureg(np.zeros(newshape, dtype=np.uint16), sample_data.datafields[0].get_unit())
         dataarray = snomtools.data.datasets.DataArray(dataspace,
                                                       label=sample_data.get_datafield(0).get_label(),
                                                       plotlabel=sample_data.get_datafield(0).get_plotlabel(),
@@ -924,7 +926,7 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
     dataarray = dataset.get_datafield(0)
 
     # Fill in data from imported tiffs:
-    slicebase = tuple([numpy.s_[:] for j in range(len(sample_data.shape))])
+    slicebase = tuple([np.s_[:] for j in range(len(sample_data.shape))])
 
     if verbose:
         import time
@@ -993,7 +995,7 @@ if __name__ == "__main__":
         plfolder = "Powerlaw"
         pldata = powerlaw_folder_peem_camera(plfolder, powerunitlabel='\\SI{\\milli\\watt}')
 
-    test_timeresolved = False
+    test_timeresolved = True
     if test_timeresolved:
         trfolder = "terra-dummy-dld"
         trdata = dummy_folder_peem_dld_terra(trfolder, h5target=trfolder + '.hdf5')
@@ -1019,7 +1021,7 @@ if __name__ == "__main__":
         trdata = tr_normal_folder_peem_dld_terra(trfolder, h5target=trfolder + '_sum.hdf5', sum_only=True)
         trdata.saveh5()
 
-    test_opo_measurement = True
+    test_opo_measurement = False
     if test_opo_measurement:
         trfolder = "D:/Messdaten/2018/20181205 a-SiH on ZnO/01 OPO NI"
         trdata = opo_folder_peem_camera(trfolder)
