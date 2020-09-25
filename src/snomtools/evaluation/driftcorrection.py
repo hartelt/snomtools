@@ -399,7 +399,7 @@ class Drift(object):
                              digits=5,
                              output_dir=None, saveImg=False,
                              saveRes=False):
-        '''
+        """
         Calculates the correlation of different scales and rotations of tomatch_data against some reference_data
         :param reference_data: 2D dataset
         :param tomatch_data: 2D dataset
@@ -416,7 +416,8 @@ class Drift(object):
             tomatch_data_cropped = ds.DataArray(crop_around_center(np.float32(tomatch_data), 100, 100))
 
             match_rotation_scale(reference_data, tomatch_data_cropped, angle_settings=(3, 0.1, 300), output_dir=output_dir, saveRes=True)
-        '''
+        """
+        # TODO: Cleanup. Why is this here? Is it used in the context of a Driftcorrection?
         rot_crop_data = rot.rot_scale_data(data=tomatch_data, angle_settings=angle_settings,
                                            scale_settings=scale_settings, digits=digits, output_dir=output_dir,
                                            saveImg=saveImg)
@@ -647,6 +648,8 @@ class Drift(object):
 
 
 class Terra_maxmap(object):
+    # TODO: Cleanup, adapt new functions and features from Drift. Do we consider this a "drift correction"?
+    #  Should it be here?
     def __init__(self, data=None, precalculated_map=None, energyAxisID=None, yAxisID=None, xAxisID=None,
                  subpixel=True, method=None, interpolation_order=None, use_meandrift=True, binning=None):
 
