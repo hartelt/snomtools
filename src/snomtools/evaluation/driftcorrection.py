@@ -342,11 +342,7 @@ class Drift(object):
 
         if h5target:
             # ToDO:implement chunkwise iteration. e.g. t,E,y,x resolved has chunks (12,6,41,41) with dim (383,81,650,650) = 1.6 GB
-            # Probe HDF5 initialization to optimize buffer size:
-            # chunk_size = snomtools.data.h5tools.probe_chunksize(shape=self.data.shape, dtype=dtype)
-            # min_cache_size = np.prod(self.data.shape, dtype=np.int64) // self.data.shape[self.dstackAxisID] * \
-            #                  chunk_size[self.dstackAxisID] * dtype.itemsize  # byte size of numeric type.
-            # use_cache_size = min_cache_size + 256 * 1024 ** 2  # Add 256 MB just to be sure.
+            # Optimize buffer size:
             use_cache_size = buffer_needed(self.data.shape,
                                            [np.s_[:] if dim != self.dstackAxisID
                                             else 0 for dim in range(self.data.dimensions)],

@@ -427,5 +427,6 @@ if __name__ == "__main__":
     cs = probe_chunksize((10, 10, 10))
 
     b = buffer_needed((100, 100, 100), np.s_[:, [1, 2, 3], :], chunks=(8, 10, 10))
+    b = buffer_needed((100, 100, 100), (0,), chunks=(8, 10, 10))
 
     print("done")
