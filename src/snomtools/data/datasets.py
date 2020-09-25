@@ -608,7 +608,7 @@ class Data_Handler_H5(u.Quantity):
             scipy.ndimage.interpolation.shift(self.magnitude, shift, output, order, mode, cval, prefilter)
             return None
         else:
-            assert (output is None) or isinstance(output, type), "Invalid output argument given."
+            assert (output is None) or isinstance(numpy.dtype(output), numpy.dtype), "Invalid output argument given."
             return Data_Handler_H5(scipy.ndimage.interpolation.shift(self.magnitude, shift, output, order, mode, cval,
                                                                      prefilter),
                                    self.units, h5target=h5target)
@@ -1469,7 +1469,7 @@ class Data_Handler_np(u.Quantity):
             scipy.ndimage.interpolation.shift(self.magnitude, shift, output, order, mode, cval, prefilter)
             return None
         else:
-            assert (output is None) or isinstance(output, type), "Invalid output argument given."
+            assert (output is None) or isinstance(numpy.dtype(output), numpy.dtype), "Invalid output argument given."
             return Data_Handler_np(scipy.ndimage.interpolation.shift(self.magnitude, shift, output, order, mode, cval,
                                                                      prefilter),
                                    self.units)
@@ -1534,7 +1534,7 @@ class Data_Handler_np(u.Quantity):
                                                   mode, cval, prefilter)[recover_slice]
             return None
         else:
-            assert (output is None) or isinstance(output, type), "Invalid output argument given."
+            assert (output is None) or isinstance(numpy.dtype(output), numpy.dtype), "Invalid output argument given."
             return Data_Handler_np(
                 scipy.ndimage.interpolation.shift(self.magnitude[expanded_slice], shift_dimensioncorrected, output,
                                                   order, mode, cval, prefilter)[recover_slice], self.units)
