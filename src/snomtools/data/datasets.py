@@ -1288,6 +1288,7 @@ class Data_Handler_H5(u.Quantity):
                                                [0 if dim == axis else numpy.s_[:] for dim in range(len(outshape))],
                                                dtype=tostack[0].dtype)
 
+        # FixMe: This breaks if the elements to stack are larger than memory:
         inst = cls(shape=outshape, unit=unit, h5target=h5target, chunk_cache_mem_size=use_cache_size)
         for i in range(len(tostack)):
             slicebase = [numpy.s_[:] for j in range(len(inshape))]
