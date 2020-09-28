@@ -344,8 +344,8 @@ class Drift(object):
             # ToDO:implement chunkwise iteration. e.g. t,E,y,x resolved has chunks (12,6,41,41) with dim (383,81,650,650) = 1.6 GB
             # Optimize buffer size:
             use_cache_size = buffer_needed(self.data.shape,
-                                           [np.s_[:] if dim != self.dstackAxisID
-                                            else 0 for dim in range(self.data.dimensions)],
+                                           [np.s_[:] if dim != self.dstackAxisID else 0
+                                            for dim in range(self.data.dimensions)],
                                            dtype=dtype)
             # Initialize data handler to write to:
             dh = snomtools.data.datasets.Data_Handler_H5(unit=str(self.data.datafields[0].units), shape=self.data.shape,
