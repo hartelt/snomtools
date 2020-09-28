@@ -408,7 +408,7 @@ def buffer_needed(shape=None, access=None, chunks=None, data=None, dtype=None, s
                     chunks_needed[dim] += 1
     chunks_needed = np.prod(chunks_needed, dtype=np.uint64)  # Total chunks is product of chunks of each dimension.
     elements_needed = chunks_needed * np.prod(chunks, dtype=np.uint64)  # Elements per chunk is product of chunk size.
-    return elements_needed * np.dtype(dtype).itemsize + safety_margin
+    return int(elements_needed) * np.dtype(dtype).itemsize + safety_margin
 
 
 if __name__ == "__main__":
