@@ -359,44 +359,65 @@ if __name__ == '__main__':
     # ___ Example for usage ___:
     # Load experimental data, copy to new target and project dispersion data:
     # Define run you want to scale
-    data_folder = os.path.abspath("Folderpath to data")  # example "E:\\Evaluation\\20200102_Au111"
-    file = "HDF5 file to scale"  # example "01_kspace_THG_GI_Texp45m3s_binned.hdf5"
-    file_path = "kscaletest.hdf5"  # os.path.join(data_folder, file)
+    data_folder = os.path.abspath("Folderpath to data")  # example : "E:\\Evaluation\\20200102_Au111"
+    file = "HDF5 file to scale"  # example : # example "01_kspace_THG_GI_Texp45m3s_binned.hdf5"
+    file_path = os.path.join(data_folder, file)
     # If you don't want to create new file with same data but only scaled 'x', 'y' axis, which only doubles amount of data.
-    full_data = ds.DataSet.in_h5(file_path)
+    # Ignore 'full_data' and use 'file' instead
+    full_data = ds.DataSet.from_h5(file)
 
     # Parameters for fitting the Parabola to your data
-    scalefactor = None  # example: u.to_ureg(0.002, 'angstrom**-1 per pixel')
-    e_offset = None  # example: u.to_ureg(0.54, 'eV')
-    zero = None  # example: u.to_ureg(322, 'pixel')
-    kfov = None  # example: u.to_ureg(1.65, '1/angstrom')
+    x_scalefactor = None  # example : u.to_ureg(0.00270, 'angstrom**-1 per pixel')
+    y_scalefactor = None  # example : u.to_ureg(0.00275, 'angstrom**-1 per pixel')
+    e_offset = None  # example : u.to_ureg(29.9, 'eV')
+    x_zero = None  # example : u.to_ureg(320, 'pixel')
+    y_zero = None  # example : u.to_ureg(321, 'pixel')
+    kfov = None  # example : None
 
-    # Projects dataset on energy, y-pixel axis
+    # Projects dataset on energy, pixel plane for both pixel axes individually
     # Set d_axisid = False for static data
-    dispersion_data = load_dispersion_data(full_data, y_axisid='y binned x5', x_axisid='x binned x5', d_axisid=False)
+    # y_axisid describes respective k plane, x_axisid is used for statistic binning
+    x_dispersion_data = load_dispersion_data(full_data, y_axisid="x-Pixel",
+                                             # example : 'x'
+                                             x_axisid="y-Pixel",
+                                             # example : 'y'
+                                             e_axisid="energy-axis",
+                                             # example : 'energy'
+                                             d_axisid=False)
+    y_dispersion_data = load_dispersion_data(full_data, y_axisid="y-Pixel",
+                                             # example : 'y'
+                                             x_axisid="x-Pixel",
+                                             # example : 'x'
+                                             e_axisid="energy-axis",
+                                             # example : 'energy'
+                                             d_axisid=False)
 
-    # Trigger for saving Imgae, with figname as name of saved file
-    save = True
-    figname = 'kscaletest'
+    # Trigger for saving Imgae, with figname as name of saved file and scale with parameter in label
+    save = False
+    x_figname = 'Figure Name k_x'
+    y_figname = 'Figure Name k_y'
 
-    # Show k-space scaling example by plotting parabola along data:
-    (scalefactor, zeropoint) = show_kscale(dispersion_data, figname, zero, scalefactor, e_offset, kfov,
-                                           k_axisid='y binned x5',
-                                           savefig=save)
-    print((scalefactor, zeropoint))
+    # Show k-space scaling by plotting parabola along data:
+    # Along k_x axis:
+    (x_scalefactor, x_zero) = show_kscale(x_dispersion_data, x_figname, x_zero, x_scalefactor, e_offset, kfov,
+                                          k_axisid="x-Pixel", e_axisid="energy-axis", savefig=save,
+                                          norm=colors.LogNorm())  # example : k_axisid='x', e_axisid='energy'
+    print("x-Axis Param. :")
+    print(x_scalefactor, x_zero)
+    # Along k_y axis:
+    (y_scalefactor, y_zero) = show_kscale(y_dispersion_data, y_figname, y_zero, y_scalefactor, e_offset, kfov,
+                                          k_axisid="y-Pixel", e_axisid="energy-axis", savefig=save,
+                                          norm=colors.LogNorm())  # example : k_axisid='y', e_axisid='energy'
+    print("y-Axis Param. :")
+    print(y_scalefactor, y_zero)
 
-    # FixMe: This does not work: The calls of show_kscale and show_state_parabola seem to be inconsistent,
-    #  one using pixels, the other inverse Angstroms. Maybe show_state_parabola should support both??
-    show_state_parabola(dispersion_data, figname, guess_mass=u.to_ureg(2, 'm_e'), guess_energyoffset=e_offset,
-                        k_axisid='y binned x5')
-
-    # Scale k-space axes according to some scaling factor and save the scaled DataSet:
-    # Set to True if fit is good, to save/rescale your data
+    # Scale k-space axes according to above scaling factors and save the scaled DataSet:
+    # Set to save = True, if fit is good to save and rescale your data
     if save:
-        # If you don't want to create new file with same data but only scaled 'x', 'y' axis
-        # which only doubles amount of data. 'Outcomment' full_data re-definition
-        full_data = ds.DataSet.from_h5(file_path, file_path.replace('.hdf5', '_kscaled.hdf5'))
-        # Applys kscale calibration
-        kscale_axes(full_data, scalefactor, scalefactor, yzero=zeropoint, y_axisid='y binned x5',
-                    x_axisid='x binned x5')
+        # Applies k-scale calibration in k_x and k_y direction
+        full_data = ds.DataSet.from_h5(file_path, file_path.replace('.hdf5', '_Kscaled.hdf5'))
+        snomtools.evaluation.kscalecalibration.kscale_axes(full_data, y_scalefactor, x_scalefactor, y_zero, x_zero,
+                                                           y_axisid="y-Pixel",  # example : 'y'
+                                                           x_axisid="x-Pixel")  # example : 'x'
+        # Save scaled DataSet with target file name
         full_data.saveh5()
