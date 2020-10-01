@@ -95,9 +95,8 @@ def load_dispersion_data(data, y_axisid='y', x_axisid='x', e_axisid='energy', d_
     return snomtools.data.transformation.project.project_2d(sumroi, e_axisid, y_axisid)
 
 
-def show_kscale(dispersion_data, figname, guess_zeropixel=None, guess_scalefactor=None, guess_energyoffset=None,
-                guess_kfov=None,
-                k_axisid='y', e_axisid='energy', savefig=False, **kwargs):
+def show_kscale(dispersion_data, guess_zeropixel=None, guess_scalefactor=None, guess_energyoffset=None,
+                guess_kfov=None, k_axisid='y'):
     """
     Plots the 2d dispersion data along a free electron parable with given parameters. Useful to test k scale.
 
@@ -160,25 +159,10 @@ def show_kscale(dispersion_data, figname, guess_zeropixel=None, guess_scalefacto
     # Calculate a free electron parabola with given parameters
     parab_data = freeElectronParabola(dldpixels, scalefactor, zeropoint, energy_offset)
 
-    # Plot dispersion and ParabolaFit
-    plt.figure()
-    ax = plt.subplot(111)
-    snomtools.plots.datasets.project_2d(dispersion_data, ax, e_axisid, k_axisid, **kwargs)
-    ax.plot(dldpixels, parab_data, 'r-', label="Fitparabel")  # Plot parabola as red line.
-    ax.invert_yaxis()  # project_2d flips the y axis as it assumes standard matrix orientation, so flip it back.)
-    e = dispersion_data.get_axis(e_axisid).data.max().magnitude
-    plt.ylim(top=e)
-    plt.xlabel("$k_{||}$ [pixel]")
-    plt.ylabel("$E_{Interm.}$ [eV]")
-    plt.title("Scalefactor=" + str(scalefactor.magnitude) + " & Zero=" + str(zeropoint.magnitude))
-    if savefig:
-        plt.savefig(figname)
-    plt.show()
-
-    return (scalefactor, zeropoint)
+    return parab_data, scalefactor, zeropoint
 
 
-def show_state_parabola(dispersion_data, figname, guess_zeropixel=None, guess_mass=None, guess_energyoffset=None,
+def show_state_parabola(dispersion_data, figname, guess_origin=None, guess_mass=None, guess_energyoffset=None,
                         k_axisid='y', e_axisid='energy', savefig=False, **kwargs):
     """
     Plots the 2d dispersion data along a parable for a intermediate state with given parameters. Useful
@@ -186,8 +170,8 @@ def show_state_parabola(dispersion_data, figname, guess_zeropixel=None, guess_ma
 
     :param dispersion_data: 2D-DataSet with an energy and a k-space dimension.
 
-    :param guess_zeropixel: The origin k value of the parable, given in ``1/angstrom``.
-    :type guess_zeropixel: float or None
+    :param guess_origin: The origin k value of the parable, given in ``1/angstrom``.
+    :type guess_origin: float or None
 
     :param guess_mass: The bandmass of the intermediate state you are interested. Typically given in
         units of m_e (electronmass).
@@ -220,41 +204,42 @@ def show_state_parabola(dispersion_data, figname, guess_zeropixel=None, guess_ma
     else:
         energy_offset = u.to_ureg(guess_energyoffset, "eV")
     k = dispersion_data.get_axis(k_axisid).data
-    if guess_zeropixel is None:
-        zeropoint = k.mean()
+    if guess_origin is None:
+        origin = k.mean()
     else:
         # FixMe: This is wrong. A zero-pixel shouldn't be measured in inverse Angstrom. See FixMe below.
-        zeropoint = u.to_ureg(guess_zeropixel, "1/angstrom")
+        origin = u.to_ureg(guess_origin, "1/angstrom")
     if guess_mass is None:
         bandmass = u.to_ureg(1, "m_e")
     else:
         bandmass = u.to_ureg(guess_mass, "m_e")
 
     # Calculate a parabola with set electronmass
-    parab_data = bandDispersionRelation(k, bandmass, zeropoint, energy_offset)
+    parab_data = bandDispersionRelation(k, bandmass, origin, energy_offset)
 
     # Plot dispersion and ParabolaFit
-    plt.figure(figsize=(7, 4.8))
-    ax = plt.subplot(111)
-    snomtools.plots.datasets.project_2d(dispersion_data, ax, e_axisid, k_axisid, **kwargs)
-    ax.plot(k, parab_data, 'r-', label="Fitparabel")  # Plot parabola as red line.
-    ax.invert_yaxis()  # project_2d flips the y axis as it assumes standard matrix orientation, so flip it back.
-    e = dispersion_data.get_axis(e_axisid).data.max().magnitude
-    plt.ylim(top=e)
-    ax.legend(loc='lower left')
-    ax.tick_params(axis='both', labelsize=12)
-    ax.set_facecolor((0.30196078431372547, 0.0, 0.29411764705882354, 1.0))
-    plt.xlabel("$k_{||,x}$ / $(\AA^{-1})$", fontsize=14)
-    plt.xticks(np.arange(-1, 1.25, 0.25))
-    plt.ylabel("$E_{Interm.}$ / (eV)", fontsize=14)
-    cb = plt.colorbar(cm.ScalarMappable(cmap='BuPu_r'))
-    cb.set_label("Normalisierte Zählrate", labelpad=6, size=14)
-    cb.ax.tick_params(labelsize=12)
-    if savefig:
-        plt.savefig(figname, bbox_inches='tight', dpi=200)
-    plt.show()
+    # plt.figure(figsize=(7, 4.8))
+    # ax = plt.subplot(111)
+    # snomtools.plots.datasets.project_2d(dispersion_data, ax, e_axisid, k_axisid, **kwargs)
+    # ax.plot(k, parab_data, 'r-', label="Fitparabel")  # Plot parabola as red line.
+    # ax.invert_yaxis()  # project_2d flips the y axis as it assumes standard matrix orientation, so flip it back.
+    # e = dispersion_data.get_axis(e_axisid).data.max().magnitude
+    # plt.ylim(top=e)
+    # ax.legend(loc='lower left')
+    # ax.tick_params(axis='both', labelsize=12)
+    # ax.set_facecolor((0.30196078431372547, 0.0, 0.29411764705882354, 1.0))
+    # plt.xlabel("$k_{||,x}$ / $(\AA^{-1})$", fontsize=14)
+    # plt.xticks(np.arange(-1, 1.25, 0.25))
+    # plt.ylabel("$E_{Interm.}$ / (eV)", fontsize=14)
+    # cb = plt.colorbar(cm.ScalarMappable(cmap='BuPu_r'))
+    # cb.set_label("Normalisierte Zählrate", labelpad=6, size=14)
+    # cb.ax.tick_params(labelsize=12)
+    # if savefig:
+    #     plt.savefig(figname, bbox_inches='tight', dpi=200)
+    # plt.show()
 
-    return bandmass
+    # return bandmass
+    return parab_data
 
 
 def freeElectronParabola(x, kscale, zero, offset, energyunit='eV'):
