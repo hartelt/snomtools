@@ -19,6 +19,8 @@ import matplotlib.pyplot as plt
 import os
 from matplotlib import cm
 import numpy as np
+# For testing example
+import matplotlib.colors as colors
 
 __author__ = 'Lukas Hellbrück'
 
