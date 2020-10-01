@@ -342,58 +342,70 @@ if __name__ == '__main__':
     # Ignore 'full_data' and use 'file' instead
     full_data = ds.DataSet.from_h5(file)
 
-    # Parameters for fitting the Parabola to your data
-    x_scalefactor = None  # example : u.to_ureg(0.00270, 'angstrom**-1 per pixel')
-    y_scalefactor = None  # example : u.to_ureg(0.00275, 'angstrom**-1 per pixel')
-    e_offset = None  # example : u.to_ureg(29.9, 'eV')
-    x_zero = None  # example : u.to_ureg(320, 'pixel')
-    y_zero = None  # example : u.to_ureg(321, 'pixel')
-    kfov = None  # example : None
+# Parameters for fitting the Parabola to your data
+x_scalefactor = None  # example : u.to_ureg(0.00270, 'angstrom**-1 per pixel')
+y_scalefactor = None  # example : u.to_ureg(0.00275, 'angstrom**-1 per pixel')
+e_offset = None  # example : u.to_ureg(29.9, 'eV')
+x_zero = None  # example : u.to_ureg(320, 'pixel')
+y_zero = None  # example : u.to_ureg(321, 'pixel')
+kfov = None  # example : None
 
-    # Projects dataset on energy, pixel plane for both pixel axes individually
-    # Set d_axisid = False for static data
-    # y_axisid describes respective k plane, x_axisid is used for statistic binning
-    x_dispersion_data = load_dispersion_data(full_data, y_axisid="x-Pixel",
-                                             # example : 'x'
-                                             x_axisid="y-Pixel",
-                                             # example : 'y'
-                                             e_axisid="energy-axis",
-                                             # example : 'energy'
-                                             d_axisid=False)
-    y_dispersion_data = load_dispersion_data(full_data, y_axisid="y-Pixel",
-                                             # example : 'y'
-                                             x_axisid="x-Pixel",
-                                             # example : 'x'
-                                             e_axisid="energy-axis",
-                                             # example : 'energy'
-                                             d_axisid=False)
+# Set axes labels
+x_axisid = "x-axis"  # example : 'x'
+y_axisid = "y-axis"  # example : 'y'
+e_axisid = "energy-axis"  # example : 'energy'
 
-    # Trigger for saving Imgae, with figname as name of saved file and scale with parameter in label
-    save = False
-    x_figname = 'Figure Name k_x'
-    y_figname = 'Figure Name k_y'
+# Projects dataset on energy, pixel plane for both pixel axes individually
+# Set d_axisid = False for static data
+# y_axisid describes respective k plane, x_axisid is used for statistic binning
+x_dispersion_data = snomtools.evaluation.kscalecalibration.load_dispersion_data(full_data, x_axisid, y_axisid, e_axisid,
+                                                                                d_axisid=False)
+y_dispersion_data = snomtools.evaluation.kscalecalibration.load_dispersion_data(full_data, y_axisid, x_axisid, e_axisid,
+                                                                                d_axisid=False)
 
-    # Show k-space scaling by plotting parabola along data:
-    # Along k_x axis:
-    (x_scalefactor, x_zero) = show_kscale(x_dispersion_data, x_figname, x_zero, x_scalefactor, e_offset, kfov,
-                                          k_axisid="x-Pixel", e_axisid="energy-axis", savefig=save,
-                                          norm=colors.LogNorm())  # example : k_axisid='x', e_axisid='energy'
-    print("x-Axis Param. :")
-    print(x_scalefactor, x_zero)
-    # Along k_y axis:
-    (y_scalefactor, y_zero) = show_kscale(y_dispersion_data, y_figname, y_zero, y_scalefactor, e_offset, kfov,
-                                          k_axisid="y-Pixel", e_axisid="energy-axis", savefig=save,
-                                          norm=colors.LogNorm())  # example : k_axisid='y', e_axisid='energy'
-    print("y-Axis Param. :")
-    print(y_scalefactor, y_zero)
+# Trigger for saving Imgae, with figname as name of saved file and scale parameter in label
+save = False
+figname = 'Figure Name'
 
-    # Scale k-space axes according to above scaling factors and save the scaled DataSet:
-    # Set to save = True, if fit is good to save and rescale your data
-    if save:
-        # Applies k-scale calibration in k_x and k_y direction
-        full_data = ds.DataSet.from_h5(file_path, file_path.replace('.hdf5', '_Kscaled.hdf5'))
-        snomtools.evaluation.kscalecalibration.kscale_axes(full_data, y_scalefactor, x_scalefactor, y_zero, x_zero,
-                                                           y_axisid="y-Pixel",  # example : 'y'
-                                                           x_axisid="x-Pixel")  # example : 'x'
-        # Save scaled DataSet with target file name
-        full_data.saveh5()
+# Show k-space scaling by plotting parabola along data:
+# Along k_x axis:
+x_parab_data, x_scalefactor, x_zeropoint = snomtools.evaluation.kscalecalibration.show_kscale(
+    x_dispersion_data, x_zero, x_scalefactor, e_offset, kfov, x_axisid)
+# Along k_y axis:
+y_parab_data, y_scalefactor, y_zeropoint = snomtools.evaluation.kscalecalibration.show_kscale(
+    y_dispersion_data, y_zero, y_scalefactor, e_offset, kfov, y_axisid)
+
+# Plot dispersion and fitted parabola for both directions
+plt.figure(figsize=(6.4, 9.6))
+ax = plt.subplot(211)
+ay = plt.subplot(212)
+snomtools.plots.datasets.project_2d(x_dispersion_data, ax, e_axisid, x_axisid, norm=colors.LogNorm())
+snomtools.plots.datasets.project_2d(y_dispersion_data, ay, e_axisid, y_axisid, norm=colors.LogNorm())
+ax.plot(x_dispersion_data.get_axis(x_axisid).data, x_parab_data, 'r-', label="fit parabola")
+ay.plot(y_dispersion_data.get_axis(y_axisid).data, y_parab_data, 'r-', label="fit parabola")
+# project_2d flips the y axis as it assumes standard matrix orientation, so flip it back.
+ax.invert_yaxis()
+ay.invert_yaxis()
+ax.set_xlabel("$k_{x}$ [pixel]", fontsize=14)
+ay.set_xlabel("$k_{y}$ [pixel]", fontsize=14)
+ax.set_ylabel("$E_{Interm.}$ [eV]", fontsize=14)
+ay.set_ylabel("$E_{Interm.}$ [eV]", fontsize=14)
+ax.set_title("Scalefactor=" + str(x_scalefactor.magnitude) + " & Zero=" + str(x_zeropoint.magnitude), fontsize=14)
+ay.set_title("Scalefactor=" + str(y_scalefactor.magnitude) + " & Zero=" + str(y_zeropoint.magnitude), fontsize=14)
+ax.tick_params(axis='both', labelsize=12)
+ay.tick_params(axis='both', labelsize=12)
+if save:
+    plt.savefig(figname)
+plt.show()
+print("x-Axis Param. :", x_scalefactor, x_zeropoint)
+print("y-Axis Param. :", y_scalefactor, y_zeropoint)
+
+# Scale k-space axes according to above scaling factors and save the scaled DataSet:
+# Set to save = True, if fit is good to save and rescale your data
+if save:
+    # Applies k-scale calibration in k_x and k_y direction
+    full_data = ds.DataSet.from_h5(file_path, file_path.replace('.hdf5', '_Kscaled.hdf5'))
+    snomtools.evaluation.kscalecalibration.kscale_axes(full_data, y_scalefactor, x_scalefactor, y_zero, x_zero,
+                                                       y_axisid, x_axisid)
+    # Save scaled DataSet with target file name
+    full_data.saveh5()
