@@ -123,8 +123,9 @@ def show_kscale(dispersion_data, guess_zeropixel=None, guess_scalefactor=None, g
     :param k_axisid: The name (label) of the k-axis of the data. Default: ``y``
     :type k_axisid: str
 
-    :return: A tuple of (scalefactor, zeropixel) that was used for the plot. As this is just the replicated input
-        parameters, it can be ignored or used for info/debugging.
+    :return: parab_data, scalefactor & zeropixel with parab_data being the calculated free electron parabola. As
+        scalefactor & zeropoint are just the replicated input parameters, it can be ignored or used for info/debugging.
+        The scalefactor is typically given in unit ``1/angstrom per pixel`` and the zeropoint in unit ``pixel``
     """
     # Define parabola and parameters for fit
     if guess_energyoffset is None:
@@ -173,8 +174,8 @@ def show_state_parabola(dispersion_data, guess_origin=None, guess_mass=None, gue
     :param k_axisid: The name (label) of the k-axis of the data. Default: ``y``
     :type k_axisid: str
 
-    :return: The value of the bandmass, that was used in the plot. Typically given in
-        units of m_e (electronmass).
+    :return: The adjusted free electron like parabola for plotting and the corresponding bandmass, used in the plot.
+        Bandmass is  typically given in units of ``m_e`` (electronmass).
     """
     # Define parabola and parameters for fit
     if guess_energyoffset is None:
