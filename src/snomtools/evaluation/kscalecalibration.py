@@ -302,12 +302,12 @@ if __name__ == '__main__':
     # ___ Example for usage ___:
     # Load experimental data, copy to new target and project dispersion data:
     # Define run you want to scale
-    data_folder = os.path.abspath("Folderpath to data")  # example : "E:\\Evaluation\\20200102_Au111"
-    file = "HDF5 file to scale"  # example : # example "01_kspace_THG_GI_Texp45m3s_binned.hdf5"
+    data_folder = os.path.abspath("Folderpath to data")  # example : "E:\\evaluation\\tr_kspace_analysis"
+    file = "HDF5 file to scale"  # example : # example "example_data_set.hdf5"
     file_path = os.path.join(data_folder, file)
-    # If you don't want to create new file with same data but only scaled 'x', 'y' axis, which only doubles amount of data.
+    # If you don't want to create new file with same data but only scaled axis, which only doubles amount of data.
     # Ignore 'full_data' and use 'file' instead
-    full_data = ds.DataSet.from_h5(file)
+    full_data = ds.DataSet.from_h5(file_path)
 
     # Parameters for fitting the Parabola to your data
     x_scalefactor = None  # example : u.to_ureg(0.00270, 'angstrom**-1 per pixel')
@@ -325,12 +325,8 @@ if __name__ == '__main__':
     # Projects dataset on energy, pixel plane for both pixel axes individually
     # Set d_axisid = False for static data
     # y_axisid describes respective k plane, x_axisid is used for statistic binning
-    x_dispersion_data = snomtools.evaluation.kscalecalibration.load_dispersion_data(full_data, x_axisid, y_axisid,
-                                                                                    e_axisid,
-                                                                                    d_axisid=False)
-    y_dispersion_data = snomtools.evaluation.kscalecalibration.load_dispersion_data(full_data, y_axisid, x_axisid,
-                                                                                    e_axisid,
-                                                                                    d_axisid=False)
+    x_dispersion_data = load_dispersion_data(full_data, x_axisid, y_axisid, e_axisid, d_axisid=False)
+    y_dispersion_data = load_dispersion_data(full_data, y_axisid, x_axisid, e_axisid, d_axisid=False)
 
     # Trigger for saving Imgae, with figname as name of saved file and scale parameter in label
     save = False
@@ -338,11 +334,11 @@ if __name__ == '__main__':
 
     # Show k-space scaling by plotting parabola along data:
     # Along k_x axis:
-    x_parab_data, x_scalefactor, x_zeropoint = snomtools.evaluation.kscalecalibration.show_kscale(
-        x_dispersion_data, x_zero, x_scalefactor, e_offset, kfov, x_axisid)
+    x_parab_data, x_scalefactor, x_zeropoint = show_kscale(x_dispersion_data, x_zero, x_scalefactor, e_offset, kfov,
+                                                           x_axisid)
     # Along k_y axis:
-    y_parab_data, y_scalefactor, y_zeropoint = snomtools.evaluation.kscalecalibration.show_kscale(
-        y_dispersion_data, y_zero, y_scalefactor, e_offset, kfov, y_axisid)
+    y_parab_data, y_scalefactor, y_zeropoint = show_kscale(y_dispersion_data, y_zero, y_scalefactor, e_offset, kfov,
+                                                           y_axisid)
 
     # Plot dispersion and fitted parabola for both directions
     plt.figure(figsize=(6.4, 9.6))
@@ -374,7 +370,6 @@ if __name__ == '__main__':
     if save:
         # Applies k-scale calibration in k_x and k_y direction
         full_data = ds.DataSet.from_h5(file_path, file_path.replace('.hdf5', '_Kscaled.hdf5'))
-        snomtools.evaluation.kscalecalibration.kscale_axes(full_data, y_scalefactor, x_scalefactor, y_zero, x_zero,
-                                                           y_axisid, x_axisid)
+        kscale_axes(full_data, y_scalefactor, x_scalefactor, y_zero, x_zero, y_axisid, x_axisid)
         # Save scaled DataSet with target file name
         full_data.saveh5()
