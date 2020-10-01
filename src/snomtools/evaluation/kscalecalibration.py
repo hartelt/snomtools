@@ -123,17 +123,6 @@ def show_kscale(dispersion_data, guess_zeropixel=None, guess_scalefactor=None, g
     :param k_axisid: The name (label) of the k-axis of the data. Default: ``y``
     :type k_axisid: str
 
-    :param e_axisid: The name (label) of the energy axis of the data. Default: ``energy``
-    :type e_axisid: str
-
-    :param savefig: Switch to determin if ploted figure should be saved or not.
-    :type savefig: bool
-
-    :param figname: Name of the file the plot should be saved into.
-    :type figname: str
-
-    :param kwargs: Keyword arguments for the plot() normalization of the plot object.
-
     :return: A tuple of (scalefactor, zeropixel) that was used for the plot. As this is just the replicated input
         parameters, it can be ignored or used for info/debugging.
     """
