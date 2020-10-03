@@ -186,7 +186,6 @@ def show_state_parabola(dispersion_data, guess_origin=None, guess_mass=None, gue
     if guess_origin is None:
         origin = k.mean()
     else:
-        # FixMe: This is wrong. A zero-pixel shouldn't be measured in inverse Angstrom. See FixMe below.
         origin = u.to_ureg(guess_origin, "1/angstrom")
     if guess_mass is None:
         bandmass = u.to_ureg(1, "m_e")
