@@ -335,11 +335,11 @@ if __name__ == '__main__':
 
     # Show k-space scaling by plotting parabola along data:
     # Along k_x axis:
-    (x_pixels, x_parab_data), x_scalefactor, x_zeropoint = show_kscale(x_dispersion_data, x_zero, x_scalefactor, e_offset, kfov,
-                                                           x_axisid)
+    (x_pixels, x_parab_data), x_scalefactor, x_zeropoint = show_kscale(x_dispersion_data, x_zero, x_scalefactor,
+                                                                       e_offset, kfov, x_axisid)
     # Along k_y axis:
-    (y_pixels, y_parab_data), y_scalefactor, y_zeropoint = show_kscale(y_dispersion_data, y_zero, y_scalefactor, e_offset, kfov,
-                                                           y_axisid)
+    (y_pixels, y_parab_data), y_scalefactor, y_zeropoint = show_kscale(y_dispersion_data, y_zero, y_scalefactor,
+                                                                       e_offset, kfov, y_axisid)
 
     # Plot dispersion and fitted parabola for both directions
     plt.figure(figsize=(6.4, 9.6))
