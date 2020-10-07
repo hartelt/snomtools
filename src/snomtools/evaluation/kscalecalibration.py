@@ -335,10 +335,10 @@ if __name__ == '__main__':
 
     # Show k-space scaling by plotting parabola along data:
     # Along k_x axis:
-    x_parab_data, x_scalefactor, x_zeropoint = show_kscale(x_dispersion_data, x_zero, x_scalefactor, e_offset, kfov,
+    (x_pixels, x_parab_data), x_scalefactor, x_zeropoint = show_kscale(x_dispersion_data, x_zero, x_scalefactor, e_offset, kfov,
                                                            x_axisid)
     # Along k_y axis:
-    y_parab_data, y_scalefactor, y_zeropoint = show_kscale(y_dispersion_data, y_zero, y_scalefactor, e_offset, kfov,
+    (y_pixels, y_parab_data), y_scalefactor, y_zeropoint = show_kscale(y_dispersion_data, y_zero, y_scalefactor, e_offset, kfov,
                                                            y_axisid)
 
     # Plot dispersion and fitted parabola for both directions
@@ -347,8 +347,8 @@ if __name__ == '__main__':
     ay = plt.subplot(212)
     snomtools.plots.datasets.project_2d(x_dispersion_data, ax, e_axisid, x_axisid, norm=colors.LogNorm())
     snomtools.plots.datasets.project_2d(y_dispersion_data, ay, e_axisid, y_axisid, norm=colors.LogNorm())
-    ax.plot(x_dispersion_data.get_axis(x_axisid).data, x_parab_data, 'r-', label="fit parabola")
-    ay.plot(y_dispersion_data.get_axis(y_axisid).data, y_parab_data, 'r-', label="fit parabola")
+    ax.plot(x_pixels, x_parab_data, 'r-', label="fit parabola")
+    ay.plot(y_pixels, y_parab_data, 'r-', label="fit parabola")
     # project_2d flips the y axis as it assumes standard matrix orientation, so flip it back.
     ax.invert_yaxis()
     ay.invert_yaxis()
