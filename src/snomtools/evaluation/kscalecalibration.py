@@ -98,27 +98,28 @@ def load_dispersion_data(data, y_axisid='y', x_axisid='x', e_axisid='energy', d_
 def show_kscale(dispersion_data, guess_zeropixel=None, guess_scalefactor=None, guess_energyoffset=None,
                 guess_kfov=None, k_axisid='y'):
     """
-    Plots the 2d dispersion data along a free electron parable with given parameters. Useful to test k scale.
+    Calculates a free electron parabola with given parameters to approximate a photoemission horizon. Returns a tuple
+    of x (x-pixels) and y (energy) values, that can be used for plotting.  Useful to test k scale.
 
     :param dispersion_data: 2D-DataSet with an energy and a k-space dimension.
 
     :param guess_zeropixel: The origin pixel value of the parable, given in pixels or unscaled k-axis units.
-    :type guess_zeropixel: float or None
+    :type guess_zeropixel: pint.Quantity is optimal, float or None are possible
 
     :param guess_scalefactor: The scalefactor translating unscaled k-axis units to k-space. Typically given in
         ``angstrom**-1 per pixel``. Alternatively, ``guess_kfov`` can be used to give full kspace width instead,
         see below.
-    :type guess_scalefactor: float or None
+    :type guess_scalefactor: pint.Quantity is optimal, float or None are possible
 
     :param guess_energyoffset: The origin of the parable on the energy axis. Typically, something like the drift
         voltage in PEEM.
-    :type guess_energyoffset: float or None
+    :type guess_energyoffset: pint.Quantity is optimal, float or None are possible
 
     :param guess_kfov: Only used if ``guess_scalefactor`` is not given. Then, this can be given (in ``angstrom**-1``)
         to guess the kspace-Field-of-View (full kspace image width) instead of a factor per pixel.
         If neither ``guess_scalefactor`` or this parameter are given, a generic value for ``guess_kfov`` of
         ``1.5 angstrom**-1`` is used.
-    :type guess_kfov: float or None
+    :type guess_kfov: pint.Quantity is optimal, float or None are possible
 
     :param k_axisid: The name (label) of the k-axis of the data. Default: ``y``
     :type k_axisid: str
@@ -149,33 +150,33 @@ def show_kscale(dispersion_data, guess_zeropixel=None, guess_scalefactor=None, g
     # Calculate a free electron parabola with given parameters
     parab_data = freeElectronParabola(dldpixels, scalefactor, zeropoint, energy_offset)
 
-    return parab_data, scalefactor, zeropoint
+    return (dldpixels, parab_data), scalefactor, zeropoint
 
 
 def show_state_parabola(dispersion_data, guess_origin=None, guess_mass=None, guess_energyoffset=None,
                         k_axisid='k_y'):
     """
-    Plots the 2d dispersion data along a parable for a intermediate state with given parameters. Useful
-    for finding out the specific band mass.
+    Calculates a free electron like parabola for a intermediate state with given parameters. Returns a tuple of x (k||)
+    and y (energy) values, that can be used for plotting. Useful for finding out the specific band mass.
 
     :param dispersion_data: 2D-DataSet with an energy and a k-space dimension.
 
     :param guess_origin: The origin k value of the parable, given in ``1/angstrom``.
-    :type guess_origin: float or None
+    :type guess_origin: pint.Quantity is optimal, float or None are possible
 
     :param guess_mass: The bandmass of the intermediate state you are interested. Typically given in
         units of m_e (electronmass).
-    :type guess_mass: float or None
+    :type guess_mass: pint.Quantity is optimal, float or None are possible
 
     :param guess_energyoffset: The origin of the parable on the energy axis. Typically, something like the drift
         voltage in PEEM.
-    :type guess_energyoffset: float or None
+    :type guess_energyoffset: pint.Quantity is optimal, float or None are possible
 
     :param k_axisid: The name (label) of the k-axis of the data. Default: ``y``
     :type k_axisid: str
 
-    :return: The adjusted free electron like parabola for plotting and the corresponding bandmass, used in the plot.
-        Bandmass is  typically given in units of ``m_e`` (electronmass).
+    :return: The adjusted free electron like parabola  as a tuple of x and y values (k, parab_data) for plotting and
+        the corresponding bandmass, used in the plot. Bandmass is  typically given in units of ``m_e`` (electronmass).
     """
     # Define parabola and parameters for fit
     if guess_energyoffset is None:
@@ -195,7 +196,7 @@ def show_state_parabola(dispersion_data, guess_origin=None, guess_mass=None, gue
     # Calculate a parabola with set electronmass
     parab_data = bandDispersionRelation(k, bandmass, origin, energy_offset)
 
-    return parab_data, bandmass
+    return (k, parab_data), bandmass
 
 
 def freeElectronParabola(x, kscale, zero, offset, energyunit='eV'):
