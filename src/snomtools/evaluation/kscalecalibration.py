@@ -15,12 +15,7 @@ import snomtools.data.fits
 import snomtools.data.transformation.project
 import snomtools.plots.datasets
 from snomtools.calcs.constants import m_e, hbar
-import matplotlib.pyplot as plt
 import os
-from matplotlib import cm
-import numpy as np
-# For testing example
-import matplotlib.colors as colors
 
 __author__ = 'Lukas Hellbrück'
 
@@ -352,6 +347,8 @@ if __name__ == '__main__':
                                                                        e_offset, kfov, y_axisid)
 
     # Plot dispersion and fitted parabola for both directions
+    import matplotlib.pyplot as plt
+    import matplotlib.colors as colors
     plt.figure(figsize=(6.4, 9.6))
     ax = plt.subplot(211)
     ay = plt.subplot(212)
