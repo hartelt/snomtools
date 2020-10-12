@@ -34,7 +34,8 @@ def load_dispersion_data(data, y_axisid='y', x_axisid='x', e_axisid='energy', d_
     For better statistics, a number of slices along the *other* pixel axis (default ``x``) and time delay axis
     (default ``delay``) are summed up (``10``, ``10`` by default).
 
-    :param data: n-D-DataSet with y-pixel, x-pixel, energy and a k-space dimension.
+    :param data: n-D-DataSet with y-pixel, x-pixel, energy and a time (pulse delay) dimension.
+    :type data: ds.DataSet
 
     :param y_axisid: The name (label) of the y-axis of the data, used as dispersion k direction. Default: ``y``
     :type y_axisid: str
@@ -74,6 +75,7 @@ def load_dispersion_data(data, y_axisid='y', x_axisid='x', e_axisid='energy', d_
 
     :return: The projection of the n-D-Dataset on the pixel and energy axis,
         with a summation over slices around time zero and pixel mean point
+    :rtype: ds.DataSet
     """
     # Define RoI boundaries to sum over for better statistics:
     sum_boundaries_index = {}
@@ -102,24 +104,25 @@ def show_kscale(dispersion_data, guess_zeropixel=None, guess_scalefactor=None, g
     of x (x-pixels) and y (energy) values, that can be used for plotting.  Useful to test k scale.
 
     :param dispersion_data: 2D-DataSet with an energy and a k-space dimension.
+    :type dispersion_data: ds.DataSet
 
     :param guess_zeropixel: The origin pixel value of the parable, given in pixels or unscaled k-axis units.
-    :type guess_zeropixel: pint.Quantity is optimal, float or None are possible
+    :type guess_zeropixel: pint.Quantity **or** float, optional
 
     :param guess_scalefactor: The scalefactor translating unscaled k-axis units to k-space. Typically given in
         ``angstrom**-1 per pixel``. Alternatively, ``guess_kfov`` can be used to give full kspace width instead,
         see below.
-    :type guess_scalefactor: pint.Quantity is optimal, float or None are possible
+    :type guess_scalefactor: pint.Quantity **or** float, optional
 
     :param guess_energyoffset: The origin of the parable on the energy axis. Typically, something like the drift
         voltage in PEEM.
-    :type guess_energyoffset: pint.Quantity is optimal, float or None are possible
+    :type guess_energyoffset: pint.Quantity **or** float, optional
 
     :param guess_kfov: Only used if ``guess_scalefactor`` is not given. Then, this can be given (in ``angstrom**-1``)
         to guess the kspace-Field-of-View (full kspace image width) instead of a factor per pixel.
         If neither ``guess_scalefactor`` or this parameter are given, a generic value for ``guess_kfov`` of
         ``1.5 angstrom**-1`` is used.
-    :type guess_kfov: pint.Quantity is optimal, float or None are possible
+    :type guess_kfov: pint.Quantity **or** float, optional
 
     :param k_axisid: The name (label) of the k-axis of the data. Default: ``y``
     :type k_axisid: str
@@ -160,17 +163,18 @@ def show_state_parabola(dispersion_data, guess_origin=None, guess_mass=None, gue
     and y (energy) values, that can be used for plotting. Useful for finding out the specific band mass.
 
     :param dispersion_data: 2D-DataSet with an energy and a k-space dimension.
+    :type dispersion_data: ds.DataSet
 
     :param guess_origin: The origin k value of the parable, given in ``1/angstrom``.
-    :type guess_origin: pint.Quantity is optimal, float or None are possible
+    :type guess_origin: pint.Quantity **or** float, optional
 
     :param guess_mass: The bandmass of the intermediate state you are interested. Typically given in
         units of m_e (electronmass).
-    :type guess_mass: pint.Quantity is optimal, float or None are possible
+    :type guess_mass: pint.Quantity **or** float, optional
 
     :param guess_energyoffset: The origin of the parable on the energy axis. Typically, something like the drift
         voltage in PEEM.
-    :type guess_energyoffset: pint.Quantity is optimal, float or None are possible
+    :type guess_energyoffset: pint.Quantity **or** float, optional
 
     :param k_axisid: The name (label) of the k-axis of the data. Default: ``y``
     :type k_axisid: str
@@ -212,21 +216,23 @@ def freeElectronParabola(x, kscale, zero, offset, energyunit='eV'):
             freeElectronParabola(mykspacedata.get_axis('k_y').data, 1, u.to_ureg(1.2, 'angstrom**-1'))
 
     :param x: An array of x-pixels.
+    :type x: pint.Quantity
 
     :param kscale: The scalefactor translating unscaled k-axis units to k-space. Typically given in
         ``angstrom**-1 per pixel``.
-    :type kscale: float
+    :type kscale: pint.Quantity
 
     :param zero: The origin pixel value of the parable, given in pixels or unscaled k-axis units.
-    :type zero: float
+    :type zero: pint.Quantity
 
     :param offset: The origin of the parable on the energy axis. Typically, something like the drift
-        voltage in PEEM.
-    :type offset: float
+        voltage (energy) in PEEM.
+    :type offset: pint.Quantity
 
     :param energyunit: Desired unit, you want to use in your data. Default: ``eV``
 
     :return: Return the free electron parabola energy values for given x-pixel
+    :rtype: pint.Quantity
     """
     return (hbar ** 2 * (kscale * (x - zero)) ** 2 / (2 * m_e) + offset).to(energyunit)
 
@@ -236,44 +242,47 @@ def bandDispersionRelation(k, m, zero, offset, energyunit='eV'):
     Calculates a parabolic band with a given effective bandmass.
 
     :param k: An array of inverse Angstroem.
+    :type k: pint.Quantity
 
     :param m: The bandmass m, to fit a freeElectronParabola to a state in your dispersion plot.
         If the electron mass m_e (see `calcs.constants`) is given, this will become a free electron parabola.
-    :type m: float
+    :type m: pint.Quantity
 
     :param zero: The origin pixel value of the parable, given in ``angstrom**-1``.
-    :type zero: float
+    :type zero: pint.Quantity
 
     :param offset: The origin of the parable on the energy axis. Depending on the state of interest.
-    :type offset: float
+    :type offset: pint.Quantity
 
     :param energyunit: Desired unit, you want to use in your data. Default: ``eV``
 
     :return: Return a parabola with a specific electron mass, to fit to your dispersion plot.
+    :rtype: pint.Quantity
     """
     return (hbar ** 2 * (k - zero) ** 2 / (2 * m) + offset).to(energyunit)
 
 
 def kscale_axes(data, yscalefactor, xscalefactor, yzero=None, xzero=None, y_axisid='y', x_axisid='x'):
     """
-    Scales the x- and y-axis of a given set of dldpixels from a 4D-Dataset to k-space, depending on a before
+    Scales the x- and y-axis of a given set of dldpixels from an nD-Dataset to k-space, depending on a before
     determined scalefactor.
 
-    :param data: 4D-DataSet with y-pixel, x-pixel, energy and a k-space dimension.
+    :param data: nD-DataSet with y-pixel, x-pixel, and possibly other dimensions.
+    :type data: ds.DataSet
 
     :param yscalefactor: The scalefactor translating unscaled ky-axis units to k-space. Typically given in
         ``angstrom**-1 per pixel``.
-    :type scalefactor: float
+    :type scalefactor: pint.Quantity
 
     :param xscalefactor: The scalefactor translating unscaled kx-axis units to k-space. Typically given in
         ``angstrom**-1 per pixel``.
-    :type scalefactor: float
+    :type scalefactor: pint.Quantity
 
-    :param yzero: The offset of the Gamma-point in k_y direction.
-    :type yzero: float or None
+    :param yzero: The offset of the Gamma-point in k_y direction, given in unscaled units (typically pixels).
+    :type yzero: pint.Quantity, optional
 
-    :param xzero: The offset of the Gamma-point in k_x direction.
-    :type xzero: float or None
+    :param xzero: The offset of the Gamma-point in k_x direction, given in unscaled units (typically pixels).
+    :type xzero: pint.Quantity, optional
 
     :param y_axisid: The name (label) of the x-axis of the data. Default: ``y``
     :type y_axisid: str
@@ -282,6 +291,7 @@ def kscale_axes(data, yscalefactor, xscalefactor, yzero=None, xzero=None, y_axis
     :type x_axisid: str
 
     :return: The k-scaled 4D-Dataset.
+    :rtype: ds.DataSet
     """
     if yzero is None:
         yzero = data.get_axis(y_axisid).mean()
