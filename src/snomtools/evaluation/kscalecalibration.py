@@ -267,11 +267,11 @@ def kscale_axes(data, yscalefactor, xscalefactor, yzero=None, xzero=None, y_axis
 
     :param yscalefactor: The scalefactor translating unscaled ky-axis units to k-space. Typically given in
         ``angstrom**-1 per pixel``.
-    :type scalefactor: pint.Quantity
+    :type yscalefactor: pint.Quantity
 
     :param xscalefactor: The scalefactor translating unscaled kx-axis units to k-space. Typically given in
         ``angstrom**-1 per pixel``.
-    :type scalefactor: pint.Quantity
+    :type xscalefactor: pint.Quantity
 
     :param yzero: The offset of the Gamma-point in k_y direction, given in unscaled units (typically pixels).
     :type yzero: pint.Quantity, optional
