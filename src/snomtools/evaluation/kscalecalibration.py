@@ -349,7 +349,7 @@ if __name__ == '__main__':
     # Plot dispersion and fitted parabola for both directions
     import matplotlib.pyplot as plt
     import matplotlib.colors as colors
-    plt.figure(figsize=(6.4, 9.6))
+    plt.figure(figsize=(6.4, 11.4))
     ax = plt.subplot(211)
     ay = plt.subplot(212)
     snomtools.plots.datasets.project_2d(x_dispersion_data, ax, e_axisid, x_axisid, norm=colors.LogNorm())
