@@ -16,9 +16,9 @@ import matplotlib.pyplot as plt
 # Load experimental data, copy to new target and project dispersion data:
 # Define run you want to scale
 file = "HDF5 file to scale"  # example : "example_data_set.hdf5"
-# If you don't want to create new file with same data but only scaled 'x', 'y' axis, which only doubles amount of data.
-# Ignore 'full_data' and use 'file' instead
-full_data = ds.DataSet.from_h5(file)
+full_data = ds.DataSet.from_h5(file, file.replace('.hdf5', '_Kscaled.hdf5'))
+# If you don't want to create new file with same data but only scaled 'x', 'y' axis, which only doubles amount of data:
+# full_data = ds.DataSet.in_h5(file)
 
 # Parameters for fitting the Parabola to your data
 x_scalefactor = None  # example : u.to_ureg(0.00270, 'angstrom**-1 per pixel')
@@ -41,7 +41,7 @@ x_dispersion_data = snomtools.evaluation.kscalecalibration.load_dispersion_data(
 y_dispersion_data = snomtools.evaluation.kscalecalibration.load_dispersion_data(full_data, y_axisid, x_axisid, e_axisid,
                                                                                 d_axisid=False)
 
-# Trigger for saving Imgae, with figname as name of saved file and scale parameter in label
+# Trigger for scaling the data and saving Image, with figname as name of saved file and scale parameter in label
 save = False
 figname = 'Figure Name'
 
@@ -82,7 +82,6 @@ print("y-Axis Param. :", y_scalefactor, y_zeropoint)
 # Set to save = True, if fit is good to save and rescale your data
 if save:
     # Applies k-scale calibration in k_x and k_y direction
-    full_data = ds.DataSet.from_h5(file, file.replace('.hdf5', '_Kscaled.hdf5'))
     snomtools.evaluation.kscalecalibration.kscale_axes(full_data, y_scalefactor, x_scalefactor, y_zero, x_zero,
                                                        y_axisid, x_axisid)
     # Save scaled DataSet with target file name
