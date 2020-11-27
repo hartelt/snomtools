@@ -13,9 +13,11 @@ wd = os.getcwd()
 
 # Recommended folder structure : /home/username/repos/evaluation/year/month/datafolder
 home = os.path.expanduser("~")
+# On elwe, can't install packages, so after we cloned them to a folder (repos in our home), we use them from source.
+# This means we have to add their folders to PATH, to allow python to find them:
 sys.path.insert(0, os.path.join(home, "repos/snomtools/src/"))
-# Example for an additional dependency from source:
 sys.path.insert(0, os.path.join(home, "repos/pint/"))
+# Specify path to data:
 wd = "path to datafolder" # example : "/home/username/repos/evaluation/2020/01 January/20200128_Au788_Zheng_blue"
 
 import snomtools.data.datasets as ds
@@ -23,7 +25,7 @@ import snomtools.calcs.units as u
 import snomtools.evaluation.cuda.obe_copol
 from snomtools.evaluation.pumpprobe import delay_apply_timescale
 
-# Used to define the enrgy slice when submitting the job
+# Used to define the energy slice when submitting the job
 for arg in sys.argv:
     if "-roi" in arg:
         roistr = arg.partition('-roi')[-1]
