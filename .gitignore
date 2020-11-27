@@ -9,6 +9,8 @@ test*
 *.png
 *.bak
 Drifttest.7z
+#Excemptions for examples (DataSets/Manual):
+!/examples/*/*.hdf5
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
