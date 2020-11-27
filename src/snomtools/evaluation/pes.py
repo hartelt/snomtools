@@ -111,7 +111,7 @@ class FermiEdge:
 	@classmethod
 	def from_xy(cls, energies, intensities, guess):
 		pl = cls()
-		pl.coeffs, pl.accuracy = cls.fit_powerlaw(energies, intensities, guess)
+		pl.coeffs, pl.accuracy = cls.fit_fermi_edge(energies, intensities, guess)
 		return pl
 
 	def fermi_edge(self, E):
