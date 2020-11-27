@@ -14,7 +14,7 @@ ecal = os.path.join(rawdatafolder, "ecal_folder", "ecal_kalfit_txt")
 trfolder = os.path.join(rawdatafolder, "Add tr_datafolder")
 
 # Define runs with PEEM Ch3 specific folder structure that should be imported
-runs = ["{0}. Durchlauf".format(n) for n in range(x, y)]  # example : range(1, 2)
+runs = ["{0}. Durchlauf".format(n) for n in range(x, y)]  # example : range(1, 2) for only first run.
 
 
 def runfolder(run):
