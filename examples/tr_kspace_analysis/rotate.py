@@ -28,8 +28,8 @@ rot_data = file.replace('.hdf5', file_end)
 print("Rotate...")
 
 # Rotate DataSet and save in HDF5 file
-# Technically doesnt need snomtools rotate methods yet, since it just uses scipy package
-# ToDo: Make rotation work on Datasets
+# Uses the preliminary version on the rotations branch!
+# ToDo: Make rotation work on large Datasets
 # ToDo: Merge rotations to master
 
 # Define the plane by the axes you want to rotate
