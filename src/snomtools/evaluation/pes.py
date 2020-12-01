@@ -120,10 +120,27 @@ class FermiEdge:
         return u.to_ureg(self.coeffs[3], self.d_unit)
 
     @classmethod
-    def from_coeffs(cls, coeffs):
-        pl = cls()
-        pl.coeffs = coeffs
-        return pl
+    def from_coeffs(cls, coeffs, energyunit='eV', countsunit=None):
+        # Parse input and handle units:
+        E_f, d_E, c, d = coeffs
+        E_f = u.to_ureg(E_f, energyunit)
+        d_E = u.to_ureg(d_E, energyunit)
+        c = u.to_ureg(c, countsunit)
+        d = u.to_ureg(d, countsunit)
+
+        # Prepare variables:
+        energyunit = str(E_f.units)
+        countsunit = str(c.units)
+        coeffs = (E_f.magnitude, d_E.magnitude, c, d)
+
+        # Make instance:
+        f = cls()
+        f.coeffs = coeffs
+        f.E_f_unit = energyunit
+        f.dE_unit = energyunit
+        f.c_unit = countsunit
+        f.d_unit = countsunit
+        return f
 
     @classmethod
     def from_xy(cls, energies, intensities, guess):
@@ -134,15 +151,22 @@ class FermiEdge:
     def fermi_edge(self, E):
         """
         The shape of a fermi edge for the known fit parameters of the Fermi_Edge instance.
+        This is the equivalent of the standalone `fermi_fit` function outside the class,
+        only it is aware of the units of the class parameters.
 
         :param E: Electron Energy (Quantity or numerical in eV).
 
         :return: The value of the Fermi distribution at the energy E. Returned as Quantity in whichever unit the fit
             data was given.
         """
-        E = u.to_ureg(E, "eV")
+        E = u.to_ureg(E, self.E_f_unit)
+        E_f = self.E_f
+        dE = self.dE
+        c = self.c
+        d = self.d
         return 0.5 * (1 + scipy.special.erf(
-            (self.E_f - E) / (np.sqrt(((1.7 * kBT_in_eV) ** 2) + self.dE ** 2) * np.sqrt(2)))) * self.c + self.d
+            ((E_f - E) / (np.sqrt(((1.7 * kBT_in_eV) ** 2) + dE ** 2) * np.sqrt(2))).magnitude)
+                      ) * c + d
 
     @staticmethod
     def extract_data_raw(data, data_id=0, axis_id=None):
