@@ -58,15 +58,18 @@ class FermiEdge:
 
     def __init__(self, data=None, guess=None, keepdata=True, normalize=False):
         """
-        Extract the fermi edge of a given data set
+        Extract the fermi edge of a given data set or ROI.
 
         :param data: Choose the dataset containing the spectral data that should be extracted.
 
-        :param guess: Optional parameter, set tuple of the start parameters (E_f, dE, c, d) defined in the fermi_edge method.
+        :param guess: Optional parameter, set tuple of the start parameters (E_f, dE, c, d)
+            defined in the fermi_edge method.
 
-        :param keepdata: Keep the current dataset. If keepdata is set to False, discard the current dataset after use?
+        :param keepdata: Keep the the data that was fitted to. If `false`, keep just the extracted parameters.
 
-        :param normalize: Normalization of the spectrum.
+        :param normalize: Normalize the spectrum before fitting to (0,1).
+            This discards the information about the absolute value of the spectrum,
+            but makes guessing the start parameters very simple.
         """
         if data:
             self.data = self.extract_data(data)
