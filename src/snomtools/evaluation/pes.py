@@ -305,24 +305,6 @@ class FermiEdge:
         return curve_fit(fermi_edge, energies.magnitude, intensities.magnitude, guess)
 
 
-# def fermi_fit(data, energy_axis=None, range=None, guess=None):
-# 	"""
-# 	Fit a Fermi Distribution to the given data.
-#
-# 	:param data:
-#
-# 	:param energy_axis:
-#
-# 	:param range:
-#
-# 	:param guess:
-#
-# 	:return:
-# 	"""
-# 	raise NotImplementedError()
-# fermi_fit is redundant I will remove this when i am ready with all the other tasks
-
-
 if __name__ == "__main__":
     # Generate some test data:
     E_f, d_E, c, d = 30, 1, 100, 1
