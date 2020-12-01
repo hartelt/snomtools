@@ -145,11 +145,11 @@ class FermiEdge:
         f.d_unit = countsunit
         return f
 
-	@classmethod
-	def from_xy(cls, energies, intensities, guess):
-		pl = cls()
-		pl.coeffs, pl.accuracy = cls.fit_fermi_edge(energies, intensities, guess)
-		return pl
+    @classmethod
+    def from_xy(cls, energies, intensities, guess):
+        f = cls()
+        f.coeffs, f.accuracy = cls.fit_fermi_edge(energies, intensities, guess)
+        return f
 
     def fermi_edge(self, E):
         """
