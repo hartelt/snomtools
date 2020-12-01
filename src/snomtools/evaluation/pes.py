@@ -230,6 +230,11 @@ class FermiEdge:
         return snomtools.data.datasets.DataSet(label, [count_data_projected_norm, count_data_projected], [energy_axis])
 
     @staticmethod
+    def guess_parameters(energies, intensities):
+        # ToDo: Do something smart to generate start parameters.
+        raise NotImplementedError
+
+    @staticmethod
     def fit_fermi_edge(energies, intensities, guess=None):
         """
         This function fits a fermi edge to data. Uses numpy.optimize.curve_fit under the hood.
