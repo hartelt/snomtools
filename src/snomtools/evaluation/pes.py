@@ -41,9 +41,14 @@ def fermi_edge(E, E_f, dE, c, d):
 
 	:return: The value of the Fermi distribution at the energy E.
 	"""
+	E = u.to_ureg(E, 'eV').magnitude
+	E_f = u.to_ureg(E_f, 'eV').magnitude
+	dE = u.to_ureg(dE, 'eV').magnitude
+	c = u.to_ureg(c)
+	d = u.to_ureg(d)
 	return 0.5 * (1 +
-				  scipy.special.erf(
-					  (E_f - E) / (np.sqrt(((1.7 * kBT_in_eV.magnitude) ** 2) + dE ** 2) * np.sqrt(2)))) * c + d
+				  scipy.special.erf((E_f - E) / (np.sqrt(((1.7 * kBT_in_eV.magnitude) ** 2) + dE ** 2) * np.sqrt(2)))
+                  )* c + d
 
 
 class FermiEdge:
