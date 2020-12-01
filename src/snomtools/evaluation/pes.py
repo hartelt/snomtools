@@ -11,12 +11,19 @@ from __future__ import division
 from __future__ import print_function
 import snomtools.calcs.units as u
 import numpy as np
-import snomtools.data.datasets
+import snomtools.data.datasets as ds
 from scipy.optimize import curve_fit
 import scipy.special
+import scipy.signal
 import snomtools.calcs.constants as const
+import sys
 
 __author__ = 'hartelt'
+
+if '-v' in sys.argv:
+    verbose = True
+else:
+    verbose = False
 
 k_B = const.k_B  # The Boltzmann constant
 Temp = u.to_ureg(300, "K")  # The Temperature, for now hardcoded as room temperature.
@@ -147,8 +154,22 @@ class FermiEdge:
 
     @classmethod
     def from_xy(cls, energies, intensities, guess):
+        if u.is_quantity(energies):
+            assert u.same_dimension(energies, "eV")
+            energies = u.to_ureg(energies)
+        else:
+            energies = u.to_ureg(energies, 'eV')
+        intensities = u.to_ureg(intensities)
+
+        energyunit = str(energies.units)
+        countsunit = str(intensities.units)
+
         f = cls()
         f.coeffs, f.accuracy = cls.fit_fermi_edge(energies, intensities, guess)
+        f.E_f_unit = energyunit
+        f.dE_unit = energyunit
+        f.c_unit = countsunit
+        f.d_unit = countsunit
         return f
 
     def fermi_edge(self, E):
@@ -186,7 +207,7 @@ class FermiEdge:
 
         :return: energies, intensities: tuple of quantities with the projected data.
         """
-        assert isinstance(data, snomtools.data.datasets.DataSet) or isinstance(data, snomtools.data.datasets.ROI), \
+        assert isinstance(data, ds.DataSet) or isinstance(data, ds.ROI), \
             "ERROR: No dataset or ROI instance given to Powerlaw data extraction."
         if axis_id is None:
             energy_axis = data.get_axis_by_dimension("eV")
@@ -213,7 +234,7 @@ class FermiEdge:
 
         :return: 1D-DataSet with projected Intensity Data and Power Axis.
         """
-        assert isinstance(data, snomtools.data.datasets.DataSet) or isinstance(data, snomtools.data.datasets.ROI), \
+        assert isinstance(data, ds.DataSet) or isinstance(data, ds.ROI), \
             "ERROR: No dataset or ROI instance given to Powerlaw data extraction."
         if axis_id is None:
             energy_axis = data.get_axis_by_dimension("eV")
@@ -222,20 +243,37 @@ class FermiEdge:
         count_data = data.get_datafield(data_id)
         energy_axis_index = data.get_axis_index(energy_axis.get_label())
         count_data_projected = count_data.project_nd(energy_axis_index, ignorenan=True)
-        count_data_projected = snomtools.data.datasets.DataArray(count_data_projected, label='intensity')
+        count_data_projected = ds.DataArray(count_data_projected, label='intensity')
         # Normalize by scaling to 1:
         count_data_projected_norm = count_data_projected / count_data_projected.max()
         count_data_projected_norm.set_label("intensity_normalized")
         # Initialize the DataSet containing only the projected powerlaw data;
-        return snomtools.data.datasets.DataSet(label, [count_data_projected_norm, count_data_projected], [energy_axis])
+        return ds.DataSet(label, [count_data_projected_norm, count_data_projected], [energy_axis])
 
     @staticmethod
     def guess_parameters(energies, intensities):
-        # ToDo: Do something smart to generate start parameters.
-        raise NotImplementedError
+        # ToDo: This just takes the 10%-edges of the value range, this could be improved with some cool statistics.
+        i_min = min(intensities)
+        i_max = max(intensities)
+        i_range = i_max - i_min
 
-    @staticmethod
-    def fit_fermi_edge(energies, intensities, guess=None):
+        # Take the 10%-values from the edge as low and high:
+        low_level = i_min + 0.1 * i_range
+        high_level = i_max - 0.1 * i_range
+
+        # As a guess for the edge position,
+        # take the mean index of the 5% closest values to the middle between high and low:
+        n_mean_index = min(int(round(len(energies) * 0.05)), 1)
+        middle_index = int(np.round(
+            np.mean(np.argsort(np.abs(intensities - (high_level - low_level) / 2))[:n_mean_index])))
+
+        guess = (energies[middle_index], u.to_ureg(0.1, 'eV'), high_level - low_level, low_level)
+        if verbose:
+            print("Guessing start parameters for Fermi Fit: {0}", guess)
+        return guess
+
+    @classmethod
+    def fit_fermi_edge(cls, energies, intensities, guess=None):
         """
         This function fits a fermi edge to data. Uses numpy.optimize.curve_fit under the hood.
 
@@ -255,7 +293,7 @@ class FermiEdge:
             energies = u.to_ureg(energies, 'eV')
         intensities = u.to_ureg(intensities)
         if guess is None:
-            guess = (29.6, 0.1, 1.0, 0.01)  # Just typical values
+            guess = tuple(u.magnitudes(cls.guess_parameters(energies, intensities)))
         else:  # to assure the guess is represented in the correct units:
             energyunit = energies.units
             countsunit = intensities.units
@@ -265,6 +303,7 @@ class FermiEdge:
                 guesslist.append(u.to_ureg(guesselement, guessunit).magnitude)
             guess = tuple(guesslist)
         return curve_fit(fermi_edge, energies.magnitude, intensities.magnitude, guess)
+
 
 # def fermi_fit(data, energy_axis=None, range=None, guess=None):
 # 	"""
@@ -282,3 +321,30 @@ class FermiEdge:
 # 	"""
 # 	raise NotImplementedError()
 # fermi_fit is redundant I will remove this when i am ready with all the other tasks
+
+
+if __name__ == "__main__":
+    # Generate some test data:
+    E_f, d_E, c, d = 30, 1, 100, 1
+    f = FermiEdge.from_coeffs((E_f, d_E, c, d))
+    energies = u.to_ureg(np.linspace(25, 35, 1000), 'eV')
+    intensities = u.to_ureg(f.fermi_edge(energies).magnitude + np.random.randn(1000) * 5, 'count')
+    testdata = ds.DataSet("testdata", (ds.DataArray(intensities, label="counts"),), (ds.Axis(energies, label="E"),))
+    testroi = ds.ROI(testdata, {'E': [u.to_ureg(29.8, 'eV'), None]})
+
+    # Test the single modules:
+    guess = FermiEdge.guess_parameters(energies, intensities)
+    result = FermiEdge.fit_fermi_edge(energies, intensities, guess)
+    print("result: {0}".format(result[0]))
+    f = FermiEdge.from_xy(energies, intensities, guess)
+
+    # Test the full thing:
+    f = FermiEdge(testroi)
+    print("result: {0}".format([f.E_f, f.dE, f.c, f.d]))
+
+    from matplotlib import pyplot as plt
+
+    plt.plot(energies, intensities)
+    plt.plot(energies, f.fermi_edge(energies))
+    plt.show()
+    print("done")
