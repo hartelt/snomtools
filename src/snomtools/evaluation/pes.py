@@ -87,9 +87,14 @@ class FermiEdge:
             else:
                 take_data = 1
 
-            self.coeffs, self.accuracy = self.fit_fermi_edge(self.data.get_axis(0).get_data(),
+            self.coeffs, pcov = self.fit_fermi_edge(self.data.get_axis(0).get_data(),
                                                              self.data.get_datafield(take_data).get_data(),
                                                              guess)
+            try:
+                self.accuracy = np.sqrt(np.diag(pcov))
+            except ValueError as e:  # Fit failed. pcov = inf, diag(inf) throws exception:
+                self.accuracy = np.full(4, np.inf)
+
             self.E_f_unit = energyunit
             self.dE_unit = energyunit
             self.c_unit = countsunit
@@ -128,6 +133,22 @@ class FermiEdge:
     @property
     def d(self):
         return u.to_ureg(self.coeffs[3], self.d_unit)
+
+    @property
+    def E_f_accuracy(self):
+        return u.to_ureg(self.accuracy[0], self.E_f_unit)
+
+    @property
+    def dE_accuracy(self):
+        return u.to_ureg(self.accuracy[1], self.dE_unit)
+
+    @property
+    def c_accuracy(self):
+        return u.to_ureg(self.accuracy[2], self.c_unit)
+
+    @property
+    def d_accuracy(self):
+        return u.to_ureg(self.accuracy[3], self.d_unit)
 
     @classmethod
     def from_coeffs(cls, coeffs, energyunit='eV', countsunit=None):
