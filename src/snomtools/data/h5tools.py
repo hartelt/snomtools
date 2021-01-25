@@ -32,6 +32,8 @@ class File(h5py.File):
     """
     A h5py.File object with the additional functionality of h5py_cache.File of setting buffer sizes. Uses the value
     :code:`chunk_cache_mem_size_default` as defined above as buffer size if not given otherwise explicitly.
+
+    .. automethod:: __init__
     """
 
     def __init__(self, name, mode='a',
@@ -48,18 +50,18 @@ class File(h5py.File):
         Therefore h5py_cache code is only used to optimize some cache access parameters for performance, now.
 
         The naming of the parameters is kept to the old snomtools scheme for backwards compatibility,
-        but the new h5py-style parameters `rdcc_nbytes`, `rdcc_w0` and `rdcc_nslots` can also be used as kwargs,
+        but the new h5py-style parameters ``rdcc_nbytes``, ``rdcc_w0`` and ``rdcc_nslots`` can also be used as kwargs,
         overwriting the snomtools-style parameters accordingly.
 
-        See https://docs.h5py.org/en/2.9.0rc1/high/file.html# for the h5py documentation.
+        See <https://docs.h5py.org/en/2.9.0rc1/high/file.html#> for the h5py documentation.
 
         :param str name: Name of file (bytes or str),
             or an instance of h5f.FileID to bind to an existing file identifier,
             or a file-like object.
 
-        :param str mode: Mode in which to open file; one of (`'w'`, `'r'`, `'r+'`, `'a'`, `'w-'`).
+        :param str mode: Mode in which to open file; one of (``'w'``, ``'r'``, ``'r+'``, ``'a'``, ``'w-'``).
 
-        :param **kwargs : dict (as keywords)
+        :param **kwargs: dict (as keywords)
             Standard h5py.File arguments, passed to its constructor
 
         :param int chunk_cache_mem_size:
