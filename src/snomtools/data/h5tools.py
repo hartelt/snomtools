@@ -57,7 +57,7 @@ class File(h5py.File):
             or an instance of h5f.FileID to bind to an existing file identifier,
             or a file-like object.
 
-        :param str mode: Mode in which to open file; one of (`“w”`, `“r”`, `“r+”`, `“a”`, `“w-“`).
+        :param str mode: Mode in which to open file; one of (`'w'`, `'r'`, `'r+'`, `'a'`, `'w-'`).
 
         :param **kwargs : dict (as keywords)
             Standard h5py.File arguments, passed to its constructor
