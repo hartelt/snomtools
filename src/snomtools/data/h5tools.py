@@ -101,7 +101,7 @@ class File(h5py.File):
         :returns: File access properties.
         :rtype: h5py.h5p.PropFAID
         """
-        return self.fid.get_access_plist()
+        return self.id.get_access_plist()
 
     def get_cache_params(self):
         """
