@@ -10,12 +10,79 @@ from __future__ import division
 from __future__ import print_function
 import numpy
 import os
+import scipy.interpolate
 import snomtools.calcs.prefixes as pref
 import snomtools.calcs.conversions as conv
+import snomtools.calcs.units as u
 
 __author__ = 'hartelt'
 
+
 # TODO: Compatibility with pint
+
+class Literature_Material(object):
+    def __init__(self, wavelengths, epsilons=None, ns=None, spline_order=3):
+        self.literature_wavelengths = u.to_ureg(wavelengths, 'nanometer').real
+        if (epsilons is None) and (ns is None):
+            raise ValueError("Literature Material cannot be initializes without values.")
+        if epsilons is not None:
+            self.literature_epsilons = u.to_ureg(epsilons, 'dimensionless')
+            self.eps_r_spline = scipy.interpolate.splrep(self.literature_wavelengths.magnitude,
+                                                         self.literature_epsilons.real.magnitude,
+                                                         k=spline_order)
+            self.eps_i_spline = scipy.interpolate.splrep(self.literature_wavelengths.magnitude,
+                                                         self.literature_epsilons.imag.magnitude,
+                                                         k=spline_order)
+        else:
+            self.literature_epsilons = None
+        if ns is not None:
+            self.literature_ns = u.to_ureg(ns, 'dimensionless')
+            self.n_r_spline = scipy.interpolate.splrep(self.literature_wavelengths.magnitude,
+                                                       self.literature_ns.real.magnitude,
+                                                       k=spline_order)
+            self.n_i_spline = scipy.interpolate.splrep(self.literature_wavelengths.magnitude,
+                                                       self.literature_ns.imag.magnitude,
+                                                       k=spline_order)
+        else:
+            self.literature_ns = None
+
+    def epsilon(self, omega):
+        """
+        This method approximates the complex dielectric function of the material
+        at a given frequency,
+        using spline interpolation of the literature data.
+        If the frequency is outside of literature data range, a ValueError is thrown.
+
+        :param omega: the frequency at which the dielectric function shall be calculated (float or numpy array) in rad/s
+
+        :return: the complex dielectric function (dimensionless)
+        """
+        omega = u.to_ureg(omega, 'rad/s')
+        wl = conv.omega2lambda(omega).to('nanometer')
+        if self.literature_epsilons is not None:
+            return u.to_ureg(scipy.interpolate.splev(wl, self.eps_r_spline, ext=2) +
+                             1j * scipy.interpolate.splev(wl, self.eps_i_spline, ext=2))
+        else:
+            return u.to_ureg(conv.n2epsilon(self.n(omega)))
+
+    def n(self, omega):
+        """
+        This method approximates the complex refraction index of the material
+        at a given frequency,
+        using spline interpolation of the literature data.
+
+        :param omega: the frequency at which the refraction index shall be calculated (float or numpy array) in rad/s
+
+        :return: the complex refraction index (dimensionless)
+        """
+        omega = u.to_ureg(omega, 'rad/s')
+        wl = conv.omega2lambda(omega).to('nanometer')
+        if self.literature_ns is not None:
+            return u.to_ureg(scipy.interpolate.splev(wl, self.n_r_spline, ext=2) +
+                             1j * scipy.interpolate.splev(wl, self.n_i_spline, ext=2))
+        else:
+            return u.to_ureg(conv.epsilon2n(self.epsilon(omega)))
+
 
 ownpath = os.path.dirname(os.path.realpath(__file__))
 
@@ -111,4 +178,16 @@ ACS Nano, American Chemical Society (ACS), 2014, 8, 6182-6192
 
 # for testing:
 if __name__ == "__main__":
-	print(Au_Olmon_singlecristalline)
+    mat = Literature_Material(u.to_ureg(Au_Olmon_singlecristalline[:, 0],'meter'), Au_Olmon_singlecristalline[:, 1])
+    from matplotlib import pyplot as plt
+    from matplotlib import pyplot as plt
+
+    xvals = u.to_ureg(numpy.arange(400,800,.05),'nanometer')
+    plt.plot(xvals.magnitude, mat.epsilon(conv.lambda2omega(xvals)).real,
+             '-', label='approx')
+    wl = conv.omega2lambda(conv.lambda2omega(xvals)).to("nanometer")
+
+    plt.plot(Au_Olmon_singlecristalline[:, 0]*1e9, Au_Olmon_singlecristalline[:, 1].real, '.', label='Olmon')
+
+    plt.legend()
+    plt.show()
