@@ -52,6 +52,8 @@ class Literature_Material(object):
         at a given frequency,
         using spline interpolation of the literature data.
         If the frequency is outside of literature data range, a ValueError is thrown.
+        If only refractive index data is available, the dielectric function is calculated from it,
+        assuming non-magnetic behaviour.
 
         :param omega: the frequency at which the dielectric function shall be calculated (float or numpy array) in rad/s
 
@@ -70,6 +72,9 @@ class Literature_Material(object):
         This method approximates the complex refraction index of the material
         at a given frequency,
         using spline interpolation of the literature data.
+        If the frequency is outside of literature data range, a ValueError is thrown.
+        If only dielectric function data is available, the refractive index is calculated from it,
+        assuming non-magnetic behaviour.
 
         :param omega: the frequency at which the refraction index shall be calculated (float or numpy array) in rad/s
 
@@ -91,7 +96,9 @@ raw = numpy.loadtxt(os.path.abspath(os.path.join(ownpath, "literature/Au/johnson
 wl = raw[:, 0] * pref.micro
 n = raw[:, 1] + (raw[:, 2] * 1j)
 eps = conv.n2epsilon(n)
-Au_Johnson_Christy = numpy.column_stack((wl, eps, n))
+Au_Johnson_Christy_data_raw = numpy.column_stack((wl, eps, n))
+Au_Johnson_Christy_data = [u.to_ureg(wl, 'meter'), eps, n]
+Au_Johnson_Christy = Literature_Material(u.to_ureg(wl, 'meter'), eps, n)
 """
 Au by Johnson and Christy
 
@@ -117,19 +124,25 @@ raw = numpy.loadtxt(os.path.abspath(os.path.join(ownpath, "literature/Au/Olmon_P
 wl = raw[:, 1]
 eps = raw[:, 2] + 1j * raw[:, 3]
 n = raw[:, 4] + 1j * raw[:, 5]
-Au_Olmon_evaporated = numpy.column_stack((wl, eps, n))
+Au_Olmon_evaporated_data_raw = numpy.column_stack((wl, eps, n))
+Au_Olmon_evaporated_data = [u.to_ureg(wl, 'meter'), eps, n]
+Au_Olmon_evaporated = Literature_Material(u.to_ureg(wl, 'meter'), eps, n)
 
 raw = numpy.loadtxt(os.path.abspath(os.path.join(ownpath, "literature/Au/Olmon_PRB2012_SC.dat")))
 wl = raw[:, 1]
 eps = raw[:, 2] + 1j * raw[:, 3]
 n = raw[:, 4] + 1j * raw[:, 5]
-Au_Olmon_singlecristalline = numpy.column_stack((wl, eps, n))
+Au_Olmon_singlecristalline_data_raw = numpy.column_stack((wl, eps, n))
+Au_Olmon_singlecristalline_data = [u.to_ureg(wl, 'meter'), eps, n]
+Au_Olmon_singlecristalline = Literature_Material(u.to_ureg(wl, 'meter'), eps, n)
 
 raw = numpy.loadtxt(os.path.abspath(os.path.join(ownpath, "literature/Au/Olmon_PRB2012_TS.dat")))
 wl = raw[:, 1]
 eps = raw[:, 2] + 1j * raw[:, 3]
 n = raw[:, 4] + 1j * raw[:, 5]
-Au_Olmon_templatestripped = numpy.column_stack((wl, eps, n))
+Au_Olmon_templatestripped_data_raw = numpy.column_stack((wl, eps, n))
+Au_Olmon_templatestripped_data = [u.to_ureg(wl, 'meter'), eps, n]
+Au_Olmon_templatestripped = Literature_Material(u.to_ureg(wl, 'meter'), eps, n)
 """
 Au by Olmon et al.
 
@@ -166,7 +179,9 @@ raw = numpy.loadtxt(os.path.abspath(os.path.join(ownpath, "literature/ITO/ITO-Ko
 wl = raw[:, 0] * pref.micro
 n = raw[:, 1] + (raw[:, 2] * 1j)
 eps = conv.n2epsilon(n)
-ITO_Koenig = numpy.column_stack((wl, eps, n))
+ITO_Koenig_data_raw = numpy.column_stack((wl, eps, n))
+ITO_Koenig_data = [u.to_ureg(wl, 'meter'), eps, n]
+ITO_Koenig = Literature_Material(u.to_ureg(wl, 'meter'), eps, n)
 """
 ITO by Koenig et al.
 http://refractiveindex.info
@@ -178,16 +193,14 @@ ACS Nano, American Chemical Society (ACS), 2014, 8, 6182-6192
 
 # for testing:
 if __name__ == "__main__":
-    mat = Literature_Material(u.to_ureg(Au_Olmon_singlecristalline[:, 0],'meter'), Au_Olmon_singlecristalline[:, 1])
-    from matplotlib import pyplot as plt
+    mat = Au_Johnson_Christy
     from matplotlib import pyplot as plt
 
-    xvals = u.to_ureg(numpy.arange(400,800,.05),'nanometer')
-    plt.plot(xvals.magnitude, mat.epsilon(conv.lambda2omega(xvals)).real,
+    xvals = u.to_ureg(numpy.arange(400, 800, .05), 'nanometer')
+    plt.plot(xvals.magnitude, mat.n(conv.lambda2omega(xvals)).real,
              '-', label='approx')
-    wl = conv.omega2lambda(conv.lambda2omega(xvals)).to("nanometer")
 
-    plt.plot(Au_Olmon_singlecristalline[:, 0]*1e9, Au_Olmon_singlecristalline[:, 1].real, '.', label='Olmon')
+    plt.plot(Au_Johnson_Christy_data_raw[:, 0] * 1e9, Au_Johnson_Christy_data_raw[:, 2].real, '.', label='Olmon')
 
     plt.legend()
     plt.show()
