@@ -17,12 +17,33 @@ import snomtools.calcs.units as u
 
 __author__ = 'hartelt'
 
-
-# TODO: Compatibility with pint
-
 class Literature_Material(object):
-    def __init__(self, wavelengths, epsilons=None, ns=None, spline_order=3):
-        self.literature_wavelengths = u.to_ureg(wavelengths, 'nanometer').real
+    """
+    An optical material defined from tabulated literature data.
+    The optical behavior for any frequency is approximated by spline interpolation.
+    """
+
+    def __init__(self, frequencies=None, epsilons=None, ns=None, wavelengths=None, spline_order=3):
+        """
+        The initializer, building the splines from the literature data.
+        Data must be given as 1D-Array-like. At least one of frequencies/wavelengths and epsilons/ns must be given.
+
+        :param frequencies: The frequencies given in rad/s.
+
+        :param epsilons: The dielectric constants, given as real or complex values.
+
+        :param ns: The refractive indices, given as real or complex values.
+
+        :param wavelengths: Wavelengths values given in nanometers. Ignored if frequencies are given.
+
+        :param spline_order: The order of the spline for approximation. Default=3.
+        """
+        if frequencies is not None:
+            self.literature_wavelengths = conv.omega2lambda(u.to_ureg(frequencies)).to('nanometer')
+        elif wavelengths is not None:
+            self.literature_wavelengths = u.to_ureg(wavelengths, 'nanometer').real
+        else:
+            raise ValueError("Wavelengths or Frequencies of Literature Values must be given.")
         if (epsilons is None) and (ns is None):
             raise ValueError("Literature Material cannot be initializes without values.")
         if epsilons is not None:
@@ -55,9 +76,9 @@ class Literature_Material(object):
         If only refractive index data is available, the dielectric function is calculated from it,
         assuming non-magnetic behaviour.
 
-        :param omega: the frequency at which the dielectric function shall be calculated (float or numpy array) in rad/s
+        :param omega: The frequency at which the dielectric function shall be calculated (float or numpy array) in rad/s
 
-        :return: the complex dielectric function (dimensionless)
+        :return: The complex dielectric function (dimensionless).
         """
         omega = u.to_ureg(omega, 'rad/s')
         wl = conv.omega2lambda(omega).to('nanometer')
@@ -76,9 +97,9 @@ class Literature_Material(object):
         If only dielectric function data is available, the refractive index is calculated from it,
         assuming non-magnetic behaviour.
 
-        :param omega: the frequency at which the refraction index shall be calculated (float or numpy array) in rad/s
+        :param omega: The frequency at which the refraction index shall be calculated (float or numpy array) in rad/s
 
-        :return: the complex refraction index (dimensionless)
+        :return: The complex refraction index (dimensionless).
         """
         omega = u.to_ureg(omega, 'rad/s')
         wl = conv.omega2lambda(omega).to('nanometer')
@@ -98,7 +119,7 @@ n = raw[:, 1] + (raw[:, 2] * 1j)
 eps = conv.n2epsilon(n)
 Au_Johnson_Christy_data_raw = numpy.column_stack((wl, eps, n))
 Au_Johnson_Christy_data = [u.to_ureg(wl, 'meter'), eps, n]
-Au_Johnson_Christy = Literature_Material(u.to_ureg(wl, 'meter'), eps, n)
+Au_Johnson_Christy = Literature_Material(None, eps, n, u.to_ureg(wl, 'meter'))
 """
 Au by Johnson and Christy
 
@@ -126,7 +147,7 @@ eps = raw[:, 2] + 1j * raw[:, 3]
 n = raw[:, 4] + 1j * raw[:, 5]
 Au_Olmon_evaporated_data_raw = numpy.column_stack((wl, eps, n))
 Au_Olmon_evaporated_data = [u.to_ureg(wl, 'meter'), eps, n]
-Au_Olmon_evaporated = Literature_Material(u.to_ureg(wl, 'meter'), eps, n)
+Au_Olmon_evaporated = Literature_Material(None, eps, n, u.to_ureg(wl, 'meter'))
 
 raw = numpy.loadtxt(os.path.abspath(os.path.join(ownpath, "literature/Au/Olmon_PRB2012_SC.dat")))
 wl = raw[:, 1]
@@ -134,7 +155,7 @@ eps = raw[:, 2] + 1j * raw[:, 3]
 n = raw[:, 4] + 1j * raw[:, 5]
 Au_Olmon_singlecristalline_data_raw = numpy.column_stack((wl, eps, n))
 Au_Olmon_singlecristalline_data = [u.to_ureg(wl, 'meter'), eps, n]
-Au_Olmon_singlecristalline = Literature_Material(u.to_ureg(wl, 'meter'), eps, n)
+Au_Olmon_singlecristalline = Literature_Material(None, eps, n, u.to_ureg(wl, 'meter'))
 
 raw = numpy.loadtxt(os.path.abspath(os.path.join(ownpath, "literature/Au/Olmon_PRB2012_TS.dat")))
 wl = raw[:, 1]
@@ -142,7 +163,7 @@ eps = raw[:, 2] + 1j * raw[:, 3]
 n = raw[:, 4] + 1j * raw[:, 5]
 Au_Olmon_templatestripped_data_raw = numpy.column_stack((wl, eps, n))
 Au_Olmon_templatestripped_data = [u.to_ureg(wl, 'meter'), eps, n]
-Au_Olmon_templatestripped = Literature_Material(u.to_ureg(wl, 'meter'), eps, n)
+Au_Olmon_templatestripped = Literature_Material(None, eps, n, u.to_ureg(wl, 'meter'))
 """
 Au by Olmon et al.
 
@@ -181,7 +202,7 @@ n = raw[:, 1] + (raw[:, 2] * 1j)
 eps = conv.n2epsilon(n)
 ITO_Koenig_data_raw = numpy.column_stack((wl, eps, n))
 ITO_Koenig_data = [u.to_ureg(wl, 'meter'), eps, n]
-ITO_Koenig = Literature_Material(u.to_ureg(wl, 'meter'), eps, n)
+ITO_Koenig = Literature_Material(None, eps, n, u.to_ureg(wl, 'meter'))
 """
 ITO by Koenig et al.
 http://refractiveindex.info
