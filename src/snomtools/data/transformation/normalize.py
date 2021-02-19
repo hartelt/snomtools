@@ -14,7 +14,8 @@ def normalize_by_reference(data, refdata, data_id=0, refdata_id=0, exclude_axes=
 						   mode="division",
 						   newlabel='normalizeddata',
 						   new_plotlabel="Normalized Data",
-						   mean_excluded = False):
+						   mean_excluded = False,
+						   label_add_mode = False):
 	"""
 	Normalizes a dataset by the reference data of another set.
 	The normalized data is written into a new DataArray in the given DataSet.
@@ -44,6 +45,8 @@ def normalize_by_reference(data, refdata, data_id=0, refdata_id=0, exclude_axes=
 
 	:param bool mean_excluded: Take mean instead of sum for excluded axes.
 		Useful for absolute values in substraction mode.
+
+	:param bool label_add_mode: Add a suffix to the new label and plotlabel, marking the mode of this normalization.
 
 	:return: The modified dataset.
 	"""
@@ -76,8 +79,12 @@ def normalize_by_reference(data, refdata, data_id=0, refdata_id=0, exclude_axes=
 
 	del refquantity
 
+	if label_add_mode:
+		newlabel = newlabel+'_reference_'+mode
+		new_plotlabel = new_plotlabel+'_reference_'+mode
+
 	data_normalized[~ np.isfinite(data_normalized)] = 0  # set inf, and NaN to 0
-	data.add_datafield(data_normalized, label=newlabel+'_reference_'+mode, plotlabel=new_plotlabel+'_reference_'+mode)
+	data.add_datafield(data_normalized, label=newlabel, plotlabel=new_plotlabel)
 	return data
 
 
