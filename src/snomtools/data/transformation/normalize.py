@@ -13,7 +13,8 @@ __author__ = 'hartelt'
 def normalize_by_reference(data, refdata, data_id=0, refdata_id=0, exclude_axes=None,
 						   mode="division",
 						   newlabel='normalizeddata',
-						   new_plotlabel="Normalized Data"):
+						   new_plotlabel="Normalized Data",
+						   mean_excluded = False):
 	"""
 	Normalizes a dataset by the reference data of another set.
 	The normalized data is written into a new DataArray in the given DataSet.
@@ -41,6 +42,9 @@ def normalize_by_reference(data, refdata, data_id=0, refdata_id=0, exclude_axes=
 
 	:param new_plotlabel: The plotlabel to set for the created DataArray.
 
+	:param bool mean_excluded: Take mean instead of sum for excluded axes.
+		Useful for absolute values in substraction mode.
+
 	:return: The modified dataset.
 	"""
 	assert isinstance(data, ds.DataSet), "ERROR: No DataSet given or imported."
@@ -52,7 +56,10 @@ def normalize_by_reference(data, refdata, data_id=0, refdata_id=0, exclude_axes=
 		for exclude_axis in exclude_axes:
 			sumlist.append(refdata.get_axis_index(exclude_axis))
 		sumtup = tuple(sumlist)
-		refquantity = refdata.get_datafield(refdata_id).sum(sumtup)
+		if mean_excluded:
+			refquantity = refdata.get_datafield(refdata_id).mean(sumtup, keepdims=True, ignorenan=True)
+		else:
+			refquantity = refdata.get_datafield(refdata_id).sum(sumtup, keepdims=True, ignorenan=True)
 	else:
 		refquantity = refdata.get_datafield(refdata_id).get_data()
 
