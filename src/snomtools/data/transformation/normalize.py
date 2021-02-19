@@ -16,7 +16,7 @@ def normalize_by_reference(data, refdata, data_id=0, refdata_id=0, exclude_axes=
                            newlabel='normalizeddata',
                            new_plotlabel="Normalized Data",
                            mean_excluded=False,
-                           label_add_mode=False):
+                           label_mode_suffix=False):
     """
     Normalizes a dataset by the reference data of another set.
     The normalized data is written into a new DataArray in the given DataSet.
@@ -47,7 +47,7 @@ def normalize_by_reference(data, refdata, data_id=0, refdata_id=0, exclude_axes=
     :param bool mean_excluded: Take mean instead of sum for excluded axes.
         Useful for absolute values in substraction mode.
 
-    :param bool label_add_mode: Add a suffix to the new label and plotlabel, marking the mode of this normalization.
+    :param bool label_mode_suffix: Add a suffix to the new label and plotlabel, marking the mode of this normalization.
 
     :return: The modified dataset.
     """
@@ -80,7 +80,7 @@ def normalize_by_reference(data, refdata, data_id=0, refdata_id=0, exclude_axes=
 
     del refquantity
 
-    if label_add_mode:
+    if label_mode_suffix:
         newlabel = newlabel + '_reference_' + mode
         new_plotlabel = new_plotlabel + '_reference_' + mode
 
@@ -93,7 +93,7 @@ def normalize_along_axis(data, axes, data_id=0,
                          mode="div", ref='max',
                          newlabel='normalizeddata',
                          new_plotlabel="Normalized Data",
-                         label_add_mode=False):
+                         label_mode_suffix=False):
     """
     Normalizes a dataset along axes.
     The normalized data is written into a new DataArray in the given DataSet.
@@ -120,7 +120,7 @@ def normalize_along_axis(data, axes, data_id=0,
 
     :param new_plotlabel: The plotlabel to set for the created DataArray.
 
-    :param bool label_add_mode: Add a suffix to the new label and plotlabel, marking the mode of this normalization.
+    :param bool label_mode_suffix: Add a suffix to the new label and plotlabel, marking the mode of this normalization.
 
     :return: The modified dataset.
     """
@@ -156,7 +156,7 @@ def normalize_along_axis(data, axes, data_id=0,
     else:
         raise ValueError("Unrecognized mode for normalize_by_reference.")
 
-    if label_add_mode:
+    if label_mode_suffix:
         newlabel = newlabel + '_axes_' + str(axes)[1:-1] + '_' + mode
         new_plotlabel = new_plotlabel + '_axes_' + str(axes)[1:-1] + '_' + mode
 
@@ -169,7 +169,7 @@ def normalize_sensitivity(data, sensitivity, data_id=0, sensitivity_id=0, includ
                           mode="division",
                           newlabel='normalizeddata',
                           new_plotlabel="Normalized Data",
-                          label_add_mode=False):
+                          label_mode_suffix=False):
     """
     Normalizes a dataset by the sensitivity which is given by the data of another set.
     The normalized data is written into a new DataArray in the given DataSet.
@@ -195,7 +195,7 @@ def normalize_sensitivity(data, sensitivity, data_id=0, sensitivity_id=0, includ
 
     :param new_plotlabel: The plotlabel to set for the created DataArray.
 
-    :param bool label_add_mode: Add a suffix to the new label and plotlabel, marking the mode of this normalization.
+    :param bool label_mode_suffix: Add a suffix to the new label and plotlabel, marking the mode of this normalization.
 
     :return: The modified dataset.
     """
@@ -229,7 +229,7 @@ def normalize_sensitivity(data, sensitivity, data_id=0, sensitivity_id=0, includ
 
     del refquantity
 
-    if label_add_mode:
+    if label_mode_suffix:
         newlabel = newlabel + '_reference_' + mode
         new_plotlabel = new_plotlabel + '_reference_' + mode
 
