@@ -29,7 +29,7 @@ def normalize_by_reference(data, refdata, data_id=0, refdata_id=0, exclude_axes=
     :param data_id: A valid identifier of the DataArray in the DataSet instance to apply normalization to. Per
         default, the first DataArray is taken.
 
-    :param flat_id: A valid identifier of the DataArray in the reference DataSet instance to take as reference. Per
+    :param refdata_id: A valid identifier of the DataArray in the reference DataSet instance to take as reference. Per
         default, the first DataArray is taken.
 
     :param exclude_axes: A list of valid axes identifiers of the reference data to exclude during normalization. The
@@ -92,7 +92,8 @@ def normalize_by_reference(data, refdata, data_id=0, refdata_id=0, exclude_axes=
 def normalize_along_axis(data, axes, data_id=0,
                          mode="div", ref='max',
                          newlabel='normalizeddata',
-                         new_plotlabel="Normalized Data"):
+                         new_plotlabel="Normalized Data",
+                         label_add_mode=False):
     """
     Normalizes a dataset along axes.
     The normalized data is written into a new DataArray in the given DataSet.
@@ -118,6 +119,8 @@ def normalize_along_axis(data, axes, data_id=0,
     :param newlabel: The label to set for the created DataArray.
 
     :param new_plotlabel: The plotlabel to set for the created DataArray.
+
+    :param bool label_add_mode: Add a suffix to the new label and plotlabel, marking the mode of this normalization.
 
     :return: The modified dataset.
     """
@@ -153,16 +156,20 @@ def normalize_along_axis(data, axes, data_id=0,
     else:
         raise ValueError("Unrecognized mode for normalize_by_reference.")
 
+    if label_add_mode:
+        newlabel = newlabel + '_axes_' + str(axes)[1:-1] + '_' + mode
+        new_plotlabel = new_plotlabel + '_axes_' + str(axes)[1:-1] + '_' + mode
+
     normalized_data[~ np.isfinite(normalized_data)] = 0  # set inf, and NaN to 0
-    data.add_datafield(normalized_data, label=newlabel + '_axes_' + str(axes)[1:-1] + '_' + mode,
-                       plotlabel=new_plotlabel + '_axes_' + str(axes)[1:-1] + '_' + mode)
+    data.add_datafield(normalized_data, label=newlabel, plotlabel=new_plotlabel)
     return data
 
 
 def normalize_sensitivity(data, sensitivity, data_id=0, sensitivity_id=0, include_axes=None,
                           mode="division",
                           newlabel='normalizeddata',
-                          new_plotlabel="Normalized Data"):
+                          new_plotlabel="Normalized Data",
+                          label_add_mode=False):
     """
     Normalizes a dataset by the sensitivity which is given by the data of another set.
     The normalized data is written into a new DataArray in the given DataSet.
@@ -175,8 +182,8 @@ def normalize_sensitivity(data, sensitivity, data_id=0, sensitivity_id=0, includ
     :param data_id: A valid identifier of the DataArray in the DataSet instance to apply normalization to. Per
         default, the first DataArray is taken.
 
-    :param sensitivity_id: A valid identifier of the DataArray in the reference DataSet instance to take as reference. Per
-        default, the first DataArray is taken.
+    :param sensitivity_id: A valid identifier of the DataArray in the reference DataSet instance to take as reference.
+        Per default, the first DataArray is taken.
 
     :param include_axes: A list of valid axes identifiers of the reference data to include during normalization.
 
@@ -187,6 +194,8 @@ def normalize_sensitivity(data, sensitivity, data_id=0, sensitivity_id=0, includ
     :param newlabel: The label to set for the created DataArray.
 
     :param new_plotlabel: The plotlabel to set for the created DataArray.
+
+    :param bool label_add_mode: Add a suffix to the new label and plotlabel, marking the mode of this normalization.
 
     :return: The modified dataset.
     """
@@ -220,7 +229,10 @@ def normalize_sensitivity(data, sensitivity, data_id=0, sensitivity_id=0, includ
 
     del refquantity
 
+    if label_add_mode:
+        newlabel = newlabel + '_reference_' + mode
+        new_plotlabel = new_plotlabel + '_reference_' + mode
+
     data_normalized[~ np.isfinite(data_normalized)] = 0  # set inf, and NaN to 0
-    data.add_datafield(data_normalized, label=newlabel + '_reference_' + mode,
-                       plotlabel=new_plotlabel + '_reference_' + mode)
+    data.add_datafield(data_normalized, label=newlabel, plotlabel=new_plotlabel)
     return data
