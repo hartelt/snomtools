@@ -77,7 +77,7 @@ def hist_asc(source, T_start=None, T_bin=1, tif_probe=None):
 
 
 def convert_comma(s):
-	# The function that converts the string with comma as decimal seperator to float
+	# The function that converts the string with comma as decimal separator to float
 	s = s.strip().replace(',', '.')
 	return float(s)
 

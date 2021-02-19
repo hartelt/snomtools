@@ -33,14 +33,17 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
-    'matplotlib.sphinxext.only_directives',
+    # 'matplotlib.sphinxext.only_directives',
     'matplotlib.sphinxext.plot_directive',
     'sphinx.ext.doctest',
     'sphinx.ext.todo',
-    'sphinx.ext.pngmath',
+    # 'sphinx.ext.pngmath',
     'sphinx.ext.viewcode',
 ]
-autodoc_default_flags = ["members", "private-members", "special-members","show-inheritance"]
+autodoc_default_flags = ["members",
+                         # "private-members",  # Commenting out this turns off __data etc.
+                         # "special-members",  # Commenting out this turns off __weakref__, but also __init__ etc.
+                         "show-inheritance"]
 # autosummary_generate = True
 # autodoc_member_order = 'bysource'
 
@@ -232,7 +235,7 @@ latex_preamble = r"""
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
   ('index', 'snomtools.tex', u'snomtools Documentation',
-   u'Michael Hartelt, Cristian González', 'manual'),
+   u'Michael Hartelt and others, TU Kaiserslautern', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -262,7 +265,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'snomtools', u'snomtools Documentation',
-     [u'Michael Hartelt, Cristian González'], 1)
+     [u'Michael Hartelt and others, TU Kaiserslautern'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -276,7 +279,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
   ('index', 'snomtools', u'snomtools Documentation',
-   u'Michael Hartelt, Cristian González', 'snomtools', 'One line description of project.',
+   u'Michael Hartelt and others, TU Kaiserslautern', 'snomtools', 'One line description of project.',
    'Miscellaneous'),
 ]
 
@@ -297,9 +300,9 @@ texinfo_documents = [
 
 # Bibliographic Dublin Core info.
 epub_title = u'snomtools'
-epub_author = u'Michael Hartelt, Cristian González'
-epub_publisher = u'Michael Hartelt, Cristian González'
-epub_copyright = u'2015, Michael Hartelt, Cristian González'
+epub_author = u'Michael Hartelt and others'
+epub_publisher = u'Michael Hartelt and others'
+epub_copyright = u'2015, Michael Hartelt and others'
 
 # The basename for the epub file. It defaults to the project name.
 #epub_basename = u'snomtools'

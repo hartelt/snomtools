@@ -1,6 +1,6 @@
 """
 This file provides data evaluation scripts for PEEM data.
-For furter info about data structures, see:
+For further info about data structures, see:
 data.imports.tiff.py
 data.datasets.py
 

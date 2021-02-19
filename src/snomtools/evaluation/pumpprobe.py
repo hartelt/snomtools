@@ -1,6 +1,6 @@
 """
 This file provides data evaluation scripts for time-resolved pump-probe data.
-For furter info about data structures, see:
+For further info about data structures, see:
 data.imports.tiff.py
 data.datasets.py
 
@@ -10,7 +10,6 @@ from __future__ import division
 from __future__ import print_function
 import snomtools.calcs.conversions
 import snomtools.data.datasets
-import snomtools.data.imports.tiff
 import snomtools.calcs.units as u
 
 __author__ = 'hartelt'

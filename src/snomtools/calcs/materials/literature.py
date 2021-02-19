@@ -42,7 +42,7 @@ Au by Johnson and Christy
 	  File                     = {:Paper/Johnson-Christy-Dielectric constants/PhysRevB.6.4370.pdf:PDF},
 	  Publisher                = {APS},
 	  Timestamp                = {2015.03.26}
-}
+	}
 
 """
 
