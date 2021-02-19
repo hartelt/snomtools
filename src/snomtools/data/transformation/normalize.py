@@ -44,7 +44,7 @@ def normalize_by_reference(data, refdata, data_id=0, refdata_id=0, exclude_axes=
 	:return: The modified dataset.
 	"""
 	assert isinstance(data, ds.DataSet), "ERROR: No DataSet given or imported."
-	assert isinstance(refdata, ds.DataSet), "ERROR: No DataSet given or imported."
+	assert isinstance(refdata, (ds.DataSet, ds.ROI)), "ERROR: No DataSet or ROI given or imported."
 
 	# Assemble tuple of axis indices to project onto:
 	if exclude_axes:
