@@ -19,7 +19,7 @@ __author__ = "Michael Hartelt"
 mplversion = version.parse(mplversion)
 
 
-def project_1d(data, plot_dest, axis_id=0, data_id=0, normalization=None, offset=None, **kwargs):
+def project_1d(data, plot_dest, axis_id=0, data_id=0, normalization=None, offset=None, flip_axes=False, **kwargs):
     """
     Plots a projection of the data onto one axis. Therefore, it sums the values over all the other axes.
 
@@ -91,7 +91,10 @@ def project_1d(data, plot_dest, axis_id=0, data_id=0, normalization=None, offset
     assert (plotdat.shape == ax.shape), "Plot data shapes don't match."
 
     # Plot and return the line object:
-    line, = plot_dest.plot(ax.get_data_raw(), plotdat.magnitude, **kwargs)
+    if flip_axes:
+        line, = plot_dest.plot(plotdat.magnitude, ax.get_data_raw(), **kwargs)
+    else:
+        line, = plot_dest.plot(ax.get_data_raw(), plotdat.magnitude, **kwargs)
     return line
 
 
