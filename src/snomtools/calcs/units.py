@@ -206,7 +206,7 @@ def latex_si(input_):
 	"""
 	input_ = to_ureg(input_)
 	# noinspection PyStringFormat
-	return "{:Lx}".format(input_.units)
+	return "{:Lx}".format(input_.units).replace("electron_volt", "electronvolt")
 
 
 def latex_SI(input_):
@@ -219,4 +219,4 @@ def latex_SI(input_):
 	"""
 	input_ = to_ureg(input_)
 	# noinspection PyStringFormat
-	return "{:Lx}".format(input_)
+	return "{:Lx}".format(input_).replace("electron_volt", "electronvolt")
