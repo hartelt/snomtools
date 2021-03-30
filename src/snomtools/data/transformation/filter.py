@@ -515,6 +515,56 @@ class SobelFilter(Filter):
         return scipy.ndimage.sobel(data, **self.filter_kwargs)
 
 
+class PrewittFilter(Filter):
+    """
+    A Prewitt filter, using `scipy.ndimage.prewitt`, derived from the generic Filter.
+    """
+
+    def __init__(self, data, axes=None, prewitt_axis=-1, mode='reflect', cval=0.0):
+        """
+        The initializeer. See the docs of `scipy.ndimage.sobel` for details on the filter parameters
+        `mode` and `cval`.
+
+        :param data: The data to filter.
+        :type data: ds.DataSet
+
+        :param axes: A list of valid axis identifiers of the axes along which to filter.
+
+        :param prewitt_axis: The axis along which to calculate the Prewitt filter, given as valid identifier.
+            Must be included in axes!
+
+        :param mode: The mode parameter, can be `reflect`, `constant`, `nearest`, `mirror`, or `wrap`.
+        :type mode: str
+
+        :param cval: The fill value for outside of the edges.
+        :type cval: scalar
+        """
+        Filter.__init__(self, data, axes)
+        self.prewitt_axis = self.data_original.get_axis_index(prewitt_axis)
+        assert self.prewitt_axis in self.axes_filtered, "Prewitt filter only works along included axis!"
+        raw_prewitt_axis = 0
+        for i in range(self.data_original.dimensions):
+            if i < self.prewitt_axis and (i in self.axes_filtered):
+                raw_prewitt_axis += 1
+
+        self.filter_kwargs['axis'] = raw_prewitt_axis
+        self.filter_kwargs['mode'] = mode
+        self.filter_kwargs['cval'] = cval
+
+    def rawfilter(self, data):
+        """
+        Handles the numeric filtering in the backend.
+
+        :param data: The raw data to be fed to the scipy.ndimage.prewitt filter function.
+        :type data: array-like
+
+        :return: filtered data
+        :rtype np.ndarray
+        """
+        assert len(data.shape) == len(self.axes_filtered), "Wrong data dimensionality."
+        return scipy.ndimage.prewitt(data, **self.filter_kwargs)
+
+
 if __name__ == "__main__":
     print("Initializing...")
     testdatah5 = "filtertest_kspace.hdf5"
@@ -547,14 +597,14 @@ if __name__ == "__main__":
     #                             cval=0)
     # print("Calculating...")
     # minimumtest.data_add_filtered('counts')
-    percentiletest = PercentileFilter(data,
-                                      50,
-                                      ['k_x', 'k_y'],
-                                      (u.to_ureg(0.05, '1/angstrom'), u.to_ureg(0.05, '1/angstrom')),
-                                      mode='constant',
-                                      cval=0)
-    print("Calculating...")
-    percentiletest.data_add_filtered('counts')
+    # percentiletest = PercentileFilter(data,
+    #                                   50,
+    #                                   ['k_x', 'k_y'],
+    #                                   (u.to_ureg(0.05, '1/angstrom'), u.to_ureg(0.05, '1/angstrom')),
+    #                                   mode='constant',
+    #                                   cval=0)
+    # print("Calculating...")
+    # percentiletest.data_add_filtered('counts')
     # laplacetest = LaplaceFilter(data,
     #                             ['k_x', 'k_y'],
     #                             mode='constant',
@@ -568,6 +618,13 @@ if __name__ == "__main__":
     #                         cval=0)
     # print("Calculating...")
     # sobeltest.data_add_filtered('counts')
+    prewitttest = PrewittFilter(data,
+                                ['k_x', 'k_y', 'energy'],
+                                prewitt_axis='energy',
+                                mode='constant',
+                                cval=0)
+    print("Calculating...")
+    prewitttest.data_add_filtered('counts')
     print("Saving...")
     data.saveh5('filtertest_out.hdf5')
     print("... done.")
