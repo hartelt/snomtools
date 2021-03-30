@@ -204,7 +204,7 @@ def fix_siunitx(unitstr):
         "speed_of_light": "clight",
         "dirac_constant": "planckbar",
         "millimeter_Hg": "mmHg",
-        "\\\\milli\\\\meter_Hg": "mmHg"
+        "\\milli\\meter_Hg": "\\mmHg"
     }
     for k in siunitx_mapping:
         unitstr = unitstr.replace(k, siunitx_mapping[k])
