@@ -207,9 +207,9 @@ def fix_siunitx(unitstr):
         "\\\\milli\\\\meter_Hg": "mmHg"
     }
     for k in siunitx_mapping:
-        unitstr.replace(k, siunitx_mapping[k])
-    unitstr = unitstr.replace("delta_", "\\\\Delta ")
-    unitstr.replace("_", "")
+        unitstr = unitstr.replace(k, siunitx_mapping[k])
+    unitstr = unitstr.replace("delta_", "Delta \\")
+    unitstr = unitstr.replace("_", "")
     return unitstr
 
 
