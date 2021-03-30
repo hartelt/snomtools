@@ -341,6 +341,7 @@ class MaximumFilter(Filter):
         assert len(data.shape) == len(self.axes_filtered), "Wrong data dimensionality."
         return scipy.ndimage.maximum_filter(data, self.size, **self.filter_kwargs)
 
+
 class LaplaceFilter(Filter):
     """
     A Laplace filter, using `scipy.ndimage.laplace`, derived from the generic Filter.
@@ -380,7 +381,6 @@ class LaplaceFilter(Filter):
         return scipy.ndimage.laplace(data, **self.filter_kwargs)
 
 
-
 if __name__ == "__main__":
     print("Initializing...")
     testdatah5 = "filtertest_kspace.hdf5"
@@ -407,9 +407,9 @@ if __name__ == "__main__":
     # print("Calculating...")
     # maximumtest.data_add_filtered('counts')
     laplacetest = LaplaceFilter(data,
-                                 ['k_x', 'k_y'],
-                                 mode='constant',
-                                 cval=0)
+                                ['k_x', 'k_y'],
+                                mode='constant',
+                                cval=0)
     print("Calculating...")
     laplacetest.data_add_filtered('counts')
     print("Saving...")
