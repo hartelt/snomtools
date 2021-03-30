@@ -202,7 +202,7 @@ def fix_siunitx(unitstr):
         "metric_ton": "tonne",
         "unified_atomic_mass_unit": "atomicmassunit",
         "speed_of_light": "clight",
-        "dirac_constant":"planckbar",
+        "dirac_constant": "planckbar",
         "millimeter_Hg": "mmHg",
         "\\\\milli\\\\meter_Hg": "mmHg"
     }
@@ -211,6 +211,7 @@ def fix_siunitx(unitstr):
     unitstr = unitstr.replace("delta_", "\\\\Delta ")
     unitstr.replace("_", "")
     return unitstr
+
 
 def latex_si(input_):
     """
