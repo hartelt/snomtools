@@ -203,7 +203,6 @@ def fix_siunitx(unitstr):
         "unified_atomic_mass_unit": "atomicmassunit",
         "speed_of_light": "clight",
         "dirac_constant": "planckbar",
-        "millimeter_Hg": "mmHg",
         "\\milli\\meter_Hg": "\\mmHg"
     }
     for k in siunitx_mapping:
