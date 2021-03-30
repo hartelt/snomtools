@@ -341,6 +341,45 @@ class MaximumFilter(Filter):
         assert len(data.shape) == len(self.axes_filtered), "Wrong data dimensionality."
         return scipy.ndimage.maximum_filter(data, self.size, **self.filter_kwargs)
 
+class LaplaceFilter(Filter):
+    """
+    A Laplace filter, using `scipy.ndimage.laplace`, derived from the generic Filter.
+    """
+
+    def __init__(self, data, axes=None, mode='reflect', cval=0.0):
+        """
+        The initializeer. See the docs of `scipy.ndimage.laplace` for details on the filter parameters
+        `mode` and `cval`.
+
+        :param data: The data to filter.
+        :type data: ds.DataSet
+
+        :param axes: A list of valid axis identifiers of the axes along which to filter.
+
+        :param mode: The mode parameter, can be `reflect`, `constant`, `nearest`, `mirror`, or `wrap`.
+        :type mode: str
+
+        :param cval: The fill value for outside of the edges.
+        :type cval: scalar
+        """
+        Filter.__init__(self, data, axes)
+        self.filter_kwargs['mode'] = mode
+        self.filter_kwargs['cval'] = cval
+
+    def rawfilter(self, data):
+        """
+        Handles the numeric filtering in the backend.
+
+        :param data: The raw data to be fed to the scipy.ndimage.laplace filter function.
+        :type data: array-like
+
+        :return: filtered data
+        :rtype np.ndarray
+        """
+        assert len(data.shape) == len(self.axes_filtered), "Wrong data dimensionality."
+        return scipy.ndimage.laplace(data, **self.filter_kwargs)
+
+
 
 if __name__ == "__main__":
     print("Initializing...")
@@ -360,13 +399,19 @@ if __name__ == "__main__":
     #                           cval=0)
     # print("Calculating...")
     # mediantest.data_add_filtered('counts')
-    maximumtest = MaximumFilter(data,
+    # maximumtest = MaximumFilter(data,
+    #                              ['k_x', 'k_y'],
+    #                              (u.to_ureg(0.05, '1/angstrom'), u.to_ureg(0.05, '1/angstrom')),
+    #                              mode='constant',
+    #                              cval=0)
+    # print("Calculating...")
+    # maximumtest.data_add_filtered('counts')
+    laplacetest = LaplaceFilter(data,
                                  ['k_x', 'k_y'],
-                                 (u.to_ureg(0.05, '1/angstrom'), u.to_ureg(0.05, '1/angstrom')),
                                  mode='constant',
                                  cval=0)
     print("Calculating...")
-    maximumtest.data_add_filtered('counts')
+    laplacetest.data_add_filtered('counts')
     print("Saving...")
     data.saveh5('filtertest_out.hdf5')
     print("... done.")
