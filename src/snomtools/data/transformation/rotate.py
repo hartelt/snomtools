@@ -5,7 +5,6 @@ Rotation and scaling is possible with output of biggest possible rectangle of va
 
 import numpy as np
 import scipy.ndimage
-import cv2 as cv
 import snomtools.data.datasets as ds
 import snomtools.calcs.units as u
 
@@ -194,6 +193,7 @@ def scale_rotated(data, zoomfactor, angle, debug_dir=None, saveImg=False):
 
     print((angle, zoomfactor))
     if saveImg == True:
+        import cv2 as cv
         cv.imwrite(debug_dir + 'angle' + str(angle) + 'scale' + str(zoomfactor) + '.tif', np.uint16(zoomed_data))
     return zoomed_data
 
