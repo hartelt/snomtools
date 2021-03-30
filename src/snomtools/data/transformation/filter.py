@@ -382,6 +382,50 @@ class MinimumFilter(Filter):
         return scipy.ndimage.minimum_filter(data, self.size, **self.filter_kwargs)
 
 
+class PercentileFilter(Filter):
+    """
+    A percentile filter, using `scipy.ndimage.percentile_filter`, derived from the generic Filter.
+    """
+
+    def __init__(self, data, percentile, axes=None, size=None, footprint=None, mode='reflect', cval=0.0, origin=0):
+        """
+        The initializer. See the docs of `scipy.ndimage.percentile_filter` for details on the filter parameters
+        `size`, `footprint`, `mode`, `cval`, and `origin`.
+
+        :param data: The data to filter.
+        :type data: ds.DataSet
+
+        :param percentile: The percentile parameter.
+        :type percentile: scalar
+
+        :param axes: A list of valid axis identifiers of the axes along which to filter.
+        """
+        Filter.__init__(self, data, axes)
+        self.percentile = percentile
+        if size is not None:
+            self.size = self.filterparam_indexify(size, require_int=True)
+        else:
+            self.size = None
+        self.origin = self.filterparam_listify(origin)
+        self.filter_kwargs['footprint'] = footprint
+        self.filter_kwargs['mode'] = mode
+        self.filter_kwargs['cval'] = cval
+        self.filter_kwargs['origin'] = origin
+
+    def rawfilter(self, data):
+        """
+        Handles the numeric filtering in the backend.
+
+        :param data: The raw data to be fed to the `scipy.ndimage.percentile_filter` filter function.
+        :type data: array-like
+
+        :return: filtered data
+        :rtype np.ndarray
+        """
+        assert len(data.shape) == len(self.axes_filtered), "Wrong data dimensionality."
+        return scipy.ndimage.percentile_filter(data, self.percentile, self.size, **self.filter_kwargs)
+
+
 class LaplaceFilter(Filter):
     """
     A Laplace filter, using `scipy.ndimage.laplace`, derived from the generic Filter.
@@ -503,19 +547,27 @@ if __name__ == "__main__":
     #                             cval=0)
     # print("Calculating...")
     # minimumtest.data_add_filtered('counts')
+    percentiletest = PercentileFilter(data,
+                                      50,
+                                      ['k_x', 'k_y'],
+                                      (u.to_ureg(0.05, '1/angstrom'), u.to_ureg(0.05, '1/angstrom')),
+                                      mode='constant',
+                                      cval=0)
+    print("Calculating...")
+    percentiletest.data_add_filtered('counts')
     # laplacetest = LaplaceFilter(data,
     #                             ['k_x', 'k_y'],
     #                             mode='constant',
     #                             cval=0)
     # print("Calculating...")
     # laplacetest.data_add_filtered('counts')
-    sobeltest = SobelFilter(data,
-                            ['k_x', 'k_y', 'energy'],
-                            sobel_axis='energy',
-                            mode='constant',
-                            cval=0)
-    print("Calculating...")
-    sobeltest.data_add_filtered('counts')
+    # sobeltest = SobelFilter(data,
+    #                         ['k_x', 'k_y', 'energy'],
+    #                         sobel_axis='energy',
+    #                         mode='constant',
+    #                         cval=0)
+    # print("Calculating...")
+    # sobeltest.data_add_filtered('counts')
     print("Saving...")
     data.saveh5('filtertest_out.hdf5')
     print("... done.")
