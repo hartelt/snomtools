@@ -262,17 +262,64 @@ class GaussFilter(Filter):
         return scipy.ndimage.gaussian_filter(data, self.sigma, **self.filter_kwargs)
 
 
+class MedianFilter(Filter):
+    """
+    A median filter, using `scipy.ndimage.median_filter`, derived from the generic Filter.
+    """
+
+    def __init__(self, data, axes=None, size=None, footprint=None, mode='reflect', cval=0.0, origin=0):
+        """
+        The initializeer. See the docs of `scipy.ndimage.median_filter` for details on the filter parameters
+        `size`, `footprint`, `mode`, `cval`, and `origin`.
+
+        :param data: The data to filter.
+        :type data: ds.DataSet
+
+        :param axes: A list of valid axis identifiers of the axes along which to filter.
+        """
+        Filter.__init__(self, data, axes)
+        if size is not None:
+            self.size = self.filterparam_indexify(size, require_int=True)
+        else:
+            self.size = None
+        self.origin = self.filterparam_listify(origin)
+        self.filter_kwargs['footprint'] = footprint
+        self.filter_kwargs['mode'] = mode
+        self.filter_kwargs['cval'] = cval
+        self.filter_kwargs['origin'] = origin
+
+    def rawfilter(self, data):
+        """
+        Handles the numeric filtering in the backend.
+
+        :param data: The raw data to be fed to the `scipy.ndimage.median_filter` filter function.
+        :type data: array-like
+
+        :return: filtered data
+        :rtype np.ndarray
+        """
+        assert len(data.shape) == len(self.axes_filtered), "Wrong data dimensionality."
+        return scipy.ndimage.median_filter(data, self.size, **self.filter_kwargs)
+
+
 if __name__ == "__main__":
     print("Initializing...")
     testdatah5 = "filtertest_kspace.hdf5"
     data = ds.DataSet.from_h5(testdatah5)
-    gausstest = GaussFilter(data,
-                            (u.to_ureg(0.05, '1/angstrom'), u.to_ureg(0.05, '1/angstrom')),
-                            ['k_x', 'k_y'],
-                            order=[0, 0],
-                            mode='constant')
+    # gausstest = GaussFilter(data,
+    #                         (u.to_ureg(0.05, '1/angstrom'), u.to_ureg(0.05, '1/angstrom')),
+    #                         ['k_x', 'k_y'],
+    #                         order=[0, 0],
+    #                         mode='constant')
+    # print("Calculating...")
+    # gausstest.data_add_filtered('counts')
+    mediantest = MedianFilter(data,
+                              ['k_x', 'k_y'],
+                              (u.to_ureg(0.05, '1/angstrom'), u.to_ureg(0.05, '1/angstrom')),
+                              mode='constant',
+                              cval=0)
     print("Calculating...")
-    gausstest.data_add_filtered('counts')
+    mediantest.data_add_filtered('counts')
     print("Saving...")
     data.saveh5('filtertest_out.hdf5')
     print("... done.")
