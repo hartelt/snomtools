@@ -196,6 +196,22 @@ def meshgrid(*args):
     return tuple(outlist)
 
 
+def fix_siunitx(unitstr):
+    siunitx_mapping = {
+        "degC": "degreeCelsius",
+        "metric_ton": "tonne",
+        "unified_atomic_mass_unit": "atomicmassunit",
+        "speed_of_light": "clight",
+        "dirac_constant": "planckbar",
+        "\\milli\\meter_Hg": "\\mmHg"
+    }
+    for k in siunitx_mapping:
+        unitstr = unitstr.replace(k, siunitx_mapping[k])
+    unitstr = unitstr.replace("delta_", "Delta \\")
+    unitstr = unitstr.replace("_", "")
+    return unitstr
+
+
 def latex_si(input_):
     """
     Returns a LaTeX \si command for a correct LaTeX representation of the unit.
@@ -206,7 +222,7 @@ def latex_si(input_):
     """
     input_ = to_ureg(input_)
     # noinspection PyStringFormat
-    return "{:Lx}".format(input_.units).replace("electron_volt", "electronvolt")
+    return fix_siunitx("{:Lx}".format(input_.units))
 
 
 def latex_SI(input_):
@@ -219,4 +235,4 @@ def latex_SI(input_):
     """
     input_ = to_ureg(input_)
     # noinspection PyStringFormat
-    return "{:Lx}".format(input_).replace("electron_volt", "electronvolt")
+    return fix_siunitx("{:Lx}".format(input_))
