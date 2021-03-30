@@ -302,7 +302,7 @@ class MedianFilter(Filter):
         return scipy.ndimage.median_filter(data, self.size, **self.filter_kwargs)
 
 
-class MaxiumumFilter(Filter):
+class MaximumFilter(Filter):
     """
     A maximum filter, using `scipy.ndimage.maximum_filter`, derived from the generic Filter.
     """
@@ -360,13 +360,13 @@ if __name__ == "__main__":
     #                           cval=0)
     # print("Calculating...")
     # mediantest.data_add_filtered('counts')
-    maxiumumtest = MaxiumumFilter(data,
-                                  ['k_x', 'k_y'],
-                                  (u.to_ureg(0.05, '1/angstrom'), u.to_ureg(0.05, '1/angstrom')),
-                                  mode='constant',
-                                  cval=0)
+    maximumtest = MaximumFilter(data,
+                                 ['k_x', 'k_y'],
+                                 (u.to_ureg(0.05, '1/angstrom'), u.to_ureg(0.05, '1/angstrom')),
+                                 mode='constant',
+                                 cval=0)
     print("Calculating...")
-    maxiumumtest.data_add_filtered('counts')
+    maximumtest.data_add_filtered('counts')
     print("Saving...")
     data.saveh5('filtertest_out.hdf5')
     print("... done.")
