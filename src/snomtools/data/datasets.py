@@ -1837,7 +1837,8 @@ class DataArray(object):
                    h5target=None,
                    chunks=True,
                    dtype=numpy.float32,
-                   compression='gzip', compression_opts=4):
+                   compression='gzip', compression_opts=4,
+                   chunk_cache_mem_size=None):
         """
         Creates an empty DataArray from a given shape and unit.
         """
@@ -1846,13 +1847,15 @@ class DataArray(object):
                                         shape=shape, chunks=chunks,
                                         dtype=dtype,
                                         compression=compression,
-                                        compression_opts=compression_opts)
+                                        compression_opts=compression_opts,
+                                        chunk_cache_mem_size=chunk_cache_mem_size)
             return cls(dataspace,
                        label=label,
                        plotlabel=plotlabel,
                        h5target=h5target,
                        chunks=chunks,
-                       compression=compression, compression_opts=compression_opts)
+                       compression=compression, compression_opts=compression_opts,
+                       chunk_cache_mem_size=chunk_cache_mem_size)
         else:
             dataspace = numpy.zeros(shape, dtype=dtype)
             return cls(dataspace,
