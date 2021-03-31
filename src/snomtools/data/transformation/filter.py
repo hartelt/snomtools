@@ -584,69 +584,98 @@ class PrewittFilter(Filter):
 
 
 if __name__ == "__main__":
+    import time
+
     print("Initializing...")
     testdatah5 = "filtertest_kspace.hdf5"
-    data = ds.DataSet.from_h5(testdatah5, h5target='filtertest_onh5.hdf5')
+    testworkh5 = 'filtertest_onh5.hdf5'
+    testresulth5 = 'filtertest_out.hdf5'
+
+    start_time = time.time()
+    data = ds.DataSet.from_h5(testdatah5, h5target=testworkh5)
+    data.saveh5()
     gausstest = GaussFilter(data,
-                            (u.to_ureg('0.01 1/angstrom'), u.to_ureg(0.01, '1/angstrom')),
+                            (u.to_ureg('0.02 1/angstrom'), u.to_ureg(0.02, '1/angstrom')),
                             ['k_x', 'k_y'],
                             order=[0, 0],
                             mode='constant',
-                            truncate=2.)
-    print("Calculating...")
+                            truncate=3.)
+    print("Calculating GaussFilter on H5")
     gausstest.data_add_filtered('counts')
     print("Saving...")
     data.saveh5()
-    # mediantest = MedianFilter(data,
-    #                           ['k_x', 'k_y'],
-    #                           (u.to_ureg(0.05, '1/angstrom'), u.to_ureg(0.05, '1/angstrom')),
-    #                           mode='constant',
-    #                           cval=0)
-    # print("Calculating...")
-    # mediantest.data_add_filtered('counts')
-    # maximumtest = MaximumFilter(data,
-    #                              ['k_x', 'k_y'],
-    #                              (u.to_ureg(0.05, '1/angstrom'), u.to_ureg(0.05, '1/angstrom')),
-    #                              mode='constant',
-    #                              cval=0)
-    # print("Calculating...")
-    # maximumtest.data_add_filtered('counts')
-    # minimumtest = MinimumFilter(data,
-    #                             ['k_x', 'k_y'],
-    #                             (u.to_ureg(0.05, '1/angstrom'), u.to_ureg(0.05, '1/angstrom')),
-    #                             mode='constant',
-    #                             cval=0)
-    # print("Calculating...")
-    # minimumtest.data_add_filtered('counts')
-    # percentiletest = PercentileFilter(data,
-    #                                   50,
-    #                                   ['k_x', 'k_y'],
-    #                                   (u.to_ureg(0.05, '1/angstrom'), u.to_ureg(0.05, '1/angstrom')),
-    #                                   mode='constant',
-    #                                   cval=0)
-    # print("Calculating...")
-    # percentiletest.data_add_filtered('counts')
-    # laplacetest = LaplaceFilter(data,
-    #                             ['k_x', 'k_y'],
-    #                             mode='constant',
-    #                             cval=0)
-    # print("Calculating...")
-    # laplacetest.data_add_filtered('counts')
-    # sobeltest = SobelFilter(data,
-    #                         ['k_x', 'k_y', 'energy'],
-    #                         sobel_axis='energy',
-    #                         mode='constant',
-    #                         cval=0)
-    # print("Calculating...")
-    # sobeltest.data_add_filtered('counts')
-    # prewitttest = PrewittFilter(data,
-    #                             ['k_x', 'k_y', 'energy'],
-    #                             prewitt_axis='energy',
-    #                             mode='constant',
-    #                             cval=0)
-    # print("Calculating...")
-    # prewitttest.data_add_filtered('counts')
+    print("Total Time for Gaussfilter on H5: {} seconds".format(time.time() - start_time))
 
-    # print("Saving...")
-    # data.saveh5('filtertest_out.hdf5')
+    start_time = time.time()
+    data = ds.DataSet.from_h5(testdatah5)
+    gausstest = GaussFilter(data,
+                            (u.to_ureg('0.02 1/angstrom'), u.to_ureg(0.02, '1/angstrom')),
+                            ['k_x', 'k_y'],
+                            order=[0, 0],
+                            mode='constant',
+                            truncate=3.)
+    print("Calculating GaussFilter in RAM")
+    gausstest.data_add_filtered('counts', label='gauss_filtered')
+    print("Saving...")
+    data.saveh5(testresulth5)
+    print("Total Time for Gaussfilter in RAM: {} seconds".format(time.time() - start_time))
+
+    mediantest = MedianFilter(data,
+                              ['k_x', 'k_y'],
+                              (u.to_ureg(0.05, '1/angstrom'), u.to_ureg(0.05, '1/angstrom')),
+                              mode='constant',
+                              cval=0)
+    print("Calculating MedianFilter...")
+    mediantest.data_add_filtered('counts', label='median_filtered')
+
+    maximumtest = MaximumFilter(data,
+                                ['k_x', 'k_y'],
+                                (u.to_ureg(0.05, '1/angstrom'), u.to_ureg(0.05, '1/angstrom')),
+                                mode='constant',
+                                cval=0)
+    print("Calculating MaximumFilter...")
+    maximumtest.data_add_filtered('counts', label='maximum_filtered')
+
+    minimumtest = MinimumFilter(data,
+                                ['k_x', 'k_y'],
+                                (u.to_ureg(0.05, '1/angstrom'), u.to_ureg(0.05, '1/angstrom')),
+                                mode='constant',
+                                cval=0)
+    print("Calculating MinimumFilter...")
+    minimumtest.data_add_filtered('counts')
+
+    percentiletest = PercentileFilter(data,
+                                      50,
+                                      ['k_x', 'k_y'],
+                                      (u.to_ureg(0.05, '1/angstrom'), u.to_ureg(0.05, '1/angstrom')),
+                                      mode='constant',
+                                      cval=0)
+    print("Calculating PercentileFilter...")
+    percentiletest.data_add_filtered('counts', label='percentile_filtered')
+
+    laplacetest = LaplaceFilter(data,
+                                ['k_x', 'k_y'],
+                                mode='constant',
+                                cval=0)
+    print("Calculating LaplaceFilter...")
+    laplacetest.data_add_filtered('counts', label='laplace_filtered')
+
+    sobeltest = SobelFilter(data,
+                            ['k_x', 'k_y', 'energy'],
+                            sobel_axis='energy',
+                            mode='constant',
+                            cval=0)
+    print("Calculating SobelFilter...")
+    sobeltest.data_add_filtered('counts', label='sobel_filtered')
+
+    prewitttest = PrewittFilter(data,
+                                ['k_x', 'k_y', 'energy'],
+                                prewitt_axis='energy',
+                                mode='constant',
+                                cval=0)
+    print("Calculating PrewittFilter...")
+    prewitttest.data_add_filtered('counts', label='prewitt_filtered')
+
+    print("Saving...")
+    data.saveh5(testresulth5)
     print("... done.")
