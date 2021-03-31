@@ -194,13 +194,15 @@ class Filter(object):
         outlist = []
         for param, axis in zip(filterparam_list, self.axes_filtered):
             axis = self.data_original.get_axis(axis)
-            if u.is_quantity(param):
+            if isinstance(param, str):  # Cast strings to quantities.
+                param = u.to_ureg(param)
+            if u.is_quantity(param):  # Handle quantities.
                 assert axis.is_linspaced(), "Trying to give filter parameter as Axis value for non-linspaced axis!"
                 pxvalue = (param / axis.spacing()).to('1').magnitude
                 if require_int:
                     pxvalue = round(pxvalue)
                 outlist.append(pxvalue)
-            else:
+            else:  # Assume numbers as expected by scipy.
                 outlist.append(param)
         return outlist
 
@@ -568,14 +570,17 @@ class PrewittFilter(Filter):
 if __name__ == "__main__":
     print("Initializing...")
     testdatah5 = "filtertest_kspace.hdf5"
-    data = ds.DataSet.from_h5(testdatah5)
-    # gausstest = GaussFilter(data,
-    #                         (u.to_ureg(0.05, '1/angstrom'), u.to_ureg(0.05, '1/angstrom')),
-    #                         ['k_x', 'k_y'],
-    #                         order=[0, 0],
-    #                         mode='constant')
-    # print("Calculating...")
-    # gausstest.data_add_filtered('counts')
+    data = ds.DataSet.from_h5(testdatah5, h5target='filtertest_onh5.hdf5')
+    gausstest = GaussFilter(data,
+                            (u.to_ureg('0.01 1/angstrom'), u.to_ureg(0.01, '1/angstrom')),
+                            ['k_x', 'k_y'],
+                            order=[0, 0],
+                            mode='constant',
+                            truncate=2.)
+    print("Calculating...")
+    gausstest.data_add_filtered('counts')
+    print("Saving...")
+    data.saveh5()
     # mediantest = MedianFilter(data,
     #                           ['k_x', 'k_y'],
     #                           (u.to_ureg(0.05, '1/angstrom'), u.to_ureg(0.05, '1/angstrom')),
@@ -618,13 +623,13 @@ if __name__ == "__main__":
     #                         cval=0)
     # print("Calculating...")
     # sobeltest.data_add_filtered('counts')
-    prewitttest = PrewittFilter(data,
-                                ['k_x', 'k_y', 'energy'],
-                                prewitt_axis='energy',
-                                mode='constant',
-                                cval=0)
-    print("Calculating...")
-    prewitttest.data_add_filtered('counts')
+    # prewitttest = PrewittFilter(data,
+    #                             ['k_x', 'k_y', 'energy'],
+    #                             prewitt_axis='energy',
+    #                             mode='constant',
+    #                             cval=0)
+    # print("Calculating...")
+    # prewitttest.data_add_filtered('counts')
     print("Saving...")
     data.saveh5('filtertest_out.hdf5')
     print("... done.")
