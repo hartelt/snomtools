@@ -59,14 +59,19 @@ class Binning(object):
 				newaxis[self.binAxisID[ax]] = newSubAxis
 		return newaxis
 
-	def bin_data(self, h5target=None):
+	def bin_data(self, data_id=0, label=None, plotlabel=None, h5target=None):
 		# TODO: Docstring!
-
+		data_id = self.data.get_datafield_index(data_id)
+		if label is None:
+			label= "binned_" + self.data.get_datafield(data_id).label
+		if plotlabel is None:
+			plotlabel = self.data.get_datafield(data_id).plotlabel
+		
 		# Building a new Dataset with shape according to binning
 		newshape = list(self.data.shape)
 		for ax in range(len(self.binAxisID)):
 			newshape[self.binAxisID[ax]] = np.int16(newshape[self.binAxisID[ax]] / self.binFactor[ax])
-		newdata = ds.Data_Handler_H5(shape=newshape, unit=self.data.get_datafield(0).get_unit())
+		newdata = ds.Data_Handler_H5(shape=newshape, unit=self.data.get_datafield(data_id).get_unit())
 
 		if verbose:
 			import time
@@ -92,7 +97,7 @@ class Binning(object):
 														  None)
 			olddataregion = tuple(olddataregion)
 			# load olddata from this region into in-memory quantity
-			olddata = self.data.get_datafield(0).data[olddataregion].q
+			olddata = self.data.get_datafield(data_id).data[olddataregion].q
 			# (.q necessary, because we do not want to reshape on the original H5 dataset)
 
 			# split data in packs that need to be summed up by rearranging the data along an additional axis
@@ -116,8 +121,8 @@ class Binning(object):
 			newdata[chunkslice] = np.sum(olddata_reshaped, axis=tuple(sumaxes))  # sum along the binning axis
 
 		newdata = ds.DataArray(newdata,
-							   label="binned_" + self.data.get_datafield(0).label,
-							   plotlabel=self.data.get_datafield(0).plotlabel,
+							   label=label,
+							   plotlabel=plotlabel,
 							   h5target=h5target)
 		if verbose:
 			print("End:")
