@@ -29,6 +29,7 @@ class Binning(object):
         :param binAxisID: List of binAxisID's as int or Axes names as str that should be binned
         :param binFactor:  List of binFactors of the corresponding Axis as int
         """
+        assert isinstance(data, (ds.DataSet, ds.ROI)), "Binning needs DataSet or ROI."
         self.data = data
         self.binAxisID = []
         for axis in binAxisID:
@@ -43,7 +44,7 @@ class Binning(object):
 
     def bin_axis(self):
         """
-        Gives the new Axis with ticks via np.mean
+        Gives the new Axes with ticks via np.mean
         :return:
         """
         newaxis = self.data.axes
@@ -130,14 +131,18 @@ class Binning(object):
             print("{0:.2f} seconds".format(time.time() - start_time))
         return newdata
 
-    def bin(self, h5target=None):
-        newaxis = self.bin_axis()
-        if h5target is not None:
-            newda = self.bin_data(h5target=True)
+    def bin(self, data_ids=None, h5target=None):
+        if data_ids is None:
+            data_ids = list(range(len(self.data.datafields)))
         else:
-            newda = self.bin_data(h5target=None)
+            data_ids = [self.data.get_datafield_index(d_id) for d_id in data_ids]
+        newaxes = self.bin_axis()
+        if h5target is not None:
+            newdas = [self.bin_data(data_id=d_id, h5target=True) for d_id in data_ids]
+        else:
+            newdas = [self.bin_data(data_id=d_id, h5target=None) for d_id in data_ids]
 
-        newds = ds.DataSet(self.data.label + " binned", (newda,), newaxis,
+        newds = ds.DataSet(self.data.label + " binned", newdas, newaxes,
                            self.data.plotconf, h5target=h5target)
         return newds
 
