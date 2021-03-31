@@ -401,7 +401,9 @@ def buffer_needed(shape=None, access=None, chunks=None, data=None, dtype=None, s
     :type access: tuple **or** slice **or** int
 
     :param chunks: The chunk size of the data to work on.
-    :type chunks: tuple of int
+        Giving `True` as usual in temp h5file mode is handled like `None`,
+        and chunksize is auto-detected with `probe_chunksize`.
+    :type chunks: tuple of int **or** True
 
     :param data: Data to use as reference for the parameters.
         Must have the attributes `shape` and `chunks` if not given explicitly.
@@ -421,7 +423,7 @@ def buffer_needed(shape=None, access=None, chunks=None, data=None, dtype=None, s
     if dtype is None:
         dtype = np.float
     if shape is not None:
-        if chunks is None:
+        if chunks is None or chunks is True:
             chunks = probe_chunksize(shape, dtype=dtype)
     elif data is not None:
         shape = data.shape
