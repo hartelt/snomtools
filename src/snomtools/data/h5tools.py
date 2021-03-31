@@ -12,11 +12,16 @@ import tempfile
 import os.path
 import sys
 import numpy as np
+from packaging import version
 from snomtools import __package__, __version__
 from snomtools.data.tools import find_next_prime, full_slice
 import snomtools.calcs.units as u
 
 __author__ = 'Michael Hartelt'
+
+H5PY_OUTDATED = version.parse(h5py.__version__) < version.parse('2.9.0')
+if H5PY_OUTDATED:
+    warnings.warn("You seem to be using an older version of h5py. Please update to h5py>=2.9.0!")
 
 # Set default cache size for h5py-cache files. h5py-default is 1024**2 (1 MB)
 chunk_cache_mem_size_default = 16 * 1024 ** 2  # 16 MB
@@ -27,20 +32,36 @@ class File(h5py.File):
     """
     A h5py.File object with the additional functionality of h5py_cache.File of setting buffer sizes. Uses the value
     :code:`chunk_cache_mem_size_default` as defined above as buffer size if not given otherwise explicitly.
+
+    .. automethod:: __init__
     """
 
-    def __init__(self, name, mode='a', chunk_cache_mem_size=None, w0=0.75, n_cache_chunks=None,
+    def __init__(self, name, mode='a',
+                 chunk_cache_mem_size=None, w0=0.75, n_cache_chunks=None,
                  **kwargs):
         """
-        The constructor. Apart from calling the parent constructor. It uses code from the h5py_cache package
-        (Copyright (c) 2016 Mike Boyle, under MIT license)
-        to set the buffer settings for the file to be opened.
+        Constructs a h5py.File object with some additional functionality.
+        A custom-size chunk cache is used, given as a parameter, with a global default.
+        The available system memory is checked and the cache size is reduced if not enough memory is available,
+        in this case a warning is thrown.
+        Code from the h5py_cache package (Copyright (c) 2016 Mike Boyle, under MIT license)
+        was used in earlier versions to set access parameters for low-level h5 file to be opened.
+        This functionality was merged to the main h5py package in version 2.9, so the native usage is prefered.
+        Therefore h5py_cache code is only used to optimize some cache access parameters for performance, now.
 
-        :param str name:
+        The naming of the parameters is kept to the old snomtools scheme for backwards compatibility,
+        but the new h5py-style parameters ``rdcc_nbytes``, ``rdcc_w0`` and ``rdcc_nslots`` can also be used as kwargs,
+        overwriting the snomtools-style parameters accordingly.
 
-        :param str mode:
+        See <https://docs.h5py.org/en/2.9.0rc1/high/file.html#> for the h5py documentation.
 
-        :param **kwargs : dict (as keywords)
+        :param str name: Name of file (bytes or str),
+            or an instance of h5f.FileID to bind to an existing file identifier,
+            or a file-like object.
+
+        :param str mode: Mode in which to open file; one of (``'w'``, ``'r'``, ``'r+'``, ``'a'``, ``'w-'``).
+
+        :param **kwargs: dict (as keywords)
             Standard h5py.File arguments, passed to its constructor
 
         :param int chunk_cache_mem_size:
@@ -60,6 +81,11 @@ class File(h5py.File):
             into memory.  This is just used for the number of slots (nslots) maintained
             in the cache metadata, so it can be set larger than needed with little cost.
         """
+        # Parse new h5py kwargs to enable h5py-like behaviour:
+        chunk_cache_mem_size = kwargs.pop('rdcc_nbytes', chunk_cache_mem_size)
+        w0 = kwargs.pop('rdcc_w0', w0)
+        n_cache_chunks = kwargs.pop('rdcc_nslots', n_cache_chunks)
+
         # Get default cache size if needed:
         if chunk_cache_mem_size is None:
             chunk_cache_mem_size = chunk_cache_mem_size_default
@@ -73,13 +99,7 @@ class File(h5py.File):
             warnings.warn(warning_message)
             chunk_cache_mem_size = mem_use
 
-        # From h5py_cache.File:
-        name = name.encode(sys.getfilesystemencoding())
-        open(name, mode).close()  # Just make sure the file exists
-        if mode in [m + b for m in ['w', 'w+', 'r+', 'a', 'a+'] for b in ['', 'b']]:
-            mode = h5py.h5f.ACC_RDWR
-        else:
-            mode = h5py.h5f.ACC_RDONLY
+        # Chunk cache address table optimization from h5py_cache.File:
         if 'dtype' in kwargs:
             bytes_per_object = np.dtype(kwargs['dtype']).itemsize
         else:
@@ -87,12 +107,11 @@ class File(h5py.File):
         if n_cache_chunks is None:
             n_cache_chunks = int(np.ceil(np.sqrt(chunk_cache_mem_size / bytes_per_object)))
         nslots = find_next_prime(100 * n_cache_chunks)
-        propfaid = h5py.h5p.create(h5py.h5p.FILE_ACCESS)
-        settings = list(propfaid.get_cache())
-        settings[1:] = (nslots, chunk_cache_mem_size, w0)
-        propfaid.set_cache(*settings)
 
-        h5py.File.__init__(self, h5py.h5f.open(name, flags=mode, fapl=propfaid), **kwargs)
+        # Initialize file with h5py:
+        h5py.File.__init__(self, name, mode,
+                           rdcc_nbytes=chunk_cache_mem_size, rdcc_w0=w0, rdcc_nslots=nslots,
+                           **kwargs)
 
     def get_PropFAID(self):
         """
@@ -101,7 +120,7 @@ class File(h5py.File):
         :returns: File access properties.
         :rtype: h5py.h5p.PropFAID
         """
-        return self.fid.get_access_plist()
+        return self.id.get_access_plist()
 
     def get_cache_params(self):
         """

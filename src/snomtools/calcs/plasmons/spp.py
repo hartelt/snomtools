@@ -9,6 +9,7 @@ from __future__ import print_function
 import snomtools.calcs.units as u
 import snomtools.calcs.materials.metals
 import snomtools.calcs.materials.dielectrics
+import snomtools.calcs.materials.literature
 import snomtools.calcs.constants as const
 import numpy
 
@@ -20,7 +21,9 @@ default_diel = snomtools.calcs.materials.dielectrics.Vacuum
 
 def Kspp(omega, metal=default_metal, diel=default_diel, unit='1/um'):
 	omega = u.to_ureg(omega, 'rad/s', convert_quantities=False)
-	assert isinstance(metal, snomtools.calcs.materials.metals.Metal), "ERROR: No metal given to Kspp"
+	assert isinstance(metal, (snomtools.calcs.materials.metals.Metal,
+							  snomtools.calcs.materials.literature.Literature_Material)), \
+		"ERROR: No metal given to Kspp"
 	assert isinstance(diel, snomtools.calcs.materials.dielectrics.Dielectric), "ERROR: No dielectric given to Kspp"
 
 	wurzel = numpy.sqrt((metal.epsilon(omega) * diel.epsilon(omega)) / (metal.epsilon(omega) + diel.epsilon(omega)))
@@ -55,7 +58,9 @@ def Kspp_real(omega, metal=default_metal, diel=default_diel, unit='1/um'):
 
 def Vspp(omega, metal=default_metal, diel=default_diel, unit='m/s'):
 	omega = u.to_ureg(omega, 'rad/s', convert_quantities=False)
-	assert isinstance(metal, snomtools.calcs.materials.metals.Metal), "ERROR: No metal given to Vspp"
+	assert isinstance(metal, (snomtools.calcs.materials.metals.Metal,
+							  snomtools.calcs.materials.literature.Literature_Material)), \
+		"ERROR: No metal given to Vspp"
 	assert isinstance(diel, snomtools.calcs.materials.dielectrics.Dielectric), "ERROR: No dielectric given to Vspp"
 
 	wurzel = numpy.sqrt((metal.epsilon(omega) * diel.epsilon(omega)) / (metal.epsilon(omega) + diel.epsilon(omega)))
