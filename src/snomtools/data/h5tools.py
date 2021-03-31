@@ -11,10 +11,10 @@ import warnings
 import tempfile
 import os.path
 import sys
-import numpy
+import numpy as np
 from packaging import version
 from snomtools import __package__, __version__
-from snomtools.data.tools import find_next_prime
+from snomtools.data.tools import find_next_prime, full_slice
 import snomtools.calcs.units as u
 
 __author__ = 'Michael Hartelt'
@@ -101,11 +101,11 @@ class File(h5py.File):
 
         # Chunk cache address table optimization from h5py_cache.File:
         if 'dtype' in kwargs:
-            bytes_per_object = numpy.dtype(kwargs['dtype']).itemsize
+            bytes_per_object = np.dtype(kwargs['dtype']).itemsize
         else:
-            bytes_per_object = numpy.dtype(numpy.float).itemsize  # assume float as most likely
+            bytes_per_object = np.dtype(np.float).itemsize  # assume float as most likely
         if n_cache_chunks is None:
-            n_cache_chunks = int(numpy.ceil(numpy.sqrt(chunk_cache_mem_size / bytes_per_object)))
+            n_cache_chunks = int(np.ceil(np.sqrt(chunk_cache_mem_size / bytes_per_object)))
         nslots = find_next_prime(100 * n_cache_chunks)
 
         # Initialize file with h5py:
@@ -363,7 +363,7 @@ def check_version(h5root):
     return True
 
 
-def probe_chunksize(shape, dtype=numpy.float32, compression="gzip", compression_opts=4):
+def probe_chunksize(shape, dtype=np.float32, compression="gzip", compression_opts=4):
     """
     Probe the chunk size that would be guessed by the h5py driver.
 
@@ -386,11 +386,85 @@ def probe_chunksize(shape, dtype=numpy.float32, compression="gzip", compression_
     return chunk_size
 
 
+def buffer_needed(shape=None, access=None, chunks=None, data=None, dtype=None, safety_margin=True):
+    """
+    Calculate the buffer size needed for an access pattern.
+    The data to work on can be described by providing the Data_Handler_H5 itself,
+    or providing its shape and chunk size.
+    The dtype can be given in the same way, or is assumed as the system-default float.
+    If data and explicit parameters are given, only the missing parameters are taken from data.
+
+    :param shape: The shape of the data to work on.
+    :type shape: tuple of int
+
+    :param access: A slice corresponding to the used access pattern.
+    :type access: tuple **or** slice **or** int
+
+    :param chunks: The chunk size of the data to work on.
+    :type chunks: tuple of int
+
+    :param data: Data to use as reference for the parameters.
+        Must have the attributes `shape` and `chunks` if not given explicitly.
+    :type data: snomtools.data.datasets.Data_Handler_H5, or anything with corresponding attributes.
+
+    :param dtype: The dtype of the data to work on.
+
+    :param safety_margin: Add a safety-margin to the calculated needed buffer size.
+        Can be given explicitly in bytes,
+        or if `True`, the default buffer size `chunk_cache_mem_size_default` is added.
+    :type safety_margin: bool or int
+
+    :return: The needed buffer size in bytes.
+    :rtype: int
+    """
+    # Handle given parameters:
+    if dtype is None:
+        dtype = np.float
+    if shape is not None:
+        if chunks is None:
+            chunks = probe_chunksize(shape, dtype=dtype)
+    elif data is not None:
+        shape = data.shape
+        if chunks is None:
+            chunks = data.chunks
+        if dtype is None:
+            dtype = data.dtype
+    else:
+        raise ValueError("Insufficient data given.")
+    access = full_slice(access, len(shape))
+    if not safety_margin:
+        safety_margin = 0
+    else:
+        if safety_margin is True:
+            safety_margin = chunk_cache_mem_size_default
+
+    # Calculate needed chunks:
+    chunks_needed = [0 for dim in range(len(shape))]
+    for dim in range(len(shape)):  # for each dimension
+        if access[dim] == np.s_[:]:  # full slice: All chunks including possible overhang.
+            chunks_needed[dim] = shape[dim] // chunks[dim]
+            if shape[dim] % chunks[dim]:
+                chunks_needed[dim] += 1
+        elif type(access[dim]) == int:  # Only one chunk.
+            chunks_needed[dim] = 1
+        else:  # A fancier slice: Look at chunk alignment and look for each chunk if there is an element selected.
+            chunk_alignment = np.array([i // chunks[dim] for i in range(shape[dim])])
+            n_chunks = shape[dim] // chunks[dim]
+            if shape[dim] % chunks[dim]:
+                n_chunks += 1
+            for c in range(n_chunks):
+                if c in chunk_alignment[access[dim]]:
+                    chunks_needed[dim] += 1
+    chunks_needed = np.prod(chunks_needed, dtype=np.uint64)  # Total chunks is product of chunks of each dimension.
+    elements_needed = chunks_needed * np.prod(chunks, dtype=np.uint64)  # Elements per chunk is product of chunk size.
+    return int(elements_needed) * np.dtype(dtype).itemsize + safety_margin
+
+
 if __name__ == "__main__":
     testfile = File('test.hdf5')
     cc_size = testfile.get_chunk_cache_mem_size()
 
-    testarray = numpy.arange(9).reshape((3, 3))
+    testarray = np.arange(9).reshape((3, 3))
     testquantity = u.to_ureg(testarray, 'meter')
     store_quantity(testfile, 'moep', testquantity)
 
@@ -400,4 +474,8 @@ if __name__ == "__main__":
     testfile.close()
 
     cs = probe_chunksize((10, 10, 10))
+
+    b = buffer_needed((100, 100, 100), np.s_[:, [1, 2, 3], :], chunks=(8, 10, 10))
+    b = buffer_needed((100, 100, 100), (0,), chunks=(8, 10, 10))
+
     print("done")
