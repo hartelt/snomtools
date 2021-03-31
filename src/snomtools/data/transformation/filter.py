@@ -586,8 +586,8 @@ if __name__ == "__main__":
     import snomtools.data.h5tools
     testh5 = snomtools.data.h5tools.Tempfile(chunk_cache_mem_size=5 * 1024 ** 3) # 5GB
     testda = gausstest.dataarray_filtered('counts', h5target=testh5)
-    data.add_datafield(testda)
     print("Saving...")
+    data.add_datafield(testda)
     data.saveh5()
     # mediantest = MedianFilter(data,
     #                           ['k_x', 'k_y'],
@@ -638,6 +638,7 @@ if __name__ == "__main__":
     #                             cval=0)
     # print("Calculating...")
     # prewitttest.data_add_filtered('counts')
-    print("Saving...")
-    data.saveh5('filtertest_out.hdf5')
+
+    # print("Saving...")
+    # data.saveh5('filtertest_out.hdf5')
     print("... done.")
