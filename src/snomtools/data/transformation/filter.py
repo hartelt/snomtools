@@ -34,9 +34,12 @@ class Filter(object):
         self.data_original = data
         if axes is not None:
             self.axes_filtered = [self.data_original.get_axis_index(ax) for ax in axes]
+            self.given_axes_order = np.argsort(self.axes_filtered)
+            self.axes_filtered.sort()
             self.axes_kept = [i for i in list(range(self.data_original.dimensions)) if i not in self.axes_filtered]
         else:
             self.axes_filtered = list(range(self.data_original.dimensions))
+            self.given_axes_order = self.axes_filtered
             self.axes_kept = []
         self.filter_kwargs = {}
 
@@ -188,6 +191,8 @@ class Filter(object):
         try:
             assert len(filterparam) == len(self.axes_filtered), \
                 "Parameter list does not fit to number of filtered axes."
+            # Sort parameters according to order that axes were given:
+            filterparam = [filterparam[i] for i in self.given_axes_order]
             return filterparam
         except TypeError as e:  # it has no length
             return [filterparam for i in self.axes_filtered]
