@@ -368,6 +368,36 @@ def probe_chunksize(shape, dtype=np.float32, compression="gzip", compression_opt
 
 
 def buffer_needed(shape=None, access=None, chunks=None, data=None, dtype=None, safety_margin=True):
+    """
+    Calculate the buffer size needed for an access pattern.
+    The data to work on can be described by providing the Data_Handler_H5 itself,
+    or providing its shape and chunk size.
+    The dtype can be given in the same way, or is assumed as the system-default float.
+    If data and explicit parameters are given, only the missing parameters are taken from data.
+
+    :param shape: The shape of the data to work on.
+    :type shape: tuple of int
+
+    :param access: A slice corresponding to the used access pattern.
+    :type access: tuple **or** slice **or** int
+
+    :param chunks: The chunk size of the data to work on.
+    :type chunks: tuple of int
+
+    :param data: Data to use as reference for the parameters.
+        Must have the attributes `shape` and `chunks` if not given explicitly.
+    :type data: snomtools.data.datasets.Data_Handler_H5, or anything with corresponding attributes.
+
+    :param dtype: The dtype of the data to work on.
+
+    :param safety_margin: Add a safety-margin to the calculated needed buffer size.
+        Can be given explicitly in bytes,
+        or if `True`, the default buffer size `chunk_cache_mem_size_default` is added.
+    :type safety_margin: bool or int
+
+    :return: The needed buffer size in bytes.
+    :rtype: int
+    """
     # Handle given parameters:
     if dtype is None:
         dtype = np.float
