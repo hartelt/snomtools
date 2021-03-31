@@ -90,11 +90,14 @@ class Filter(object):
         if dtype is None:
             dtype = d_original.data.dtype
 
+        # TODO: In h5 mode, use appropriate buffer size!
+
         if verbose:
             print("Calculating filtered data for {}".format(d_original.get_label()))
             slices_todo = np.prod(
                 [d_original.shape[i] for i in range(self.data_original.dimensions) if i in self.axes_kept])
             slices_done = 0
+            time_spent = 0
             import time
             print("Start: {}".format(time.ctime()))
             start_time = time.time()
@@ -108,12 +111,14 @@ class Filter(object):
 
             if verbose:
                 slices_done += 1
-                tps = ((time.time() - start_time) / float(slices_done))
-                etr = tps * (slices_todo - slices_done)
-                print("Slice {0:d} / {1:d}, Time/Slice {3:.2f}s ETR: {2:.1f}s".format(slices_done,
-                                                                                      slices_todo,
-                                                                                      etr,
-                                                                                      tps))
+                if (time.time() - start_time) - time_spent > 1: # every second
+                    time_spent = (time.time() - start_time)
+                    tps = (time_spent / float(slices_done))
+                    etr = tps * (slices_todo - slices_done)
+                    print("Slice {0:d} / {1:d}, Time/Slice {3:.2f}s ETR: {2:.1f}s".format(slices_done,
+                                                                                          slices_todo,
+                                                                                          etr,
+                                                                                          tps))
         if verbose:
             print("Done: {}".format(time.ctime()))
         return outda
@@ -578,7 +583,10 @@ if __name__ == "__main__":
                             mode='constant',
                             truncate=2.)
     print("Calculating...")
-    gausstest.data_add_filtered('counts')
+    import snomtools.data.h5tools
+    testh5 = snomtools.data.h5tools.Tempfile(chunk_cache_mem_size=5 * 1024 ** 3) # 5GB
+    testda = gausstest.dataarray_filtered('counts', h5target=testh5)
+    data.add_datafield(testda)
     print("Saving...")
     data.saveh5()
     # mediantest = MedianFilter(data,
