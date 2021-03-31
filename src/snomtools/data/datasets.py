@@ -1286,10 +1286,14 @@ class Data_Handler_H5(u.Quantity):
         outshape = tuple(shapelist)
 
         # Find optimized buffer size:
-        chunk_size = h5tools.probe_chunksize(outshape)
-        min_cache_size = chunk_size[axis] * numpy.prod(inshape) * 4  # 32bit floats require 4 bytes.
-        use_cache_size = min_cache_size + 64 * 1024 ** 2  # Add 64 MB just to be sure.
+        # chunk_size = h5tools.probe_chunksize(outshape)
+        # min_cache_size = chunk_size[axis] * numpy.prod(inshape) * 4  # 32bit floats require 4 bytes.
+        # use_cache_size = min_cache_size + 64 * 1024 ** 2  # Add 64 MB just to be sure.
+        use_cache_size = h5tools.buffer_needed(outshape,
+                                               [0 if dim == axis else numpy.s_[:] for dim in range(len(outshape))],
+                                               dtype=tostack[0].dtype)
 
+        # FixMe: This breaks if the elements to stack are larger than memory:
         inst = cls(shape=outshape, unit=unit, h5target=h5target, chunk_cache_mem_size=use_cache_size)
         for i in range(len(tostack)):
             slicebase = [numpy.s_[:] for j in range(len(inshape))]
