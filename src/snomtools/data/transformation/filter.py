@@ -6,6 +6,7 @@ import numpy as np
 import scipy.ndimage
 import snomtools.data.datasets as ds
 import snomtools.calcs.units as u
+from snomtools.data.h5tools import buffer_needed
 
 __author__ = 'Michael Hartelt'
 
@@ -89,8 +90,14 @@ class Filter(object):
             plotlabel = d_original.get_plotlabel()
         if dtype is None:
             dtype = d_original.data.dtype
-
-        # TODO: In h5 mode, use appropriate buffer size!
+        if h5target is None:
+            use_buffer = None
+        else:
+            acc = [0 if i in self.axes_kept else np.s_[:] for i in range(self.data_original.dimensions)]
+            use_buffer = buffer_needed(d_original.shape,
+                                       acc,
+                                       chunks,
+                                       dtype=dtype)
 
         if verbose:
             print("Calculating filtered data for {}".format(d_original.get_label()))
@@ -98,12 +105,16 @@ class Filter(object):
                 [d_original.shape[i] for i in range(self.data_original.dimensions) if i in self.axes_kept])
             slices_done = 0
             time_spent = 0
+            if use_buffer:
+                print("Using buffer of {0:.1f} MB".format(use_buffer / 1024 ** 2))
             import time
             print("Start: {}".format(time.ctime()))
             start_time = time.time()
 
         outda = ds.DataArray.make_empty(d_original.shape, d_original.units, label, plotlabel,
-                                        h5target, chunks, dtype, compression, compression_opts)
+                                        h5target,
+                                        chunks, dtype, compression, compression_opts,
+                                        chunk_cache_mem_size=use_buffer)
         for s in outda.data.iterflatslices(dims=self.axes_kept):
             raw_data = d_original.data[s].magnitude
             filtered_data = self.rawfilter(raw_data)
@@ -111,7 +122,7 @@ class Filter(object):
 
             if verbose:
                 slices_done += 1
-                if (time.time() - start_time) - time_spent > 1: # every second
+                if (time.time() - start_time) - time_spent > 1:  # every second
                     time_spent = (time.time() - start_time)
                     tps = (time_spent / float(slices_done))
                     etr = tps * (slices_todo - slices_done)
@@ -583,11 +594,8 @@ if __name__ == "__main__":
                             mode='constant',
                             truncate=2.)
     print("Calculating...")
-    import snomtools.data.h5tools
-    testh5 = snomtools.data.h5tools.Tempfile(chunk_cache_mem_size=5 * 1024 ** 3) # 5GB
-    testda = gausstest.dataarray_filtered('counts', h5target=testh5)
+    gausstest.data_add_filtered('counts')
     print("Saving...")
-    data.add_datafield(testda)
     data.saveh5()
     # mediantest = MedianFilter(data,
     #                           ['k_x', 'k_y'],
