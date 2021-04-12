@@ -1231,6 +1231,7 @@ class Data_Handler_H5(u.Quantity):
         :param toadd: The elements to add. All must have the same shape.
 
         :param kwargs: kwargs for the new Data_Handler, see :func:`~Data_Handler_H5.__new__`.
+            For `unit` and `dtype`, if not given, the values of the first element to add are used.
 
         :return: The summed up data.
         :rtype: Data_Handler_H5
@@ -1240,6 +1241,12 @@ class Data_Handler_H5(u.Quantity):
         if importunit is None:
             toadd[0] = u.to_ureg(toadd[0])
             importunit = str(toadd[0].units)
+        dtype = kwargs.pop('dtype', None)
+        if dtype is None:
+            if hasattr(toadd[0],'dtype'):
+                dtype = toadd[0].dtype
+            else:
+                warnings.warn("Elemtent without dtype given to add. System-default dtype used.")
         for i, element in enumerate(toadd):
             if isinstance(toadd[i], cls):
                 toadd[i] = u.to_ureg(element, importunit)
@@ -1247,7 +1254,7 @@ class Data_Handler_H5(u.Quantity):
                 toadd[i] = cls(element, importunit)
             assert toadd[i].shape == toadd[0].shape, "Elements of different shape given."
         # Initialize new Data_Handler:
-        newdh = cls(shape=toadd[0].shape, unit=importunit, **kwargs)
+        newdh = cls(shape=toadd[0].shape, unit=importunit, dtype=dtype, **kwargs)
         for slice_ in newdh.iterfastslices():
             slicedata = toadd[0].get_slice_q(slice_)
             for element in toadd[1:]:
@@ -1256,7 +1263,7 @@ class Data_Handler_H5(u.Quantity):
         return newdh
 
     @classmethod
-    def stack(cls, tostack, axis=0, unit=None, h5target=None):
+    def stack(cls, tostack, axis=0, unit=None, h5target=None, dtype=None):
         """
         Stacks a sequence of given Data_Handlers (or castables) along a new axis.
 
@@ -1269,27 +1276,30 @@ class Data_Handler_H5(u.Quantity):
 
         :param h5target: optional: A h5target to work on. See __new__
 
+        :param dtype: optional: The dtype to use for the stacked data. Best given as numpy dtype.
+            By default, the dtype of the first element to stack is used.
+
         :return: stacked Data_Handler
         """
         if unit is None:
             unit = str(tostack[0].units)
+        if dtype is None:
+            if hasattr(tostack[0],'dtype'):
+                dtype = tostack[0].dtype
+            else:
+                warnings.warn("Elemtent without dtype given to stack. System-default dtype used.")
         inshape = tostack[0].shape
         for e in tostack:
             assert e.shape == inshape, "Data_Handler_H5.stack got elements of varying shape."
         shapelist = list(inshape)
         shapelist.insert(axis, len(tostack))
         outshape = tuple(shapelist)
-
-        # Find optimized buffer size:
-        # chunk_size = h5tools.probe_chunksize(outshape)
-        # min_cache_size = chunk_size[axis] * numpy.prod(inshape) * 4  # 32bit floats require 4 bytes.
-        # use_cache_size = min_cache_size + 64 * 1024 ** 2  # Add 64 MB just to be sure.
         use_cache_size = h5tools.buffer_needed(outshape,
                                                [0 if dim == axis else numpy.s_[:] for dim in range(len(outshape))],
                                                dtype=tostack[0].dtype)
 
         # FixMe: This breaks if the elements to stack are larger than memory:
-        inst = cls(shape=outshape, unit=unit, h5target=h5target, chunk_cache_mem_size=use_cache_size)
+        inst = cls(shape=outshape, unit=unit, h5target=h5target, dtype=dtype, chunk_cache_mem_size=use_cache_size)
         for i in range(len(tostack)):
             slicebase = [numpy.s_[:] for j in range(len(inshape))]
             slicebase.insert(axis, i)
