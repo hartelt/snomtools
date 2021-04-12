@@ -1297,6 +1297,11 @@ class Data_Handler_H5(u.Quantity):
         use_cache_size = h5tools.buffer_needed(outshape,
                                                [0 if dim == axis else numpy.s_[:] for dim in range(len(outshape))],
                                                dtype=tostack[0].dtype)
+        if verbose:
+            import time
+            print("Stacking Data to shape: ", outshape)
+            print("... using cache size {0:d} MB".format(use_cache_size // 1024 ** 2))
+            start_time = time.time()
 
         # FixMe: This breaks if the elements to stack are larger than memory:
         inst = cls(shape=outshape, unit=unit, h5target=h5target, dtype=dtype, chunk_cache_mem_size=use_cache_size)
@@ -1304,6 +1309,10 @@ class Data_Handler_H5(u.Quantity):
             slicebase = [numpy.s_[:] for j in range(len(inshape))]
             slicebase.insert(axis, i)
             inst[tuple(slicebase)] = tostack[i]
+            if verbose:
+                tpf = ((time.time() - start_time) / float(i + 1))
+                etr = tpf * (outshape[axis] - (i + 1))
+                print("Slice {0:d} / {1:d}, Time/Slice {3:.2f}s ETR: {2:.1f}s".format(i, outshape[axis], etr, tpf))
         return inst
 
 
