@@ -1243,10 +1243,10 @@ class Data_Handler_H5(u.Quantity):
             importunit = str(toadd[0].units)
         dtype = kwargs.pop('dtype', None)
         if dtype is None:
-            if hasattr(toadd[0],'dtype'):
+            if hasattr(toadd[0], 'dtype'):
                 dtype = toadd[0].dtype
             else:
-                warnings.warn("Elemtent without dtype given to add. System-default dtype used.")
+                warnings.warn("Element without dtype given to add. System-default dtype used.")
         for i, element in enumerate(toadd):
             if isinstance(toadd[i], cls):
                 toadd[i] = u.to_ureg(element, importunit)
@@ -1284,10 +1284,10 @@ class Data_Handler_H5(u.Quantity):
         if unit is None:
             unit = str(tostack[0].units)
         if dtype is None:
-            if hasattr(tostack[0],'dtype'):
+            if hasattr(tostack[0], 'dtype'):
                 dtype = tostack[0].dtype
             else:
-                warnings.warn("Elemtent without dtype given to stack. System-default dtype used.")
+                warnings.warn("Element without dtype given to stack. System-default dtype used.")
         inshape = tostack[0].shape
         for e in tostack:
             assert e.shape == inshape, "Data_Handler_H5.stack got elements of varying shape."
@@ -1694,27 +1694,34 @@ class Data_Handler_np(u.Quantity):
 
         :param toadd: The elements to add.
 
-        :param kwargs: kwargs for the new Data_Handler, see :func:`~Data_Handler_np.__new__`. Only :code:`unit` makes
-            sense here.
+        :param kwargs: kwargs for the new Data_Handler, see :func:`~Data_Handler_np.__new__`.
+            Only :code:`unit` and :code:`dtype` make sense here.
+            If not given, the values of the first element to add are used.
 
         :return: The summed up data.
         :rtype: Data_Handler_np
         """
         toadd = list(toadd)
         importunit = kwargs.pop('unit', None)
+        dtype = kwargs.pop('dtype', None)
         if kwargs:
             raise TypeError('Unexpected **kwargs: %r' % kwargs)
         if importunit is None:
             toadd[0] = u.to_ureg(toadd[0])
             importunit = str(toadd[0].units)
+        if dtype is None:
+            if hasattr(toadd[0], 'dtype'):
+                dtype = toadd[0].dtype
+            else:
+                warnings.warn("Element without dtype given to add. System-default dtype used.")
 
-        newdh = cls(shape=toadd[0].shape, unit=importunit)
+        newdh = cls(shape=toadd[0].shape, unit=importunit, dtype=dtype)
         for element in toadd:
             newdh += element
         return newdh
 
     @classmethod
-    def stack(cls, tostack, axis=0, unit=None):
+    def stack(cls, tostack, axis=0, unit=None, dtype=None):
         """
         Stacks a sequence of given Data_Handlers (or castables) along a new axis.
 
@@ -1725,11 +1732,26 @@ class Data_Handler_np(u.Quantity):
         :param unit: optional: A valid unit string to convert the stack to. Default is the unit of the first element
             of the sequence.
 
+        :param dtype: optional: The dtype to use for the stacked data. Best given as numpy dtype.
+            By default, the dtype of the first element to stack is used.
+
         :return: stacked Data_Handler
         """
         if unit is None:
             unit = str(tostack[0].units)
-        return cls(numpy.stack(u.magnitudes(u.as_ureg_quantities(tostack, unit)), axis), unit)
+        inshape = tostack[0].shape
+        for e in tostack:
+            assert e.shape == inshape, "Data_Handler_H5.stack got elements of varying shape."
+        if dtype is None:
+            out = None
+        else:
+            # If a dtype is specified, we have to give numpy an empty array to write to, with the dtype,
+            # because numpy.stack has no option to specify dtype.
+            shapelist = list(inshape)
+            shapelist.insert(axis, len(tostack))
+            outshape = tuple(shapelist)
+            out = numpy.empty(outshape, dtype=dtype)
+        return cls(numpy.stack(u.magnitudes(u.as_ureg_quantities(tostack, unit)), axis, out=out), unit)
 
 
 class DataArray(object):
