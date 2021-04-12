@@ -790,7 +790,7 @@ class Data_Handler_H5(u.Quantity):
         """
         if dims is None:
             dims = list(range(len(self.shape)))
-        iterlist = [range(self.shape[i]) if i in dims else [numpy.s_[:]] for i in range(len(self.shape))]
+        iterlist = [range(self.shape[i]) if i in dims else [np.s_[:]] for i in range(len(self.shape))]
         return itertools.product(*iterlist)
 
     def iterflat(self):
@@ -1601,7 +1601,7 @@ class Data_Handler_np(u.Quantity):
         """
         if dims is None:
             dims = list(range(len(self.shape)))
-        iterlist = [range(self.shape[i]) if i in dims else [numpy.s_[:]] for i in range(len(self.shape))]
+        iterlist = [range(self.shape[i]) if i in dims else [np.s_[:]] for i in range(len(self.shape))]
         return itertools.product(*iterlist)
 
     def iterflat(self):
@@ -1877,7 +1877,7 @@ class DataArray(object):
     def make_empty(cls, shape, unit=None, label=None, plotlabel=None,
                    h5target=None,
                    chunks=True,
-                   dtype=numpy.float32,
+                   dtype=np.float32,
                    compression='gzip', compression_opts=4,
                    chunk_cache_mem_size=None):
         """
@@ -1898,7 +1898,7 @@ class DataArray(object):
                        compression=compression, compression_opts=compression_opts,
                        chunk_cache_mem_size=chunk_cache_mem_size)
         else:
-            dataspace = numpy.zeros(shape, dtype=dtype)
+            dataspace = np.zeros(shape, dtype=dtype)
             return cls(dataspace,
                        unit=unit,
                        label=label,
@@ -4313,7 +4313,7 @@ if __name__ == "__main__":  # just for testing
         print("Adding 5 arrays took {0:.2f} seconds".format(time.time() - start_time))
 
         if False:
-            bignumpy = numpy.zeros(shape=(1000, 1000, 1000), dtype=numpy.float32)
+            bignumpy = np.zeros(shape=(1000, 1000, 1000), dtype=np.float32)
             start_time = time.time()
             bignumpyplus = bignumpy + 1
             print("Numpy plus 1 took {0:.2f} seconds".format(time.time() - start_time))
