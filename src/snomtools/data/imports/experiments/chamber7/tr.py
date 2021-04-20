@@ -262,7 +262,7 @@ def measurement_folder_peem(folderpath, detector="dld_ch7", pattern="ch7tr", sca
     if detector == "dld_ch7":
         sample_data = peem_dld_read_ch7(os.path.join(folderpath, scanfiles[list(scanfiles.keys())[0]]))
     else:
-        sample_data = tf.peem_camera_read_terra(os.path.join(folderpath, scanfiles[list(scanfiles.keys())[0]]))
+        raise NotImplementedError("Invalid Detector Mode.")
     axlist = [scanaxis] + sample_data.axes
     newshape = scanaxis.shape + sample_data.shape
 
