@@ -295,14 +295,14 @@ def measurement_folder_peem(folderpath, detector="dld_ch7", pattern="ch7tr", sca
                 if use_chunk_size[0] < 1:  # Avoid edge case 0
                     use_chunk_size = (1,) + use_chunk_size[1:]
                     print("Warning: Cannot reduce chunk size to fit into available buffer. Readin might be slow!")
-                    use_cache_size = buffer_needed(newshape, (0,), use_chunk_size, dtype=np.uint16)
+                    use_cache_size = buffer_needed(newshape, (0,), use_chunk_size, dtype=np.float32)
                     break
                 if verbose:
                     print("Using half chunk size along scan direction: {0}".format(use_chunk_size))
-                use_cache_size = buffer_needed(newshape, (0,), use_chunk_size, dtype=np.uint16)
+                use_cache_size = buffer_needed(newshape, (0,), use_chunk_size, dtype=np.float32)
         elif chunks:  # Chunk size is explicitly set:
             use_chunk_size = chunks
-            use_cache_size = buffer_needed(newshape, (0,), use_chunk_size, dtype=np.uint16)
+            use_cache_size = buffer_needed(newshape, (0,), use_chunk_size, dtype=np.float32)
         else:  # Chunked storage is turned off:
             use_chunk_size = False
             use_cache_size = None
