@@ -115,7 +115,14 @@ def peem_dld_read_ch7(filepath):
     return snomtools.data.datasets.DataSet(label=filebase, datafields=[dataarray], axes=[taxis, yaxis, xaxis])
 
 
-def gen_all_files_of_pathtree(folderpath, filesuffixes):
+def strs_in_path(path, strings):
+    for i in strings:
+        if i in path:
+            return True
+    return False
+
+
+def gen_all_files_of_pathtree(folderpath, filesuffixes, ignores = []):
     """
     Returns a generator that yields the Path to all files with types passed in filesuffixes recursively
 
@@ -123,9 +130,14 @@ def gen_all_files_of_pathtree(folderpath, filesuffixes):
 
     :param List[str] a list of filesuffixes that are valid. Works only for format ".type" not "type"
 
-    :return: Filepath of type Generator
+    :param List[str] if str occurs in path, path will be ignored.
+
+    :return: Generator for all filepaths found
+
+    ToDo: Testing!
     """
-    return (Path(path, file) for path, _, files in os.walk(folderpath) for file in
+
+    return (Path(path, file) for path, _, files in os.walk(folderpath) if not strs_in_path(path, ignores) for file in
             files if file.suffix in filesuffixes)
 
 
@@ -135,9 +147,25 @@ def gen_all_tiff_of_pathtree(folderpath):
 
     :param str/path folderpath: The folderpath that will be crawled for files of a type
 
-    :return: Filepath of type Generator
+    :return: Generator for all filepaths found
+
+    Todo: Testing!
     """
     return gen_all_files_of_pathtree(folderpath, [".tiff", ".tif"])
+
+
+def gen_all_non_tr_tiff(folderpath):
+    """
+    Returns a generator that yields the Path to all .tiff/.tif of a path recursively and ignores tr folders
+
+    :param str/path folderpath: The folderpath that will be crawled for files of a type
+
+    :return: Generator for all filepaths found
+
+    Todo: Testing!
+    """
+
+    return gen_all_files_of_pathtree(folderpath, [".tiff", ".tif"], ignores=["tr"])
 
 
 def measurement_folder_peem(folderpath, detector="dld_ch7", pattern="ch7tr", scanunit="fs",
@@ -149,16 +177,10 @@ def measurement_folder_peem(folderpath, detector="dld_ch7", pattern="ch7tr", sca
 
     :param str detector: Read mode corresponding to the used detector.
         Valid inputs:
-            * :code:`"dld"` for reading the energy-resolved data out of dld tiffs.
-            * :code:`"dld-sum"` for reading the sum image out of dld tiffs.
             * :code:`"dld_ch7"` for reading ch7 dld data.
-            * :code:`"camera"`
 
     :param str pattern: The pattern in the filenames that indicates the scan enumeration and is followed by the number
         indicating the position, according to the device used for the scan. Terra uses:
-            * :code:`"D"` for a delay stage
-            * :code:`"R"` for the rotation mount
-            * :code:`"N"` for a dummy device.
             * :code:`"ch7tr"' for ch7 pattern
 
     :param str scanunit: A valid unit string, according to the physical dimension that was scanned over.
