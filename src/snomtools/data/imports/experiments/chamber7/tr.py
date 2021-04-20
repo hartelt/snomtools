@@ -115,7 +115,7 @@ def peem_dld_read_ch7(filepath):
     return snomtools.data.datasets.DataSet(label=filebase, datafields=[dataarray], axes=[taxis, yaxis, xaxis])
 
 
-def rec_list_all_files_gen(folderpath, filesuffixes):
+def gen_all_files_of_pathtree(folderpath, filesuffixes):
     """
     Returns a generator that yields the Path to all files with types passed in filesuffixes recursively
 
@@ -125,11 +125,11 @@ def rec_list_all_files_gen(folderpath, filesuffixes):
 
     :return: Filepath of type Generator
     """
-    return (Path(path, file) for path, files in (path, files for path, _, files in os.walk(folderpath)) for file in
-           files if file.suffix in filesuffixes)
+    return (Path(path, file) for path, _, files in os.walk(folderpath) for file in
+            files if file.suffix in filesuffixes)
 
 
-def rec_list_all_tiff_gen(folderpath):
+def gen_all_tiff_of_pathtree(folderpath):
     """
     Returns a generator that yields the Path to all .tiff/.tif of a path recursively.
 
@@ -137,7 +137,7 @@ def rec_list_all_tiff_gen(folderpath):
 
     :return: Filepath of type Generator
     """
-    return rec_list_all_files_gen(folderpath, [".tiff", ".tif"])
+    return gen_all_files_of_pathtree(folderpath, [".tiff", ".tif"])
 
 
 def measurement_folder_peem(folderpath, detector="dld_ch7", pattern="ch7tr", scanunit="fs",
@@ -205,7 +205,7 @@ def measurement_folder_peem(folderpath, detector="dld_ch7", pattern="ch7tr", sca
 
     # Inspect the given folder for time step files:
     scanfiles = {}
-    for filename in rec_list_all_tiff_gen(folderpath):
+    for filename in gen_all_tiff_of_pathtree(folderpath):
         found = re.search(pat, str(filename))
         if found:
             scanstep = float(found.group(1))
