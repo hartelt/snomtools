@@ -312,7 +312,7 @@ def measurement_folder_peem(folderpath, detector="dld_ch7", pattern="ch7tr", sca
                                                             shape=newshape, chunks=use_chunk_size,
                                                             compression=compression, compression_opts=compression_opts,
                                                             chunk_cache_mem_size=use_cache_size,
-                                                            dtype=np.uint16)
+                                                            dtype=np.float32)
         dataarray = snomtools.data.datasets.DataArray(dataspace,
                                                       label=sample_data.get_datafield(0).get_label(),
                                                       plotlabel=sample_data.get_datafield(0).get_plotlabel(),
@@ -373,10 +373,5 @@ def measurement_folder_peem(folderpath, detector="dld_ch7", pattern="ch7tr", sca
 
     return dataset
 
-if __name__ == "__main__":
-    test_path = r"E:\Uni\Aeschliwi\Data"
-    test_path2 = r"E:\Uni\Aeschliwi\Data\Tr-test-measurement_Au111CoT4PT_oldSample"
-    test_hdf5 = r"E:\Uni\Aeschliwi\Data\test.hdf5"
-    dataset = measurement_folder_peem(test_path2, h5target=test_hdf5)
 
     print("done")
