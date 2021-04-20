@@ -10,7 +10,6 @@ import os
 import numpy as np
 import tifffile
 import re
-import warnings
 import sys
 import psutil
 import snomtools.calcs.units as u
@@ -47,8 +46,8 @@ def ch7_read_tiff_info(filepath):
         "(modulo): (\d+)"
     ]
 
-    info_dict = {}
     print(filepath)
+    info_dict = {}
 
     with open(filepath) as file:
         info = file.read()
@@ -83,6 +82,8 @@ def peem_dld_read_ch7(filepath):
     meta_dict = ch7_read_tiff_info(infopath)
 
     T = int(meta_dict["region of interest t"][0])
+    Xbin = int(meta_dict["binning x"][0])
+    Ybin = int(meta_dict["binning y"][0])
     Tbin = int(meta_dict["binning t"][0])
 
     # Read tif file to numpy array. Axes will be (timechannel, x, y):
@@ -105,15 +106,42 @@ def peem_dld_read_ch7(filepath):
     # Careful about orientation! This is like a matrix:
     # rows go first and are numbered in vertical direction -> Y
     # columns go last and are numbered in horizontal direction -> X
-    yaxis = snomtools.data.datasets.Axis(np.arange(0, indata.shape[1]), unit='pixel', label='y', plotlabel='y')
-    xaxis = snomtools.data.datasets.Axis(np.arange(0, indata.shape[2]), unit='pixel', label='x', plotlabel='x')
+    yaxis = snomtools.data.datasets.Axis([i * Xbin for i in range(indata.shape[1])],
+                                         unit='pixel', label='y', plotlabel='y')
+    xaxis = snomtools.data.datasets.Axis([i * Xbin for i in range(indata.shape[2])],
+                                         unit='pixel', label='x', plotlabel='x')
 
     # Return dataset:
     return snomtools.data.datasets.DataSet(label=filebase, datafields=[dataarray], axes=[taxis, yaxis, xaxis])
 
 
-def measurement_folder_peem(folderpath, detector="dld_ch7", pattern="D", scanunit="fs", scanfactor=1,
-                                  scanaxislabel="scanaxis", scanaxispl=None, h5target=True, chunks=True):
+def rec_list_all_files_gen(folderpath, filesuffixes):
+    """
+    Returns a generator that yields the Path to all files with types passed in filesuffixes recursively
+
+    :param str/path folderpath: The folderpath that will be crawled for files of a type
+
+    :param List[str] a list of filesuffixes that are valid. Works only for format ".type" not "type"
+
+    :return: Filepath of type Generator
+    """
+    return (Path(path, file) for path, files in (path, files for path, _, files in os.walk(folderpath)) for file in
+           files if file.suffix in filesuffixes)
+
+
+def rec_list_all_tiff_gen(folderpath):
+    """
+    Returns a generator that yields the Path to all .tiff/.tif of a path recursively.
+
+    :param str/path folderpath: The folderpath that will be crawled for files of a type
+
+    :return: Filepath of type Generator
+    """
+    return rec_list_all_files_gen(folderpath, [".tiff", ".tif"])
+
+
+def measurement_folder_peem(folderpath, detector="dld_ch7", pattern="ch7tr", scanunit="fs",
+                                  scanaxislabel="delay", scanaxispl=None, h5target=True, chunks=True):
     """
     The base method for importing terra scan folders. Covers all scan possibilities, so far only in 1D scans.
 
@@ -134,14 +162,6 @@ def measurement_folder_peem(folderpath, detector="dld_ch7", pattern="D", scanuni
             * :code:`"ch7tr"' for ch7 pattern
 
     :param str scanunit: A valid unit string, according to the physical dimension that was scanned over.
-
-    :param float scanfactor: A factor that the numbers in the filenames need to be multiplied with to get the
-        real value of the scan point in units of scanunit.
-        This would be for example:
-            * :code:`0.2` (because of stage position) with delayunit :code:`"um"` for normal Interferometer because \
-            one decimal is in filenames.
-            * :code:`0.2` (because of stage position and strange factor 10 in filenames) with delayunit :code:`"as"` \
-            for PR interferometer
 
     :param str scanaxislabel: A label for the axis of the scan.
 
@@ -166,8 +186,10 @@ def measurement_folder_peem(folderpath, detector="dld_ch7", pattern="D", scanuni
 
     :return: Imported DataSet.
     :rtype: DataSet
+
+    ToDo: Testing!
     """
-    assert detector in ["dld", "dld-sum", "camera", "dld_ch7"], "Invalid detector mode."
+    assert detector in ["dld_ch7"], "Invalid detector mode."
     if scanaxispl is None:
         scanaxispl = 'Scan / ' + scanunit
 
@@ -176,15 +198,15 @@ def measurement_folder_peem(folderpath, detector="dld_ch7", pattern="D", scanuni
     if pattern == "ch7tr":
         pat = re.compile("\d{3}_\d{4}_(.+)_.+tif")
     else:
-        pat = re.compile(pattern + "(-?\d*).tif")
+        raise Exception("Invalid pattern")
 
     # Translate input path to absolute path:
     folderpath = os.path.abspath(folderpath)
 
     # Inspect the given folder for time step files:
     scanfiles = {}
-    for filename in filter(tf.is_tif, os.listdir(folderpath)):
-        found = re.search(pat, filename)
+    for filename in rec_list_all_tiff_gen(folderpath):
+        found = re.search(pat, str(filename))
         if found:
             scanstep = float(found.group(1))
             scanfiles[scanstep] = filename
@@ -195,8 +217,7 @@ def measurement_folder_peem(folderpath, detector="dld_ch7", pattern="D", scanuni
         axlist.append(scanstep)
     if pattern == "ch7tr":
         scanvalues = u.to_ureg(np.array(axlist), scanunit)
-    else:
-        scanvalues = u.to_ureg(np.array(axlist) * scanfactor, scanunit)
+
     scanaxis = snomtools.data.datasets.Axis(scanvalues, label=scanaxislabel, plotlabel=scanaxispl)
 
     # Test data size:
@@ -312,14 +333,3 @@ def measurement_folder_peem(folderpath, detector="dld_ch7", pattern="D", scanuni
             print("tiff {0:d} / {1:d}, Time/File {3:.2f}s ETR: {2:.1f}s".format(i, dataset.shape[0], etr, tpf))
 
     return dataset
-
-
-if __name__ == "__main__":
-    test_info_file = r"E:\Uni\Aeschliwi\Data\001_0000_-1000.000_test_info.txt"
-    info = ch7_read_tiff_info(test_info_file)
-
-
-    test_tif = r"E:\Uni\Aeschliwi\Data\001_0000_-1000.000_test.tif"
-    dataset = peem_dld_read_ch7(test_tif)
-
-    print("done")
