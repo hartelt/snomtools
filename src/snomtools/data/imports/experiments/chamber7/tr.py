@@ -254,8 +254,7 @@ def measurement_folder_peem(folderpath, detector="dld_ch7", pattern="ch7tr", sca
     axlist = []
     for scanstep in iter(sorted(scanfiles.keys())):
         axlist.append(scanstep)
-    if pattern == "ch7tr":
-        scanvalues = u.to_ureg(np.array(axlist), scanunit)
+    scanvalues = u.to_ureg(np.array(axlist), scanunit)
 
     scanaxis = snomtools.data.datasets.Axis(scanvalues, label=scanaxislabel, plotlabel=scanaxispl)
 
