@@ -367,5 +367,12 @@ def measurement_folder_peem(folderpath, detector="dld_ch7", pattern="ch7tr", sca
 
     return dataset
 
+if __name__ == "__main__":
+    read_test_path = r"E:\Uni\Aeschliwi\Data"
+    tr_test_path = r"E:\Uni\Aeschliwi\Data\Tr-test-measurement_Au111CoT4PT_oldSample"
+    test_hdf = r"E:\Uni\Aeschliwi\Data\test.hdf5"
+
+    measurement_folder_peem(tr_test_path, h5target=test_hdf)
+    peem_dld_read_all_static_ch7(read_test_path)
 
     print("done")
