@@ -196,8 +196,7 @@ def measurement_folder_peem(folderpath, detector="dld_ch7", pattern="ch7tr", sca
         Valid inputs:
             * :code:`"dld_ch7"` for reading ch7 dld data.
 
-    :param str pattern: The pattern in the filenames that indicates the scan enumeration and is followed by the number
-        indicating the position, according to the device used for the scan. Terra uses:
+    :param str pattern: Kept only for consistent call signature with `data.imports.tiff` Methods. Only valid option:
             * :code:`"ch7tr"' for ch7 pattern
 
     :param str scanunit: A valid unit string, according to the physical dimension that was scanned over.
