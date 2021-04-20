@@ -348,14 +348,10 @@ def measurement_folder_peem(folderpath, detector="dld_ch7", pattern="ch7tr", sca
     for i, scanstep in zip(list(range(len(scanfiles))), iter(sorted(scanfiles.keys()))):
         islice = (i,) + slicebase
         # Import tiff:
-        if detector == "dld":
-            idata = tf.peem_dld_read_terra(os.path.join(folderpath, scanfiles[scanstep]))
-        elif detector == "dld-sum":
-            idata = tf.peem_dld_read_terra_sumimage(os.path.join(folderpath, scanfiles[scanstep]))
-        elif detector == "dld_ch7":
+        if detector == "dld_ch7":
             idata = peem_dld_read_ch7(os.path.join(folderpath, scanfiles[scanstep]))
         else:
-            idata = tf.peem_camera_read_terra(os.path.join(folderpath, scanfiles[scanstep]))
+            raise NotImplementedError("Invalid Detector Mode.")
         # Check data consistency:
         assert idata.shape == sample_data.shape, "Trying to combine scan data with different shape."
         for ax1, ax2 in zip(idata.axes, sample_data.axes):
