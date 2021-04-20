@@ -18,11 +18,63 @@ from snomtools.data.h5tools import probe_chunksize, buffer_needed
 
 if '-v' in sys.argv or __name__ == "__main__":
     verbose = True
-
 else:
     verbose = False
 
 MAX_CACHE_SIZE = None  # 4 * 1024 ** 3  # 4 GB
+
+
+def strs_in_path(path, strings):
+    for string in strings:
+        if string in path:
+            return True
+    return False
+
+
+def gen_all_files_of_pathtree(folderpath, filesuffixes, ignores = []):
+    """
+    Returns a generator that yields the Path to all files with types passed in filesuffixes recursively
+
+    :param str/path folderpath: The folderpath that will be crawled for files of a type
+
+    :param List[str] a list of filesuffixes that are valid. Works only for format ".type" not "type"
+
+    :param List[str] if str occurs in path, path will be ignored.
+
+    :return: Generator for all filepaths found
+
+    ToDo: Testing!
+    """
+
+    return (Path(path, file) for path, _, files in os.walk(folderpath) if not strs_in_path(path, ignores) for file in
+            files if Path(file).suffix in filesuffixes)
+
+
+def gen_all_tiff_of_pathtree(folderpath):
+    """
+    Returns a generator that yields the Path to all .tiff/.tif of a path recursively.
+
+    :param str/path folderpath: The folderpath that will be crawled for files of a type
+
+    :return: Generator for all filepaths found
+
+    Todo: Testing!
+    """
+    return gen_all_files_of_pathtree(folderpath, [".tiff", ".tif"])
+
+
+def gen_all_non_tr_tiff(folderpath):
+    """
+    Returns a generator that yields the Path to all .tiff/.tif of a path recursively and ignores tr folders
+
+    :param str/path folderpath: The folderpath that will be crawled for files of a type
+
+    :return: Generator for all filepaths found
+
+    Todo: Testing!
+    """
+
+    return gen_all_files_of_pathtree(folderpath, [".tiff", ".tif"], ignores=["tr", "TR", "Tr"])
 
 
 def ch7_read_tiff_info(filepath):
@@ -115,57 +167,22 @@ def peem_dld_read_ch7(filepath):
     return snomtools.data.datasets.DataSet(label=filebase, datafields=[dataarray], axes=[taxis, yaxis, xaxis])
 
 
-def strs_in_path(path, strings):
-    for i in strings:
-        if i in path:
-            return True
-    return False
-
-
-def gen_all_files_of_pathtree(folderpath, filesuffixes, ignores = []):
+def peem_dld_read_all_static_ch7(folderpath):
     """
-    Returns a generator that yields the Path to all files with types passed in filesuffixes recursively
+    Greedy function that converts all tiffs anywhere in the folderpath (subdirs too!) use with care! Get a coffee!
+    Can produce chaos and despair if it breaks midways.
+    IGNORES FOLDERS WITH "tr","Tr","TR" IN THEIR PATH! If that happens you probably want to use measurement_folder_peem
 
-    :param str/path folderpath: The folderpath that will be crawled for files of a type
+    :param folderpath: Folderpath in which tiff are searched and converted
 
-    :param List[str] a list of filesuffixes that are valid. Works only for format ".type" not "type"
-
-    :param List[str] if str occurs in path, path will be ignored.
-
-    :return: Generator for all filepaths found
-
-    ToDo: Testing!
+    :return: None
     """
 
-    return (Path(path, file) for path, _, files in os.walk(folderpath) if not strs_in_path(path, ignores) for file in
-            files if file.suffix in filesuffixes)
-
-
-def gen_all_tiff_of_pathtree(folderpath):
-    """
-    Returns a generator that yields the Path to all .tiff/.tif of a path recursively.
-
-    :param str/path folderpath: The folderpath that will be crawled for files of a type
-
-    :return: Generator for all filepaths found
-
-    Todo: Testing!
-    """
-    return gen_all_files_of_pathtree(folderpath, [".tiff", ".tif"])
-
-
-def gen_all_non_tr_tiff(folderpath):
-    """
-    Returns a generator that yields the Path to all .tiff/.tif of a path recursively and ignores tr folders
-
-    :param str/path folderpath: The folderpath that will be crawled for files of a type
-
-    :return: Generator for all filepaths found
-
-    Todo: Testing!
-    """
-
-    return gen_all_files_of_pathtree(folderpath, [".tiff", ".tif"], ignores=["tr"])
+    for filepath in gen_all_non_tr_tiff(folderpath):
+        dest = Path(filepath.parent) / (filepath.stem + ".hdf5")
+        print(dest)
+        dataset = peem_dld_read_ch7(filepath)
+        dataset.saveh5(h5dest=str(dest))
 
 
 def measurement_folder_peem(folderpath, detector="dld_ch7", pattern="ch7tr", scanunit="fs",
@@ -218,7 +235,7 @@ def measurement_folder_peem(folderpath, detector="dld_ch7", pattern="ch7tr", sca
     # Compile regex for file detection:
 
     if pattern == "ch7tr":
-        pat = re.compile("\d{3}_\d{4}_(.+)_.+tif")
+        pat = re.compile("\d{3}_\d{4}_(.+?)_.+tif")
     else:
         raise Exception("Invalid pattern")
 
@@ -338,7 +355,7 @@ def measurement_folder_peem(folderpath, detector="dld_ch7", pattern="ch7tr", sca
         elif detector == "dld-sum":
             idata = tf.peem_dld_read_terra_sumimage(os.path.join(folderpath, scanfiles[scanstep]))
         elif detector == "dld_ch7":
-            sample_data = peem_dld_read_ch7(os.path.join(folderpath, scanfiles[scanstep]))
+            idata = peem_dld_read_ch7(os.path.join(folderpath, scanfiles[scanstep]))
         else:
             idata = tf.peem_camera_read_terra(os.path.join(folderpath, scanfiles[scanstep]))
         # Check data consistency:
@@ -355,3 +372,11 @@ def measurement_folder_peem(folderpath, detector="dld_ch7", pattern="ch7tr", sca
             print("tiff {0:d} / {1:d}, Time/File {3:.2f}s ETR: {2:.1f}s".format(i, dataset.shape[0], etr, tpf))
 
     return dataset
+
+if __name__ == "__main__":
+    test_path = r"E:\Uni\Aeschliwi\Data"
+    test_path2 = r"E:\Uni\Aeschliwi\Data\Tr-test-measurement_Au111CoT4PT_oldSample"
+    test_hdf5 = r"E:\Uni\Aeschliwi\Data\test.hdf5"
+    dataset = measurement_folder_peem(test_path2, h5target=test_hdf5)
+
+    print("done")
