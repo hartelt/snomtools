@@ -1,6 +1,6 @@
-numpy>=1.10.0
+numpy
 pint
-h5py
+h5py>=2.9.0
 scipy
 tifffile
 six
@@ -9,3 +9,6 @@ opencv-python
 future
 matplotlib
 imageio
+python-dateutil
+packaging
+setuptools

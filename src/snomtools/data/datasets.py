@@ -6,7 +6,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from six import string_types
-import numpy
+import numpy as np
 import os
 import h5py
 import re
@@ -164,7 +164,7 @@ class Data_Handler_H5(u.Quantity):
             h5tools.clear_name(h5target, "data")
             h5tools.clear_name(h5target, "unit")
             if dtype is None:
-                dtype = numpy.float32
+                dtype = np.float32
             inst.ds_data = h5target.create_dataset("data", shape,
                                                    dtype=dtype,
                                                    chunks=chunks,
@@ -199,7 +199,7 @@ class Data_Handler_H5(u.Quantity):
             return self.ds_data[()]
 
     def _set__magnitude(self, val):
-        if numpy.asarray(val).shape == self.shape:  # Same shape, so just overwrite everything in place.
+        if np.asarray(val).shape == self.shape:  # Same shape, so just overwrite everything in place.
             if self.shape:  # array-like
                 self.ds_data[:] = val
             else:  # scalar
@@ -284,7 +284,7 @@ class Data_Handler_H5(u.Quantity):
             else:
                 readkeylist.append(key_element)
         read_data = self.ds_data[tuple(readkeylist)]
-        ordered_data = read_data[tuple([numpy.s_[::-1] if flip else numpy.s_[:] for flip in to_reverse])]
+        ordered_data = read_data[tuple([np.s_[::-1] if flip else np.s_[:] for flip in to_reverse])]
         return self.__class__(ordered_data, self._units)
 
     def get_slice_q(self, key):
@@ -302,7 +302,7 @@ class Data_Handler_H5(u.Quantity):
             else:
                 readkeylist.append(key_element)
         read_data = self.ds_data[tuple(readkeylist)]
-        ordered_data = read_data[tuple([numpy.s_[::-1] if flip else numpy.s_[:] for flip in to_reverse])]
+        ordered_data = read_data[tuple([np.s_[::-1] if flip else np.s_[:] for flip in to_reverse])]
         return u.to_ureg(ordered_data, self._units)
 
     def __setitem__(self, key, value):
@@ -430,7 +430,7 @@ class Data_Handler_H5(u.Quantity):
         # TODO: Adapt and optimize memory performance.
         value = u.to_ureg(value, unit=self.get_unit())
         idx_flat = (abs(self - value)).argmin()
-        idx_tup = numpy.unravel_index(idx_flat, self.shape)
+        idx_tup = np.unravel_index(idx_flat, self.shape)
         return idx_tup
 
     def get_nearest_value(self, value):
@@ -518,28 +518,28 @@ class Data_Handler_H5(u.Quantity):
                 outshape[axis] = 1
                 outshape = tuple(outshape)
             else:
-                outshape = tuple(numpy.delete(inshape, axis))
+                outshape = tuple(np.delete(inshape, axis))
             if out:
                 assert out.shape == outshape, "Wrong shape of given destination."
                 outdata = out
             else:
                 outdata = self.__class__(shape=outshape, unit=self.get_unit(), h5target=h5target)
             for i in range(inshape[axis]):
-                slicebase = [numpy.s_[:] for j in range(len(inshape) - 1)]
+                slicebase = [np.s_[:] for j in range(len(inshape) - 1)]
                 slicebase.insert(axis, i)
                 if outdata.shape == ():  # Scalar
                     if ignorenan:
-                        outdata.ds_data[()] += numpy.ma.fix_invalid(self.ds_data[tuple(slicebase)], fill_value=0.)
+                        outdata.ds_data[()] += np.ma.fix_invalid(self.ds_data[tuple(slicebase)], fill_value=0.)
                     else:
                         outdata.ds_data[()] += self.ds_data[tuple(slicebase)]
                 else:
                     if ignorenan:
-                        outdata.ds_data[:] += numpy.ma.fix_invalid(self.ds_data[tuple(slicebase)], fill_value=0.)
+                        outdata.ds_data[:] += np.ma.fix_invalid(self.ds_data[tuple(slicebase)], fill_value=0.)
                     else:
                         outdata.ds_data[:] += self.ds_data[tuple(slicebase)]
             return outdata
         else:  # We still have a list or tuple of several axes to sum over.
-            axis = numpy.array(sorted(axis))
+            axis = np.array(sorted(axis))
             axisnow = axis[0]
             if keepdims:  # Axes positions stay as they are. Prepare sum tuple for rest of summations.
                 axisrest = tuple(axis[1:])
@@ -554,27 +554,27 @@ class Data_Handler_H5(u.Quantity):
     # TODO: Improve nanmax, nanmin, nanmean, absmax, nanabsmax, absmin, nanabsmin to avoid working on magnitude and breaking memory.
 
     def nanmax(self, axis=None, keepdims=None):
-        return u.to_ureg(numpy.nanmax(self.magnitude, axis=axis, keepdims=keepdims), unit=self.get_unit())
+        return u.to_ureg(np.nanmax(self.magnitude, axis=axis, keepdims=keepdims), unit=self.get_unit())
 
     def nanmin(self, axis=None, keepdims=None):
-        return u.to_ureg(numpy.nanmin(self.magnitude, axis=axis, keepdims=keepdims), unit=self.get_unit())
+        return u.to_ureg(np.nanmin(self.magnitude, axis=axis, keepdims=keepdims), unit=self.get_unit())
 
     def nanmean(self, axis=None, keepdims=None):
-        return u.to_ureg(numpy.nanmean(self.magnitude, axis=axis, keepdims=keepdims), unit=self.get_unit())
+        return u.to_ureg(np.nanmean(self.magnitude, axis=axis, keepdims=keepdims), unit=self.get_unit())
 
     def absmax(self, axis=None, keepdims=None):
         return abs(self).max(axis=axis, keepdims=keepdims)
 
     def nanabsmax(self, axis=None, keepdims=None):
-        return u.to_ureg(numpy.nanmax(abs(self), axis=axis, keepdims=keepdims), unit=self.get_unit())
+        return u.to_ureg(np.nanmax(abs(self), axis=axis, keepdims=keepdims), unit=self.get_unit())
 
     def absmin(self, axis=None, keepdims=None):
         return abs(self).min(axis=axis, keepdims=keepdims)
 
     def nanabsmin(self, axis=None, keepdims=None):
-        return u.to_ureg(numpy.nanmin(abs(self), axis=axis, keepdims=keepdims), unit=self.get_unit())
+        return u.to_ureg(np.nanmin(abs(self), axis=axis, keepdims=keepdims), unit=self.get_unit())
 
-    def shift(self, shift, output=None, order=0, mode='constant', cval=numpy.nan, prefilter=None, h5target=None):
+    def shift(self, shift, output=None, order=0, mode='constant', cval=np.nan, prefilter=None, h5target=None):
         """
         Shifts the complete data with scipy.ndimage.interpolation.shift.
         In difference to that method, it does not need an input, but works on the instance data.
@@ -604,16 +604,16 @@ class Data_Handler_H5(u.Quantity):
             self._magnitude = scipy.ndimage.interpolation.shift(self.magnitude, shift, None, order, mode, cval,
                                                                 prefilter)
             return None
-        elif isinstance(output, numpy.ndarray):
+        elif isinstance(output, np.ndarray):
             scipy.ndimage.interpolation.shift(self.magnitude, shift, output, order, mode, cval, prefilter)
             return None
         else:
-            assert (output is None) or isinstance(output, type), "Invalid output argument given."
+            assert (output is None) or isinstance(np.dtype(output), np.dtype), "Invalid output argument given."
             return Data_Handler_H5(scipy.ndimage.interpolation.shift(self.magnitude, shift, output, order, mode, cval,
                                                                      prefilter),
                                    self.units, h5target=h5target)
 
-    def shift_slice(self, slice_, shift, output=None, order=0, mode='constant', cval=numpy.nan, prefilter=None,
+    def shift_slice(self, slice_, shift, output=None, order=0, mode='constant', cval=np.nan, prefilter=None,
                     h5target=None):
         """
         Shifts a certain slice of the data with scipy.ndimage.interpolation.shift.
@@ -629,10 +629,12 @@ class Data_Handler_H5(u.Quantity):
             If :code:`False` is given, the slice of the instance data is overwritten.
         :type output: ndarray *or* dtype *or* :code:`False`, *optional*
 
-        :param h5target: The h5target to in case a new Data_Handler_H5 is generated.
+        :param h5target: The h5target to write to if a Data_Handler_H5 should be generated.
+            If :code:`True` is given, the returned object will be a Data_Handler_H5 (temp file mode).
+            By default (:code:`None`), the data is returned as Quantity (in-memory).
 
         :returns: The shifted data. If output is given as a parameter or :code:`False`, None is returned.
-        :rtype: Data_Handler_H5 *or* None
+        :rtype: Quantity *or* Data_Handler_H5 *or* None
         """
         # TODO: Optimize performance by not loading full data along shifted axes.
         if prefilter is None:  # if not explicitly set, determine neccesity of prefiltering
@@ -644,7 +646,7 @@ class Data_Handler_H5(u.Quantity):
 
         try:
             test = float(shift)
-            expanded_slice = full_slice(numpy.s_[:], len(self.shape))
+            expanded_slice = full_slice(np.s_[:], len(self.shape))
             recover_slice = slice_
             shift_dimensioncorrected = shift
         except TypeError:  # Shift is a sequence with shifts for each dimension
@@ -654,13 +656,13 @@ class Data_Handler_H5(u.Quantity):
             shift_dimensioncorrected = []
             for shift_element, slice_element in zip(shift, slice_):
                 if shift_element != 0:
-                    expanded_slice.append(numpy.s_[:])
+                    expanded_slice.append(np.s_[:])
                     recover_slice.append(slice_element)
                     shift_dimensioncorrected.append(shift_element)
                 else:
                     expanded_slice.append(slice_element)
                     if isinstance(slice_element, slice):  # If we don't end up with one less dimension.
-                        recover_slice.append(numpy.s_[:])
+                        recover_slice.append(np.s_[:])
                         shift_dimensioncorrected.append(0.)
             expanded_slice = tuple(expanded_slice)  # Part of the data we need for shifting.
             recover_slice = tuple(recover_slice)  # Part of the shifted data we wanted to address.
@@ -671,16 +673,23 @@ class Data_Handler_H5(u.Quantity):
                 scipy.ndimage.interpolation.shift(self.ds_data[expanded_slice], shift_dimensioncorrected, None, order,
                                                   mode, cval, prefilter)[recover_slice]
             return None
-        elif isinstance(output, numpy.ndarray):
+        elif isinstance(output, np.ndarray):
             output[:] = \
                 scipy.ndimage.interpolation.shift(self.ds_data[expanded_slice], shift_dimensioncorrected, None, order,
                                                   mode, cval, prefilter)[recover_slice]
             return None
         else:
-            assert (output is None) or isinstance(output, type), "Invalid output argument given."
-            return Data_Handler_H5(
-                scipy.ndimage.interpolation.shift(self.ds_data[expanded_slice], shift_dimensioncorrected, output, order,
-                                                  mode, cval, prefilter)[recover_slice], self.units, h5target=h5target)
+            assert (output is None) or isinstance(np.dtype(output), np.dtype), \
+                "Invalid output argument given."
+            if h5target:
+                return Data_Handler_H5(
+                    scipy.ndimage.interpolation.shift(self.ds_data[expanded_slice], shift_dimensioncorrected, output,
+                                                      order, mode, cval, prefilter)[recover_slice], self.units,
+                    h5target=h5target)
+            else:
+                return u.to_ureg(
+                    scipy.ndimage.interpolation.shift(self.ds_data[expanded_slice], shift_dimensioncorrected, output,
+                                                      order, mode, cval, prefilter)[recover_slice], self.units)
 
     # TODO: Implement rotate_slice similar to shift_slice by using scipy.ndimage.interpolation.rotate
 
@@ -715,7 +724,7 @@ class Data_Handler_H5(u.Quantity):
                     yield (slice(start, stop),)
                     start = start + csize_dim
             else:
-                yield (numpy.s_[:],)
+                yield (np.s_[:],)
         else:  # Generate slices for dim and attach them to all slices for dim-1 recursively
             if dim in dims:
                 csize_dim = self.chunks[dim]
@@ -729,7 +738,7 @@ class Data_Handler_H5(u.Quantity):
                     start = start + csize_dim
             else:
                 for slicetuple_before in self.iterchunkslices(dim - 1, dims):
-                    yield slicetuple_before + (numpy.s_[:],)
+                    yield slicetuple_before + (np.s_[:],)
 
     def iterchunks(self, dims=None):
         """
@@ -756,7 +765,7 @@ class Data_Handler_H5(u.Quantity):
         iterlist = [range(i) for i in self.shape]
         if iterlist:
             iterlist.pop()
-        iterlist.append([numpy.s_[:]])
+        iterlist.append([np.s_[:]])
         return itertools.product(*iterlist)
 
     def iterlines(self):
@@ -811,7 +820,7 @@ class Data_Handler_H5(u.Quantity):
             best_elements = 0
             best_selection = None
             for selection in itertools.product([False, True], repeat=self.dims):
-                elements = numpy.where(selection, self.shape, self.chunks).prod()
+                elements = np.where(selection, self.shape, self.chunks).prod()
                 if elements <= select_elements:
                     if elements > best_elements:
                         best_elements = elements
@@ -841,7 +850,7 @@ class Data_Handler_H5(u.Quantity):
         if not hasattr(other, 'shape') or other.shape == ():
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
-            assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            assert np.isscalar(other.magnitude), "Input seemed scalar but isn't."
             if self.shape == ():  # self is also scalar, so just do default calculation:
                 return super(Data_Handler_H5, self).__add__(other)
             newdh = self.__class__(shape=self.shape, unit=self.get_unit())
@@ -864,7 +873,7 @@ class Data_Handler_H5(u.Quantity):
             if self.chunks:
                 newchunks = h5tools.probe_chunksize(newshape)
                 # Use at least one line worth of chunks as buffer for performance:
-                min_cache_size = numpy.prod(newchunks, dtype=numpy.int64) // newchunks[-1] * newshape[-1] \
+                min_cache_size = np.prod(newchunks, dtype=np.int64) // newchunks[-1] * newshape[-1] \
                                  * 4  # 32bit floats require 4 bytes.
                 use_cache_size = min_cache_size + 16 * 1024 ** 2  # Add 16 MB just to be sure.
                 newdh = self.__class__(shape=newshape, unit=self.get_unit(), chunk_cache_mem_size=use_cache_size)
@@ -881,7 +890,7 @@ class Data_Handler_H5(u.Quantity):
         if not hasattr(other, 'shape') or other.shape == ():
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
-            assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            assert np.isscalar(other.magnitude), "Input seemed scalar but isn't."
             if self.shape == ():  # self is also scalar, so just do default calculation:
                 return super(Data_Handler_H5, self).__iadd__(other)
             for slice_ in self.iterfastslices():
@@ -910,7 +919,7 @@ class Data_Handler_H5(u.Quantity):
         if not hasattr(other, 'shape') or other.shape == ():
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
-            assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            assert np.isscalar(other.magnitude), "Input seemed scalar but isn't."
             if self.shape == ():  # self is also scalar, so just do default calculation:
                 return super(Data_Handler_H5, self).__sub__(other)
             newdh = self.__class__(shape=self.shape, unit=self.get_unit())
@@ -938,7 +947,7 @@ class Data_Handler_H5(u.Quantity):
         if not hasattr(other, 'shape') or other.shape == ():
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
-            assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            assert np.isscalar(other.magnitude), "Input seemed scalar but isn't."
             if self.shape == ():  # self is also scalar, so just do default calculation:
                 return super(Data_Handler_H5, self).__isub__(other)
             for slice_ in self.iterfastslices():
@@ -964,7 +973,7 @@ class Data_Handler_H5(u.Quantity):
         if not hasattr(other, 'shape') or other.shape == ():
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
-            assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            assert np.isscalar(other.magnitude), "Input seemed scalar but isn't."
             if self.shape == ():  # self is also scalar, so just do default calculation:
                 return super(Data_Handler_H5, self).__mul__(other)
             newunit = str((other * u.to_ureg(1., self.get_unit())).units)
@@ -994,7 +1003,7 @@ class Data_Handler_H5(u.Quantity):
         if not hasattr(other, 'shape') or other.shape == ():
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
-            assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            assert np.isscalar(other.magnitude), "Input seemed scalar but isn't."
             if self.shape == ():  # self is also scalar, so just do default calculation:
                 return super(Data_Handler_H5, self).__imul__(other)
             self._units = str((other * u.to_ureg(1., self.get_unit())).units)
@@ -1026,7 +1035,7 @@ class Data_Handler_H5(u.Quantity):
         if not hasattr(other, 'shape') or other.shape == ():
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
-            assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            assert np.isscalar(other.magnitude), "Input seemed scalar but isn't."
             if self.shape == ():  # self is also scalar, so just do default calculation:
                 return super(Data_Handler_H5, self).__truediv__(other)
             newunit = str((u.to_ureg(1., self.get_unit()) / other).units)
@@ -1060,7 +1069,7 @@ class Data_Handler_H5(u.Quantity):
         if not hasattr(other, 'shape') or other.shape == ():
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
-            assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            assert np.isscalar(other.magnitude), "Input seemed scalar but isn't."
             if self.shape == ():  # self is also scalar, so just do default calculation:
                 return super(Data_Handler_H5, self).__itruediv__(other)
             self._units = str((u.to_ureg(1., self.get_unit()) / other).units)
@@ -1088,7 +1097,7 @@ class Data_Handler_H5(u.Quantity):
         if not hasattr(other, 'shape') or other.shape == ():
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
-            assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            assert np.isscalar(other.magnitude), "Input seemed scalar but isn't."
             if self.shape == ():  # self is also scalar, so just do default calculation:
                 return super(Data_Handler_H5, self).__floordiv__(other)
             newunit = str((u.to_ureg(1., self.get_unit()) // other).units)
@@ -1122,7 +1131,7 @@ class Data_Handler_H5(u.Quantity):
         if not hasattr(other, 'shape') or other.shape == ():
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
-            assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            assert np.isscalar(other.magnitude), "Input seemed scalar but isn't."
             if self.shape == ():  # self is also scalar, so just do default calculation:
                 return super(Data_Handler_H5, self).__ifloordiv__(other)
             self._units = str((u.to_ureg(1., self.get_unit()) // other).units)
@@ -1150,7 +1159,7 @@ class Data_Handler_H5(u.Quantity):
         if not hasattr(other, 'shape') or other.shape == ():
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
-            assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            assert np.isscalar(other.magnitude), "Input seemed scalar but isn't."
             if self.shape == ():  # self is also scalar, so just do default calculation:
                 return super(Data_Handler_H5, self).__pow__(other)
             newunit = str((u.to_ureg(1., self.get_unit()) ** other).units)
@@ -1180,7 +1189,7 @@ class Data_Handler_H5(u.Quantity):
         if not hasattr(other, 'shape') or other.shape == ():
             # If other is scalar, the shape doesn't change and we can do everything chunk-wise with better
             # performance and memory use.
-            assert numpy.isscalar(other.magnitude), "Input seemed scalar but isn't."
+            assert np.isscalar(other.magnitude), "Input seemed scalar but isn't."
             if self.shape == ():  # self is also scalar, so just do default calculation:
                 return super(Data_Handler_H5, self).__ipow__(other)
             self._units = str((u.to_ureg(1., self.get_unit()) ** other).units)
@@ -1222,6 +1231,7 @@ class Data_Handler_H5(u.Quantity):
         :param toadd: The elements to add. All must have the same shape.
 
         :param kwargs: kwargs for the new Data_Handler, see :func:`~Data_Handler_H5.__new__`.
+            For `unit` and `dtype`, if not given, the values of the first element to add are used.
 
         :return: The summed up data.
         :rtype: Data_Handler_H5
@@ -1231,6 +1241,12 @@ class Data_Handler_H5(u.Quantity):
         if importunit is None:
             toadd[0] = u.to_ureg(toadd[0])
             importunit = str(toadd[0].units)
+        dtype = kwargs.pop('dtype', None)
+        if dtype is None:
+            if hasattr(toadd[0], 'dtype'):
+                dtype = toadd[0].dtype
+            else:
+                warnings.warn("Element without dtype given to add. System-default dtype used.")
         for i, element in enumerate(toadd):
             if isinstance(toadd[i], cls):
                 toadd[i] = u.to_ureg(element, importunit)
@@ -1238,7 +1254,7 @@ class Data_Handler_H5(u.Quantity):
                 toadd[i] = cls(element, importunit)
             assert toadd[i].shape == toadd[0].shape, "Elements of different shape given."
         # Initialize new Data_Handler:
-        newdh = cls(shape=toadd[0].shape, unit=importunit, **kwargs)
+        newdh = cls(shape=toadd[0].shape, unit=importunit, dtype=dtype, **kwargs)
         for slice_ in newdh.iterfastslices():
             slicedata = toadd[0].get_slice_q(slice_)
             for element in toadd[1:]:
@@ -1247,7 +1263,7 @@ class Data_Handler_H5(u.Quantity):
         return newdh
 
     @classmethod
-    def stack(cls, tostack, axis=0, unit=None, h5target=None):
+    def stack(cls, tostack, axis=0, unit=None, h5target=None, dtype=None):
         """
         Stacks a sequence of given Data_Handlers (or castables) along a new axis.
 
@@ -1260,27 +1276,43 @@ class Data_Handler_H5(u.Quantity):
 
         :param h5target: optional: A h5target to work on. See __new__
 
+        :param dtype: optional: The dtype to use for the stacked data. Best given as numpy dtype.
+            By default, the dtype of the first element to stack is used.
+
         :return: stacked Data_Handler
         """
         if unit is None:
             unit = str(tostack[0].units)
+        if dtype is None:
+            if hasattr(tostack[0], 'dtype'):
+                dtype = tostack[0].dtype
+            else:
+                warnings.warn("Element without dtype given to stack. System-default dtype used.")
         inshape = tostack[0].shape
         for e in tostack:
             assert e.shape == inshape, "Data_Handler_H5.stack got elements of varying shape."
         shapelist = list(inshape)
         shapelist.insert(axis, len(tostack))
         outshape = tuple(shapelist)
+        use_cache_size = h5tools.buffer_needed(outshape,
+                                               [0 if dim == axis else np.s_[:] for dim in range(len(outshape))],
+                                               dtype=tostack[0].dtype)
+        if verbose:
+            import time
+            print("Stacking Data to shape: ", outshape)
+            print("... using cache size {0:d} MB".format(use_cache_size // 1024 ** 2))
+            start_time = time.time()
 
-        # Find optimized buffer size:
-        chunk_size = h5tools.probe_chunksize(outshape)
-        min_cache_size = chunk_size[axis] * numpy.prod(inshape) * 4  # 32bit floats require 4 bytes.
-        use_cache_size = min_cache_size + 64 * 1024 ** 2  # Add 64 MB just to be sure.
-
-        inst = cls(shape=outshape, unit=unit, h5target=h5target, chunk_cache_mem_size=use_cache_size)
+        # FixMe: This breaks if the elements to stack are larger than memory:
+        inst = cls(shape=outshape, unit=unit, h5target=h5target, dtype=dtype, chunk_cache_mem_size=use_cache_size)
         for i in range(len(tostack)):
-            slicebase = [numpy.s_[:] for j in range(len(inshape))]
+            slicebase = [np.s_[:] for j in range(len(inshape))]
             slicebase.insert(axis, i)
             inst[tuple(slicebase)] = tostack[i]
+            if verbose:
+                tpf = ((time.time() - start_time) / float(i + 1))
+                etr = tpf * (outshape[axis] - (i + 1))
+                print("Slice {0:d} / {1:d}, Time/Slice {3:.2f}s ETR: {2:.1f}s".format(i, outshape[axis], etr, tpf))
         return inst
 
 
@@ -1302,8 +1334,8 @@ class Data_Handler_np(u.Quantity):
                 return super(Data_Handler_np, cls).__new__(cls, compiled_data.magnitude, compiled_data.units)
         elif shape is not None:
             if dtype is None:
-                dtype = numpy.float32
-            return cls.__new__(cls, numpy.zeros(shape=shape, dtype=dtype), unit)
+                dtype = np.float32
+            return cls.__new__(cls, np.zeros(shape=shape, dtype=dtype), unit)
         else:
             raise ValueError("Initialized Data_Handler_np with wrong parameters.")
 
@@ -1346,8 +1378,8 @@ class Data_Handler_np(u.Quantity):
         :return: The index tuple of the array entry nearest to the given value.
         """
         value = u.to_ureg(value, unit=self.get_unit())
-        idx_flat = (numpy.abs(self - value)).argmin()
-        idx_tup = numpy.unravel_index(idx_flat, self.shape)
+        idx_flat = (np.abs(self - value)).argmin()
+        idx_tup = np.unravel_index(idx_flat, self.shape)
         return idx_tup
 
     def get_nearest_value(self, value):
@@ -1404,34 +1436,34 @@ class Data_Handler_np(u.Quantity):
         """
         if ignorenan:
             return self.__class__(
-                numpy.ma.fix_invalid(self.magnitude, fill_value=0.).sum(axis=axis, dtype=dtype, out=out,
-                                                                        keepdims=keepdims), unit=self.get_unit())
+                np.ma.fix_invalid(self.magnitude, fill_value=0.).sum(axis=axis, dtype=dtype, out=out,
+                                                                     keepdims=keepdims), unit=self.get_unit())
         else:
             return self.__class__(self.magnitude.sum(axis=axis, dtype=dtype, out=out, keepdims=keepdims),
                                   unit=self.get_unit())
 
     def nanmax(self, axis=None, keepdims=None):
-        return u.to_ureg(numpy.nanmax(self.magnitude, axis=axis, keepdims=keepdims), unit=self.get_unit())
+        return u.to_ureg(np.nanmax(self.magnitude, axis=axis, keepdims=keepdims), unit=self.get_unit())
 
     def nanmin(self, axis=None, keepdims=None):
-        return u.to_ureg(numpy.nanmin(self.magnitude, axis=axis, keepdims=keepdims), unit=self.get_unit())
+        return u.to_ureg(np.nanmin(self.magnitude, axis=axis, keepdims=keepdims), unit=self.get_unit())
 
     def nanmean(self, axis=None, keepdims=None):
-        return u.to_ureg(numpy.nanmean(self.magnitude, axis=axis, keepdims=keepdims), unit=self.get_unit())
+        return u.to_ureg(np.nanmean(self.magnitude, axis=axis, keepdims=keepdims), unit=self.get_unit())
 
     def absmax(self, axis=None, keepdims=None):
         return abs(self).max(axis=axis, keepdims=keepdims)
 
     def nanabsmax(self, axis=None, keepdims=None):
-        return u.to_ureg(numpy.nanmax(abs(self), axis=axis, keepdims=keepdims), unit=self.get_unit())
+        return u.to_ureg(np.nanmax(abs(self), axis=axis, keepdims=keepdims), unit=self.get_unit())
 
     def absmin(self, axis=None, keepdims=None):
         return abs(self).min(axis=axis, keepdims=keepdims)
 
     def nanabsmin(self, axis=None, keepdims=None):
-        return u.to_ureg(numpy.nanmin(abs(self), axis=axis, keepdims=keepdims), unit=self.get_unit())
+        return u.to_ureg(np.nanmin(abs(self), axis=axis, keepdims=keepdims), unit=self.get_unit())
 
-    def shift(self, shift, output=None, order=0, mode='constant', cval=numpy.nan, prefilter=None):
+    def shift(self, shift, output=None, order=0, mode='constant', cval=np.nan, prefilter=None):
         """
         Shifts the complete data with scipy.ndimage.interpolation.shift.
         In difference to that method, it does not need an input, but works on the instance data.
@@ -1456,16 +1488,16 @@ class Data_Handler_np(u.Quantity):
             self.magnitude = scipy.ndimage.interpolation.shift(self.magnitude, shift, None, order, mode, cval,
                                                                prefilter)
             return None
-        elif isinstance(output, numpy.ndarray):
+        elif isinstance(output, np.ndarray):
             scipy.ndimage.interpolation.shift(self.magnitude, shift, output, order, mode, cval, prefilter)
             return None
         else:
-            assert (output is None) or isinstance(output, type), "Invalid output argument given."
+            assert (output is None) or isinstance(np.dtype(output), np.dtype), "Invalid output argument given."
             return Data_Handler_np(scipy.ndimage.interpolation.shift(self.magnitude, shift, output, order, mode, cval,
                                                                      prefilter),
                                    self.units)
 
-    def shift_slice(self, slice_, shift, output=None, order=0, mode='constant', cval=numpy.nan, prefilter=None):
+    def shift_slice(self, slice_, shift, output=None, order=0, mode='constant', cval=np.nan, prefilter=None):
         """
         Shifts a certain slice of the data with scipy.ndimage.interpolation.shift.
         See: :func:`scipy.ndimage.interpolation.shift` for full documentation of parameters.
@@ -1492,7 +1524,7 @@ class Data_Handler_np(u.Quantity):
 
         try:
             test = float(shift)
-            expanded_slice = full_slice(numpy.s_[:], len(self.shape))
+            expanded_slice = full_slice(np.s_[:], len(self.shape))
             recover_slice = slice_
             shift_dimensioncorrected = shift
         except TypeError:  # Shift is a sequence with shifts for each dimension
@@ -1502,13 +1534,13 @@ class Data_Handler_np(u.Quantity):
             shift_dimensioncorrected = []
             for shift_element, slice_element in zip(shift, slice_):
                 if shift_element != 0:
-                    expanded_slice.append(numpy.s_[:])
+                    expanded_slice.append(np.s_[:])
                     recover_slice.append(slice_element)
                     shift_dimensioncorrected.append(shift_element)
                 else:
                     expanded_slice.append(slice_element)
                     if isinstance(slice_element, slice):  # If we don't end up with one less dimension.
-                        recover_slice.append(numpy.s_[:])
+                        recover_slice.append(np.s_[:])
                         shift_dimensioncorrected.append(0.)
             expanded_slice = tuple(expanded_slice)  # Part of the data we need for shifting.
             recover_slice = tuple(recover_slice)  # Part of the shifted data we wanted to address.
@@ -1519,14 +1551,14 @@ class Data_Handler_np(u.Quantity):
                 scipy.ndimage.interpolation.shift(self.magnitude[expanded_slice], shift_dimensioncorrected, None, order,
                                                   mode, cval, prefilter)[recover_slice]
             return None
-        elif isinstance(output, numpy.ndarray):
+        elif isinstance(output, np.ndarray):
             output[:] = \
                 scipy.ndimage.interpolation.shift(self.magnitude[expanded_slice], shift_dimensioncorrected, None, order,
                                                   mode, cval, prefilter)[recover_slice]
             return None
         else:
-            assert (output is None) or isinstance(output, type), "Invalid output argument given."
-            return Data_Handler_np(
+            assert (output is None) or isinstance(np.dtype(output), np.dtype), "Invalid output argument given."
+            return u.to_ureg(
                 scipy.ndimage.interpolation.shift(self.magnitude[expanded_slice], shift_dimensioncorrected, output,
                                                   order, mode, cval, prefilter)[recover_slice], self.units)
 
@@ -1540,7 +1572,7 @@ class Data_Handler_np(u.Quantity):
             return iter([()])
         iterlist = [range(i) for i in self.shape]
         iterlist.pop()
-        iterlist.append([numpy.s_[:]])
+        iterlist.append([np.s_[:]])
         return itertools.product(*iterlist)
 
     def iterlines(self):
@@ -1662,27 +1694,34 @@ class Data_Handler_np(u.Quantity):
 
         :param toadd: The elements to add.
 
-        :param kwargs: kwargs for the new Data_Handler, see :func:`~Data_Handler_np.__new__`. Only :code:`unit` makes
-            sense here.
+        :param kwargs: kwargs for the new Data_Handler, see :func:`~Data_Handler_np.__new__`.
+            Only :code:`unit` and :code:`dtype` make sense here.
+            If not given, the values of the first element to add are used.
 
         :return: The summed up data.
         :rtype: Data_Handler_np
         """
         toadd = list(toadd)
         importunit = kwargs.pop('unit', None)
+        dtype = kwargs.pop('dtype', None)
         if kwargs:
             raise TypeError('Unexpected **kwargs: %r' % kwargs)
         if importunit is None:
             toadd[0] = u.to_ureg(toadd[0])
             importunit = str(toadd[0].units)
+        if dtype is None:
+            if hasattr(toadd[0], 'dtype'):
+                dtype = toadd[0].dtype
+            else:
+                warnings.warn("Element without dtype given to add. System-default dtype used.")
 
-        newdh = cls(shape=toadd[0].shape, unit=importunit)
+        newdh = cls(shape=toadd[0].shape, unit=importunit, dtype=dtype)
         for element in toadd:
             newdh += element
         return newdh
 
     @classmethod
-    def stack(cls, tostack, axis=0, unit=None):
+    def stack(cls, tostack, axis=0, unit=None, dtype=None):
         """
         Stacks a sequence of given Data_Handlers (or castables) along a new axis.
 
@@ -1693,11 +1732,26 @@ class Data_Handler_np(u.Quantity):
         :param unit: optional: A valid unit string to convert the stack to. Default is the unit of the first element
             of the sequence.
 
+        :param dtype: optional: The dtype to use for the stacked data. Best given as numpy dtype.
+            By default, the dtype of the first element to stack is used.
+
         :return: stacked Data_Handler
         """
         if unit is None:
             unit = str(tostack[0].units)
-        return cls(numpy.stack(u.magnitudes(u.as_ureg_quantities(tostack, unit)), axis), unit)
+        inshape = tostack[0].shape
+        for e in tostack:
+            assert e.shape == inshape, "Data_Handler_H5.stack got elements of varying shape."
+        if dtype is None:
+            out = None
+        else:
+            # If a dtype is specified, we have to give numpy an empty array to write to, with the dtype,
+            # because numpy.stack has no option to specify dtype.
+            shapelist = list(inshape)
+            shapelist.insert(axis, len(tostack))
+            outshape = tuple(shapelist)
+            out = np.empty(outshape, dtype=dtype)
+        return cls(np.stack(u.magnitudes(u.as_ureg_quantities(tostack, unit)), axis, out=out), unit)
 
 
 class DataArray(object):
@@ -1769,11 +1823,11 @@ class DataArray(object):
                 if unit:  # If a unit is explicitly requested anyway, make sure we set it.
                     self.set_unit(unit)
             elif type(data) == str:  # If it's a string, try to evaluate it as an array.
-                self.data = u.to_ureg(numpy.array(eval(data)), unit)
-            elif type(data) == numpy.ndarray:  # If it is an ndarray, just make a quantity with it.
+                self.data = u.to_ureg(np.array(eval(data)), unit)
+            elif type(data) == np.ndarray:  # If it is an ndarray, just make a quantity with it.
                 self.data = u.to_ureg(data, unit)
             else:  # If it's none of the above, it hopefully is an array-like. So let's try to cast it.
-                self.data = u.to_ureg(numpy.array(data), unit)
+                self.data = u.to_ureg(np.array(data), unit)
             self.label = str(label)
             self.plotlabel = str(plotlabel)
 
@@ -1869,6 +1923,13 @@ class DataArray(object):
     @property
     def units(self):
         return self._data.units
+
+    @property
+    def dtype(self):
+        """
+        The type of the numerical data, e.g. `numpy.float64`.
+        """
+        return self._data.dtype
 
     def get_data_raw(self):
         """
@@ -2002,7 +2063,7 @@ class DataArray(object):
             self.label = h5tools.read_as_str(h5source["label"])
             self.plotlabel = h5tools.read_as_str(h5source["plotlabel"])
         else:
-            self.set_data(numpy.array(h5source["data"]), h5tools.read_as_str(h5source["unit"]))
+            self.set_data(np.array(h5source["data"]), h5tools.read_as_str(h5source["unit"]))
         self.set_label(h5tools.read_as_str(h5source["label"]))
         self.set_plotlabel(h5tools.read_as_str(h5source["plotlabel"]))
 
@@ -2097,7 +2158,7 @@ class DataArray(object):
         else:
             return self
 
-    def shift(self, shift, output=None, order=0, mode='constant', cval=numpy.nan, prefilter=None):
+    def shift(self, shift, output=None, order=0, mode='constant', cval=np.nan, prefilter=None):
         """
         Shifts the complete data. This is just calling the underlying methods implemented in
             :func:`Data_Handler_H5.shift` and :func:`Data_Handler_np.shift`
@@ -2106,7 +2167,7 @@ class DataArray(object):
         """
         return self.data.shift(shift, output=output, order=order, mode=mode, cval=cval, prefilter=prefilter)
 
-    def shift_slice(self, slice_, shift, output=None, order=0, mode='constant', cval=numpy.nan, prefilter=None):
+    def shift_slice(self, slice_, shift, output=None, order=0, mode='constant', cval=np.nan, prefilter=None):
         """
         Shifts a certain slice of the data. This is just calling the underlying methods implemented in
             :func:`Data_Handler_H5.shift_slice` and :func:`Data_Handler_np.shift_slice`
@@ -2448,7 +2509,7 @@ class Axis(DataArray):
 
         :return: array of ints: The corresponding indexes with the same shape as values.
         """
-        return numpy.searchsorted(self.data, values)
+        return np.searchsorted(self.data, values)
 
     def value_floatindex(self, idx):
         """
@@ -2499,7 +2560,7 @@ class Axis(DataArray):
         if self.data.size <= 1:  # Axis contains only a single point, technically it's "evenly spaced".
             return True
         spaces = self.data[1:] - self.data[:-1]
-        return numpy.allclose(spaces, spaces[0])
+        return np.allclose(spaces, spaces[0])
 
     def spacing(self):
         """
@@ -2846,16 +2907,16 @@ class ROI(object):
             llim = self.limits[axis_index][0]
             rlim = self.limits[axis_index][1]
             if rlim is None:  # there is no right limit, so the left limit is llim, which can be a number or None:
-                return numpy.s_[llim:None]
+                return np.s_[llim:None]
             elif llim is None:  # if there is a right but no left limit, the slice index (works excluding) is rlim+1:
-                return numpy.s_[None:rlim + 1]
+                return np.s_[None:rlim + 1]
             elif llim <= rlim:  # both limits given, standard order:
-                return numpy.s_[llim:rlim + 1]
+                return np.s_[llim:rlim + 1]
             else:  # both limits given, reverse order:
                 if rlim == 0:  # 0 as index is only addressable like follows, b/c excluding:
-                    return numpy.s_[llim::-1]
+                    return np.s_[llim::-1]
                 else:  # rlim must be shifted like above, b/c excluding:
-                    return numpy.s_[llim:rlim - 1:-1]
+                    return np.s_[llim:rlim - 1:-1]
 
     def get_limits(self, data_key=None, by_index=False, raw=False):
         """
@@ -3183,7 +3244,7 @@ class DataSet(object):
                         plotconf=(),
                         h5target=None, chunk_cache_mem_size=None,
                         chunks=True, compression='gzip', compression_opts=4,
-                        dtypes=numpy.float32):
+                        dtypes=np.float32):
         """
         Build an empty dataset containing zero-arrays in all DataFields from a list of Axes.
 
@@ -3258,7 +3319,7 @@ class DataSet(object):
             # In-memory data processing without h5 files.
             das = []
             for i, label in enumerate(datalabels):
-                dataspace = numpy.zeros(newshape, dtype=dtypes[i])
+                dataspace = np.zeros(newshape, dtype=dtypes[i])
                 dataarray = DataArray(dataspace,
                                       unit=dataunits[i],
                                       label=label,
@@ -3362,7 +3423,7 @@ class DataSet(object):
 
     def add_datafield_empty(self, unit=None, label=None, plotlabel=None,
                             chunks=True,
-                            dtype=numpy.float32,
+                            dtype=np.float32,
                             compression='gzip', compression_opts=4):
         # Create empty DataArray:
         if self.h5target:
@@ -3378,7 +3439,7 @@ class DataSet(object):
                                   chunks=chunks,
                                   compression=compression, compression_opts=compression_opts)
         else:
-            dataspace = numpy.zeros(self.shape, dtype=dtype)
+            dataspace = np.zeros(self.shape, dtype=dtype)
             dataarray = DataArray(dataspace,
                                   unit=unit,
                                   label=label,
@@ -3805,7 +3866,7 @@ class DataSet(object):
         # Normalize path:
         path = os.path.abspath(path)
         # Load data from text file:
-        datacontent = numpy.loadtxt(path, comments=comments, delimiter=delimiter, **kwargs)
+        datacontent = np.loadtxt(path, comments=comments, delimiter=delimiter, **kwargs)
         # All columns contain data by default. This can change if there is an Axis:
         datacolumns = list(range(datacontent.shape[1]))
 
@@ -3977,7 +4038,7 @@ class DataSet(object):
         # Build new axes grid:
         new_axes_list = data[0].axes.copy()
         new_axes_list.pop(axis)
-        new_axis_data = numpy.concatenate([ds.get_axis(axis).data for ds in data])
+        new_axis_data = np.concatenate([ds.get_axis(axis).data for ds in data])
         new_axis = Axis(new_axis_data,
                         label=data[0].get_axis(axis).get_label(),
                         plotlabel=data[0].get_axis(axis).get_plotlabel())
@@ -3991,7 +4052,7 @@ class DataSet(object):
             assert (checkshape == shape_to_stack), "ERROR: Input data has incompatible shapes."
             for i, ax in enumerate(new_axes_list):
                 if i != axis:
-                    assert numpy.allclose(ax, ds.get_axis[i]), "ERROR: Input data has incompatible Axis."
+                    assert np.allclose(ax, ds.get_axis[i]), "ERROR: Input data has incompatible Axis."
             assert (len(ds.datafields) == len(data[0].datafields)), \
                 "ERROR: Input data has different number of datafields."
 
@@ -4006,7 +4067,7 @@ class DataSet(object):
 
         # Stack the datafields all the DataSets and add them to the stacked Set:
         for i, df in enumerate(data[0].datafields):
-            dfdata = numpy.concatenate([ds.get_datafield(i) for ds in data], axis=axis)
+            dfdata = np.concatenate([ds.get_datafield(i) for ds in data], axis=axis)
             stack.add_datafield(dfdata, label=df.get_label(), plotlabel=df.get_plotlabel())
 
         # Check if everything is fine and return the data.
@@ -4085,13 +4146,13 @@ def stack_DataSets(datastack, new_axis, axis=0, label=None, plotconf=None, h5tar
 if __name__ == "__main__":  # just for testing
     print("snomtools version " + __version__)
     print('Testing...')
-    testarray = numpy.arange(0, 10, 2.)
+    testarray = np.arange(0, 10, 2.)
     testaxis = DataArray(testarray, 'meter', label="xaxis")
     testaxis2 = testaxis / 2.
     testaxis2.set_label("yaxis")
-    X, Y = numpy.meshgrid(testaxis, testaxis2)
+    X, Y = np.meshgrid(testaxis, testaxis2)
     # testaxis = DataArray(testarray[testarray<5], 'meter')
-    testdata = DataArray(numpy.sin((X + Y) * u.ureg('rad')) * u.ureg('counts'), label="testdaten", plotlabel="pl")
+    testdata = DataArray(np.sin((X + Y) * u.ureg('rad')) * u.ureg('counts'), label="testdaten", plotlabel="pl")
     # testdatastacklist = [testdata * i for i in range(3)]
 
     pc = {'a': 1.0, 'b': "moep", 'c': 3, 'de': "eins/zwo"}
@@ -4151,8 +4212,8 @@ if __name__ == "__main__":  # just for testing
         testh5 = h5tools.File('test.hdf5')
         moep3 = DataArray(testh5, h5target=testh5)
 
-        dhs = [Data_Handler_H5(numpy.arange(5), 'meter') for i in range(3)]
-        dhs.append(u.to_ureg(numpy.arange(5), 'millimeter'))
+        dhs = [Data_Handler_H5(np.arange(5), 'meter') for i in range(3)]
+        dhs.append(u.to_ureg(np.arange(5), 'millimeter'))
         stacktest = DataArray(Data_Handler_np.stack(dhs, unit='millimeter', axis=1))
 
         dhs = [stacktest for i in range(10)]
@@ -4165,7 +4226,7 @@ if __name__ == "__main__":  # just for testing
     test_sum = False
     if test_sum:
         h5 = h5tools.File("test4.hdf5")
-        mediumfuckindata = Data_Handler_H5(numpy.ones((100, 100, 20)), unit="m/s")
+        mediumfuckindata = Data_Handler_H5(np.ones((100, 100, 20)), unit="m/s")
         sum1 = mediumfuckindata.sum(0)
         sum2 = mediumfuckindata.sum(0, keepdims=True)
         sum3 = sum1.sum(0)
@@ -4223,7 +4284,7 @@ if __name__ == "__main__":  # just for testing
 
         print("writing data...")
         for f in h5files:
-            h5tools.write_dataset(f, "data", data=numpy.ones((100, 100, 20)),
+            h5tools.write_dataset(f, "data", data=np.ones((100, 100, 20)),
                                   chunks=True,
                                   compression="gzip",
                                   compression_opts=4)

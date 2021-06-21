@@ -1,0 +1,6 @@
+#!/bin/bash
+#SBATCH --ntasks=1
+#SBATCH -C XEON_E5_2670
+#SBATCH --gres=gpu:K20Xm:1
+
+python3 /home/hellbrue/repos/evaluation/2020/01\ January/20200128_Au788_Zheng_blue/cuda_eval.py -v -roi16

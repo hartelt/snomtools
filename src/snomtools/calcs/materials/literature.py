@@ -10,12 +10,105 @@ from __future__ import division
 from __future__ import print_function
 import numpy
 import os
+import scipy.interpolate
 import snomtools.calcs.prefixes as pref
 import snomtools.calcs.conversions as conv
+import snomtools.calcs.units as u
 
 __author__ = 'hartelt'
 
-# TODO: Compatibility with pint
+class Literature_Material(object):
+    """
+    An optical material defined from tabulated literature data.
+    The optical behavior for any frequency is approximated by spline interpolation.
+    """
+
+    def __init__(self, frequencies=None, epsilons=None, ns=None, wavelengths=None, spline_order=3):
+        """
+        The initializer, building the splines from the literature data.
+        Data must be given as 1D-Array-like. At least one of frequencies/wavelengths and epsilons/ns must be given.
+
+        :param frequencies: The frequencies given in rad/s.
+
+        :param epsilons: The dielectric constants, given as real or complex values.
+
+        :param ns: The refractive indices, given as real or complex values.
+
+        :param wavelengths: Wavelengths values given in nanometers. Ignored if frequencies are given.
+
+        :param spline_order: The order of the spline for approximation. Default=3.
+        """
+        if frequencies is not None:
+            self.literature_wavelengths = conv.omega2lambda(u.to_ureg(frequencies)).to('nanometer')
+        elif wavelengths is not None:
+            self.literature_wavelengths = u.to_ureg(wavelengths, 'nanometer').real
+        else:
+            raise ValueError("Wavelengths or Frequencies of Literature Values must be given.")
+        if (epsilons is None) and (ns is None):
+            raise ValueError("Literature Material cannot be initializes without values.")
+        if epsilons is not None:
+            self.literature_epsilons = u.to_ureg(epsilons, 'dimensionless')
+            self.eps_r_spline = scipy.interpolate.splrep(self.literature_wavelengths.magnitude,
+                                                         self.literature_epsilons.real.magnitude,
+                                                         k=spline_order)
+            self.eps_i_spline = scipy.interpolate.splrep(self.literature_wavelengths.magnitude,
+                                                         self.literature_epsilons.imag.magnitude,
+                                                         k=spline_order)
+        else:
+            self.literature_epsilons = None
+        if ns is not None:
+            self.literature_ns = u.to_ureg(ns, 'dimensionless')
+            self.n_r_spline = scipy.interpolate.splrep(self.literature_wavelengths.magnitude,
+                                                       self.literature_ns.real.magnitude,
+                                                       k=spline_order)
+            self.n_i_spline = scipy.interpolate.splrep(self.literature_wavelengths.magnitude,
+                                                       self.literature_ns.imag.magnitude,
+                                                       k=spline_order)
+        else:
+            self.literature_ns = None
+
+    def epsilon(self, omega):
+        """
+        This method approximates the complex dielectric function of the material
+        at a given frequency,
+        using spline interpolation of the literature data.
+        If the frequency is outside of literature data range, a ValueError is thrown.
+        If only refractive index data is available, the dielectric function is calculated from it,
+        assuming non-magnetic behaviour.
+
+        :param omega: The frequency at which the dielectric function shall be calculated (float or numpy array) in rad/s
+
+        :return: The complex dielectric function (dimensionless).
+        """
+        omega = u.to_ureg(omega, 'rad/s')
+        wl = conv.omega2lambda(omega).to('nanometer')
+        if self.literature_epsilons is not None:
+            return u.to_ureg(scipy.interpolate.splev(wl, self.eps_r_spline, ext=2) +
+                             1j * scipy.interpolate.splev(wl, self.eps_i_spline, ext=2))
+        else:
+            return u.to_ureg(conv.n2epsilon(self.n(omega)))
+
+    def n(self, omega):
+        """
+        This method approximates the complex refraction index of the material
+        at a given frequency,
+        using spline interpolation of the literature data.
+        If the frequency is outside of literature data range, a ValueError is thrown.
+        If only dielectric function data is available, the refractive index is calculated from it,
+        assuming non-magnetic behaviour.
+
+        :param omega: The frequency at which the refraction index shall be calculated (float or numpy array) in rad/s
+
+        :return: The complex refraction index (dimensionless).
+        """
+        omega = u.to_ureg(omega, 'rad/s')
+        wl = conv.omega2lambda(omega).to('nanometer')
+        if self.literature_ns is not None:
+            return u.to_ureg(scipy.interpolate.splev(wl, self.n_r_spline, ext=2) +
+                             1j * scipy.interpolate.splev(wl, self.n_i_spline, ext=2))
+        else:
+            return u.to_ureg(conv.epsilon2n(self.epsilon(omega)))
+
 
 ownpath = os.path.dirname(os.path.realpath(__file__))
 
@@ -24,7 +117,9 @@ raw = numpy.loadtxt(os.path.abspath(os.path.join(ownpath, "literature/Au/johnson
 wl = raw[:, 0] * pref.micro
 n = raw[:, 1] + (raw[:, 2] * 1j)
 eps = conv.n2epsilon(n)
-Au_Johnson_Christy = numpy.column_stack((wl, eps, n))
+Au_Johnson_Christy_data_raw = numpy.column_stack((wl, eps, n))
+Au_Johnson_Christy_data = [u.to_ureg(wl, 'meter'), eps, n]
+Au_Johnson_Christy = Literature_Material(None, eps, n, u.to_ureg(wl, 'meter'))
 """
 Au by Johnson and Christy
 
@@ -50,19 +145,25 @@ raw = numpy.loadtxt(os.path.abspath(os.path.join(ownpath, "literature/Au/Olmon_P
 wl = raw[:, 1]
 eps = raw[:, 2] + 1j * raw[:, 3]
 n = raw[:, 4] + 1j * raw[:, 5]
-Au_Olmon_evaporated = numpy.column_stack((wl, eps, n))
+Au_Olmon_evaporated_data_raw = numpy.column_stack((wl, eps, n))
+Au_Olmon_evaporated_data = [u.to_ureg(wl, 'meter'), eps, n]
+Au_Olmon_evaporated = Literature_Material(None, eps, n, u.to_ureg(wl, 'meter'))
 
 raw = numpy.loadtxt(os.path.abspath(os.path.join(ownpath, "literature/Au/Olmon_PRB2012_SC.dat")))
 wl = raw[:, 1]
 eps = raw[:, 2] + 1j * raw[:, 3]
 n = raw[:, 4] + 1j * raw[:, 5]
-Au_Olmon_singlecristalline = numpy.column_stack((wl, eps, n))
+Au_Olmon_singlecristalline_data_raw = numpy.column_stack((wl, eps, n))
+Au_Olmon_singlecristalline_data = [u.to_ureg(wl, 'meter'), eps, n]
+Au_Olmon_singlecristalline = Literature_Material(None, eps, n, u.to_ureg(wl, 'meter'))
 
 raw = numpy.loadtxt(os.path.abspath(os.path.join(ownpath, "literature/Au/Olmon_PRB2012_TS.dat")))
 wl = raw[:, 1]
 eps = raw[:, 2] + 1j * raw[:, 3]
 n = raw[:, 4] + 1j * raw[:, 5]
-Au_Olmon_templatestripped = numpy.column_stack((wl, eps, n))
+Au_Olmon_templatestripped_data_raw = numpy.column_stack((wl, eps, n))
+Au_Olmon_templatestripped_data = [u.to_ureg(wl, 'meter'), eps, n]
+Au_Olmon_templatestripped = Literature_Material(None, eps, n, u.to_ureg(wl, 'meter'))
 """
 Au by Olmon et al.
 
@@ -99,7 +200,9 @@ raw = numpy.loadtxt(os.path.abspath(os.path.join(ownpath, "literature/ITO/ITO-Ko
 wl = raw[:, 0] * pref.micro
 n = raw[:, 1] + (raw[:, 2] * 1j)
 eps = conv.n2epsilon(n)
-ITO_Koenig = numpy.column_stack((wl, eps, n))
+ITO_Koenig_data_raw = numpy.column_stack((wl, eps, n))
+ITO_Koenig_data = [u.to_ureg(wl, 'meter'), eps, n]
+ITO_Koenig = Literature_Material(None, eps, n, u.to_ureg(wl, 'meter'))
 """
 ITO by Koenig et al.
 http://refractiveindex.info
@@ -111,4 +214,14 @@ ACS Nano, American Chemical Society (ACS), 2014, 8, 6182-6192
 
 # for testing:
 if __name__ == "__main__":
-	print(Au_Olmon_singlecristalline)
+    mat = Au_Johnson_Christy
+    from matplotlib import pyplot as plt
+
+    xvals = u.to_ureg(numpy.arange(400, 800, .05), 'nanometer')
+    plt.plot(xvals.magnitude, mat.n(conv.lambda2omega(xvals)).real,
+             '-', label='approx')
+
+    plt.plot(Au_Johnson_Christy_data_raw[:, 0] * 1e9, Au_Johnson_Christy_data_raw[:, 2].real, '.', label='Olmon')
+
+    plt.legend()
+    plt.show()

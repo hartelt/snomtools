@@ -9,7 +9,7 @@ import numpy as np
 import snomtools.data.datasets as ds
 import snomtools.calcs.units as u
 import snomtools.calcs.constants as consts
-from snomtools.data.h5tools import probe_chunksize
+from snomtools.data.h5tools import probe_chunksize, buffer_needed
 from snomtools.data.tools import full_slice
 import warnings
 
@@ -314,11 +314,15 @@ class FrequencyFilter(object):
             axes = [self.indata.get_axis(label) for label in self.indata.axlabels]
 
             if h5target:
-                chunks = probe_chunksize(self.indata.shape)
-                iteration_size = [chunks[i] if i != self.filter_axis_id else self.indata.shape[i]
-                                  for i in range(len(self.indata.shape))]
-                cache_size_min = np.prod(iteration_size) * len(components) * 8  # 8 Bytes per 64bit number
-                use_cache_size = cache_size_min + 64 * 1024 ** 2  # Add 64 MB to be sure.
+                # chunks = probe_chunksize(self.indata.shape)
+                # iteration_size = [chunks[i] if i != self.filter_axis_id else self.indata.shape[i]
+                #                   for i in range(len(self.indata.shape))]
+                # cache_size_min = np.prod(iteration_size) * len(components) * 8  # 8 Bytes per 64bit number
+                # use_cache_size = cache_size_min + 64 * 1024 ** 2  # Add 64 MB to be sure.
+                use_cache_size = buffer_needed(self.indata.shape,
+                                               [0 if i != self.filter_axis_id else np.s_[:]
+                                                for i in range(len(self.indata.shape))],
+                                               dtype=np.float32)
             else:
                 use_cache_size = None
 
@@ -524,7 +528,7 @@ class FFT(object):
         if s[self.axis_to_transform_id] != np.s_[:]:
             warnings.warn("FFT of a slice that is not full along the FFT axis might return bad results")
         df_in = self.indata.get_datafield(df)
-        timedata = df_in.data[s]
+        timedata = df_in.data[s].magnitude
         freqdata = fftpack.fftshift(fftpack.fft(timedata, axis=self.axis_to_transform_id),
                                     axes=self.axis_to_transform_id)
         return u.to_ureg(freqdata, df_in.get_unit())
@@ -558,11 +562,15 @@ class FFT(object):
         transformed_shape = tuple([len(ax) for ax in axes])
 
         if h5target:
-            chunks = probe_chunksize(transformed_shape)
-            iteration_size = [chunks[i] if i != self.axis_to_transform_id else transformed_shape[i]
-                              for i in range(len(transformed_shape))]
-            cache_size_min = np.prod(iteration_size) * 16  # 8 Bytes per 64bit number but complex.
-            use_cache_size = cache_size_min + 64 * 1024 ** 2  # Add 64 MB to be sure.
+            # chunks = probe_chunksize(transformed_shape)
+            # iteration_size = [chunks[i] if i != self.axis_to_transform_id else transformed_shape[i]
+            #                   for i in range(len(transformed_shape))]
+            # cache_size_min = np.prod(iteration_size) * 16  # 8 Bytes per 64bit number but complex.
+            # use_cache_size = cache_size_min + 64 * 1024 ** 2  # Add 64 MB to be sure.
+            use_cache_size = buffer_needed(transformed_shape,
+                                           [0 if i != self.axis_to_transform_id else np.s_[:]
+                                            for i in range(len(transformed_shape))],
+                                           dtype=np.complex64)
         else:
             use_cache_size = None
 

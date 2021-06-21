@@ -1,4 +1,5 @@
 #Custom entries (rest is from gitignore template):
+venv/
 .idea/
 *~
 *.orig
@@ -9,6 +10,8 @@ test*
 *.png
 *.bak
 Drifttest.7z
+#Excemptions for examples (DataSets/Manual):
+!/examples/*/*.hdf5
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
