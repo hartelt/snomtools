@@ -33,12 +33,13 @@ def is_image_file(filename):
 
 	:rtype: bool
 	"""
-	return os.path.splitext(filename)[1] in [".jpg", ".jpeg", ".bmp"]
+	return os.path.splitext(filename)[1] in [".jpg", ".jpeg", ".bmp", ".png"]
 
 
 def read_image(filepath):
 	"""
-	Reads a generic image in the one of the implemented file extensions. The 2D image dimensions are interpreted as x and y.
+	Reads a generic image in the one of the implemented file extensions.
+	The 2D image dimensions are interpreted as x and y.
 	Reads only greyscale, if a color (RGB or RGBA) image is given, it will be converted to greyscale.
 
 	:param filepath: String: The (absolute or relative) path of input file.
