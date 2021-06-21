@@ -75,15 +75,18 @@ def timelog_folder(folderpath, timeunit='s', timeunitlabel=None,
 	:param: timeunit: Set unit (dimension) of the sequence of images. If not explicitly stated this parameter will have
 			dimension of second
 
-	:param: timeunitlabel: Set a label of your given timeunit.If no explicit value is given to this parameter it assumes
-			the same value as the time unit
+	:param: timeunitlabel: Set a label of your given timeunit.
+			If no explicit value is given to this parameter it assumes
+			the same value as the time unit.
 
-	:param: timefomrat: State the time format of the targeted file(s) (e.g. %d%m%Y). If no format is explicitly stated
+	:param: timeformat: State the time format of the targeted file(s) (e.g. %d%m%Y). If no format is explicitly stated
 			the script will try to guess the time format
 
-	:param: prefix: part of the filename that is BEFORE the timeformat
+	:param: prefix: part of the filename that is BEFORE the timeformat.
+			Files that do not contain the prefix will be ignored.
 
-	:param: postfix: part of the file name that is AFTER the timeformat
+	:param: postfix: part of the file name that is AFTER the timeformat.
+			Files that do not contain the postfix will be ignored.
 
 	:param: h5target: optional, set a h5 group or path on which the data is being saved on (NOT SURE)
 
@@ -101,8 +104,14 @@ def timelog_folder(folderpath, timeunit='s', timeunitlabel=None,
 	for filename in filter(is_image_file, os.listdir(folderpath)):
 		# Strip extension, prefix, postfix:
 		timestring = os.path.splitext(filename)[0]
-		timestring = timestring.lstrip(prefix)
-		timestring = timestring.rstrip(postfix)
+		if prefix in timestring:
+			timestring = timestring.lstrip(prefix)
+		else:
+			continue
+		if postfix in timestring:
+			timestring = timestring.rstrip(postfix)
+		else:
+			continue
 
 		if timeformat:  # If format is given, parse accordingly:
 			timestring = timestring.strip()
