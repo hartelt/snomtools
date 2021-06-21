@@ -212,9 +212,13 @@ def image_series(folderpath, numbered=False,
                  prefix="", postfix="",
                  h5target=True):
     """
+    Reads an image series / sequence from a folder into a DataSet.
+    All compatible image files will be read and stacked onto a file_number axis.
+    A naming scheme can be specified for filtering using `prefix` and `postfix`.
+
     :param folderpath: The (relative or absolute) path of the folders containing the measurement series.
 
-    :param numbered: If True, the files are numbered and the file number will be read and used at the file_number axis.
+    :param numbered: If True, the file names contain numbers, which will be read and used at the file_number axis.
             In this case, the filename part between `prefix` and `postfix` must be castable to an integer.
             If false: The files will be taken in alphabetical order and the file_number axis will start at 0.
     :type numbered: bool
@@ -236,7 +240,7 @@ def image_series(folderpath, numbered=False,
     # Inspect the given folder for the image files:
     numbered_files = {}
     i = 0
-    for filename in filter(is_image_file, os.listdir(folderpath)):
+    for filename in filter(is_image_file, sorted(os.listdir(folderpath))):
         # Strip extension, prefix, postfix:
         timestring = os.path.splitext(filename)[0]
         if timestring.startswith(prefix):
