@@ -30,6 +30,13 @@ def strs_in_path(path, strings):
             return True
     return False
 
+def check_min_max(curr_min, curr_max, val):
+    if curr_min is None or curr_min > val:
+        curr_min = val
+    if curr_max is None or curr_max < val:
+        curr_max = val
+    return curr_min, curr_max
+
 
 def gen_all_files_of_pathtree(folderpath, filesuffixes, ignores = None):
     """
@@ -43,7 +50,6 @@ def gen_all_files_of_pathtree(folderpath, filesuffixes, ignores = None):
 
     :return: Generator for all filepaths found
 
-    ToDo: Testing!
     """
     if ignores is None:
         ignores = []
@@ -59,7 +65,6 @@ def gen_all_tiff_of_pathtree(folderpath):
 
     :return: Generator for all filepaths found
 
-    Todo: Testing!
     """
     return gen_all_files_of_pathtree(folderpath, [".tiff", ".tif"])
 
@@ -72,7 +77,6 @@ def gen_all_non_tr_tiff(folderpath):
 
     :return: Generator for all filepaths found
 
-    Todo: Testing!
     """
 
     return gen_all_files_of_pathtree(folderpath, [".tiff", ".tif"], ignores=["tr", "TR", "Tr"])
@@ -99,7 +103,6 @@ def ch7_read_tiff_info(filepath):
         "(modulo): (\d+)"
     ]
 
-    print(filepath)
     info_dict = {}
 
     with open(filepath) as file:
@@ -130,7 +133,7 @@ def ch7_dld_read(filepath, h5target=None):
     fileparent = os.path.abspath(os.path.join(filepath, os.pardir))
 
     # Get Metadata from file_info.txt
-    infopath = Path(fileparent , Path(filebase).stem + "_info.txt")
+    infopath = Path(fileparent, Path(filebase).stem + "_info.txt")
     print(infopath)
     meta_dict = ch7_read_tiff_info(infopath)
 
@@ -213,8 +216,9 @@ def ch7_dld_read_all_static_to_dest_with_structure(folderpath, destination):
 def ch7_read_tr_folder(folderpath, detector="dld_ch7", pattern="ch7tr", scanunit="fs",
                        scanaxislabel="delay", scanaxispl=None, h5target=True, chunks=True):
     """
-    The base method for importing terra scan folders. Covers all scan possibilities, so far only in 1D scans. Will dig
-    for tiff files, so ensure that online one measurement is contained in folderpath.
+    Method to read Chamber 7's time resolved measurements. Will dig for tiff files, so ensure that online one
+    measurement is contained in folderpath. Will try to isolate cycles (In the most cruel way, may it bring as much pain
+    while reading as it did while writing)
 
     :param str folderpath: The path of the folder containing the scan data. Example: "/path/to/measurement/1. Durchlauf"
 
@@ -248,10 +252,9 @@ def ch7_read_tr_folder(folderpath, detector="dld_ch7", pattern="ch7tr", scanunit
         Chunking can be turned off by giving `False` (not recommended).
     :type chunks: tuple *of* ints **or** bool
 
-    :return: Imported DataSet.
-    :rtype: DataSet
+    :return: List of Imported DataSets.
+    :rtype: List[DataSet]
 
-    ToDo: Testing!
     """
     assert detector in ["dld_ch7"], "Invalid detector mode."
     if scanaxispl is None:
@@ -260,138 +263,165 @@ def ch7_read_tr_folder(folderpath, detector="dld_ch7", pattern="ch7tr", scanunit
     # Compile regex for file detection:
 
     if pattern == "ch7tr":
-        pat = re.compile("\d{3}_\d{4}_(.+?)_.+tif")
+        pat = re.compile("(\d{3})_(\d{4})_(.+?)_.+tif")
     else:
         raise Exception("Invalid pattern")
 
     # Translate input path to absolute path:
     folderpath = os.path.abspath(folderpath)
 
-    # Inspect the given folder for time step files:
-    scanfiles = {}
+    # Inspect the given folder for time step files and check for max and min scanstep to slice runs:
+    scannedfiles = {}
+    scanstep_max = None
+    scanstep_min = None
+
     for filename in gen_all_tiff_of_pathtree(folderpath):
         found = re.search(pat, str(filename))
         if found:
-            scanstep = float(found.group(1))
-            scanfiles[scanstep] = filename
+            scanindex = int(found.group(2))
+            scanstep = int(found.group(3))
+            scanstep_min, scanstep_max = check_min_max(scanstep_min, scanstep_max, scanstep)
+            scannedfiles[scanindex] = {'filename': filename, 'scanstep': scanstep}
 
-    # Generate delay axis:
-    axlist = []
-    for scanstep in iter(sorted(scanfiles.keys())):
-        axlist.append(scanstep)
-    scanvalues = u.to_ureg(np.array(axlist), scanunit)
+    # Check for multiple runs and split them
+    min_or_max_index = [i for i in range(len(scannedfiles))
+                        if scannedfiles[i]['scanstep'] == scanstep_min or scannedfiles[i]['scanstep'] == scanstep_max]
 
-    scanaxis = snomtools.data.datasets.Axis(scanvalues, label=scanaxislabel, plotlabel=scanaxispl)
+    if min_or_max_index[0] is not 0:
+        min_or_max_index.insert(0, 0)
+    if min_or_max_index[-1] is not len(scannedfiles):
+        min_or_max_index.insert(-1, len(scannedfiles) - 1)
 
-    # Test data size:
-    if detector == "dld_ch7":
-        sample_data = ch7_dld_read(os.path.join(folderpath, scanfiles[list(scanfiles.keys())[0]]))
-    else:
-        raise NotImplementedError("Invalid Detector Mode.")
-    axlist = [scanaxis] + sample_data.axes
-    newshape = scanaxis.shape + sample_data.shape
+    scanstep_filename_dicts_list = [{scannedfiles[i]['scanstep']:scannedfiles[i]['filename']
+                      for i in range(min_or_max_index[m], min_or_max_index[m+1], 1)}
+                      for m in range(0, len(min_or_max_index), 2)]
 
-    # Build the data-structure that the loaded data gets filled into
-    if h5target:
-        compression = 'gzip'
-        compression_opts = 4
+    #Create Datasets by iteration over runs/dicts in scanstep_filename_dicts_list
+    dataset_list = []
 
-        # Handle chunking and optimize buffer size:
-        if chunks is True:  # Default is auto chunk alignment, so we need to probe.
-            max_available_cache = psutil.virtual_memory().available * 0.7  # 70 % of available memory
-            if MAX_CACHE_SIZE:
-                max_available_cache = min(max_available_cache, MAX_CACHE_SIZE)  # Stay below hardcoded debug limit.
-            use_chunk_size = probe_chunksize(shape=newshape, compression=compression, compression_opts=compression_opts)
-            use_cache_size = buffer_needed(newshape, (0,), use_chunk_size, dtype=np.float32)
-            while use_cache_size > max_available_cache:
-                if verbose:
-                    print("Warning: Chunk alignment {0} to large for available cache.".format(use_chunk_size))
-                # Reduce chunk scan chunk size by half:
-                use_chunk_size = (use_chunk_size[0] // 2,) + use_chunk_size[1:]
-                # Note: It looks tempting to do something like this to keep overall chunk size constant:
-                # ndims = len(use_chunk_size[1:])
-                # use_chunk_size = (use_chunk_size[0] // 2,) + tuple(
-                #     int(n * (2 ** (1 / ndims))) for n in use_chunk_size[1:])
-                # This is NOT better, because of overhang (length % chunksize) which can exceed buffer!
-                # I'll not do an advanced search for optimal values for constant size,
-                # because the chunk size should still be reasonable down to 1/16 MB or so.
-                # MH, 2020-04-16
-                if use_chunk_size[0] < 1:  # Avoid edge case 0
-                    use_chunk_size = (1,) + use_chunk_size[1:]
-                    print("Warning: Cannot reduce chunk size to fit into available buffer. Readin might be slow!")
-                    use_cache_size = buffer_needed(newshape, (0,), use_chunk_size, dtype=np.float32)
-                    break
-                if verbose:
-                    print("Using half chunk size along scan direction: {0}".format(use_chunk_size))
-                use_cache_size = buffer_needed(newshape, (0,), use_chunk_size, dtype=np.float32)
-        elif chunks:  # Chunk size is explicitly set:
-            use_chunk_size = chunks
-            use_cache_size = buffer_needed(newshape, (0,), use_chunk_size, dtype=np.float32)
-        else:  # Chunked storage is turned off:
-            use_chunk_size = False
-            use_cache_size = None
+    for n, cycle in enumerate(scanstep_filename_dicts_list):
+        # Generate delay axis:
+        axlist = []
+        for scanstep in iter(sorted(cycle.keys())):
+            axlist.append(scanstep)
+        scanvalues = u.to_ureg(np.array(axlist), scanunit)
 
-        # Initialize full DataSet with zeroes:
-        dataspace = snomtools.data.datasets.Data_Handler_H5(unit=sample_data.get_datafield(0).get_unit(),
-                                                            shape=newshape, chunks=use_chunk_size,
-                                                            compression=compression, compression_opts=compression_opts,
-                                                            chunk_cache_mem_size=use_cache_size,
-                                                            dtype=np.float32)
-        dataarray = snomtools.data.datasets.DataArray(dataspace,
-                                                      label=sample_data.get_datafield(0).get_label(),
-                                                      plotlabel=sample_data.get_datafield(0).get_plotlabel(),
-                                                      h5target=dataspace.h5target,
-                                                      chunks=use_chunk_size,
-                                                      compression=compression, compression_opts=compression_opts,
-                                                      chunk_cache_mem_size=use_cache_size)
-        dataset = snomtools.data.datasets.DataSet("TR Scan " + folderpath, [dataarray], axlist, h5target=h5target,
-                                                  chunk_cache_mem_size=use_cache_size)
-    else:
-        # In-memory data processing without h5 files.
-        dataspace = u.to_ureg(np.zeros(newshape, dtype=np.float32), sample_data.datafields[0].get_unit())
-        dataarray = snomtools.data.datasets.DataArray(dataspace,
-                                                      label=sample_data.get_datafield(0).get_label(),
-                                                      plotlabel=sample_data.get_datafield(0).get_plotlabel(),
-                                                      h5target=None)
-        dataset = snomtools.data.datasets.DataSet("Terra Scan " + folderpath, [dataarray], axlist, h5target=h5target)
+        scanaxis = snomtools.data.datasets.Axis(scanvalues, label=scanaxislabel, plotlabel=scanaxispl)
 
-    dataarray = dataset.get_datafield(0)
-
-    # Fill in data from imported tiffs:
-    slicebase = tuple([np.s_[:] for j in range(len(sample_data.shape))])
-
-    if verbose:
-        import time
-        print("Reading Terra Scan Folder of shape: ", dataset.shape)
-        if h5target:
-            print("... generating chunks of shape: ", dataset.get_datafield(0).data.ds_data.chunks)
-            if dataset.own_h5file:
-                print("... using cache size {0:d} MB".format(dataset.h5target.get_chunk_cache_mem_size() // 1024 ** 2))
-        else:
-            print("... in memory")
-        start_time = time.time()
-
-    for i, scanstep in zip(list(range(len(scanfiles))), iter(sorted(scanfiles.keys()))):
-        islice = (i,) + slicebase
-        # Import tiff:
+        # Test data size:
         if detector == "dld_ch7":
-            idata = ch7_dld_read(os.path.join(folderpath, scanfiles[scanstep]))
+            sample_data = ch7_dld_read(os.path.join(folderpath, cycle[list(cycle.keys())[0]]))
         else:
             raise NotImplementedError("Invalid Detector Mode.")
-        # Check data consistency:
-        assert idata.shape == sample_data.shape, "Trying to combine scan data with different shape."
-        for ax1, ax2 in zip(idata.axes, sample_data.axes):
-            assert ax1.units == ax2.units, "Trying to combine scan data with different axis dimensionality."
-        assert idata.get_datafield(0).units == sample_data.get_datafield(0).units, \
-            "Trying to combine scan data with different data dimensionality."
-        # Write data:
-        dataarray[islice] = idata.get_datafield(0).data
-        if verbose:
-            tpf = ((time.time() - start_time) / float(i + 1))
-            etr = tpf * (dataset.shape[0] - i + 1)
-            print("tiff {0:d} / {1:d}, Time/File {3:.2f}s ETR: {2:.1f}s".format(i, dataset.shape[0], etr, tpf))
+        axlist = [scanaxis] + sample_data.axes
+        newshape = scanaxis.shape + sample_data.shape
 
-    return dataset
+        # Build the data-structure that the loaded data gets filled into
+        if h5target:
+            if len(scanstep_filename_dicts_list) > 1:
+                h5target = Path(h5target.with_stem(h5target.stem + str(n)))
+            compression = 'gzip'
+            compression_opts = 4
+
+            # Handle chunking and optimize buffer size:
+            if chunks is True:  # Default is auto chunk alignment, so we need to probe.
+                max_available_cache = psutil.virtual_memory().available * 0.7  # 70 % of available memory
+                if MAX_CACHE_SIZE:
+                    max_available_cache = min(max_available_cache, MAX_CACHE_SIZE)  # Stay below hardcoded debug limit.
+                use_chunk_size = probe_chunksize(shape=newshape, compression=compression, compression_opts=compression_opts)
+                use_cache_size = buffer_needed(newshape, (0,), use_chunk_size, dtype=np.float32)
+                while use_cache_size > max_available_cache:
+                    if verbose:
+                        print("Warning: Chunk alignment {0} to large for available cache.".format(use_chunk_size))
+                    # Reduce chunk scan chunk size by half:
+                    use_chunk_size = (use_chunk_size[0] // 2,) + use_chunk_size[1:]
+                    # Note: It looks tempting to do something like this to keep overall chunk size constant:
+                    # ndims = len(use_chunk_size[1:])
+                    # use_chunk_size = (use_chunk_size[0] // 2,) + tuple(
+                    #     int(n * (2 ** (1 / ndims))) for n in use_chunk_size[1:])
+                    # This is NOT better, because of overhang (length % chunksize) which can exceed buffer!
+                    # I'll not do an advanced search for optimal values for constant size,
+                    # because the chunk size should still be reasonable down to 1/16 MB or so.
+                    # MH, 2020-04-16
+                    if use_chunk_size[0] < 1:  # Avoid edge case 0
+                        use_chunk_size = (1,) + use_chunk_size[1:]
+                        print("Warning: Cannot reduce chunk size to fit into available buffer. Readin might be slow!")
+                        use_cache_size = buffer_needed(newshape, (0,), use_chunk_size, dtype=np.float32)
+                        break
+                    if verbose:
+                        print("Using half chunk size along scan direction: {0}".format(use_chunk_size))
+                    use_cache_size = buffer_needed(newshape, (0,), use_chunk_size, dtype=np.float32)
+            elif chunks:  # Chunk size is explicitly set:
+                use_chunk_size = chunks
+                use_cache_size = buffer_needed(newshape, (0,), use_chunk_size, dtype=np.float32)
+            else:  # Chunked storage is turned off:
+                use_chunk_size = False
+                use_cache_size = None
+
+            # Initialize full DataSet with zeroes:
+            dataspace = snomtools.data.datasets.Data_Handler_H5(unit=sample_data.get_datafield(0).get_unit(),
+                                                                shape=newshape, chunks=use_chunk_size,
+                                                                compression=compression, compression_opts=compression_opts,
+                                                                chunk_cache_mem_size=use_cache_size,
+                                                                dtype=np.float32)
+            dataarray = snomtools.data.datasets.DataArray(dataspace,
+                                                          label=sample_data.get_datafield(0).get_label(),
+                                                          plotlabel=sample_data.get_datafield(0).get_plotlabel(),
+                                                          h5target=dataspace.h5target,
+                                                          chunks=use_chunk_size,
+                                                          compression=compression, compression_opts=compression_opts,
+                                                          chunk_cache_mem_size=use_cache_size)
+            dataset = snomtools.data.datasets.DataSet("TR Scan " + folderpath, [dataarray], axlist, h5target=h5target,
+                                                      chunk_cache_mem_size=use_cache_size)
+            dataset_list.append(dataset)
+
+        else:
+            # In-memory data processing without h5 files.
+            dataspace = u.to_ureg(np.zeros(newshape, dtype=np.float32), sample_data.datafields[0].get_unit())
+            dataarray = snomtools.data.datasets.DataArray(dataspace,
+                                                          label=sample_data.get_datafield(0).get_label(),
+                                                          plotlabel=sample_data.get_datafield(0).get_plotlabel(),
+                                                          h5target=None)
+            dataset = snomtools.data.datasets.DataSet("Terra Scan " + folderpath, [dataarray], axlist, h5target=h5target)
+            dataset_list.append(dataset)
+
+        dataarray = dataset.get_datafield(0)
+
+        # Fill in data from imported tiffs:
+        slicebase = tuple([np.s_[:] for j in range(len(sample_data.shape))])
+
+        if verbose:
+            import time
+            print("Reading Terra Scan Folder of shape: ", dataset.shape)
+            if h5target:
+                print("... generating chunks of shape: ", dataset.get_datafield(0).data.ds_data.chunks)
+                if dataset.own_h5file:
+                    print("... using cache size {0:d} MB".format(dataset.h5target.get_chunk_cache_mem_size() // 1024 ** 2))
+            else:
+                print("... in memory")
+            start_time = time.time()
+
+        for i, scanstep in zip(list(range(len(cycle))), iter(sorted(cycle.keys()))):
+            islice = (i,) + slicebase
+            # Import tiff:
+            if detector == "dld_ch7":
+                idata = ch7_dld_read(os.path.join(folderpath, cycle[scanstep]))
+            else:
+                raise NotImplementedError("Invalid Detector Mode.")
+            # Check data consistency:
+            assert idata.shape == sample_data.shape, "Trying to combine scan data with different shape."
+            for ax1, ax2 in zip(idata.axes, sample_data.axes):
+                assert ax1.units == ax2.units, "Trying to combine scan data with different axis dimensionality."
+            assert idata.get_datafield(0).units == sample_data.get_datafield(0).units, \
+                "Trying to combine scan data with different data dimensionality."
+            # Write data:
+            dataarray[islice] = idata.get_datafield(0).data
+            if verbose:
+                tpf = ((time.time() - start_time) / float(i + 1))
+                etr = tpf * (dataset.shape[0] - i + 1)
+                print("tiff {0:d} / {1:d}, Time/File {3:.2f}s ETR: {2:.1f}s".format(i, dataset.shape[0], etr, tpf))
+
+    return dataset_list
 
 if __name__ == "__main__":
     read_test_path = r"E:\Uni\Aeschliwi\Data"
