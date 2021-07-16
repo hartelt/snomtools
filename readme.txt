@@ -24,6 +24,7 @@ The package was originally written in Python 2 and was adapted to Python 3.
 Python 2 is supported through the use of the future module, but full support is not prioritized in the further development, especially since the End-of-Life of Python 2 in 2020.
 32 bit versions of Python work, but especially for large data and on Windows, out-of-memory problems may occur.
 
+Before installation, make sure that pip and git are installed on your system and usable from the command line.
 To install, run:
     >>> pip install -r requirements.txt
     >>> python setup.py develop --user
