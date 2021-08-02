@@ -30,6 +30,7 @@ def strs_in_path(path, strings):
             return True
     return False
 
+
 def check_min_max(curr_min, curr_max, val):
     if curr_min is None or curr_min > val:
         curr_min = val
@@ -279,7 +280,7 @@ def ch7_read_tr_folder(folderpath, detector="dld_ch7", pattern="ch7tr", scanunit
         found = re.search(pat, str(filename))
         if found:
             scanindex = int(found.group(2))
-            scanstep = int(found.group(3))
+            scanstep = float(found.group(3))
             scanstep_min, scanstep_max = check_min_max(scanstep_min, scanstep_max, scanstep)
             scannedfiles[scanindex] = {'filename': filename, 'scanstep': scanstep}
 
@@ -287,14 +288,16 @@ def ch7_read_tr_folder(folderpath, detector="dld_ch7", pattern="ch7tr", scanunit
     min_or_max_index = [i for i in range(len(scannedfiles))
                         if scannedfiles[i]['scanstep'] == scanstep_min or scannedfiles[i]['scanstep'] == scanstep_max]
 
-    if min_or_max_index[0] is not 0:
+    if min_or_max_index[0] != 0:
         min_or_max_index.insert(0, 0)
-    if min_or_max_index[-1] is not len(scannedfiles):
+    if min_or_max_index[-1] != len(scannedfiles) - 1:
         min_or_max_index.insert(-1, len(scannedfiles) - 1)
 
     scanstep_filename_dicts_list = [{scannedfiles[i]['scanstep']:scannedfiles[i]['filename']
                       for i in range(min_or_max_index[m], min_or_max_index[m+1], 1)}
-                      for m in range(0, len(min_or_max_index), 2)]
+                      for m in range(0, len(min_or_max_index)-1, 2)]
+
+    print(min_or_max_index)
 
     #Create Datasets by iteration over runs/dicts in scanstep_filename_dicts_list
     dataset_list = []
@@ -318,8 +321,6 @@ def ch7_read_tr_folder(folderpath, detector="dld_ch7", pattern="ch7tr", scanunit
 
         # Build the data-structure that the loaded data gets filled into
         if h5target:
-            if len(scanstep_filename_dicts_list) > 1:
-                h5target = Path(h5target.with_stem(h5target.stem + str(n)))
             compression = 'gzip'
             compression_opts = 4
 
@@ -424,11 +425,14 @@ def ch7_read_tr_folder(folderpath, detector="dld_ch7", pattern="ch7tr", scanunit
     return dataset_list
 
 if __name__ == "__main__":
-    read_test_path = r"E:\Uni\Aeschliwi\Data"
-    tr_test_path = r"E:\Uni\Aeschliwi\Data\Tr-test-measurement_Au111CoT4PT_oldSample"
-    test_hdf = r"E:\Uni\Aeschliwi\Data\test.hdf5"
+    tr_test_path = r"Z:\PEEM_c7\2021\20210417_Au111_1h50minCo\time-resolved"
+    h5target = r"E:\Uni\Aeschliwi\test_tr_multiple_cycle.hdf5"
 
-    ch7_read_tr_folder(tr_test_path, h5target=test_hdf)
-    ch7_dld_read_all_static(read_test_path)
+    datasets = ch7_read_tr_folder(tr_test_path)
+
+    for n,dataset in enumerate(datasets):
+        h5target = Path(h5target)
+        h5target = str(h5target.with_stem(h5target.stem + str(n)))
+        dataset.saveh5(h5dest=h5target)
 
     print("done")
