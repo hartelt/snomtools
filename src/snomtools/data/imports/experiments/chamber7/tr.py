@@ -1,6 +1,5 @@
 """Imports time-resolved measurements at Chamber 7."""
 
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -39,7 +38,7 @@ def check_min_max(curr_min, curr_max, val):
     return curr_min, curr_max
 
 
-def gen_all_files_of_pathtree(folderpath, filesuffixes, ignores = None):
+def gen_all_files_of_pathtree(folderpath, filesuffixes, ignores=None):
     """
     Returns a generator that yields the Path to all files with types passed in filesuffixes recursively
 
@@ -160,7 +159,6 @@ def ch7_dld_read(filepath, h5target=None):
     taxis = snomtools.data.datasets.Axis([T + i * Tbin for i in range(indata.shape[0])], label='channel',
                                          plotlabel='Time Channel')
 
-
     # Careful about orientation! This is like a matrix:
     # rows go first and are numbered in vertical direction -> Y
     # columns go last and are numbered in horizontal direction -> X
@@ -236,7 +234,8 @@ def ch7_read_tr_folder(folderpath, detector="dld_ch7", pattern="ch7tr", scanunit
 
     :param str scanaxispl: A plot label for the axis of the scan.
 
-    :param h5target: The HDF5 target to write to.
+    :param h5target: The HDF5 target to write to. Given a basename, a "_run#" is added.
+        #TODO: This is very hacky, change it to something better!
     :type h5target: str **or** h5py.Group **or** True (the default), *optional*
 
     .. warning::
@@ -293,16 +292,31 @@ def ch7_read_tr_folder(folderpath, detector="dld_ch7", pattern="ch7tr", scanunit
     if min_or_max_index[-1] != len(scannedfiles) - 1:
         min_or_max_index.insert(-1, len(scannedfiles) - 1)
 
-    scanstep_filename_dicts_list = [{scannedfiles[i]['scanstep']:scannedfiles[i]['filename']
-                      for i in range(min_or_max_index[m], min_or_max_index[m+1], 1)}
-                      for m in range(0, len(min_or_max_index)-1, 2)]
+    scanstep_filename_dicts_list = [{scannedfiles[i]['scanstep']: scannedfiles[i]['filename']
+                                     for i in range(min_or_max_index[m], min_or_max_index[m + 1], 1)}
+                                    for m in range(0, len(min_or_max_index) - 1, 2)]
 
-    print(min_or_max_index)
+    if verbose:
+        print("Min and Max indices of detected runs:")
+        print(min_or_max_index)
 
-    #Create Datasets by iteration over runs/dicts in scanstep_filename_dicts_list
+    # Create Datasets by iteration over runs/dicts in scanstep_filename_dicts_list
     dataset_list = []
 
     for n, cycle in enumerate(scanstep_filename_dicts_list):
+        # Generate H5 File name for Run:
+        if isinstance(h5target, str):
+            if h5target.endswith(".hdf5"):
+                run_h5target = h5target.replace(".hdf5", "_run{0}.hdf5".format(cycle))
+            elif h5target.endswith(".h5"):
+                run_h5target = h5target.replace(".h5", "_run{0}.h5".format(cycle))
+            else:
+                run_h5target = h5target + "_run{0}.hdf5".format(cycle)
+        elif h5target is True:
+            run_h5target = True
+        else:
+            run_h5target = None
+
         # Generate delay axis:
         axlist = []
         for scanstep in iter(sorted(cycle.keys())):
@@ -320,7 +334,7 @@ def ch7_read_tr_folder(folderpath, detector="dld_ch7", pattern="ch7tr", scanunit
         newshape = scanaxis.shape + sample_data.shape
 
         # Build the data-structure that the loaded data gets filled into
-        if h5target:
+        if run_h5target:
             compression = 'gzip'
             compression_opts = 4
 
@@ -329,7 +343,8 @@ def ch7_read_tr_folder(folderpath, detector="dld_ch7", pattern="ch7tr", scanunit
                 max_available_cache = psutil.virtual_memory().available * 0.7  # 70 % of available memory
                 if MAX_CACHE_SIZE:
                     max_available_cache = min(max_available_cache, MAX_CACHE_SIZE)  # Stay below hardcoded debug limit.
-                use_chunk_size = probe_chunksize(shape=newshape, compression=compression, compression_opts=compression_opts)
+                use_chunk_size = probe_chunksize(shape=newshape, compression=compression,
+                                                 compression_opts=compression_opts)
                 use_cache_size = buffer_needed(newshape, (0,), use_chunk_size, dtype=np.float32)
                 while use_cache_size > max_available_cache:
                     if verbose:
@@ -362,7 +377,8 @@ def ch7_read_tr_folder(folderpath, detector="dld_ch7", pattern="ch7tr", scanunit
             # Initialize full DataSet with zeroes:
             dataspace = snomtools.data.datasets.Data_Handler_H5(unit=sample_data.get_datafield(0).get_unit(),
                                                                 shape=newshape, chunks=use_chunk_size,
-                                                                compression=compression, compression_opts=compression_opts,
+                                                                compression=compression,
+                                                                compression_opts=compression_opts,
                                                                 chunk_cache_mem_size=use_cache_size,
                                                                 dtype=np.float32)
             dataarray = snomtools.data.datasets.DataArray(dataspace,
@@ -372,7 +388,8 @@ def ch7_read_tr_folder(folderpath, detector="dld_ch7", pattern="ch7tr", scanunit
                                                           chunks=use_chunk_size,
                                                           compression=compression, compression_opts=compression_opts,
                                                           chunk_cache_mem_size=use_cache_size)
-            dataset = snomtools.data.datasets.DataSet("TR Scan " + folderpath, [dataarray], axlist, h5target=h5target,
+            dataset = snomtools.data.datasets.DataSet("TR Scan " + folderpath, [dataarray], axlist,
+                                                      h5target=run_h5target,
                                                       chunk_cache_mem_size=use_cache_size)
             dataset_list.append(dataset)
 
@@ -383,7 +400,8 @@ def ch7_read_tr_folder(folderpath, detector="dld_ch7", pattern="ch7tr", scanunit
                                                           label=sample_data.get_datafield(0).get_label(),
                                                           plotlabel=sample_data.get_datafield(0).get_plotlabel(),
                                                           h5target=None)
-            dataset = snomtools.data.datasets.DataSet("Terra Scan " + folderpath, [dataarray], axlist, h5target=h5target)
+            dataset = snomtools.data.datasets.DataSet("Terra Scan " + folderpath, [dataarray], axlist,
+                                                      h5target=run_h5target)
             dataset_list.append(dataset)
 
         dataarray = dataset.get_datafield(0)
@@ -394,10 +412,11 @@ def ch7_read_tr_folder(folderpath, detector="dld_ch7", pattern="ch7tr", scanunit
         if verbose:
             import time
             print("Reading Terra Scan Folder of shape: ", dataset.shape)
-            if h5target:
+            if run_h5target:
                 print("... generating chunks of shape: ", dataset.get_datafield(0).data.ds_data.chunks)
                 if dataset.own_h5file:
-                    print("... using cache size {0:d} MB".format(dataset.h5target.get_chunk_cache_mem_size() // 1024 ** 2))
+                    print("... using cache size {0:d} MB".format(
+                        dataset.h5target.get_chunk_cache_mem_size() // 1024 ** 2))
             else:
                 print("... in memory")
             start_time = time.time()
@@ -424,13 +443,14 @@ def ch7_read_tr_folder(folderpath, detector="dld_ch7", pattern="ch7tr", scanunit
 
     return dataset_list
 
+
 if __name__ == "__main__":
     tr_test_path = r"Z:\PEEM_c7\2021\20210417_Au111_1h50minCo\time-resolved"
     h5target = r"E:\Uni\Aeschliwi\test_tr_multiple_cycle.hdf5"
 
     datasets = ch7_read_tr_folder(tr_test_path)
 
-    for n,dataset in enumerate(datasets):
+    for n, dataset in enumerate(datasets):
         h5target = Path(h5target)
         h5target = str(h5target.with_stem(h5target.stem + str(n)))
         dataset.saveh5(h5dest=h5target)
