@@ -346,6 +346,7 @@ def gpuOBE_ACBlauCoPolTest(Delaylist, tau, laserWavelength, laserFWHM, buffersiz
     G3 = 1. / T3
 
     IAC = np.zeros(gpuOBE_buffersize, dtype=np.float64)
+    # The density matrix time evolution will be calculated from - to + this time in fs:
     t_min = gpuOBE_simOverhead * max(abs(Delaylist))
 
     simOBErb = mod.get_function("simOBEcudaCoPolTest")

@@ -2,8 +2,8 @@
 #define CUDART_PI_F 3.141592654f
 
 __device__ void stepOBE (double* dxdy, const double* rho, const double laser, const double w, const double w2, const double g12, const double g13, const double g23, const double g22)
+// This is some kind of differential step of the time evolution of the density matrix, as govered by the OBEs.
 {
-
     //12R
     dxdy[0] = -laser*rho[3] - w*rho[1] - g12*rho[0];
     //12I
@@ -31,6 +31,12 @@ __global__ void simOBEcudaCoPolTest (double* AC, const double* Delaylist, const 
 {
     int idx = blockIdx.x*blockDim.x + threadIdx.x; // Unique index
 
+    // This is increadibly bad because it does not correspond to the correct physical definitions, but it encodes the lifetime assumptions:
+    // G1 corresponds to T2* for the polarizations with 1, rho12 and rho13 (usually something short like 1fs)
+    // G2 corresponds to T1 of the intermediate state, the fit parameter.
+    // G3 corresponds to T1 of the final state, usually infinity.
+    // T2* of rho23 is implicitly set as infinity.
+    // T1 of rho11 is implicitly set as infinity.
     //double g11 = 2*G1;
     //double g12 = G1;
     double g12 = G1 + G2;
@@ -40,8 +46,9 @@ __global__ void simOBEcudaCoPolTest (double* AC, const double* Delaylist, const 
 
     const double w2 = 2*w;
 
+    // Number of time steps to simulate, -tmin to +tmin divided by the time step of 0.1fs
     int n = round(2*t_min/0.1);
-
+    // Simulation time step, basically the 0.1fs from above +- float precision...
     double delta_t = 2*t_min/n;
 
     double delay = Delaylist[idx];
@@ -67,10 +74,14 @@ __global__ void simOBEcudaCoPolTest (double* AC, const double* Delaylist, const 
     {
 
         time = i*delta_t;
+        // No idea what the prefactors mean, but the cosine brackets are the electric field of the two pulses:
         laser = 0.5 * 0.0012 / CUDART_PI_F * 2 * ( cos(w*(time-t_min)) / cosh(-(time-t_min)/(FWHM)) + cos(w*(time-t_min+delay)) / cosh(-(time-t_min+delay)/(FWHM)) );
+        // ...and half a time step later:
         laser1 = 0.5 * 0.0012 / CUDART_PI_F * 2 * ( cos(w*(time+hh-t_min)) / cosh(-(time+hh-t_min)/(FWHM)) + cos(w*(time+hh-t_min+delay)) / cosh(-(time+hh-t_min+delay)/(FWHM)) );
+        // ...and a full time step later:
         laser2 = 0.5 * 0.0012 / CUDART_PI_F * 2 * ( cos(w*(time+h-t_min)) / cosh(-(time+h-t_min)/(FWHM)) + cos(w*(time+h-t_min+delay)) / cosh(-(time+h-t_min+delay)/(FWHM)) );
 
+        // This must be the Runge-Kutta magic for the differential time evolution:
         stepOBE(k1, rho, laser, w, w2, g12, g13, g23, g22);
         for(int i = 0; i<9; i++) tmp[i] = rho[i] + hh * k1[i];
         stepOBE(k2, tmp, laser1, w, w2, g12, g13, g23, g22);
@@ -79,6 +90,7 @@ __global__ void simOBEcudaCoPolTest (double* AC, const double* Delaylist, const 
         for(int i = 0; i<9; i++) tmp[i] = rho[i] + h * k3[i];
         stepOBE(k4, tmp, laser2, w, w2, g12, g13, g23, g22);
 
+        // Add the different magic terms to the density matrix, weighted somehow. Since they seem to be rates, multiplied by the time step h.
         for(int j=0; j<9; j++)
         {
             rho[j] = rho[j] + h/6 * (k1[j] + k4[j] + 2*(k2[j] + k3[j]));
