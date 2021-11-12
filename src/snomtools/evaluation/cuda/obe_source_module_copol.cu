@@ -81,7 +81,9 @@ __global__ void simOBEcudaCoPolTest (double* AC, const double* Delaylist, const 
         // ...and a full time step later:
         laser2 = 0.5 * 0.0012 / CUDART_PI_F * 2 * ( cos(w*(time+h-t_min)) / cosh(-(time+h-t_min)/(FWHM)) + cos(w*(time+h-t_min+delay)) / cosh(-(time+h-t_min+delay)/(FWHM)) );
 
-        // This must be the Runge-Kutta magic for the differential time evolution:
+        // These are the incremental terms for the RK4 Method (Runge-Kutta) for the differential time evolution.
+        // see: https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods
+        // or in german: https://de.wikipedia.org/wiki/Klassisches_Runge-Kutta-Verfahren
         stepOBE(k1, rho, laser, w, w2, g12, g13, g23, g22);
         for(int i = 0; i<9; i++) tmp[i] = rho[i] + hh * k1[i];
         stepOBE(k2, tmp, laser1, w, w2, g12, g13, g23, g22);
@@ -90,7 +92,7 @@ __global__ void simOBEcudaCoPolTest (double* AC, const double* Delaylist, const 
         for(int i = 0; i<9; i++) tmp[i] = rho[i] + h * k3[i];
         stepOBE(k4, tmp, laser2, w, w2, g12, g13, g23, g22);
 
-        // Add the different magic terms to the density matrix, weighted somehow. Since they seem to be rates, multiplied by the time step h.
+        // Add the incrementals to the density matrix:
         for(int j=0; j<9; j++)
         {
             rho[j] = rho[j] + h/6 * (k1[j] + k4[j] + 2*(k2[j] + k3[j]));
