@@ -779,13 +779,18 @@ class Data_Handler_H5(u.Quantity):
         for lineslice in self.iterlineslices():
             yield u.to_ureg(self.ds_data[lineslice], self._units)
 
-    def iterflatslices(self):
+    def iterflatslices(self, dims=None):
         """
         Iterator, which provides index tuples corresponding to a flat iteration over the array.
 
+        :param dims: Iterate only for the dimensions in dims. Full-slices [:] are given for all others.
+        :type dims: sequence of ints
+
         :return: Tuple of ints of length corresponding to the data dimensions.
         """
-        iterlist = [range(i) for i in self.shape]
+        if dims is None:
+            dims = list(range(len(self.shape)))
+        iterlist = [range(self.shape[i]) if i in dims else [np.s_[:]] for i in range(len(self.shape))]
         return itertools.product(*iterlist)
 
     def iterflat(self):
@@ -1585,13 +1590,18 @@ class Data_Handler_np(u.Quantity):
         for lineslice in self.iterlineslices():
             yield self[lineslice].q
 
-    def iterflatslices(self):
+    def iterflatslices(self, dims=None):
         """
         Iterator, which provides index tuples corresponding to a flat iteration over the array.
 
+        :param dims: Iterate only for the dimensions in dims. Full-slices [:] are given for all others.
+        :type dims: sequence of ints
+
         :return: Tuple of ints of length corresponding to the data dimensions.
         """
-        iterlist = [range(i) for i in self.shape]
+        if dims is None:
+            dims = list(range(len(self.shape)))
+        iterlist = [range(self.shape[i]) if i in dims else [np.s_[:]] for i in range(len(self.shape))]
         return itertools.product(*iterlist)
 
     def iterflat(self):
@@ -1862,6 +1872,38 @@ class DataArray(object):
         :return: The initialized DataArray.
         """
         return cls.from_h5(h5source, h5source)
+
+    @classmethod
+    def make_empty(cls, shape, unit=None, label=None, plotlabel=None,
+                   h5target=None,
+                   chunks=True,
+                   dtype=np.float32,
+                   compression='gzip', compression_opts=4,
+                   chunk_cache_mem_size=None):
+        """
+        Creates an empty DataArray from a given shape and unit.
+        """
+        if h5target:
+            dataspace = Data_Handler_H5(unit=unit,
+                                        shape=shape, chunks=chunks,
+                                        dtype=dtype,
+                                        compression=compression,
+                                        compression_opts=compression_opts,
+                                        chunk_cache_mem_size=chunk_cache_mem_size)
+            return cls(dataspace,
+                       label=label,
+                       plotlabel=plotlabel,
+                       h5target=h5target,
+                       chunks=chunks,
+                       compression=compression, compression_opts=compression_opts,
+                       chunk_cache_mem_size=chunk_cache_mem_size)
+        else:
+            dataspace = np.zeros(shape, dtype=dtype)
+            return cls(dataspace,
+                       unit=unit,
+                       label=label,
+                       plotlabel=plotlabel,
+                       h5target=None)
 
     def __getattr__(self, item):
         """
@@ -4271,7 +4313,7 @@ if __name__ == "__main__":  # just for testing
         print("Adding 5 arrays took {0:.2f} seconds".format(time.time() - start_time))
 
         if False:
-            bignumpy = numpy.zeros(shape=(1000, 1000, 1000), dtype=numpy.float32)
+            bignumpy = np.zeros(shape=(1000, 1000, 1000), dtype=np.float32)
             start_time = time.time()
             bignumpyplus = bignumpy + 1
             print("Numpy plus 1 took {0:.2f} seconds".format(time.time() - start_time))
