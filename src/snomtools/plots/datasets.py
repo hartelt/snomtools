@@ -19,7 +19,7 @@ __author__ = "Michael Hartelt"
 mplversion = version.parse(mplversion)
 
 
-def project_1d(data, plot_dest, axis_id=0, data_id=0, normalization=None, offset=None, **kwargs):
+def project_1d(data, plot_dest, axis_id=0, data_id=0, normalization=None, offset=None, flip_axes=False, **kwargs):
     """
     Plots a projection of the data onto one axis. Therefore, it sums the values over all the other axes.
 
@@ -91,11 +91,14 @@ def project_1d(data, plot_dest, axis_id=0, data_id=0, normalization=None, offset
     assert (plotdat.shape == ax.shape), "Plot data shapes don't match."
 
     # Plot and return the line object:
-    line, = plot_dest.plot(ax.get_data_raw(), plotdat.magnitude, **kwargs)
+    if flip_axes:
+        line, = plot_dest.plot(plotdat.magnitude, ax.get_data_raw(), **kwargs)
+    else:
+        line, = plot_dest.plot(ax.get_data_raw(), plotdat.magnitude, **kwargs)
     return line
 
 
-def project_2d(data, plot_dest, axis_vert=0, axis_hori=1, data_id=0, normalization=None, **kwargs):
+def project_2d(data, plot_dest, axis_vert=0, axis_hori=1, data_id=0, normalization=None, ignorenan=True, **kwargs):
     """
     Plots a projection of the data onto two axes as a pseudocolor 2d map. Therefore, it sums the values over all the
     other axes. Using the pcolor function for matplotlib ensures correct representation of data on nonlinear grids.
@@ -146,7 +149,7 @@ def project_2d(data, plot_dest, axis_vert=0, axis_hori=1, data_id=0, normalizati
     sumlist.remove(axv_index)
     sumlist.remove(axh_index)
     sumtup = tuple(sumlist)
-    dat = data.get_datafield(data_id).sum(sumtup, ignorenan=True)
+    dat = data.get_datafield(data_id).sum(sumtup, ignorenan=ignorenan)
     if axv_index > axh_index:  # transpose if axes are not in array-like order
         sumdat = dat.T
     else:

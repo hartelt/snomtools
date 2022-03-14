@@ -6,7 +6,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 import warnings
-import snomtools.data.datasets as datasets
+import snomtools.data.datasets as ds
 
 __author__ = 'hartelt'
 
@@ -36,7 +36,7 @@ def project_1d(data, axis_id=0, data_id=None, outlabel=None, normalization=None,
 
 	:return: A dataset instance with the projected data.
 	"""
-	assert isinstance(data, datasets.DataSet) or isinstance(data, datasets.ROI), \
+	assert isinstance(data, ds.DataSet) or isinstance(data, ds.ROI), \
 		"No dataset or ROI instance given to projection function."
 
 	if outlabel is None:
@@ -88,13 +88,13 @@ def project_1d(data, axis_id=0, data_id=None, outlabel=None, normalization=None,
 			normdat = sumdat
 			pl = "projected " + df.get_plotlabel()
 		if h5target:
-			outfield = datasets.DataArray(normdat, label=df.get_label(), plotlabel=pl, h5target=True)
+			outfield = ds.DataArray(normdat, label=df.get_label(), plotlabel=pl, h5target=True)
 		else:
-			outfield = datasets.DataArray(normdat, label=df.get_label(), plotlabel=pl)
+			outfield = ds.DataArray(normdat, label=df.get_label(), plotlabel=pl)
 
 		dfields.append(outfield)
 
-	return datasets.DataSet(outlabel, dfields, [ax], h5target=h5target)
+	return ds.DataSet(outlabel, dfields, [ax], h5target=h5target)
 
 
 def project_2d(data, axis1_id=0, axis2_id=0, data_id=None, outlabel=None, normalization=None, h5target=None,
@@ -125,7 +125,7 @@ def project_2d(data, axis1_id=0, axis2_id=0, data_id=None, outlabel=None, normal
 
 	:return: A dataset instance with the projected data.
 	"""
-	assert isinstance(data, datasets.DataSet) or isinstance(data, datasets.ROI), \
+	assert isinstance(data, ds.DataSet) or isinstance(data, ds.ROI), \
 		"No dataset or ROI instance given to projection function."
 
 	if outlabel is None:
@@ -186,9 +186,9 @@ def project_2d(data, axis1_id=0, axis2_id=0, data_id=None, outlabel=None, normal
 			normdat = sumdat
 			pl = "projected " + df.get_plotlabel()
 		if h5target:
-			outfield = datasets.DataArray(normdat, label=df.get_label(), plotlabel=pl, h5target=True)
+			outfield = ds.DataArray(normdat, label=df.get_label(), plotlabel=pl, h5target=True)
 		else:
-			outfield = datasets.DataArray(normdat, label=df.get_label(), plotlabel=pl)
+			outfield = ds.DataArray(normdat, label=df.get_label(), plotlabel=pl)
 		dfields.append(outfield)
 
-	return datasets.DataSet(outlabel, dfields, axes, h5target=h5target)
+	return ds.DataSet(outlabel, dfields, axes, h5target=h5target)
