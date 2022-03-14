@@ -9,7 +9,7 @@ from __future__ import division
 from __future__ import print_function
 import snomtools.data.datasets as ds
 import snomtools.calcs.units as u
-from snomtools.data.h5tools import probe_chunksize
+from snomtools.data.h5tools import probe_chunksize, buffer_needed
 import numpy as np
 import sys
 import os
@@ -120,15 +120,15 @@ def timelog_folder(folderpath, timeunit='s', timeunitlabel=None,
 			chunk_size = probe_chunksize(shape=newshape, compression=compression, compression_opts=compression_opts)
 		else:
 			chunk_size = chunks
-		min_cache_size = chunk_size[0] * np.prod(sample_data.shape) * 4  # 32bit floats require 4 bytes.
-		use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 64 MB just to be sure.
+		use_cache_size = buffer_needed(newshape, (0,), chunk_size, dtype=np.uint8)
 
 		# Initialize full DataSet with zeroes:
 		dataspace = ds.Data_Handler_H5(unit=sample_data.get_datafield(0).get_unit(),
 									   shape=newshape, chunks=chunks,
 									   compression=compression,
 									   compression_opts=compression_opts,
-									   chunk_cache_mem_size=use_cache_size)
+									   chunk_cache_mem_size=use_cache_size,
+									   dtype=np.uint8)
 		dataarray = ds.DataArray(dataspace,
 								 label=sample_data.get_datafield(0).get_label(),
 								 plotlabel=sample_data.get_datafield(0).get_plotlabel(),
@@ -140,12 +140,12 @@ def timelog_folder(folderpath, timeunit='s', timeunitlabel=None,
 							 chunk_cache_mem_size=use_cache_size)
 	else:
 		# In-memory data processing without h5 files.
-		dataspace = u.to_ureg(np.zeros(newshape), sample_data.datafields[0].get_unit())
+		dataspace = u.to_ureg(np.zeros(newshape, dtype=np.uint8), sample_data.datafields[0].get_unit())
 		dataarray = ds.DataArray(dataspace,
 								 label=sample_data.get_datafield(0).get_label(),
 								 plotlabel=sample_data.get_datafield(0).get_plotlabel(),
 								 h5target=None)
-		dataset = ds.DataSet("Powerlaw " + folderpath, [dataarray], axlist, h5target=h5target)
+		dataset = ds.DataSet("Time Log " + folderpath, [dataarray], axlist, h5target=h5target)
 	dataarray = dataset.get_datafield(0)
 
 	# ----------------------Fill dataset------------------------

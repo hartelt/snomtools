@@ -16,7 +16,7 @@ import warnings
 import sys
 import psutil
 import snomtools.calcs.units as u
-from snomtools.data.h5tools import probe_chunksize
+from snomtools.data.h5tools import probe_chunksize, buffer_needed
 
 __author__ = 'Michael Hartelt'
 
@@ -509,8 +509,7 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
             if MAX_CACHE_SIZE:
                 max_available_cache = min(max_available_cache, MAX_CACHE_SIZE)  # Stay below hardcoded debug limit.
             use_chunk_size = probe_chunksize(shape=newshape, compression=compression, compression_opts=compression_opts)
-            min_cache_size = use_chunk_size[0] * int(np.prod(sample_data.shape)) * 2  # 16bit = 2 bytes.
-            use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 128 MB just to be sure.
+            use_cache_size = buffer_needed(newshape, (0,), use_chunk_size, dtype=np.uint16)
             while use_cache_size > max_available_cache:
                 if verbose:
                     print("Warning: Chunk alignment {0} to large for available cache.".format(use_chunk_size))
@@ -527,17 +526,14 @@ def powerlaw_folder_peem_dld(folderpath, pattern="mW", powerunit=None, powerunit
                 if use_chunk_size[0] < 1:  # Avoid edge case 0
                     use_chunk_size = (1,) + use_chunk_size[1:]
                     print("Warning: Cannot reduce chunk size to fit into available buffer. Readin might be slow!")
-                    min_cache_size = use_chunk_size[0] * int(np.prod(sample_data.shape)) * 2  # 16bit = 2 bytes.
-                    use_cache_size = min_cache_size + 32 * 1024 ** 2  # Add 32 MB , overhang is small in this case.
+                    use_cache_size = buffer_needed(newshape, (0,), use_chunk_size, dtype=np.uint16)
                     break
                 if verbose:
                     print("Using half chunk size along scan direction: {0}".format(use_chunk_size))
-                min_cache_size = use_chunk_size[0] * int(np.prod(sample_data.shape)) * 2  # 16bit = 2 bytes.
-                use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 128 MB just to be sure.
+                use_cache_size = buffer_needed(newshape, (0,), use_chunk_size, dtype=np.uint16)
         elif chunks:  # Chunk size is explicitly set:
             use_chunk_size = chunks
-            min_cache_size = use_chunk_size[0] * int(np.prod(sample_data.shape)) * 2  # 16bit = 2 bytes.
-            use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 128 MB just to be sure.
+            use_cache_size = buffer_needed(newshape, (0,), use_chunk_size, dtype=np.uint16)
         else:  # Chunked storage is turned off:
             use_chunk_size = False
             use_cache_size = None
@@ -866,8 +862,7 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
             if MAX_CACHE_SIZE:
                 max_available_cache = min(max_available_cache, MAX_CACHE_SIZE)  # Stay below hardcoded debug limit.
             use_chunk_size = probe_chunksize(shape=newshape, compression=compression, compression_opts=compression_opts)
-            min_cache_size = use_chunk_size[0] * int(np.prod(sample_data.shape)) * 2  # 16bit = 2 bytes.
-            use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 128 MB just to be sure.
+            use_cache_size = buffer_needed(newshape, (0,), use_chunk_size, dtype=np.uint16)
             while use_cache_size > max_available_cache:
                 if verbose:
                     print("Warning: Chunk alignment {0} to large for available cache.".format(use_chunk_size))
@@ -884,17 +879,14 @@ def measurement_folder_peem_terra(folderpath, detector="dld", pattern="D", scanu
                 if use_chunk_size[0] < 1:  # Avoid edge case 0
                     use_chunk_size = (1,) + use_chunk_size[1:]
                     print("Warning: Cannot reduce chunk size to fit into available buffer. Readin might be slow!")
-                    min_cache_size = use_chunk_size[0] * int(np.prod(sample_data.shape)) * 2  # 16bit = 2 bytes.
-                    use_cache_size = min_cache_size + 32 * 1024 ** 2  # Add 32 MB , overhang is small in this case.
+                    use_cache_size = buffer_needed(newshape, (0,), use_chunk_size, dtype=np.uint16)
                     break
                 if verbose:
                     print("Using half chunk size along scan direction: {0}".format(use_chunk_size))
-                min_cache_size = use_chunk_size[0] * int(np.prod(sample_data.shape)) * 2  # 16bit = 2 bytes.
-                use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 128 MB just to be sure.
+                use_cache_size = buffer_needed(newshape, (0,), use_chunk_size, dtype=np.uint16)
         elif chunks:  # Chunk size is explicitly set:
             use_chunk_size = chunks
-            min_cache_size = use_chunk_size[0] * int(np.prod(sample_data.shape)) * 2  # 16bit = 2 bytes.
-            use_cache_size = min_cache_size + 128 * 1024 ** 2  # Add 128 MB just to be sure.
+            use_cache_size = buffer_needed(newshape, (0,), use_chunk_size, dtype=np.uint16)
         else:  # Chunked storage is turned off:
             use_chunk_size = False
             use_cache_size = None
